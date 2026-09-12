@@ -1,0 +1,15 @@
+{
+  "name": "@brydio/manifest",
+  "version": "0.1.0-alpha.0",
+  "description": "The shape of a Brydio app's manifest, its collections' schemas, and the checks that say what is wrong with one.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "zod": "4.6.2"
+  }
+}
