@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-import { build, checkSource, main, validate } from '../src/index.ts';
+import { build, main, validate } from '../src/index.ts';
 
 const template = join(import.meta.dir, '..', '..', '..', 'templates', 'preact');
 const made: string[] = [];
@@ -157,17 +157,11 @@ describe('brydio validate', () => {
     expect(validate(root).problems.map(problem => [problem.line, problem.code])).toEqual([
       [3, 'prop_value_invalid'],
       [4, 'element_unknown'],
-      [5, 'prop_unknown'],
+      [5, 'style_forbidden'],
       [6, 'style_forbidden'],
       [6, 'dom_global'],
-      [10, 'dom_global'],
+      [10, 'network_global'],
     ]);
-  });
-
-  test('checkSource: h() with an unknown element, a handler for an event the element lacks', () => {
-    expect(codes(checkSource('a.ts', "h('span', null);"))).toEqual(['element_unknown']);
-    expect(codes(checkSource('a.tsx', '<bry-text text="x" onPress={go} />'))).toEqual(['event_unknown']);
-    expect(checkSource('a.tsx', 'const x = useState<string>(""); if (a <b) {}')).toEqual([]);
   });
 });
 

@@ -15,6 +15,7 @@
   ],
   "dependencies": {
     "@brydio/manifest": "0.1.0-alpha.0",
-    "@brydio/ui": "0.1.0-alpha.0"
+    "@brydio/ui": "0.1.0-alpha.0",
+    "typescript": "5.9.3"
   }
 }

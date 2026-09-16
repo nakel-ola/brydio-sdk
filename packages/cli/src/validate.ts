@@ -11,7 +11,8 @@ import { checkSource } from './source-checks.ts';
  *
  * The manifest, by the server's schema. The built bundle, by the store's
  * rules and the version record's (every screen's entry a script in the
- * bundle). The source, by what the catalogue and the worker allow. Run it
+ * bundle). The source, parsed, by what the catalogue and the worker allow
+ * (`source-checks.ts`). Run it
  * after `brydio build`; it reads the bundle as it was built.
  */
 
@@ -67,7 +68,7 @@ export function validate(dir: string, options: { outDir?: string } = {}): Valida
 
   if (existsSync(src)) {
     for (const [path, bytes] of filesUnder(src)) {
-      if (!SOURCE_EXTENSIONS.some(extension => path.endsWith(extension))) continue;
+      if (!SOURCE_EXTENSIONS.some(extension => path.endsWith(extension)) || path.endsWith('.d.ts')) continue;
       // Tests run in the fake host, not in a workspace; they may do what a screen may not.
       if (/(^|\/)(test|tests|__tests__)\/|\.(test|spec)\.[jt]sx?$/.test(path)) continue;
 

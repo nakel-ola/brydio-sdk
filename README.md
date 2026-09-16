@@ -46,8 +46,21 @@ Run these in an app's folder (they need [Bun](https://bun.sh) 1.3):
   per screen plus `app.json`, and prints the size and the fingerprint.
 - `brydio validate` checks everything Brydio would refuse: the manifest, the
   built bundle (only scripts, under 1 MB, every screen built), and the screens'
-  source (only the five building blocks, only their settings, no styles, no
-  web page or internet).
+  source, read with TypeScript's parser (only the catalogue's elements, only
+  their settings and values, the settings each needs, no children where an
+  element holds none, no styles, no page, network, storage or other workers).
+  Every problem has a code and a `file:line:column`:
+
+  | Code | What it means |
+  |---|---|
+  | `manifest_missing`, `manifest_not_json`, `manifest_invalid`, `data_*`, `placement_*` | The manifest, in the server's own codes |
+  | `bundle_not_built`, `screen_not_built`, `bundle_stale` (warning) | `dist/` is missing, lacks a screen, or is older than the manifest |
+  | `bundle_too_large`, `bundle_file_not_code`, `bundle_path_invalid`, `bundle_manifest_missing`, `bundle_empty` | What the bundle store refuses |
+  | `element_unknown`, `prop_unknown`, `prop_value_invalid`, `prop_required`, `event_unknown`, `children_not_allowed` | A screen asks for something the catalogue does not have |
+  | `style_forbidden` | `style`, `className`, `class`, `color`/`colour`, `innerHTML` |
+  | `dom_global`, `network_global`, `storage_global`, `worker_global`, `eval_forbidden` | A screen reaches for what its worker does not have |
+  | `source_syntax` | A source file does not parse |
+
 - `brydio dev` builds, serves `dist/` on `http://localhost:5174`, builds again
   whenever a file changes, and prints the command that loads the build into a
   local Brydio.

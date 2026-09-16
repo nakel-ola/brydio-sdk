@@ -23,6 +23,7 @@ export interface Problem {
   severity: 'error' | 'warning';
   file?: string;
   line?: number;
+  column?: number;
   /** Where in the manifest, like `placements.0.screen`. */
   path?: string;
 }
@@ -87,7 +88,7 @@ export function sourceOf(root: string, entry: string): string | null {
 
 /** A problem as one line: `file:line  code  message`. */
 export function formatProblem(problem: Problem): string {
-  const where = problem.file ? `${problem.file}${problem.line ? `:${problem.line}` : ''}${problem.path ? ` (${problem.path})` : ''}` : (problem.path ?? '');
+  const where = problem.file ? `${problem.file}${problem.line ? `:${problem.line}${problem.column ? `:${problem.column}` : ''}` : ''}${problem.path ? ` (${problem.path})` : ''}` : (problem.path ?? '');
 
   return `${problem.severity === 'error' ? 'error  ' : 'warning'} ${where ? `${where}  ` : ''}${problem.message} [${problem.code}]`;
 }

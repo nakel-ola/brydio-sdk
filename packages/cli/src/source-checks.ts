@@ -1,148 +1,497 @@
-import { CATALOGUE, checkEvent, checkProp, eventOfHandler, isElementName, type ElementName } from '@brydio/ui';
+import { CATALOGUE, FORBIDDEN_PROPS, checkEvent, checkProp, eventOfHandler, isElementName, type ElementName, type ElementSpec } from '@brydio/ui';
+import ts from 'typescript';
 
 import type { Problem } from './project.ts';
 
 /**
  * What `brydio validate` can see wrong in a screen's source without running it
- * (A5-F03): an element Brydio does not have, a setting an element does not
- * take, a style or a class, and reaching for a page or a network the worker
- * does not have.
+ * (A5-F03-S02): an element Brydio does not have, a setting an element does
+ * not take or a value it does not allow, a setting it cannot be drawn
+ * without, children inside an element that holds none, a style or a class,
+ * and reaching for a page, a network, storage or another worker that the
+ * worker does not have.
  *
- * Best effort, by reading the text. It will not follow a variable to find out
- * which element it names, and it can be fooled by a string that looks like
- * JSX. What it misses the runtime refuses at the line, and the host refuses
- * after that; this is only the earliest of the three.
+ * The source is parsed with TypeScript's own parser, so a `<` in a generic, a
+ * JSX-looking string or a comment is never mistaken for an element, and a
+ * name is only a global when nothing in the file declares it. The checks
+ * speak up only when they are sure: a setting whose value is worked out at
+ * run time is not guessed at, and an element named through a variable is not
+ * followed. What slips past is refused by the runtime at the line that made
+ * it, and by the host after that; this is the earliest of the three.
+ *
+ * Every refusal about an element or a setting uses `@brydio/ui`'s sentence,
+ * which is the host's, so the terminal, the runtime and `tree/refused` read
+ * the same.
  */
 
-/** Names a worker does not have, or that Brydio's prelude takes away. */
-const GLOBALS: [RegExp, string][] = [
-  [/\b(document|window|localStorage|sessionStorage)\s*[.[]/g, 'A screen has no page: it runs in a worker and draws only with the catalogue.'],
-  [/\b(indexedDB|caches)\b/g, 'A screen has no storage; keep records in the app’s collections.'],
-  [/\bnavigator\s*\.\s*(storage|sendBeacon)\b/g, 'A screen has no storage and no network.'],
-  [/\bfetch\s*\(/g, 'A screen has no network; call the app’s tools instead.'],
-  [/\bnew\s+(XMLHttpRequest|WebSocket|EventSource|WebTransport|Worker|SharedWorker|BroadcastChannel)\b/g, 'A screen has no network and no other workers.'],
-  [/\bimportScripts\s*\(/g, 'A screen is one module; there is nothing else to load.'],
-];
+export type SourceProblemCode =
+  | 'source_syntax'
+  | 'element_unknown'
+  | 'prop_unknown'
+  | 'prop_value_invalid'
+  | 'prop_required'
+  | 'event_unknown'
+  | 'style_forbidden'
+  | 'children_not_allowed'
+  | 'dom_global'
+  | 'network_global'
+  | 'storage_global'
+  | 'worker_global'
+  | 'eval_forbidden';
 
-/** Comments out, strings kept, lines kept: what the element checks read. */
-function withoutComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, match => match.replace(/[^\n]/g, ' '));
+interface Refused {
+  code: SourceProblemCode;
+  why: string;
 }
 
-/** Comments and string contents out, lines kept: what the globals check reads. */
-function withoutStrings(source: string): string {
-  return withoutComments(source).replace(/(["'`])(?:\\.|(?!\1)[^\\\n])*\1/g, match => match.replace(/[^\n]/g, ' '));
+const PAGE: Refused = { code: 'dom_global', why: 'A screen has no page: it runs in a worker and draws only with the catalogue.' };
+const NETWORK: Refused = { code: 'network_global', why: 'A screen has no network; call the app’s tools instead.' };
+const STORAGE: Refused = { code: 'storage_global', why: 'A screen has no storage; keep records in the app’s collections.' };
+const WORKERS: Refused = { code: 'worker_global', why: 'A screen is one module in one worker; there is nothing else to start or load.' };
+
+/** Globals a screen cannot use: what a page has and a worker lacks, and what Brydio's prelude takes away. */
+export const FORBIDDEN_GLOBALS: Readonly<Record<string, Refused>> = {
+  document: PAGE,
+  window: PAGE,
+  localStorage: STORAGE,
+  sessionStorage: STORAGE,
+  indexedDB: STORAGE,
+  caches: STORAGE,
+  fetch: NETWORK,
+  XMLHttpRequest: NETWORK,
+  WebSocket: NETWORK,
+  WebSocketStream: NETWORK,
+  EventSource: NETWORK,
+  WebTransport: NETWORK,
+  Worker: WORKERS,
+  SharedWorker: WORKERS,
+  BroadcastChannel: WORKERS,
+  importScripts: WORKERS,
+};
+
+/** `navigator.<name>` that the prelude takes away. */
+const NAVIGATOR: Readonly<Record<string, Refused>> = { storage: STORAGE, sendBeacon: NETWORK };
+
+/** What the global object is called in a worker, and on a page. */
+const GLOBAL_OBJECTS = new Set(['self', 'globalThis', 'window']);
+
+/** Attributes Preact reads itself and never sends to the host. */
+const FRAMEWORK_ATTRIBUTES = new Set(['key', 'ref', 'children']);
+
+/** The plain factories `@brydio/app` exports, by the element each makes. */
+const FACTORIES: Readonly<Record<string, ElementName>> = {
+  stack: 'bry-stack',
+  heading: 'bry-heading',
+  text: 'bry-text',
+  button: 'bry-button',
+  card: 'bry-card',
+};
+
+/** Modules whose `h` and `createElement` take an element's name first. */
+const ELEMENT_MAKERS = new Set(['@brydio/app', 'preact']);
+
+const scriptKindOf = (file: string): ts.ScriptKind =>
+  file.endsWith('.tsx') ? ts.ScriptKind.TSX : file.endsWith('.ts') || file.endsWith('.mts') ? ts.ScriptKind.TS : ts.ScriptKind.JSX;
+
+/** A value the screen will send, when it is written out; `undefined` when it is worked out at run time. */
+type Literal = { value: unknown } | undefined;
+
+function literalsOf(expression: ts.Expression | undefined): Literal[] {
+  if (!expression) return [undefined];
+
+  const node = unwrap(expression);
+
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return [{ value: node.text }];
+  if (ts.isNumericLiteral(node)) return [{ value: Number(node.text) }];
+  if (node.kind === ts.SyntaxKind.TrueKeyword) return [{ value: true }];
+  if (node.kind === ts.SyntaxKind.FalseKeyword) return [{ value: false }];
+  if (ts.isPrefixUnaryExpression(node) && node.operator === ts.SyntaxKind.MinusToken && ts.isNumericLiteral(node.operand)) {
+    return [{ value: -Number(node.operand.text) }];
+  }
+  // `tone={done ? 'muted' : 'loud'}`: either branch is a value the screen can send.
+  if (ts.isConditionalExpression(node)) return [...literalsOf(node.whenTrue), ...literalsOf(node.whenFalse)];
+
+  return [undefined];
 }
 
-const lineOf = (source: string, index: number): number => source.slice(0, index).split('\n').length;
+/** The expression inside parentheses and type assertions, which change nothing at run time. */
+function unwrap(node: ts.Expression): ts.Expression {
+  let at = node;
 
-/**
- * The attributes of one JSX opening tag, starting just after its name: each
- * name, and its value when that value is a plain literal.
- */
-function attributesOf(source: string, from: number): { name: string; literal?: unknown; at: number }[] {
-  const found: { name: string; literal?: unknown; at: number }[] = [];
-  let depth = 0;
-
-  for (let at = from; at < source.length; at++) {
-    const char = source[at]!;
-
-    if (char === '{') depth++;
-    else if (char === '}') depth--;
-    else if (depth === 0 && char === '>') break;
-    else if (depth === 0 && (char === '"' || char === "'")) {
-      at = source.indexOf(char, at + 1);
-      if (at < 0) break;
-    } else if (depth === 0 && /[A-Za-z_]/.test(char) && /[\s]/.test(source[at - 1] ?? '')) {
-      const match = /^([A-Za-z_][\w-]*)(\s*=\s*("([^"]*)"|'([^']*)'|\{\s*(-?\d+(?:\.\d+)?|true|false)\s*\}))?/.exec(source.slice(at));
-
-      if (!match) continue;
-
-      const assigned = /^\s*=/.test(source.slice(at + match[1]!.length));
-      const text = match[4] ?? match[5];
-      const other = match[6];
-      // A bare name is `true`; a name given an expression has no literal to check.
-      const literal =
-        text !== undefined ? text : other !== undefined ? (other === 'true' ? true : other === 'false' ? false : Number(other)) : assigned ? undefined : true;
-
-      found.push({ name: match[1]!, at, ...(literal === undefined ? {} : { literal }) });
-      at += (match[1]!.length) - 1;
-    }
+  while (ts.isParenthesizedExpression(at) || ts.isAsExpression(at) || ts.isSatisfiesExpression(at) || ts.isNonNullExpression(at)) {
+    at = at.expression;
   }
 
-  return found;
+  return at;
 }
 
-export function checkSource(file: string, source: string): Problem[] {
-  const problems: Problem[] = [];
-  const code = withoutComments(source);
-  const push = (code: string, message: string, index: number, severity: Problem['severity'] = 'error') =>
-    problems.push({ code, severity, file, line: lineOf(source, index), message });
+const isWrittenString = (node: ts.Node): node is ts.StringLiteral | ts.NoSubstitutionTemplateLiteral =>
+  ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node);
 
-  // JSX tags: `<div`, `<bry-stack`. A tag follows something that can come
-  // before an expression, which keeps `useState<string>` out of it.
-  for (const match of code.matchAll(/(^|[\s(){}[\]=?:,&|>])<([a-z][\w-]*)(?=[\s/>])/gm)) {
-    const name = match[2]!;
-    const index = match.index! + match[1]!.length;
+/** Every name the file declares anywhere. A local `fetch` is the app's own, not the worker's. */
+function declaredNames(source: ts.SourceFile): Set<string> {
+  const names = new Set<string>();
+  const addBinding = (name: ts.BindingName) => {
+    if (ts.isIdentifier(name)) names.add(name.text);
+    else for (const element of name.elements) if (!ts.isOmittedExpression(element)) addBinding(element.name);
+  };
+  const visit = (node: ts.Node) => {
+    if (ts.isVariableDeclaration(node) || ts.isParameter(node) || ts.isBindingElement(node)) addBinding(node.name);
+    else if ((ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node) || ts.isFunctionExpression(node) || ts.isClassExpression(node)) && node.name) {
+      names.add(node.name.text);
+    } else if (ts.isImportClause(node) && node.name) names.add(node.name.text);
+    else if (ts.isImportSpecifier(node) || ts.isNamespaceImport(node) || ts.isImportEqualsDeclaration(node)) names.add(node.name.text);
+    else if ((ts.isEnumDeclaration(node) || ts.isModuleDeclaration(node)) && ts.isIdentifier(node.name)) names.add(node.name.text);
 
-    if (!isElementName(name)) {
-      push('element_unknown', `Brydio has no element called "${name}". A screen draws with ${Object.keys(CATALOGUE).join(', ')}.`, index);
+    ts.forEachChild(node, visit);
+  };
+
+  visit(source);
+
+  return names;
+}
+
+/** Whether an identifier is read as a value when the code runs, rather than being a key, a declaration's name or a type. */
+function isValueReference(node: ts.Identifier): boolean {
+  const parent = node.parent;
+
+  if (ts.isPropertyAccessExpression(parent)) return parent.expression === node;
+  if (
+    (ts.isPropertyAssignment(parent) ||
+      ts.isPropertyDeclaration(parent) ||
+      ts.isPropertySignature(parent) ||
+      ts.isMethodDeclaration(parent) ||
+      ts.isMethodSignature(parent) ||
+      ts.isGetAccessor(parent) ||
+      ts.isSetAccessor(parent) ||
+      ts.isEnumMember(parent)) &&
+    parent.name === node
+  ) {
+    return false;
+  }
+  if (
+    ts.isQualifiedName(parent) ||
+    ts.isJsxAttribute(parent) ||
+    ts.isLabeledStatement(parent) ||
+    ts.isBreakOrContinueStatement(parent) ||
+    ts.isImportSpecifier(parent) ||
+    ts.isExportSpecifier(parent) ||
+    ts.isImportClause(parent) ||
+    ts.isNamespaceImport(parent)
+  ) {
+    return false;
+  }
+
+  // Anything inside a type is never run.
+  for (let at: ts.Node = parent; !ts.isSourceFile(at); at = at.parent) {
+    if (ts.isTypeNode(at) && !ts.isExpressionWithTypeArguments(at)) return false;
+    if (ts.isInterfaceDeclaration(at) || ts.isTypeAliasDeclaration(at)) return false;
+    if (ts.isStatement(at)) break;
+  }
+
+  return true;
+}
+
+/** A property's settings, as the element checks read them. */
+interface Setting {
+  name: string;
+  values: Literal[];
+  at: ts.Node;
+}
+
+/** The settings written in an object literal, and whether that is all of them. */
+function settingsOf(object: ts.ObjectLiteralExpression): { settings: Setting[]; complete: boolean } {
+  const settings: Setting[] = [];
+  let complete = true;
+
+  for (const property of object.properties) {
+    if (ts.isSpreadAssignment(property)) {
+      const inner = unwrap(property.expression);
+
+      if (ts.isObjectLiteralExpression(inner)) {
+        const nested = settingsOf(inner);
+
+        settings.push(...nested.settings);
+        complete &&= nested.complete;
+      } else {
+        complete = false;
+      }
+
       continue;
     }
 
-    for (const attribute of attributesOf(code, index + 1 + name.length)) {
-      if (attribute.name === 'key' || attribute.name === 'children') continue;
+    const key = property.name;
+    const name = key && (ts.isIdentifier(key) || ts.isStringLiteral(key) || ts.isNumericLiteral(key)) ? key.text : null;
 
-      const event = eventOfHandler(attribute.name);
+    if (name === null || !key) {
+      complete = false;
+      continue;
+    }
 
-      if (event !== null) {
-        const refused = checkEvent(name, event);
+    settings.push({ name, values: ts.isPropertyAssignment(property) ? literalsOf(property.initializer) : [undefined], at: key });
+  }
 
-        if (refused) push('event_unknown', refused, attribute.at);
+  return { settings, complete };
+}
+
+export function checkSource(file: string, text: string): Problem[] {
+  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, scriptKindOf(file));
+  const problems: Problem[] = [];
+  const place = (position: number) => {
+    const { line, character } = source.getLineAndCharacterOfPosition(position);
+
+    return { line: line + 1, column: character + 1 };
+  };
+  const push = (code: SourceProblemCode, message: string, at: ts.Node) =>
+    problems.push({ code, severity: 'error', file, ...place(at.getStart(source)), message });
+
+  // A file that does not parse says only that: anything more would be a guess.
+  const syntax = (source as unknown as { parseDiagnostics?: ts.DiagnosticWithLocation[] }).parseDiagnostics ?? [];
+
+  if (syntax.length) {
+    return syntax.slice(0, 5).map(diagnostic => ({
+      code: 'source_syntax',
+      severity: 'error',
+      file,
+      ...place(diagnostic.start),
+      message: `This does not parse: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`,
+    }));
+  }
+
+  const declared = declaredNames(source);
+  // `h` and `createElement` from `@brydio/app` or Preact, and the plain
+  // factories from `@brydio/app`, by the names this file imports them as. A
+  // function of the app's own that happens to be called `text` is left alone.
+  const makers = new Set<string>();
+  const factories = new Map<string, ElementName>();
+
+  for (const statement of source.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
+
+    const from = statement.moduleSpecifier.text;
+    const bindings = statement.importClause?.namedBindings;
+
+    if (!bindings || !ts.isNamedImports(bindings)) continue;
+
+    for (const specifier of bindings.elements) {
+      const imported = (specifier.propertyName ?? specifier.name).text;
+
+      if (ELEMENT_MAKERS.has(from) && (imported === 'h' || imported === 'createElement')) makers.add(specifier.name.text);
+      if (from === '@brydio/app' && FACTORIES[imported]) factories.set(specifier.name.text, FACTORIES[imported]);
+    }
+  }
+
+  const checkSetting = (element: ElementName, { name, values, at }: Setting) => {
+    if (FRAMEWORK_ATTRIBUTES.has(name)) return;
+
+    const event = eventOfHandler(name);
+
+    if (event !== null) {
+      const refused = checkEvent(element, event);
+
+      if (refused) push('event_unknown', refused, at);
+
+      return;
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(CATALOGUE[element].props, name)) {
+      push(Object.prototype.hasOwnProperty.call(FORBIDDEN_PROPS, name) ? 'style_forbidden' : 'prop_unknown', checkProp(element, name, undefined)!, at);
+
+      return;
+    }
+
+    for (const literal of values) {
+      const refused = literal && checkProp(element, name, literal.value);
+
+      if (refused) {
+        push('prop_value_invalid', refused, at);
+
+        return;
+      }
+    }
+  };
+
+  const checkRequired = (element: ElementName, written: Setting[], at: ts.Node) => {
+    for (const required of (CATALOGUE[element] as ElementSpec).required ?? []) {
+      if (!written.some(setting => setting.name === required)) push('prop_required', `${element} needs a ${required}.`, at);
+    }
+  };
+
+  const isKnownElement = (name: string, at: ts.Node): name is ElementName => {
+    if (isElementName(name)) return true;
+
+    push('element_unknown', `Brydio has no element called "${name}". A screen draws with ${Object.keys(CATALOGUE).join(', ')}.`, at);
+
+    return false;
+  };
+
+  const checkJsx = (opening: ts.JsxOpeningElement | ts.JsxSelfClosingElement, children: readonly ts.JsxChild[]) => {
+    const tag = opening.tagName;
+
+    // `<Board />` and `<ui.Row />` are components, which draw with elements themselves.
+    if (!ts.isIdentifier(tag) || !/^[a-z]/.test(tag.text)) {
+      if (ts.isJsxNamespacedName(tag)) push('element_unknown', `Brydio has no element called "${tag.getText(source)}".`, tag);
+
+      return;
+    }
+
+    const name = tag.text;
+
+    if (!isKnownElement(name, tag)) return;
+
+    const written: Setting[] = [];
+    let complete = true;
+
+    for (const attribute of opening.attributes.properties) {
+      if (ts.isJsxSpreadAttribute(attribute)) {
+        const inner = unwrap(attribute.expression);
+
+        if (ts.isObjectLiteralExpression(inner)) {
+          const spread = settingsOf(inner);
+
+          written.push(...spread.settings);
+          complete &&= spread.complete;
+        } else {
+          // Whatever is spread may carry anything; the runtime checks it.
+          complete = false;
+        }
+
         continue;
       }
 
-      const spec = (CATALOGUE[name as ElementName].props as Record<string, unknown>)[attribute.name];
+      const initializer = attribute.initializer;
 
-      if (!spec) {
-        const style = attribute.name === 'style' || attribute.name === 'className' || attribute.name === 'class';
+      written.push({
+        name: attribute.name.getText(source),
+        values: !initializer
+          ? [{ value: true }]
+          : ts.isStringLiteral(initializer)
+            ? [{ value: initializer.text }]
+            : ts.isJsxExpression(initializer)
+              ? literalsOf(initializer.expression)
+              : [undefined],
+        at: attribute.name,
+      });
+    }
 
-        push(style ? 'style_forbidden' : 'prop_unknown', checkProp(name, attribute.name, undefined)!, attribute.at);
-      } else if (attribute.literal !== undefined) {
-        const refused = checkProp(name, attribute.name, attribute.literal);
+    written.forEach(setting => checkSetting(name, setting));
 
-        if (refused) push('prop_value_invalid', refused, attribute.at);
+    if (complete) checkRequired(name, written, tag);
+
+    if (!CATALOGUE[name].children) {
+      const held = children.find(child =>
+        ts.isJsxText(child) ? child.text.trim() !== '' : ts.isJsxExpression(child) ? child.expression !== undefined : true,
+      );
+
+      if (held) {
+        const words = name === 'bry-button' ? ' Give it its words as label="…".' : 'text' in CATALOGUE[name].props ? ' Give it its words as text="…".' : '';
+
+        push('children_not_allowed', `${name} can’t hold other nodes.${words}`, held);
       }
     }
-  }
+  };
 
-  // Elements made without JSX: `h('div', …)`, `createElement('div', …)`.
-  for (const match of code.matchAll(/\b(?:h|createElement)\(\s*(["'])([^"']+)\1/g)) {
-    if (!isElementName(match[2]) && match[2] !== '#text') {
-      push('element_unknown', `Brydio has no element called "${match[2]}".`, match.index!);
+  const checkFactory = (element: ElementName, argument: ts.Expression | undefined, at: ts.Node) => {
+    const attributes = argument && unwrap(argument);
+
+    if (!attributes || attributes.kind === ts.SyntaxKind.NullKeyword || (ts.isIdentifier(attributes) && attributes.text === 'undefined')) {
+      checkRequired(element, [], at);
+
+      return;
     }
-  }
 
-  // A style or class anywhere, including through a spread's object.
-  for (const match of withoutStrings(source).matchAll(/\b(style|className)\s*[:=]/g)) {
-    push('style_forbidden', 'There is no style or class in a Brydio app: Brydio draws every element in its own style.', match.index!);
-  }
+    if (!ts.isObjectLiteralExpression(attributes)) return;
 
-  const bare = withoutStrings(source);
+    const { settings, complete } = settingsOf(attributes);
 
-  for (const [pattern, why] of GLOBALS) {
-    for (const match of bare.matchAll(pattern)) push('dom_global', `${match[0].replace(/\s+/g, ' ').trim()}: ${why}`, match.index!);
-  }
+    settings.forEach(setting => checkSetting(element, setting));
+
+    if (complete) checkRequired(element, settings, at);
+  };
+
+  const checkCall = (call: ts.CallExpression) => {
+    const callee = unwrap(call.expression);
+    const [first, second] = call.arguments;
+
+    if (ts.isIdentifier(callee) && makers.has(callee.text) && first) {
+      const tag = unwrap(first);
+
+      if (isWrittenString(tag) && tag.text !== '#text' && isKnownElement(tag.text, tag)) checkFactory(tag.text, second, tag);
+
+      return;
+    }
+
+    if (ts.isIdentifier(callee) && factories.has(callee.text)) {
+      checkFactory(factories.get(callee.text)!, first, callee);
+
+      return;
+    }
+
+    if (ts.isIdentifier(callee) && callee.text === 'eval' && !declared.has('eval')) {
+      push('eval_forbidden', 'eval is refused in a Brydio app’s worker; write the code out.', callee);
+    }
+
+    // `import('https://…')`: a worker can import only its own bundle's files.
+    if (callee.kind === ts.SyntaxKind.ImportKeyword && first) {
+      const target = unwrap(first);
+
+      if (isWrittenString(target) && /^([a-z][a-z0-9+.-]*:|\/\/)/i.test(target.text)) {
+        push('network_global', `import("${target.text}"): a screen can load nothing from elsewhere; build it into the bundle.`, target);
+      }
+    }
+  };
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isJsxElement(node)) {
+      checkJsx(node.openingElement, node.children);
+    } else if (ts.isJsxSelfClosingElement(node)) {
+      checkJsx(node, []);
+    } else if (ts.isCallExpression(node)) {
+      checkCall(node);
+    } else if (ts.isNewExpression(node)) {
+      const callee = unwrap(node.expression);
+
+      if (ts.isIdentifier(callee) && callee.text === 'Function' && !declared.has('Function')) {
+        push('eval_forbidden', 'new Function is refused in a Brydio app’s worker; write the code out.', callee);
+      }
+    } else if (ts.isIdentifier(node)) {
+      const refused = FORBIDDEN_GLOBALS[node.text];
+
+      // `self.fetch` is reported at the property access, so `self` itself passes.
+      if (refused && Object.prototype.hasOwnProperty.call(FORBIDDEN_GLOBALS, node.text) && !declared.has(node.text) && isValueReference(node)) {
+        push(refused.code, `${node.text}: ${refused.why}`, node);
+      }
+    } else if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
+      const object = unwrap(node.expression);
+      const property = ts.isPropertyAccessExpression(node)
+        ? node.name.text
+        : isWrittenString(node.argumentExpression)
+          ? node.argumentExpression.text
+          : null;
+
+      if (property !== null && ts.isIdentifier(object) && !declared.has(object.text)) {
+        const refused = GLOBAL_OBJECTS.has(object.text)
+          ? Object.prototype.hasOwnProperty.call(FORBIDDEN_GLOBALS, property) && FORBIDDEN_GLOBALS[property]
+          : object.text === 'navigator' && Object.prototype.hasOwnProperty.call(NAVIGATOR, property) && NAVIGATOR[property];
+
+        if (refused) push(refused.code, `${object.text}.${property}: ${refused.why}`, node);
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(source);
 
   return dedupe(problems);
 }
 
-/** One problem per line and code: a `style=` found twice over is one mistake. */
+/** One problem per place and code: `window.fetch` found as `window` and as `.fetch` is still one mistake per code. */
 function dedupe(problems: Problem[]): Problem[] {
   const seen = new Set<string>();
 
   return problems.filter(problem => {
-    const key = `${problem.line}:${problem.code}`;
+    const key = `${problem.line}:${problem.column}:${problem.code}`;
 
     if (seen.has(key)) return false;
 
