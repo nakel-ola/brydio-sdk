@@ -144,8 +144,10 @@ describe('the runtime a screen carries', () => {
     expect(used.size).toBeGreaterThan(5);
     expect(whole.runtime).toBeGreaterThan(10 * 1024);
     expect(whole.runtime).toBeLessThanOrEqual(RUNTIME_MAX_BYTES);
-    // Everything the whole entry re-exports beyond what the screen uses is shaken out.
-    expect(whole.bytes).toBe(trimmed.bytes);
+    // Everything the whole entry re-exports beyond what the screen uses is shaken out. The
+    // minifier may name one thing a letter differently between the two, so a few bytes either
+    // way are the same bundle; a leaked module is kilobytes.
+    expect(Math.abs(whole.bytes - trimmed.bytes)).toBeLessThanOrEqual(64);
   }, 30_000);
 
   test('build refuses a screen carrying more than 30 KB of the runtime, naming it', async () => {

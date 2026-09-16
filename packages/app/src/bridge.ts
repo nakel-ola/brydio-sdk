@@ -156,14 +156,14 @@ export class Bridge {
   readonly #watches = new Map<string, Watch>();
   /** Subscribe calls not yet answered, by call id, with the watch each one started. */
   readonly #subscribing = new Map<string, { collection: string; watch: Watch }>();
-  /** `data/get` and `data/list` reads waiting on `data/result` or `data/error`, by call id. */
-  readonly #reads = new Map<string, { resolve(result: unknown): void; reject(error: HostError): void }>();
+  /**
+   * Requests waiting on their answer by call id: reads (`data/get`, `data/list`
+   * answered `data/result`/`data/error`), names (`host/*` answered
+   * `host/result`/`host/error`) and `ui/navigate` (`ui/result`/`ui/error`).
+   */
+  readonly #requests = new Map<string, { resolve(result: unknown): void; reject(error: Error): void }>();
   /** Set once the host has said it can't answer `data/*` reads, so they go through the tools from then on. */
   #readsThroughTools = false;
-  /** `host/members` and `host/projects` requests waiting on `host/result` or `host/error`, by call id. */
-  readonly #hostCalls = new Map<string, { resolve(result: unknown): void; reject(error: Error): void }>();
-  /** `ui/navigate` requests waiting on `ui/result` or `ui/error`, by call id. */
-  readonly #asking = new Map<string, { resolve(result: { opened: boolean }): void; reject(error: Error): void }>();
   readonly #connected: Promise<HostContext>;
   readonly #unlisten: () => void;
   #resolveConnected: (context: HostContext) => void = () => {};
@@ -321,13 +321,8 @@ export class Bridge {
     if (this.#readsThroughTools) return throughTools();
     if (this.#stopped) throw new TeardownError();
 
-    const id = String(++this.#nextId);
-
     try {
-      return (await new Promise<unknown>((resolve, reject) => {
-        this.#reads.set(id, { resolve, reject });
-        this.#port.post({ jsonrpc: '2.0', id, method, params });
-      })) as T;
+      return (await this.#request(method, params)) as T;
     } catch (error) {
       if (error instanceof HostError && error.code === -32601) {
         this.#readsThroughTools = true;
@@ -418,13 +413,19 @@ export class Bridge {
     const refused = this.#grant('host', 'navigate');
 
     if (refused) throw refused;
+
+    return this.#request('ui/navigate', { to }).then(result => ({ opened: (result as { opened?: unknown } | undefined)?.opened === true }));
+  }
+
+  /** Sends a request with its own call id, and resolves with its answer's `result`, or rejects with a `HostError`. */
+  #request(method: string, params: Record<string, unknown>, idInParams = false): Promise<unknown> {
     if (this.#stopped) return Promise.reject(new TeardownError());
 
     const id = String(++this.#nextId);
 
     return new Promise((resolve, reject) => {
-      this.#asking.set(id, { resolve, reject });
-      this.#port.post({ jsonrpc: '2.0', id, method: 'ui/navigate', params: { to } });
+      this.#requests.set(id, { resolve, reject });
+      this.#port.post({ jsonrpc: '2.0', id, method, params: idInParams ? { id, ...params } : params });
     });
   }
 
@@ -440,12 +441,12 @@ export class Bridge {
    * is simply absent. Needs the `members` host grant.
    */
   members(ids: readonly string[]): Promise<MemberName[]> {
-    return this.#hostCall('members', ids).then(result => (Array.isArray((result as { members?: unknown })?.members) ? (result as { members: MemberName[] }).members : []));
+    return this.#hostCall('members', ids).then(result => namesIn<MemberName>(result, 'members'));
   }
 
   /** The names of projects the screen holds ids for, among those the viewer can open. Needs the `projects` host grant. */
   projects(ids: readonly string[]): Promise<ProjectName[]> {
-    return this.#hostCall('projects', ids).then(result => (Array.isArray((result as { projects?: unknown })?.projects) ? (result as { projects: ProjectName[] }).projects : []));
+    return this.#hostCall('projects', ids).then(result => namesIn<ProjectName>(result, 'projects'));
   }
 
   /**
@@ -458,34 +459,22 @@ export class Bridge {
     const refused = this.#grant('host', 'members');
 
     if (refused) return Promise.reject(refused);
-    if (this.#stopped) return Promise.reject(new TeardownError());
 
-    const id = String(++this.#nextId);
     const params = {
-      id,
       ...(typeof options.query === 'string' && options.query ? { query: options.query } : {}),
       ...(Number.isInteger(options.limit) ? { limit: options.limit } : {}),
     };
 
-    return new Promise<unknown>((resolve, reject) => {
-      this.#hostCalls.set(id, { resolve, reject });
-      this.#port.post({ jsonrpc: '2.0', id, method: 'host/members', params });
-    }).then(result => (Array.isArray((result as { members?: unknown })?.members) ? (result as { members: MemberName[] }).members : []));
+    return this.#request('host/members', params, true).then(result => namesIn<MemberName>(result, 'members'));
   }
 
   #hostCall(capability: 'members' | 'projects', ids: readonly string[]): Promise<unknown> {
     const refused = this.#grant('host', capability);
 
     if (refused) return Promise.reject(refused);
-    if (this.#stopped) return Promise.reject(new TeardownError());
-    if (!ids.length) return Promise.resolve({ [capability]: [] });
+    if (!ids.length && !this.#stopped) return Promise.resolve({ [capability]: [] });
 
-    const id = String(++this.#nextId);
-
-    return new Promise((resolve, reject) => {
-      this.#hostCalls.set(id, { resolve, reject });
-      this.#port.post({ jsonrpc: '2.0', id, method: `host/${capability}`, params: { id, ids: [...new Set(ids)] } });
-    });
+    return this.#request(`host/${capability}`, { ids: [...new Set(ids)] }, true);
   }
 
   /**
@@ -587,42 +576,24 @@ export class Bridge {
         return;
       }
       case 'host/result':
-      case 'host/error': {
-        const call = this.#hostCalls.get(String(params.id));
-
-        this.#hostCalls.delete(String(params.id));
-
-        if (message.method === 'host/result') call?.resolve(params.result);
-        else call?.reject(new HostError(params.error));
-
-        return;
-      }
-      case 'ui/result': {
-        const asked = this.#asking.get(String(params.id));
-        const result = params.result as { opened?: unknown } | undefined;
-
-        this.#asking.delete(String(params.id));
-        asked?.resolve({ opened: result?.opened === true });
-
-        return;
-      }
-      case 'ui/error': {
-        const asked = this.#asking.get(String(params.id));
-
-        this.#asking.delete(String(params.id));
-        asked?.reject(new HostError(params.error));
-
-        return;
-      }
+      case 'host/error':
+      case 'ui/result':
+      case 'ui/error':
+      case 'data/result':
       case 'data/error': {
-        const read = this.#reads.get(String(params.id));
+        const request = this.#requests.get(String(params.id));
 
-        if (read) {
-          this.#reads.delete(String(params.id));
-          read.reject(new HostError(params.error));
+        this.#requests.delete(String(params.id));
+
+        if (request) {
+          if (message.method.endsWith('/result')) request.resolve(params.result);
+          else request.reject(new HostError(params.error));
 
           return;
         }
+
+        if (message.method === 'data/result') this.#subscribing.delete(String(params.id));
+        if (message.method !== 'data/error') return;
 
         const call = this.#subscribing.get(String(params.id));
 
@@ -633,12 +604,6 @@ export class Bridge {
 
         return;
       }
-      case 'data/result':
-        this.#reads.get(String(params.id))?.resolve(params.result);
-        this.#reads.delete(String(params.id));
-        this.#subscribing.delete(String(params.id));
-
-        return;
       case 'data/changed': {
         const watch = typeof params.collection === 'string' ? this.#watches.get(params.collection) : undefined;
         const changes = Array.isArray(params.changes) ? (params.changes as DataChange[]) : [];
@@ -715,20 +680,21 @@ export class Bridge {
 
     this.#pending.clear();
 
-    for (const asked of this.#asking.values()) asked.reject(new TeardownError());
-    for (const call of this.#hostCalls.values()) call.reject(new TeardownError());
-    for (const read of this.#reads.values()) read.reject(new TeardownError() as never);
+    for (const request of this.#requests.values()) request.reject(new TeardownError());
 
-    this.#reads.clear();
-
-    this.#hostCalls.clear();
-
-    this.#asking.clear();
+    this.#requests.clear();
     this.#watches.clear();
     this.#subscribing.clear();
     this.#unlisten();
   }
 }
+
+/** The list of names an answer carries, or none. */
+const namesIn = <T>(result: unknown, kind: 'members' | 'projects'): T[] => {
+  const list = (result as Record<string, unknown> | undefined)?.[kind];
+
+  return Array.isArray(list) ? (list as T[]) : [];
+};
 
 /** The host capabilities `*` covers. */
 const HOST_CAPABILITIES: readonly string[] = ['navigate', 'message', 'members', 'projects'];
