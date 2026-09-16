@@ -105,6 +105,25 @@ describe('what the host stops an app for', () => {
     expect(host.stopped).toBe('start');
   });
 
+  test('a tree over 5,000 nodes, for the host’s reason', async () => {
+    host = FakeHost.start({ entry: screen('flood'), manifest });
+
+    await host.waitFor(() => host!.stopped, { what: 'the stop' });
+
+    expect(host.stopped).toBe('cap');
+  });
+
+  test('budgets a test can shorten but never lengthen past the host’s', async () => {
+    host = FakeHost.start({ entry: screen('silent'), manifest, budgets: { start: 60_000 } });
+
+    expect(host.budgets).toEqual({ ready: 10_000, start: 2_000 });
+
+    host.stop();
+    host = FakeHost.start({ entry: screen('silent'), manifest, budgets: { ready: 5, start: 50 } });
+
+    expect(host.budgets).toEqual({ ready: 5, start: 50 });
+  });
+
   test('a module that cannot be loaded', async () => {
     host = FakeHost.start({ entry: join(app, 'dist', 'screens', 'missing.js'), manifest });
 

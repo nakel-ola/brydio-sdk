@@ -62,7 +62,7 @@ export interface FakeHostOptions {
   asks?: AskAnswer | ((call: ToolCall) => AskAnswer);
   /** Run Brydio's prelude before the screen. On unless a test needs it off. */
   prelude?: boolean;
-  /** The host's budgets, in milliseconds. A test can shorten them. */
+  /** The host's budgets, in milliseconds. A test can shorten them; a longer one is held to the host's. */
   budgets?: { ready?: number; start?: number };
 }
 
@@ -84,6 +84,9 @@ interface Rpc {
 }
 
 const MAX_MESSAGE_BYTES = 512 * 1024;
+/** The host's budgets: to `worker/ready`, and from it to the first tree. */
+const READY_BUDGET = 10_000;
+const START_BUDGET = 2_000;
 const MAX_TOAST = 200;
 
 export class FakeHost {
@@ -97,6 +100,11 @@ export class FakeHost {
   /** What the worker threw, or failed to load with. */
   readonly errors: string[] = [];
   app: { name: string; version: string } | null = null;
+  /**
+   * The budgets this host enforces. A test may shorten one to fail fast, but
+   * a longer one would pass a screen Brydio stops, so it is held to the host's.
+   */
+  readonly budgets: { ready: number; start: number };
   stopped: StopReason | null = null;
 
   readonly #worker: Worker;
@@ -113,6 +121,10 @@ export class FakeHost {
 
   private constructor(options: FakeHostOptions) {
     this.#options = options;
+    this.budgets = {
+      ready: Math.min(options.budgets?.ready ?? READY_BUDGET, READY_BUDGET),
+      start: Math.min(options.budgets?.start ?? START_BUDGET, START_BUDGET),
+    };
     this.#context = { ...DEFAULT_CONTEXT, ...options.context };
     this.store = options.manifest ? new FixtureStore(options.manifest, options.fixtures) : null;
     this.#tools = { ...this.store?.tools(), ...options.tools };
@@ -145,7 +157,7 @@ export class FakeHost {
       this.stop(message.includes('brydio:load') ? 'load' : 'error');
     });
 
-    this.#after(options.budgets?.ready ?? 10_000, () => {
+    this.#after(this.budgets.ready, () => {
       if (!this.app && !this.stopped) this.stop('ready');
     });
   }
@@ -327,7 +339,7 @@ export class FakeHost {
 
         this.app = { name: String(app.name ?? ''), version: String(app.version ?? '') };
         this.#send({ jsonrpc: '2.0', method: 'host/context', params: this.#context as never });
-        this.#after(this.#options.budgets?.start ?? 2_000, () => {
+        this.#after(this.budgets.start, () => {
           if (!this.#mounted && !this.stopped) this.stop('start');
         });
         break;

@@ -6,7 +6,8 @@
     "counter": { "entry": "screens/counter.js" },
     "broken": { "entry": "screens/broken.js" },
     "silent": { "entry": "screens/silent.js" },
-    "walls": { "entry": "screens/walls.js" }
+    "walls": { "entry": "screens/walls.js" },
+    "flood": { "entry": "screens/flood.js" }
   },
   "grants": { "tools": ["*"], "collections": ["*"], "host": ["message"] }
 }
