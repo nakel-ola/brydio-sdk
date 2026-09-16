@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
@@ -203,6 +203,55 @@ describe('what the publish route refuses, found first', () => {
     expect(found(validate(built(manifest)).problems)).toEqual([
       ['screen_not_built', 'The "issue" screen names "screens/issue.js", which is not a script in this bundle. Run brydio build.'],
     ]);
+  });
+});
+
+describe('a manifest refused in the publish route’s words (A8-F04-S03)', () => {
+  const api = join(import.meta.dir, '..', '..', '..', '..', 'brydio', 'apps/api/src');
+  const route = join(api, 'apps/publishing/app-publish.service.ts');
+
+  test('names the check and the field, behind app.json', () => {
+    const kept = built(issues('0.2.0', { title: 'string' }, { grants: { tools: ['*'], collections: ['labels'] } }));
+
+    expect(found(validate(kept).problems)).toContainEqual([
+      'grant_collection_missing',
+      'app.json: "grants.collections": issues is kept but not asked for: add it to grants.collections.',
+    ]);
+
+    const nowhere = built(JSON.stringify({ ...JSON.parse(V020), placements: [{ kind: 'project-tab', screen: 'nowhere' }] }));
+
+    expect(found(validate(nowhere).problems)).toContainEqual([
+      'placement_screen_unknown',
+      'app.json: A project-tab placement opens "nowhere", which is not one of the app\'s screens.',
+    ]);
+  });
+
+  test('says a manifest that is not JSON the route’s way, with where the parser stopped after', () => {
+    const [problem] = validate(app({ '.brydio/app.json': '{ "name": ' })).problems;
+
+    expect(problem).toMatchObject({ code: 'manifest_not_json', message: 'app.json is not valid JSON.' });
+    expect(problem!.hint).toBeString();
+  });
+
+  test('finds a secret in the manifest itself, as the route does, without quoting it', () => {
+    const root = built(issues('0.2.0', { title: 'string' }, { settings: { apiKey: 'sk_live_abc123' } }));
+    const secrets = validate(root).problems.filter(problem => problem.code === 'secret_in_bundle');
+
+    expect(secrets).toEqual([expect.objectContaining({ file: '.brydio/app.json', path: 'app.json.settings.apiKey' })]);
+    expect(JSON.stringify(secrets)).not.toContain('abc123');
+  });
+
+  test.skipIf(!existsSync(route))('matches the route’s own templates, read from its source', () => {
+    const source = readFileSync(route, 'utf8');
+
+    // A manifest refusal: the check's own code, then `app.json: "<path>": <sentence>`.
+    expect(source).toContain("typeof named === 'string' ? named : 'manifest_invalid'");
+    expect(source).toContain('`${BUNDLE_MANIFEST}: "${at}": ${issue!.message}`');
+    expect(source).toContain('`${BUNDLE_MANIFEST}: ${issue?.message}`');
+    expect(source).toContain("`${BUNDLE_MANIFEST} is not valid JSON.`");
+    expect(source).toContain('secretsInJson(manifest, BUNDLE_MANIFEST)');
+    expect(source).toContain('(${version} against ${below!.version}, the version before it.)');
+    expect(readFileSync(join(api, 'apps/versions/app-version.service.ts'), 'utf8')).toContain("'which is not a script in this bundle. Run brydio build.'");
   });
 });
 

@@ -158,7 +158,7 @@ describe('a schema change against the version Brydio has (A5-F03-S02)', () => {
 
     expect(code).toBe(1);
     expect(route.asked).toContain('http://brydio.test/api/v1/apps/publish/tracker/latest');
-    expect(text).toContain('issues.due is new; add it with a step. (0.2.0 against 0.1.0, the version published before it.) [migration_missing]');
+    expect(text).toContain('issues.due is new; add it with a step. (0.2.0 against 0.1.0, the version before it.) [migration_missing]');
     expect(route.sent).toEqual([]);
   });
 

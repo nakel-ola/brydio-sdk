@@ -29,15 +29,17 @@ and not on this page, or the other way round.
 ## 1. The manifest parses, and every placement names a screen
 
 The manifest is `.brydio/app.json` (or `app.json`), read with Brydio's own
-schema (`@brydio/manifest`). At publish, Brydio reports every problem in this
-section as `manifest_invalid`, with the sentence behind
-`app.json: "<path>": `. `validate` keeps the specific code, so you can search
-for it.
+schema (`@brydio/manifest`). `validate` and the publish route refuse the
+same way: the check's own code (`manifest_invalid` for a field of the wrong
+shape) and the sentence behind `app.json: "<path>": `, or behind `app.json: `
+when the problem isn't about one field. The sentences below are what follows
+that prefix. `validate` lists every problem; the route answers with the
+first.
 
 | Code | Refused with | validate | server | How to fix |
 |---|---|---|---|---|
 | `manifest_missing` | There is no manifest. Put one at .brydio/app.json. | yes | publish, as `bundle_manifest_missing` | Add `.brydio/app.json`. |
-| `manifest_not_json` | The manifest is not valid JSON: `<parser's words>` | yes | publish, as `manifest_unreadable` ("app.json is not valid JSON.") | Fix the JSON. |
+| `manifest_not_json` | app.json is not valid JSON. (`validate` adds where the parser stopped.) | yes | publish, as `manifest_invalid` | Fix the JSON. |
 | `manifest_invalid` | The schema's sentence for the field at `<path>`. For example, the name must be lowercase letters, digits and dashes; the version must look like 1.2.0; "Custom tools are not available yet." | yes | publish | Change the field the path names. |
 | `placement_screen_unknown` | A `<kind>` placement opens "`<screen>`", which is not one of the app's screens. | yes | publish | Declare the screen under `screens`, or point the placement at one that is declared. |
 | `data_too_many_collections` | An app may keep at most `<n>` collections. | yes | publish | Keep fewer collections. |
@@ -154,7 +156,7 @@ Screens may call only tools that exist:
 | Code | Refused with | validate | server | How to fix |
 |---|---|---|---|---|
 | `bundle_not_built` | There is no dist/ yet. Run brydio build first. | yes | no | Run `brydio build`. |
-| `screen_not_built` | The "`<screen>`" screen names "`<entry>`", which is not a script in this bundle. Run brydio build. | yes | publish, as `manifest_invalid`, without "Run brydio build." | Run `brydio build`, or fix the entry. |
+| `screen_not_built` | The "`<screen>`" screen names "`<entry>`", which is not a script in this bundle. Run brydio build. | yes | publish | Run `brydio build`, or fix the entry. |
 | `bundle_stale` (warning) | The built manifest is not the manifest as it is now. Run brydio build again. | yes | no | Run `brydio build`. |
 | `bundle_too_large` | That bundle is `<size>`, over the 1.00 MB cap. The largest file is "`<file>`" at `<size>`. | yes | publish | Make the screens smaller; start with the largest file. |
 | `bundle_file_not_code` | "`<file>`" is not a script. A bundle holds only .js files and app.json. (From `brydio build`: The "`<screen>`" screen brings in "`<file>`", which a bundle cannot hold. A Brydio app has no CSS, HTML or images: Brydio draws every element itself.) | yes | publish | Remove the import of CSS, HTML or images. |
@@ -171,12 +173,12 @@ Screens may call only tools that exist:
 | `secret_in_bundle` | That package contains a secret. Header values and client secrets are entered here, never shipped in a file — remove it and import again. | yes | publish | Remove the value, and treat it as leaked. |
 
 This is Brydio's existing scan (`extensions/apps/secret-scan.ts`), copied
-exactly. It looks only at the value keys (`value`, `secret`, `token`,
-`apiKey`, …) of `servers.json` and `integrations/*.json`, and skips
-placeholders like `${user_config.key}` or `<your key>`. A bundle may hold only
-scripts and `app.json`, so today this scan finds nothing in an app's bundle.
-Scanning the scripts too is Brydio's decision to make first; the SDK copies
-it when it lands.
+exactly. It looks at the value keys (`value`, `secret`, `token`, `apiKey`, …)
+anywhere in the bundle's `app.json`, and in `servers.json` and
+`integrations/*.json`, and skips placeholders like `${user_config.key}` or
+`<your key>`. `app.json` is served to every screen that opens the app, so it
+holds nothing private. Scripts aren't scanned, on purpose: a pattern scan of
+minified code misses real keys and refuses innocent strings.
 
 ## 8. The grants list everything the screens call, and nothing they don't
 
@@ -191,10 +193,10 @@ the assistant rather than a screen.
 
 | Code | Refused with | validate | server | How to fix |
 |---|---|---|---|---|
-| `grant_collection_missing` | `<collection>` is kept but not asked for: add it to grants.collections. | yes | publish, as `manifest_invalid` | Add the collection, or `*`, to `grants.collections`. |
+| `grant_collection_missing` | app.json: "grants.collections": `<collection>` is kept but not asked for: add it to grants.collections. | yes | publish | Add the collection, or `*`, to `grants.collections`. |
 | `grant_tool_missing` | "`<tool>`" is called here but not asked for: add it, or its collection `<collection>`, to grants.tools. | yes | runtime | Add the tool or its collection to `grants.tools`. |
 | `grant_host_missing` | navigate is called here but not asked for: add "navigate" to grants.host. | yes | runtime | Add `navigate` to `grants.host`. |
-| `grant_unknown` | app.json asks for "`<grant>`", which Brydio does not grant. An app may ask for navigate and message. | yes | publish | Ask only for `navigate` or `message`. |
+| `grant_unknown` | app.json asks for "`<grant>`", which Brydio does not grant. An app may ask for navigate, message or connection:<name>. | yes | publish | Ask only for `navigate`, `message` or `connection:<name>`. |
 | `grant_tool_unknown` (warning) | grants.tools asks for "`<name>`", which is neither one of this app's tools nor one of its collections. | yes | no | Remove the name, or fix its spelling. |
 | `grant_collection_unknown` (warning) | grants.collections asks for "`<name>`", which this app does not keep. | yes | no | Remove the name. |
 | `grant_host_unused` (warning) | grants.host asks for "`<grant>`", which no screen uses. Ask only for what the app does. | yes | no | Remove the grant, or use it. |

@@ -3,6 +3,7 @@ import {
   bundleProblem,
   compareVersions,
   findSecrets,
+  secretsInJson,
   isScriptPath,
   publishedMigrationProblems,
   unknownHostGrant,
@@ -56,6 +57,11 @@ export function validate(dir: string, options: ValidateOptions = {}): ValidateRe
   const grant = unknownHostGrant(project.raw);
 
   if (grant) problems.push({ code: grant.code, severity: 'error', file: manifestFile, path: grant.path, message: grant.message });
+
+  // The manifest is served to every screen that opens the app, so it holds nothing private either.
+  for (const secret of secretsInJson(project.raw, BUNDLE_MANIFEST)) {
+    problems.push({ code: secret.code, severity: 'error', file: manifestFile, path: secret.path, message: secret.message });
+  }
 
   if (project.manifest) {
     const built = existsSync(outDir) ? filesUnder(outDir) : null;

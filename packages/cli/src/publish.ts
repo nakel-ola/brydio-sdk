@@ -196,7 +196,7 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
         const missing = publishedMigrationProblems(latest.manifest, shipping);
 
         for (const problem of missing) {
-          out(`error   .brydio/app.json (migrations)  ${problem.message} (${shipping.version} against ${latest.version}, the version published before it.) [migration_missing]`);
+          out(`error   .brydio/app.json (migrations)  ${problem.message} (${shipping.version} against ${latest.version}, the version before it.) [migration_missing]`);
         }
 
         if (missing.length) {

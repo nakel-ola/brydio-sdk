@@ -71,7 +71,16 @@ export function readProject(dir: string): Project {
       manifestFile: found,
       raw: {},
       manifest: null,
-      problems: [{ code: 'manifest_not_json', severity: 'error', file, message: `The manifest is not valid JSON: ${error instanceof Error ? error.message : String(error)}` }],
+      problems: [
+        {
+          code: 'manifest_not_json',
+          severity: 'error',
+          file,
+          // The publish route's sentence; the parser's words say where.
+          message: 'app.json is not valid JSON.',
+          hint: error instanceof Error ? error.message : String(error),
+        },
+      ],
     };
   }
 
@@ -82,7 +91,13 @@ export function readProject(dir: string): Project {
     manifestFile: found,
     raw: (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>,
     manifest: checked.manifest ?? null,
-    problems: checked.problems.map((problem: ManifestProblem) => ({ ...problem, severity: 'error' as const, file })),
+    // Worded as `POST /apps/publish` words a manifest refusal: `app.json: "<path>": <sentence>` (A8-F04-S03).
+    problems: checked.problems.map((problem: ManifestProblem) => ({
+      ...problem,
+      severity: 'error' as const,
+      file,
+      message: problem.path ? `app.json: "${problem.path}": ${problem.message}` : `app.json: ${problem.message}`,
+    })),
   };
 }
 

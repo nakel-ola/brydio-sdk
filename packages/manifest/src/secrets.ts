@@ -9,10 +9,10 @@
  *
  * The scan is deliberately narrow, as the server's is. It looks only where a
  * package *declares* credentials, `servers.json` and `integrations/*.json`,
- * where a value is unambiguous, rather than grepping every file for things
- * that look like keys. A bundle holds only scripts and `app.json`, so today
- * the scan finds nothing in one: `docs/publish-checklist.md` says so, and the
- * question of a wider scan is Brydio's to answer first.
+ * where a value is unambiguous, and in the bundle's own `app.json`
+ * (`secretsInJson`), rather than grepping scripts for things that look like
+ * keys: a pattern scan of minified code misses real keys and refuses innocent
+ * strings (Hodler, 16 Sep).
  */
 
 /** The server's sentence for `brydio_secret_in_package`, which publishing sends as `secret_in_bundle`. */
@@ -64,6 +64,19 @@ function walk(node: unknown, at: string, found: SecretFound[]): void {
 
     walk(value, path, found);
   }
+}
+
+/**
+ * Every secret-shaped value in one JSON document, by the same keys and the
+ * same placeholder rules: for a bundle's `app.json`, which Brydio serves to
+ * every screen that opens it and scans at publish (`secretsInJson`).
+ */
+export function secretsInJson(document: unknown, at: string): SecretFound[] {
+  const found: SecretFound[] = [];
+
+  walk(document, at, found);
+
+  return found;
 }
 
 /** Every secret declared in a bundle's files, as the server finds them. */

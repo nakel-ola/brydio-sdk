@@ -7,6 +7,7 @@ import {
   isHostCapability,
   SECRET_MESSAGE,
   findSecrets,
+  secretsInJson,
   migrationProblems,
   publishedMigrationProblems,
   unknownHostGrant,
@@ -156,6 +157,12 @@ describe('the secret scan', () => {
       expect(findSecrets(one).map(found => found.path)).toEqual(server.findSecrets(buffers(one)).map((found: { path: string }) => found.path));
     }
 
+    const manifest = { name: 'x', grants: { host: ['navigate'] }, settings: [{ token: 'live-abc' }, { password: '<yours>' }] };
+
+    expect(secretsInJson(manifest, 'app.json').map(found => found.path)).toEqual(
+      server.secretsInJson(manifest, 'app.json').map((found: { path: string }) => found.path),
+    );
+    expect(secretsInJson(manifest, 'app.json').map(found => found.path)).toEqual(['app.json.settings[0].token']);
     expect(SECRET_MESSAGE).toBe(codes.problem('brydio_secret_in_package', 'x').message);
   });
 });
