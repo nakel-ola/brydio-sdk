@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-import { DEV_CONFIG, dev, DevRefused, type DevSession } from '../src/index.ts';
+import { create, DEV_CONFIG, dev, DevRefused, type DevSession } from '../src/index.ts';
 
 const made: string[] = [];
 const sessions: DevSession[] = [];
@@ -209,6 +209,28 @@ describe('brydio dev, signed in', () => {
 
     await expect(run(tiny(), off, { projectId: 'p_1' })).rejects.toThrow(/Apps aren't switched on/);
   });
+});
+
+describe('brydio dev on a new app', () => {
+  test.each(['preact', 'plain'] as const)(
+    'runs an app fresh from the %s template, with no edits',
+    async template => {
+      // A5-F06-S01: the result runs in brydio dev with no edits.
+      const into = mkdtempSync(join(tmpdir(), 'brydio-dev-create-'));
+
+      made.push(into);
+
+      const root = await create(`fresh-${template}`, { into, template, out: () => {} });
+      const server = brydio({ 'GET /api/v1/extensions?kind=app': () => [200, []] });
+      const { session } = await run(root, server, { projectId: 'p_1' });
+      const started = server.calls.find(call => call.path === '/api/v1/apps/development')!.body;
+
+      expect(started.manifest).toMatchObject({ name: `fresh-${template}`, screens: { home: { entry: 'screens/home.js' } } });
+      expect((await fetch(`${session.url}/screens/home.js`)).status).toBe(200);
+      expect(session.development).toMatchObject({ id: 'dev_1', placementId: 'pl_1' });
+    },
+    120_000,
+  );
 });
 
 describe('brydio dev, not signed in', () => {
