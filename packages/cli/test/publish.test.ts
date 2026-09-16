@@ -43,7 +43,12 @@ interface Sent {
 type SdkAnswer = { oldest: string; before: string } | number;
 
 /** A pretend publish route that answers with a status and a body, and remembers what it was sent. */
-function server(status: number, body: (sent: Sent) => unknown, sdk: SdkAnswer = { oldest: '0.1.0-alpha.0', before: '0.2.0' }) {
+function server(
+  status: number,
+  body: (sent: Sent) => unknown,
+  sdk: SdkAnswer = { oldest: '0.1.0-alpha.0', before: '0.2.0' },
+  latest: { version: string; manifest: unknown } | null = null,
+) {
   const sent: Sent[] = [];
   const asked: string[] = [];
   const fetch = async (url: string, init: RequestInit) => {
@@ -53,6 +58,12 @@ function server(status: number, body: (sent: Sent) => unknown, sdk: SdkAnswer = 
       return typeof sdk === 'number'
         ? new Response(JSON.stringify({ statusCode: sdk }), { status: sdk })
         : new Response(JSON.stringify(sdk), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+
+    if (url.endsWith('/latest')) {
+      asked.push(url);
+
+      return latest ? new Response(JSON.stringify({ appKey: 'x', ...latest }), { status: 200 }) : new Response(JSON.stringify({ statusCode: 404 }), { status: 404 });
     }
 
     const one = {
@@ -125,6 +136,47 @@ describe('pictures of each screen at publish (A5-F04-S04)', () => {
     expect(code).toBe(1);
     expect(text).toContain('bun add -d @brydio/fake-host');
     expect(route.sent).toEqual([]);
+  });
+});
+
+describe('a schema change against the version Brydio has (A5-F03-S02)', () => {
+  const manifest = (version: string, schema: Record<string, unknown>, migrations?: unknown) => ({
+    name: 'tracker',
+    version,
+    data: { issues: { schema, label: 'issue' } },
+    screens: { home: { entry: 'screens/home.js' } },
+    grants: { tools: ['*'], collections: ['*'] },
+    ...(migrations ? { migrations } : {}),
+  });
+  const V1 = manifest('0.1.0', { title: 'string' });
+  const tracker = (next: object) => app({ '.brydio/app.json': JSON.stringify(next), 'src/screens/home.ts': 'export const home = 1;\n' });
+
+  test('refuses before uploading a version whose schema changed with no migration step, naming the field', async () => {
+    const root = tracker(manifest('0.2.0', { title: 'string', due: 'date?' }));
+    const route = server(201, () => ({}), undefined, { version: '0.1.0', manifest: V1 });
+    const { code, text } = await run(root, route);
+
+    expect(code).toBe(1);
+    expect(route.asked).toContain('http://brydio.test/api/v1/apps/publish/tracker/latest');
+    expect(text).toContain('issues.due is new; add it with a step. (0.2.0 against 0.1.0, the version published before it.) [migration_missing]');
+    expect(route.sent).toEqual([]);
+  });
+
+  test('uploads once the step is declared, and when the app has no version yet', async () => {
+    const stepped = tracker(manifest('0.2.0', { title: 'string', due: 'date?' }, [{ version: '0.2.0', steps: [{ op: 'add', collection: 'issues', field: 'due' }] }]));
+    const withStep = server(201, () => ({ created: true, appKey: 'tracker', version: '0.2.0', versionId: 'v', bundleHash: 'h', publishedBy: 'u', publishedAt: 'now', files: [] }), undefined, {
+      version: '0.1.0',
+      manifest: V1,
+    });
+
+    expect((await run(stepped, withStep)).code).toBe(0);
+    expect(withStep.sent).toHaveLength(1);
+
+    const first = tracker(manifest('0.2.0', { title: 'string', due: 'date?' }));
+    const none = server(201, () => ({ created: true, appKey: 'tracker', version: '0.2.0', versionId: 'v', bundleHash: 'h', publishedBy: 'u', publishedAt: 'now', files: [] }));
+
+    expect((await run(first, none)).code).toBe(0);
+    expect(none.sent).toHaveLength(1);
   });
 });
 

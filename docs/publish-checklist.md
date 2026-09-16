@@ -115,7 +115,7 @@ against the highest version already published below this one.
 
 | Code | Refused with | validate | server | How to fix |
 |---|---|---|---|---|
-| `migration_missing` | `<why>` (`<version>` against `<previous>`, the version before it.) `<why>` is one of the sentences in the next table. `validate` lists every one; the route stops at the first. | with a previous version | publish | Add the step to `migrations` under this version's number. |
+| `migration_missing` | `<why>` (`<version>` against `<previous>`, the version before it.) `<why>` is one of the sentences in the next table. `validate` lists every one; the route stops at the first. | with a previous version: `--previous <app.json>`, an older `dist/`, or, in `brydio publish`, the version Brydio last published (`GET /api/v1/apps/publish/:appKey/latest`), checked before uploading | publish | Add the step to `migrations` under this version's number. |
 | `previous_unreadable` | There is no manifest at `<path>` to compare this version with. Or: `<path>` is not valid JSON, so this version can't be compared with it. | yes | no | Point `--previous` at the published version's `app.json`. |
 | `previous_not_older` | `<path>` is version `<v>`, not one before `<version>`, so it can't say what this version changes. | yes | no | Point `--previous` at an earlier version. |
 

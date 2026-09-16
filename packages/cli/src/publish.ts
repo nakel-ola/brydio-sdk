@@ -1,4 +1,4 @@
-import { BUNDLE_MANIFEST, sdkRefusal, sizeOf, type SdkSupport } from '@brydio/manifest';
+import { BUNDLE_MANIFEST, compareVersions, publishedMigrationProblems, sdkRefusal, sizeOf, type SdkSupport } from '@brydio/manifest';
 
 import { build } from './build.ts';
 import { formatProblem, readProject } from './project.ts';
@@ -41,6 +41,8 @@ export const TOKEN_ENV = 'BRYDIO_TOKEN';
 export const API_URL_ENV = 'BRYDIO_API_URL';
 export const PUBLISH_PATH = '/api/v1/apps/publish';
 export const SDK_PATH = '/api/v1/apps/sdk';
+/** The highest published version of an app, for its publishers: `{ version, manifest, … }`, or 404 before the first. */
+export const LATEST_PATH = (appKey: string) => `/api/v1/apps/publish/${encodeURIComponent(appKey)}/latest`;
 
 export interface PublishOptions {
   /** Brydio's API, like `https://api.brydio.app`. `BRYDIO_API_URL` unless given. */
@@ -176,6 +178,36 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
 
       return 1;
     }
+  }
+
+  // The version published before this one, as Brydio has it: a collection
+  // whose schema changed needs a migration step, said here before uploading
+  // (A5-F03-S02). No version yet, or not this account's to see, is the
+  // server's to decide.
+  const shipping = JSON.parse(new TextDecoder().decode(built.files.get(BUNDLE_MANIFEST)!)) as { name?: string; version?: string };
+
+  try {
+    const answer = await request(`${apiUrl}${LATEST_PATH(String(shipping.name))}`, { method: 'GET', headers });
+
+    if (answer.ok) {
+      const latest = (await answer.json().catch(() => null)) as { version?: unknown; manifest?: unknown } | null;
+
+      if (typeof latest?.version === 'string' && typeof shipping.version === 'string' && compareVersions(latest.version, shipping.version) < 0) {
+        const missing = publishedMigrationProblems(latest.manifest, shipping);
+
+        for (const problem of missing) {
+          out(`error   .brydio/app.json (migrations)  ${problem.message} (${shipping.version} against ${latest.version}, the version published before it.) [migration_missing]`);
+        }
+
+        if (missing.length) {
+          out('Not published.');
+
+          return 1;
+        }
+      }
+    }
+  } catch {
+    // Unreachable here means unreachable for the upload too, which says so.
   }
 
   let screenshots: PublishedScreenshot[] = [];
