@@ -8,7 +8,7 @@ import {
   sizeOf,
 } from '@brydio/manifest';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 
@@ -119,7 +119,22 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
 
   if (problems.some(problem => problem.severity === 'error')) return failed();
 
-  files.set(BUNDLE_MANIFEST, new TextEncoder().encode(`${JSON.stringify(project.raw, null, 2)}\n`));
+  // Which SDK built it, for Brydio to check at publish (A5-F04-S03). Written
+  // here and only here: a hand-written `sdk` could claim a runtime the screens
+  // were never built with.
+  const sdk = sdkVersionFor(project.root);
+
+  if (project.raw.sdk !== undefined) {
+    problems.push({
+      code: 'manifest_sdk_overwritten',
+      severity: 'warning',
+      file: relative(project.root, project.manifestFile),
+      path: 'sdk',
+      message: `The manifest says "sdk": ${JSON.stringify(project.raw.sdk)}, which brydio build writes itself. The build says ${sdk}; take the line out of the manifest.`,
+    });
+  }
+
+  files.set(BUNDLE_MANIFEST, new TextEncoder().encode(`${JSON.stringify({ ...project.raw, sdk }, null, 2)}\n`));
 
   const refused = bundleProblem(files);
 
@@ -197,3 +212,34 @@ async function bundle(root: string, source: string, baked: object, minify: boole
     rmSync(scratch, { recursive: true, force: true });
   }
 }
+
+/**
+ * The version of `@brydio/app` an app's screens are built against: the copy
+ * the app's own folder resolves, since that is what `bun build` bundles. An
+ * app that never imports it (a screen of plain messages, a test fixture) gets
+ * this CLI's version, which every `@brydio` package shares.
+ */
+export function sdkVersionFor(root: string): string {
+  try {
+    let at = dirname(Bun.resolveSync('@brydio/app', root));
+
+    for (;;) {
+      const manifest = join(at, 'package.json');
+
+      if (existsSync(manifest)) {
+        const found = JSON.parse(readFileSync(manifest, 'utf8')) as { name?: string; version?: string };
+
+        if (found.name === '@brydio/app' && found.version) return found.version;
+      }
+
+      if (dirname(at) === at) break;
+
+      at = dirname(at);
+    }
+  } catch {
+    // Not resolvable from the app's folder; fall through to the CLI's own.
+  }
+
+  return (JSON.parse(readFileSync(join(import.meta.dir, '..', 'package.json'), 'utf8')) as { version: string }).version;
+}
+

@@ -9,6 +9,8 @@ import {
   collectionsOf,
   generatedToolsOf,
   parseFieldType,
+  compareVersions,
+  sdkRefusal,
   validateManifest,
   validateManifestText,
   type DocumentOf,
@@ -44,6 +46,8 @@ const CORPUS: unknown[] = [
   withData({ issues: { schema: { a: 'string' }, label: 'thing' }, things: { schema: { b: 'string' } } }),
   withData({ Issues: { schema: { a: 'string' } } }),
   withData({ issues: { schema: { a: 'boolean?', b: 'token?', c: 'string[]?' }, index: ['a'] } }),
+  { ...ISSUES_MANIFEST, sdk: '0.1.0-alpha.0' },
+  { ...ISSUES_MANIFEST, sdk: 'latest' },
 ];
 
 describe('the example manifests', () => {
@@ -131,6 +135,12 @@ describe('validateManifest', () => {
     expect(codesOf({ ...ISSUES_MANIFEST, screens: { board: { entry: 'screens/board.ts' } } })).toEqual(['manifest_invalid']);
   });
 
+  test('keeps the sdk brydio build wrote, and refuses one that is not a version', () => {
+    expect(validateManifest({ ...ISSUES_MANIFEST, sdk: '0.1.0-alpha.0' }).manifest?.sdk).toBe('0.1.0-alpha.0');
+    expect(validateManifest(ISSUES_MANIFEST).ok).toBe(true);
+    expect(validateManifest({ ...ISSUES_MANIFEST, sdk: 'latest' }).problems.map(problem => [problem.code, problem.path])).toEqual([['manifest_invalid', 'sdk']]);
+  });
+
   test('says when the text is not JSON', () => {
     expect(validateManifestText('{').problems[0]?.code).toBe('manifest_not_json');
   });
@@ -141,9 +151,12 @@ describe('validateManifest', () => {
     // Until the server's entry regex takes `.mjs` as agreed (CONTRACT-NOTES 21),
     // an `.mjs` entry is the one place the two are allowed to differ.
     const serverTakesMjs = server.appManifestSchema.safeParse(CORPUS[7]).success;
+    const serverKnowsSdk = server.appManifestSchema.safeParse({ ...ISSUES_MANIFEST, sdk: '0.1.0' }).data?.sdk === '0.1.0';
 
     for (const manifest of CORPUS) {
       if (!serverTakesMjs && JSON.stringify(manifest).includes('.mjs"')) continue;
+      // Until the server's schema has `sdk` (CONTRACT-NOTES 30), it strips the field the SDK reads.
+      if (!serverKnowsSdk && typeof manifest === 'object' && manifest !== null && 'sdk' in manifest) continue;
 
       const theirs = server.appManifestSchema.safeParse(manifest);
       const ours = appManifestSchema.safeParse(manifest);
@@ -239,3 +252,33 @@ describe('the bundle fingerprint (contracts §11)', () => {
     expect(bundleProblem(twoFiles())).toBeNull();
   });
 });
+
+describe('which SDK a Brydio runs (A5-F04-S03)', () => {
+  const support = { oldest: '0.1.0-alpha.0', before: '0.2.0' };
+  const serverSupport = join(brydio, 'apps/api/src/apps/publishing/sdk-support.ts');
+  const serverCompare = join(brydio, 'apps/api/src/apps/versions/compare-versions.ts');
+  const versions = ['0.0.9', '0.1.0-0', '0.1.0-alpha.0', '0.1.0-alpha.3', '0.1.0', '0.1.9', '0.2.0-beta.1', '0.2.0', '1.0.0', '1.0.0-beta', '1.0.0-beta.1', '1.0.0-1', '1.0.0+abc'];
+
+  test('runs from the oldest up to, not including, before and its prereleases', () => {
+    for (const sdk of ['0.1.0-alpha.0', '0.1.0-alpha.3', '0.1.0', '0.1.9']) expect(sdkRefusal(sdk, support)).toBeNull();
+    for (const sdk of ['0.0.9', '0.1.0-0', '0.2.0-beta.1', '0.2.0', '1.0.0']) {
+      expect(sdkRefusal(sdk, support)).toBe(`This app was built with SDK ${sdk}. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0.`);
+    }
+    expect(sdkRefusal(undefined, support)).toBe(
+      'app.json does not say which SDK built it. Build it with brydio build. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0.',
+    );
+  });
+
+  test.skipIf(!existsSync(serverSupport))('refuses with the server’s sentence for the server’s own range', async () => {
+    const server = await import(serverSupport);
+
+    for (const sdk of [...versions, undefined, '', 42]) expect(sdkRefusal(sdk, server.SDK_SUPPORT)).toBe(server.sdkRefusal(sdk));
+  });
+
+  test.skipIf(!existsSync(serverCompare))('orders versions as the server does', async () => {
+    const server = await import(serverCompare);
+
+    for (const a of versions) for (const b of versions) expect([a, b, compareVersions(a, b)]).toEqual([a, b, server.compareVersions(a, b)]);
+  });
+});
+

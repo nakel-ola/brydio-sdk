@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { baseManifestSchema as manifestSchema } from './base.ts';
+import { MANIFEST_LIMITS, SEMVER_FORMAT, baseManifestSchema as manifestSchema } from './base.ts';
 import {
   COLLECTION_NAME,
   FIELD_LIMITS,
@@ -88,6 +88,12 @@ const extensionShape = {
   tools: toolsSchema.optional(),
   screens: z.record(z.string(), screenSchema).optional(),
   grants: grantsSchema.optional(),
+  /**
+   * The `@brydio/app` version the bundle was built against, written by
+   * `brydio build` and never by hand. Optional, so a bundle from before it
+   * still loads; `POST /apps/publish` requires it and checks it (A5-F04-S03).
+   */
+  sdk: z.string().max(MANIFEST_LIMITS.versionChars).regex(SEMVER_FORMAT).optional(),
 };
 
 /** One problem with an app's additions, named down to the field. */

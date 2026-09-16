@@ -56,6 +56,8 @@ export {
   type ManifestExtensions,
 } from './schema.ts';
 
+export { compareVersions, sdkRefusal, type SdkSupport } from './sdk.ts';
+
 export { TOOL_WRITES, generatedToolsOf, toolNames, type GeneratedTool, type ToolVerb } from './tools.ts';
 
 export {

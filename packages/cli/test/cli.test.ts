@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-import { build, main, validate } from '../src/index.ts';
+import { build, main, sdkVersionFor, validate } from '../src/index.ts';
 
 const template = join(import.meta.dir, '..', '..', '..', 'templates', 'preact');
 const made: string[] = [];
@@ -110,6 +110,27 @@ describe('brydio build', () => {
 
     expect(codes(result.problems)).toEqual(['bundle_file_not_code']);
     expect(result.problems[0]!.message).toContain('"screen.css"');
+  });
+
+  test('writes the @brydio/app version it built against into dist/app.json as sdk', async () => {
+    const appVersion = JSON.parse(readFileSync(join(import.meta.dir, '../../app/package.json'), 'utf8')).version;
+    const result = await build(template);
+
+    expect(sdkVersionFor(template)).toBe(appVersion);
+    expect(JSON.parse(readFileSync(join(template, 'dist/app.json'), 'utf8')).sdk).toBe(appVersion);
+    expect(JSON.parse(readFileSync(join(template, '.brydio/app.json'), 'utf8')).sdk).toBeUndefined();
+    expect(result.hash).toBe(bundleHash(result.files));
+    expect(validate(template)).toEqual({ ok: true, problems: [] });
+  });
+
+  test('overwrites an sdk written by hand, and says so', async () => {
+    const root = app({ '.brydio/app.json': manifest({ sdk: '9.9.9' }), 'src/screens/home.ts': 'export const home = 1;\n' });
+    const result = await build(root);
+
+    expect(result.ok).toBe(true);
+    expect(result.problems).toMatchObject([{ code: 'manifest_sdk_overwritten', severity: 'warning', path: 'sdk' }]);
+    expect(JSON.parse(readFileSync(join(root, 'dist/app.json'), 'utf8')).sdk).toBe(sdkVersionFor(root));
+    expect(sdkVersionFor(root)).not.toBe('9.9.9');
   });
 
   test('is reproducible: the same source builds to the same fingerprint twice', async () => {

@@ -53,7 +53,10 @@ export function validate(dir: string, options: { outDir?: string } = {}): Valida
 
       const shipped = built.get(BUNDLE_MANIFEST);
 
-      if (shipped && JSON.stringify(JSON.parse(new TextDecoder().decode(shipped))) !== JSON.stringify(project.raw)) {
+      // `sdk` is the build's to write, so it is left out of the comparison on both sides.
+      const withoutSdk = (manifest: Record<string, unknown>) => JSON.stringify({ ...manifest, sdk: undefined });
+
+      if (shipped && withoutSdk(JSON.parse(new TextDecoder().decode(shipped))) !== withoutSdk(project.raw)) {
         problems.push({
           code: 'bundle_stale',
           severity: 'warning',
