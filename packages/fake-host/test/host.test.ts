@@ -265,3 +265,28 @@ test('data/get and data/list are answered through the collection’s own tools, 
   expect(lines.slice(2)).toEqual(['-32000 There is no such note.', '-32000 There is no such collection.', '-32602 A read needs a collection and a record id.']);
   expect(host.calls.map(call => call.tool)).toEqual(['list_notes', 'get_note', 'get_note']);
 });
+
+test('host/members and host/projects name only who and what the directory holds, and need the grant', async () => {
+  const directory = { members: [{ id: 'user_ada', name: 'Ada Lovelace' }], projects: [{ id: 'project_web', name: 'Website' }] };
+
+  host = FakeHost.start({ entry: screen('names'), manifest, directory });
+  await host.mounted();
+  await host.waitFor(() => host!.findAll(node => node.type === 'bry-text').length === 2, { what: 'both answers' });
+
+  // The plain fixture's install grants `message` only, so Brydio refuses both, in its words.
+  expect(host.findAll(node => node.type === 'bry-text').map(node => node.props.text)).toEqual([
+    'members: plain did not ask to see the names of people.',
+    'projects: plain did not ask to see the names of projects.',
+  ]);
+  host.stop();
+
+  host = FakeHost.start({ entry: screen('names'), manifest: { ...manifest, grants: { ...manifest.grants, host: ['members', 'projects'] } }, directory });
+  await host.mounted();
+  await host.waitFor(() => host!.findAll(node => node.type === 'bry-text').length === 2, { what: 'both answers' });
+
+  expect(host.findAll(node => node.type === 'bry-text').map(node => node.props.text)).toEqual(['Ada Lovelace (AL)', 'Website']);
+  expect(host.namesAsked).toEqual([
+    { kind: 'members', ids: ['user_ada', 'user_nobody'] },
+    { kind: 'projects', ids: ['project_web'] },
+  ]);
+});

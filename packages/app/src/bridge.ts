@@ -4,6 +4,8 @@ import {
   type AppDocument,
   type AppInfo,
   type DataChange,
+  type MemberName,
+  type ProjectName,
   type HostContext,
   type ListQuery,
   type ListResult,
@@ -153,6 +155,8 @@ export class Bridge {
   readonly #watches = new Map<string, Watch>();
   /** Subscribe calls not yet answered, by call id, with the watch each one started. */
   readonly #subscribing = new Map<string, { collection: string; watch: Watch }>();
+  /** `host/members` and `host/projects` requests waiting on `host/result` or `host/error`, by call id. */
+  readonly #hostCalls = new Map<string, { resolve(result: unknown): void; reject(error: Error): void }>();
   /** `ui/navigate` requests waiting on `ui/result` or `ui/error`, by call id. */
   readonly #asking = new Map<string, { resolve(result: { opened: boolean }): void; reject(error: Error): void }>();
   readonly #connected: Promise<HostContext>;
@@ -376,6 +380,36 @@ export class Bridge {
   }
 
   /**
+   * The names of workspace members the screen already holds ids for (an
+   * issue's assignee), with their initials for `bry-avatar` (G12, Osprey's
+   * contract). Only people the viewer may see come back; an id that isn't one
+   * is simply absent. Needs the `members` host grant.
+   */
+  members(ids: readonly string[]): Promise<MemberName[]> {
+    return this.#hostCall('members', ids).then(result => (Array.isArray((result as { members?: unknown })?.members) ? (result as { members: MemberName[] }).members : []));
+  }
+
+  /** The names of projects the screen holds ids for, among those the viewer can open. Needs the `projects` host grant. */
+  projects(ids: readonly string[]): Promise<ProjectName[]> {
+    return this.#hostCall('projects', ids).then(result => (Array.isArray((result as { projects?: unknown })?.projects) ? (result as { projects: ProjectName[] }).projects : []));
+  }
+
+  #hostCall(capability: 'members' | 'projects', ids: readonly string[]): Promise<unknown> {
+    const refused = this.#grant('host', capability);
+
+    if (refused) return Promise.reject(refused);
+    if (this.#stopped) return Promise.reject(new TeardownError());
+    if (!ids.length) return Promise.resolve({ [capability]: [] });
+
+    const id = String(++this.#nextId);
+
+    return new Promise((resolve, reject) => {
+      this.#hostCalls.set(id, { resolve, reject });
+      this.#port.post({ jsonrpc: '2.0', id, method: `host/${capability}`, params: { id, ids: [...new Set(ids)] } });
+    });
+  }
+
+  /**
    * A collection's tool names: the built manifest's, or worked out the way
    * the server works them out when there is no build (a label is the name
    * without a trailing "s"; the plural is the label with one).
@@ -466,6 +500,17 @@ export class Bridge {
         }
 
         for (const listener of this.#refusedListeners) run(() => listener(refusal));
+
+        return;
+      }
+      case 'host/result':
+      case 'host/error': {
+        const call = this.#hostCalls.get(String(params.id));
+
+        this.#hostCalls.delete(String(params.id));
+
+        if (message.method === 'host/result') call?.resolve(params.result);
+        else call?.reject(new HostError(params.error));
 
         return;
       }
@@ -568,6 +613,9 @@ export class Bridge {
     this.#pending.clear();
 
     for (const asked of this.#asking.values()) asked.reject(new TeardownError());
+    for (const call of this.#hostCalls.values()) call.reject(new TeardownError());
+
+    this.#hostCalls.clear();
 
     this.#asking.clear();
     this.#watches.clear();
@@ -577,7 +625,7 @@ export class Bridge {
 }
 
 /** The host capabilities `*` covers. */
-const HOST_CAPABILITIES: readonly string[] = ['navigate', 'message'];
+const HOST_CAPABILITIES: readonly string[] = ['navigate', 'message', 'members', 'projects'];
 
 /** A collection's generated tool names, as the server names them. */
 const generatedTools = ({ label, plural }: { label: string; plural: string }) => [

@@ -53,7 +53,7 @@ export interface FakeHostOptions {
   /** The built screen: a path or a `file:` URL to its ES module. */
   entry: string;
   /** The app's manifest, for its generated tools and which of them write. */
-  manifest?: Pick<ManifestExtensions, 'data' | 'tools'>;
+  manifest?: Pick<ManifestExtensions, 'data' | 'tools'> & { name?: string; grants?: { host?: string[] } };
   /** Records each collection starts with. */
   fixtures?: Fixtures;
   /** Tools of the test's own, or replacements for generated ones, by name. */
@@ -67,6 +67,11 @@ export interface FakeHostOptions {
    * (the app called or read too often). Answered in the host's words.
    */
   refuse?: (call: ToolCall) => HostRefusal | undefined;
+  /**
+   * The people and projects Brydio would name to this screen (`host/members`,
+   * `host/projects`): only these, as the viewer's own directory would be.
+   */
+  directory?: { members?: { id: string; name: string }[]; projects?: { id: string; name: string }[] };
   /** Run Brydio's prelude before the screen. On unless a test needs it off. */
   prelude?: boolean;
   /**
@@ -140,6 +145,8 @@ export class FakeHost {
   readonly calls: ToolCall[] = [];
   readonly refusals: Refusal[] = [];
   readonly toasts: { text: string; tone: 'info' | 'success' | 'danger' }[] = [];
+  /** Each names request the screen made: which kind, and the ids. */
+  readonly namesAsked: { kind: 'members' | 'projects'; ids: string[] }[] = [];
   /** What the screen asked to open, and whether it was. */
   readonly navigations: (NavigateTo & { opened: boolean; error?: string })[] = [];
   /** What the worker threw, or failed to load with. */
@@ -493,6 +500,12 @@ export class FakeHost {
         if (this.app && text) this.toasts.push({ text, tone });
         break;
       }
+      case 'host/members':
+      case 'host/projects':
+        if (!this.app || message.id === undefined) break;
+
+        this.#names(message.id, message.method === 'host/members' ? 'members' : 'projects', params.ids);
+        break;
       case 'ui/navigate':
         if (!this.app) break;
 
@@ -501,6 +514,35 @@ export class FakeHost {
     }
 
     this.#changed();
+  }
+
+  /**
+   * `host/members` and `host/projects`, answered as Brydio's host names them
+   * (Osprey's `host-names.service.ts`): refused in the host's words without
+   * the grant, at most 100 distinct ids, and an id it won't name left out.
+   */
+  #names(id: string | number, kind: 'members' | 'projects', asked: unknown): void {
+    const host = this.#options.manifest?.grants?.host ?? [];
+    const granted = host.includes(kind) || host.includes('*');
+
+    if (!granted) {
+      const words = kind === 'members' ? 'see the names of people' : 'see the names of projects';
+
+      this.#send({ jsonrpc: '2.0', method: 'host/error', params: { id, error: { code: -32000, message: `${this.#options.manifest?.name ?? this.app?.name} did not ask to ${words}.` } } });
+
+      return;
+    }
+
+    const ids = [...new Set((Array.isArray(asked) ? asked : []).filter((one): one is string => typeof one === 'string' && one.length > 0 && one.length <= 128))].slice(0, 100);
+    const known = this.#options.directory?.[kind] ?? [];
+    const found = ids.flatMap(one => known.filter(entry => entry.id === one));
+    const result =
+      kind === 'members'
+        ? { members: found.map(one => ({ id: one.id, name: one.name, initials: initialsOf(one.name) })) }
+        : { projects: found.map(one => ({ id: one.id, name: one.name })) };
+
+    this.namesAsked.push({ kind, ids });
+    this.#send({ jsonrpc: '2.0', method: 'host/result', params: { id, result } as never });
   }
 
   /**
@@ -805,6 +847,14 @@ function moduleUrl(given: string): string {
   }
 
   return pathToFileURL(path).href;
+}
+
+/** "Ada Lovelace" is AL, "cher" is C: Brydio's rule, the one `bry-avatar` draws with. */
+export function initialsOf(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const letters = words.length > 1 ? [words[0]!, words[words.length - 1]!] : words;
+
+  return letters.map(word => Array.from(word)[0]!.toUpperCase()).join('');
 }
 
 /** A node's words: its text, or the label, text or title setting. */

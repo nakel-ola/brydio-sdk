@@ -173,6 +173,19 @@ export interface DataChange {
   version: number;
 }
 
+/** A workspace member's name for an id a screen holds, and the initials `bry-avatar` draws. */
+export interface MemberName {
+  id: string;
+  name: string;
+  initials: string;
+}
+
+/** A project's name for an id a screen holds. */
+export interface ProjectName {
+  id: string;
+  name: string;
+}
+
 export type NavigateTarget = { kind: 'chat' | 'file' | 'item'; id: string };
 
 export type ToastTone = 'info' | 'success' | 'danger';
@@ -228,6 +241,8 @@ export const WORKER_METHODS = [
   'data/unsubscribe',
   'ui/navigate',
   'ui/toast',
+  'host/members',
+  'host/projects',
 ] as const;
 
 export type WorkerMethod = (typeof WORKER_METHODS)[number];
@@ -299,6 +314,8 @@ export const HOST_METHODS = [
   'data/ended',
   'ui/result',
   'ui/error',
+  'host/result',
+  'host/error',
   'worker/teardown',
 ] as const;
 

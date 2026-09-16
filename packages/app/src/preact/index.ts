@@ -3,8 +3,9 @@ import { createContext, h, render as preactRender, type ComponentChild, type Com
 import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 
 import { defaultBridge, type Bridge } from '../bridge.ts';
-import type { AppDocument, DataChange, HostContext, ListQuery } from '../protocol.ts';
+import type { AppDocument, DataChange, HostContext, ListQuery, MemberName, ProjectName } from '../protocol.ts';
 import { createRoot, RemoteElement, type RemoteRoot, type RootOptions } from '../tree.ts';
+import { useMemberNames, useProjectNames } from './names.ts';
 import { installDocument } from './document.ts';
 
 /**
@@ -310,3 +311,22 @@ export {
   useState,
 } from 'preact/hooks';
 export { installDocument } from './document.ts';
+
+/**
+ * The names of members whose ids the screen holds, with initials for
+ * `bry-avatar`, by id; absent until Brydio answers, or when it won't name
+ * one. Needs the `members` host grant.
+ *
+ * ```tsx
+ * const people = useMembers(issues.map(issue => issue.assignee));
+ * <bry-avatar name={people.get(issue.assignee)?.name ?? 'Unassigned'} />
+ * ```
+ */
+export function useMembers(ids: readonly (string | null | undefined)[]): Map<string, MemberName> {
+  return useMemberNames(useBridge(), ids);
+}
+
+/** The names of projects whose ids the screen holds, by id. Needs the `projects` host grant. */
+export function useProjects(ids: readonly (string | null | undefined)[]): Map<string, ProjectName> {
+  return useProjectNames(useBridge(), ids);
+}
