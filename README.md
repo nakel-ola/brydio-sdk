@@ -1,0 +1,104 @@
+# Brydio SDK
+
+The tools for making a **Brydio app**: something that lives inside a Brydio
+project as a tab or a sidebar item, keeps its own records, and draws its
+screens with Brydio's own building blocks so it always looks like Brydio.
+
+This repository holds the pieces an app is made with. The first app built with
+it is Issues, in `../brydio-issues`.
+
+## How an app works, in plain words
+
+- An app has a **manifest** (`.brydio/app.json`). It says the app's name and
+  version, what records it keeps (for Issues: issues and labels), where it
+  shows up (a project tab, the sidebar), and which screens it has.
+- From the records it keeps, Brydio makes **tools** by itself: create, change,
+  read, list, search and delete. The app's screens use those tools, and so can
+  the assistant in a chat.
+- A **screen** is a small program that runs out of sight, in a sealed box with
+  no internet and no page to draw on. It describes what it wants on screen
+  using **five building blocks** (a stack, a heading, a text, a button and a
+  card), and Brydio draws them. It can't use colours, styles or anything
+  Brydio doesn't offer, which is why every app looks right.
+- When a screen **changes something** (a button that moves an issue), Brydio
+  asks the person first.
+- An app is **built** into a small bundle of files, at most 1 MB. Each bundle
+  gets a **fingerprint** (a long code worked out from its files), which is the
+  address Brydio serves it from.
+
+## What is in here
+
+| Folder | What it is |
+|---|---|
+| `packages/ui` | The list of the five building blocks and what each accepts. A copy of Brydio's own list. |
+| `packages/manifest` | The rules for a manifest, the tools Brydio makes from it, and the bundle rules and fingerprint. Copies of Brydio's server rules. |
+| `packages/app` | What runs inside a screen: it keeps the screen's tree of building blocks, talks to Brydio, and lets you write screens with Preact (a small React). |
+| `packages/fake-host` | A pretend Brydio for tests: it runs a built screen, remembers what it drew, lets a test press buttons, and answers tools from sample records. |
+| `packages/cli` | The `brydio` command: `build`, `validate` and `dev`. |
+| `templates/preact` | A starter app (a checklist) to copy. |
+| `CONTRACT-NOTES.md` | Every place the plan and Brydio's actual code differed, and which way this went. |
+
+## The `brydio` command
+
+Run these in an app's folder (they need [Bun](https://bun.sh) 1.3):
+
+- `brydio build` turns the screens in `src/screens/` into `dist/`, one file
+  per screen plus `app.json`, and prints the size and the fingerprint.
+- `brydio validate` checks everything Brydio would refuse: the manifest, the
+  built bundle (only scripts, under 1 MB, every screen built), and the screens'
+  source (only the five building blocks, only their settings, no styles, no
+  web page or internet).
+- `brydio dev` builds, serves `dist/` on `http://localhost:5174`, builds again
+  whenever a file changes, and prints the command that loads the build into a
+  local Brydio.
+
+## Working on the SDK itself
+
+```sh
+bun install
+bun test               # every package, the template, and the end-to-end runs in a worker
+bun run check-types
+```
+
+Some tests compare these copies with Brydio's own code. They run when a Brydio
+checkout sits beside this folder (`../brydio`, or set `BRYDIO_DIR`), and are
+skipped otherwise.
+
+Nothing here is published anywhere yet. An app uses the packages straight from
+this folder (see `../brydio-issues/package.json`).
+
+## Writing a screen
+
+```tsx
+import { tools } from '@brydio/app';
+import { mount, useList } from '@brydio/app/preact';
+
+function Board() {
+  const issues = useList('issues', { limit: 200 });
+
+  return (
+    <bry-stack gap="3">
+      <bry-heading level={1} text="Issues" />
+      {issues.items.map(issue => (
+        <bry-card key={issue.id} title={String(issue.title)} />
+      ))}
+      <bry-button label="New issue" onPress={() => tools.call('create_issue', { title: 'New issue', status: 'todo' })} />
+    </bry-stack>
+  );
+}
+
+void mount(Board);
+```
+
+The five building blocks and their settings:
+
+| Block | Settings | Tells the screen |
+|---|---|---|
+| `bry-stack` | `direction` row or column, `gap` 1–8, `align`, `justify`, `wrap` | nothing |
+| `bry-heading` | `text` (needed), `level` 1–3 | nothing |
+| `bry-text` | `text` (needed), `tone` default, muted or danger, `size` sm or md | nothing |
+| `bry-button` | `label` (needed), `variant` primary, secondary, ghost or danger, `size`, `disabled` | `onPress` |
+| `bry-card` | `title`, `padding` 2–6, `pressable` | `onPress`, when pressable |
+
+Only a stack and a card can hold other blocks. There is no text box yet: a
+screen can't ask a person to type in Phase 0.
