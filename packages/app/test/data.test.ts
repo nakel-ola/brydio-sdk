@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
+import { join } from 'node:path';
 
 import { collection, setDefaultBridge } from '../src/index.ts';
 import { harness, settle } from './harness.ts';
@@ -64,5 +65,14 @@ describe('a collection, typed from its schema', () => {
     };
 
     expect(typeof unused).toBe('function');
+  });
+
+  test('adds nothing of the manifest package to a screen\'s bundle', async () => {
+    // A screen that uses \`collection\` must not carry \`@brydio/manifest\`'s schemas (zod) with it.
+    const built = await Bun.build({ entrypoints: [join(import.meta.dir, '..', 'src', 'data.ts')], target: 'browser', minify: true });
+    const size = (await built.outputs[0]!.text()).length;
+
+    expect(built.success).toBe(true);
+    expect(size).toBeLessThan(60_000);
   });
 });

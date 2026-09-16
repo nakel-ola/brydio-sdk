@@ -1,4 +1,4 @@
-import { labelOf, type DocumentOf } from '@brydio/manifest';
+import type { DocumentOf } from '@brydio/manifest';
 
 import { builtApp, defaultBridge } from './bridge.ts';
 import type { DataChange, ListQuery, ListResult } from './protocol.ts';
@@ -38,7 +38,7 @@ export interface Collection<S> {
 }
 
 export function collection<const S extends Record<string, unknown>>(name: string, _schema: S): Collection<S> {
-  const label = () => builtApp()?.collections?.[name]?.label ?? labelOf(name);
+  const label = () => builtApp()?.collections?.[name]?.label ?? singular(name);
 
   return {
     name,
@@ -51,4 +51,13 @@ export function collection<const S extends Record<string, unknown>>(name: string
     },
     subscribe: (onChange, onEnd) => defaultBridge().watch(name, onChange, onEnd),
   };
+}
+
+/**
+ * A collection's default label, as `@brydio/manifest`'s `labelOf` works it
+ * out: `issues` is `issue`. Copied rather than imported, because importing the
+ * manifest package would put its schemas in every screen's bundle.
+ */
+function singular(collection: string): string {
+  return collection.length > 1 && collection.endsWith('s') ? collection.slice(0, -1) : collection;
 }
