@@ -588,6 +588,9 @@ export class FakeHost {
       this.navigations.push({ ...asked, opened: true });
 
       if (id !== undefined) this.#send({ jsonrpc: '2.0', method: 'ui/result', params: { id, result: { opened: true } } });
+
+      // As Brydio's screen does, after answering: an item the app opened becomes its selection.
+      if (asked.kind === 'item') this.setContext({ selection: { kind: 'item', id: asked.id } });
     } catch (error) {
       const message = (error instanceof Error ? error.message : 'That didn’t work.').slice(0, 300);
 

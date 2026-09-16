@@ -235,17 +235,21 @@ test('a screen asking to open something hears whether it opened, in the host’s
   });
 
   await host.mounted();
-  await host.waitFor(() => host!.byText('url https://example.com: An app can open a chat, a file or one of its own items, by id.'), { what: 'the last answer' });
+  await host.waitFor(() => host!.byText('selected {"kind":"item","id":"note_a"}'), { what: 'the item to become the selection' });
 
   expect(host.findAll(node => node.type === 'bry-text').map(node => node.props.text)).toEqual([
     'Opening',
     'chat conv_1: opened',
     'item note_gone: There is no such note.',
     'url https://example.com: An app can open a chat, a file or one of its own items, by id.',
+    'item note_a: opened',
+    // Opening one of the app's own items makes it the screen's selection, as Brydio's screen does.
+    'selected {"kind":"item","id":"note_a"}',
   ]);
   expect(host.navigations).toEqual([
     { kind: 'chat', id: 'conv_1', opened: true },
     { kind: 'item', id: 'note_gone', opened: false, error: 'There is no such note.' },
+    { kind: 'item', id: 'note_a', opened: true },
   ]);
 });
 
