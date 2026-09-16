@@ -1,4 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "plugins": [{ "name": "@brydio/cli/ts-plugin" }]
+  },
   "include": ["src", "test"]
 }

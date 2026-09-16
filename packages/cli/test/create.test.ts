@@ -49,6 +49,9 @@ describe('brydio create', () => {
     expect(pkg.overrides['@brydio/ui']).toBe(`file:${join(SDK_ROOT, 'packages/ui')}`);
     expect(json(join(dir, 'tsconfig.json')).extends).toBeUndefined();
     expect(json(join(dir, 'tsconfig.json')).compilerOptions.strict).toBe(true);
+    // Brydio's source checks underline in the editor from the first open (A5-F03-S03).
+    expect(json(join(dir, 'tsconfig.json')).compilerOptions.plugins).toEqual([{ name: '@brydio/cli/ts-plugin' }]);
+    expect(pkg.devDependencies['@brydio/cli']).toBeDefined();
     expect(readFileSync(join(dir, 'README.md'), 'utf8')).toStartWith('# Team issues\n');
     expect(existsSync(join(dir, 'node_modules'))).toBe(false);
     expect(existsSync(join(dir, 'dist'))).toBe(false);
@@ -99,6 +102,9 @@ describe('brydio create', () => {
       expect(built.ok).toBe(true);
       expect(validate(dir).problems).toEqual([]);
       expect(await runTests(dir, { out: () => {} })).toBe(0);
+      // The editor plugin is on, and installed where tsserver looks for it.
+      expect(json(join(dir, 'tsconfig.json')).compilerOptions.plugins).toEqual([{ name: '@brydio/cli/ts-plugin' }]);
+      expect(existsSync(join(dir, 'node_modules', '@brydio', 'cli', 'ts-plugin', 'package.json'))).toBe(true);
     },
     120_000,
   );
