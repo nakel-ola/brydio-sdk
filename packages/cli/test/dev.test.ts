@@ -154,18 +154,24 @@ describe('brydio dev, signed in', () => {
     const beats = server.calls.filter(call => call.path.endsWith('/heartbeat'));
 
     expect(beats).toHaveLength(1);
-    expect(beats[0]!.body).toMatchObject({ build: 1, manifest: { name: 'tiny' } });
+    expect(beats[0]!.body).toMatchObject({ build: 1, manifest: { name: 'tiny' }, problem: null });
 
     writeFileSync(join(root, 'src/screens/home.ts'), 'export const home = ;\n');
     await session.rebuild();
 
-    expect(server.calls.filter(call => call.path.endsWith('/heartbeat'))).toHaveLength(1);
+    const failed = server.calls.filter(call => call.path.endsWith('/heartbeat')).at(-1)!.body;
+
+    // The failed build tells the tab why, and keeps the build number where it was.
+    expect(failed.build).toBe(1);
+    expect(failed.manifest).toBeUndefined();
+    expect(typeof failed.problem.message).toBe('string');
+    expect(failed.problem.message.length).toBeGreaterThan(0);
     expect(lines.join('\n')).toContain('the tab keeps the last good build');
 
     writeFileSync(join(root, 'src/screens/home.ts'), 'export const home = 3;\n');
     await session.rebuild();
 
-    expect(server.calls.filter(call => call.path.endsWith('/heartbeat')).at(-1)!.body.build).toBe(2);
+    expect(server.calls.filter(call => call.path.endsWith('/heartbeat')).at(-1)!.body).toMatchObject({ build: 2, problem: null });
   });
 
   test('says what Brydio said about a build it turned down', async () => {

@@ -3,7 +3,7 @@ import { dirname, extname, join, normalize, relative, sep } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 
 import { build, describeBuild, type BuildResult } from './build.ts';
-import { formatProblem, readProject } from './project.ts';
+import { formatProblem, readProject, type Problem } from './project.ts';
 import { API_URL_ENV, TOKEN_ENV } from './publish.ts';
 
 /**
@@ -106,7 +106,17 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
 
     if (!result.ok) {
       for (const problem of result.problems) out(formatProblem(problem));
-      if (development) out('Not built: the tab keeps the last good build.');
+
+      if (development) {
+        out('Not built: the tab keeps the last good build, and says why.');
+
+        const first = result.problems.find(problem => problem.severity === 'error') ?? result.problems[0];
+
+        await call('POST', `${DEV_PATH}/${development.id}/heartbeat`, {
+          build: buildNumber,
+          problem: problemOf(first),
+        }).catch(() => null);
+      }
 
       return result;
     }
@@ -119,6 +129,7 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
       const answer = await call('POST', `${DEV_PATH}/${development.id}/heartbeat`, {
         build: buildNumber,
         manifest: manifestOf(result),
+        problem: null,
       }).catch((error: unknown): Answer => ({ status: 0, json: { message: String(error) } }));
 
       if (answer.status !== 200) out(`Brydio didn't take this build: ${messageOf(answer)}`);
@@ -318,6 +329,19 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
       return next;
     },
     stop,
+  };
+}
+
+/** A build problem as the tab shows it: the words, and the file and line when there are some. */
+function problemOf(problem: Problem | undefined): { message: string; file?: string; line?: number } {
+  if (!problem) return { message: 'The build failed.' };
+
+  const where = problem as Problem & { file?: unknown; line?: unknown };
+
+  return {
+    message: problem.message,
+    ...(typeof where.file === 'string' ? { file: where.file } : {}),
+    ...(typeof where.line === 'number' ? { line: where.line } : {}),
   };
 }
 
