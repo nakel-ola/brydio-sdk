@@ -100,6 +100,26 @@ describe('brydio build', () => {
     expect(result.files.size).toBe(0);
   });
 
+  test('refuses a screen that brings in CSS or HTML, naming what it brought', async () => {
+    const root = app({
+      '.brydio/app.json': manifest(),
+      'src/screens/home.ts': "import './home.css';\nexport const home = 1;\n",
+      'src/screens/home.css': 'p { color: red; }\n',
+    });
+    const result = await build(root);
+
+    expect(codes(result.problems)).toEqual(['bundle_file_not_code']);
+    expect(result.problems[0]!.message).toContain('"screen.css"');
+  });
+
+  test('is reproducible: the same source builds to the same fingerprint twice', async () => {
+    const first = await build(template);
+    const second = await build(template);
+
+    expect(second.hash).toBe(first.hash!);
+    expect([...second.files]).toEqual([...first.files]);
+  });
+
   test('refuses a manifest the server would refuse, with the server’s code', async () => {
     const result = await build(app({ '.brydio/app.json': manifest({ placements: [{ kind: 'project-tab', screen: 'nowhere' }] }) }));
 
@@ -124,6 +144,15 @@ describe('brydio validate', () => {
     });
 
     expect(codes(validate(root).problems)).toEqual(['screen_not_built', 'bundle_stale']);
+  });
+
+  test('passes with warnings, and fails only on errors', async () => {
+    const root = app({ '.brydio/app.json': manifest(), 'src/screens/home.ts': 'export const home = 1;\n' });
+
+    await build(root);
+    writeFileSync(join(root, '.brydio/app.json'), manifest({ displayName: 'Tiny' }));
+
+    expect(validate(root)).toMatchObject({ ok: true, problems: [{ code: 'bundle_stale', severity: 'warning' }] });
   });
 
   test('catches what the store refuses: a file that is not a script, and more than 1 MB', () => {
@@ -206,6 +235,13 @@ describe('brydio test', () => {
 
     expect(await main(['test', root], line => lines.push(line))).toBe(1);
     expect(await main(['test', root, '--', '--test-name-pattern', 'right'], line => lines.push(line))).toBe(0);
+  });
+
+  test('runs the template’s own tests, which use the fake host', async () => {
+    const lines: string[] = [];
+
+    expect(await main(['test', template], line => lines.push(line))).toBe(0);
+    expect(lines.join('\n')).toMatch(/[1-9]\d* pass[\s\S]*\b0 fail/);
   });
 
   test('runs no test when the app does not build', async () => {

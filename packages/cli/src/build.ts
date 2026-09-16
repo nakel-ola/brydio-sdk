@@ -7,7 +7,7 @@ import {
   collectionsOf,
   sizeOf,
 } from '@brydio/manifest';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 
@@ -99,7 +99,21 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
       continue;
     }
 
-    files.set(entry, built);
+    if (built.others.length) {
+      // CSS, HTML or an image the screen imported. Refused by name here rather
+      // than dropped, so a builder never ships a screen that expected it.
+      problems.push({
+        code: 'bundle_file_not_code',
+        severity: 'error',
+        file: relative(project.root, source),
+        message:
+          `The "${screen}" screen brings in ${built.others.map(name => `"${name}"`).join(', ')}, which a bundle cannot hold. ` +
+          'A Brydio app has no CSS, HTML or images: Brydio draws every element itself.',
+      });
+      continue;
+    }
+
+    files.set(entry, built.code);
   }
 
   if (problems.some(problem => problem.severity === 'error')) return failed();
@@ -149,9 +163,8 @@ export function describeBuild(result: BuildResult, root: string): string {
  * inside `bun test` in another folder, `Bun.build` resolves against that
  * folder instead.
  */
-async function bundle(root: string, source: string, baked: object, minify: boolean): Promise<Uint8Array | string> {
+async function bundle(root: string, source: string, baked: object, minify: boolean): Promise<{ code: Uint8Array; others: string[] } | string> {
   const scratch = mkdtempSync(join(tmpdir(), 'brydio-build-'));
-  const outfile = join(scratch, 'screen.js');
 
   try {
     const child = Bun.spawn(
@@ -161,7 +174,10 @@ async function bundle(root: string, source: string, baked: object, minify: boole
         source,
         '--target=browser',
         '--format=esm',
-        `--outfile=${outfile}`,
+        // A folder, not one file, so a stylesheet or an image the screen
+        // imports is written beside it where it can be seen and refused.
+        `--outdir=${scratch}`,
+        '--entry-naming=screen.[ext]',
         `--define=__BRYDIO_APP__=${JSON.stringify(JSON.stringify(baked))}`,
         '--define=process.env.NODE_ENV="production"',
         ...(minify ? ['--minify'] : []),
@@ -172,7 +188,9 @@ async function bundle(root: string, source: string, baked: object, minify: boole
 
     if (code !== 0) return (stderr || stdout).trim().split('\n').filter(Boolean).slice(-6).join(' ');
 
-    return new Uint8Array(readFileSync(outfile));
+    const others = (readdirSync(scratch, { recursive: true }) as string[]).filter(name => name !== 'screen.js' && !statSync(join(scratch, name)).isDirectory());
+
+    return { code: new Uint8Array(readFileSync(join(scratch, 'screen.js'))), others: others.sort() };
   } finally {
     rmSync(scratch, { recursive: true, force: true });
   }
