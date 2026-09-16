@@ -59,6 +59,7 @@ Run these in an app's folder (they need [Bun](https://bun.sh) 1.3):
   | `element_unknown`, `prop_unknown`, `prop_value_invalid`, `prop_required`, `event_unknown`, `children_not_allowed` | A screen asks for something the catalogue does not have |
   | `style_forbidden` | `style`, `className`, `class`, `color`/`colour`, `innerHTML` |
   | `dom_global`, `network_global`, `storage_global`, `worker_global`, `eval_forbidden` | A screen reaches for what its worker does not have |
+  | `import_not_allowed` | A screen imports something other than `@brydio/*`, Preact (`preact`, `preact/hooks`, `preact/jsx-runtime`) or the app's own files: a bare package, an absolute path, a `file:` URL, or a relative path out of the app's folder |
   | `source_syntax` | A source file does not parse |
 
 - `brydio test` builds the app, then runs its `*.test.ts` files with

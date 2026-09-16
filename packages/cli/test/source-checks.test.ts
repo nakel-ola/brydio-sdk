@@ -128,6 +128,83 @@ describe('what a worker does not have', () => {
   });
 });
 
+describe('imports (A8-F04-S01)', () => {
+  test('refuses anything but @brydio, Preact and the app’s own files, with the specifier and where', () => {
+    const source = [
+      "import { z } from 'zod';",
+      "import lodash from 'lodash/fp';",
+      "import { readFileSync } from 'node:fs';",
+      "import secret from '../../../brydio/apps/api/src/secret.ts';",
+      "import absolute from '/Users/someone/brydio/x.ts';",
+      "import url from 'file:///Users/someone/x.ts';",
+      "export { thing } from 'some-package';",
+      "const later = () => import('left-pad');",
+      "const old = require('react');",
+      "import type { Row } from 'kysely';",
+    ].join('\n');
+    const problems = checkSource('src/screens/home.tsx', source);
+
+    expect(problems.map(problem => [problem.line, problem.code])).toEqual(
+      Array.from({ length: 10 }, (_, at) => [at + 1, 'import_not_allowed']),
+    );
+    expect(problems[0]).toMatchObject({ file: 'src/screens/home.tsx', line: 1, column: 19 });
+    expect(problems[0]!.message).toContain('"zod"');
+    expect(problems[3]!.message).toContain('reaches outside the app');
+    expect(problems[4]!.message).toContain('names a place');
+    expect(problems[5]!.message).toContain('names a place');
+  });
+
+  test('allows @brydio packages, the Preact the adapter uses, and files anywhere inside the app', () => {
+    const source = [
+      "import { tools } from '@brydio/app';",
+      "import { mount, useState } from '@brydio/app/preact';",
+      "import type { AppManifestWithData } from '@brydio/manifest';",
+      "import { h } from 'preact';",
+      "import { useEffect } from 'preact/hooks';",
+      "import { jsx } from 'preact/jsx-runtime';",
+      "import { COLUMNS } from '../issues.ts';",
+      "import { helper } from './helper.ts';",
+      "import data from '../../fixtures/sample.ts';",
+      "const lazy = () => import('./other.ts');",
+    ].join('\n');
+
+    expect(checkSource('src/screens/home.tsx', source)).toEqual([]);
+  });
+
+  test('counts a climb from where the file is, not from src', () => {
+    expect(codes("import x from '../../x.ts';", 'src/screens/home.ts')).toEqual([]);
+    expect(codes("import x from '../../../x.ts';", 'src/screens/home.ts')).toEqual(['import_not_allowed']);
+    expect(codes("import x from './a/../../x.ts';", 'src/home.ts')).toEqual([]);
+    expect(codes("import x from './a/../../../x.ts';", 'src/home.ts')).toEqual(['import_not_allowed']);
+  });
+
+  test('keeps a URL import a network problem, not two', () => {
+    expect(codes("const x = () => import('https://cdn.example.com/x.js');")).toEqual(['network_global']);
+  });
+
+  test('fails validate and build for an app that imports a package', async () => {
+    const { build, validate } = await import('../src/index.ts');
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const root = mkdtempSync(join(tmpdir(), 'brydio-imports-'));
+
+    try {
+      mkdirSync(join(root, '.brydio'));
+      mkdirSync(join(root, 'src/screens'), { recursive: true });
+      writeFileSync(join(root, '.brydio/app.json'), JSON.stringify({ name: 'tiny', version: '1.0.0', screens: { home: { entry: 'screens/home.js' } } }));
+      writeFileSync(join(root, 'src/screens/home.ts'), "import { z } from 'zod';\nexport const home = z;\n");
+
+      const built = await build(root);
+
+      expect(built.ok).toBe(false);
+      expect(built.problems.map(problem => [problem.file, problem.line, problem.column, problem.code])).toEqual([['src/screens/home.ts', 1, 19, 'import_not_allowed']]);
+      expect(validate(root).problems.map(problem => problem.code)).toContain('import_not_allowed');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('no false alarms', () => {
   test('words in strings, comments and JSX text are not code', () => {
     const source = [

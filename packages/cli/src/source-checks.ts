@@ -1,4 +1,5 @@
 import { CATALOGUE, FORBIDDEN_PROPS, checkEvent, checkProp, eventOfHandler, isElementName, type ElementName, type ElementSpec } from '@brydio/ui';
+import { posix } from 'node:path';
 import ts from 'typescript';
 
 import type { Problem } from './project.ts';
@@ -37,7 +38,8 @@ export type SourceProblemCode =
   | 'network_global'
   | 'storage_global'
   | 'worker_global'
-  | 'eval_forbidden';
+  | 'eval_forbidden'
+  | 'import_not_allowed';
 
 interface Refused {
   code: SourceProblemCode;
@@ -89,6 +91,33 @@ const FACTORIES: Readonly<Record<string, ElementName>> = {
 
 /** Modules whose `h` and `createElement` take an element's name first. */
 const ELEMENT_MAKERS = new Set(['@brydio/app', 'preact']);
+
+/**
+ * Where a screen may import from (A8-F04-S01): the SDK's own packages, the
+ * parts of Preact its adapter is built on, and the app's own files. Nothing
+ * else, so an app can lean on no private door and no package the SDK has not
+ * vouched for; what it needs from anywhere else goes in the SDK first.
+ */
+const ALLOWED_PACKAGES = /^(@brydio\/[a-z0-9-]+(\/.*)?|preact|preact\/(hooks|jsx-runtime|jsx-dev-runtime))$/;
+
+/** Why an import specifier is refused in a screen written at `file` (relative to the app's root), or null. */
+export function importRefusal(file: string, specifier: string): string | null {
+  if (specifier.startsWith('./') || specifier.startsWith('../') || specifier === '.' || specifier === '..') {
+    const inside = posix.normalize(posix.join(posix.dirname(file.split('\\').join('/')), specifier));
+
+    return inside === '..' || inside.startsWith('../') || posix.isAbsolute(inside)
+      ? `import "${specifier}" reaches outside the app's folder. A screen imports only its own files, @brydio packages and Preact.`
+      : null;
+  }
+
+  if (ALLOWED_PACKAGES.test(specifier)) return null;
+
+  if (specifier.startsWith('/') || /^[A-Za-z]:[\\/]/.test(specifier) || /^[a-z][a-z0-9+.-]*:/i.test(specifier)) {
+    return `import "${specifier}" names a place, not the app's own file. A screen imports only its own files, @brydio packages and Preact.`;
+  }
+
+  return `import "${specifier}": a screen imports only its own files, @brydio packages and Preact. Anything else it needs belongs in the SDK.`;
+}
 
 const scriptKindOf = (file: string): ts.ScriptKind =>
   file.endsWith('.tsx') ? ts.ScriptKind.TSX : file.endsWith('.ts') || file.endsWith('.mts') ? ts.ScriptKind.TS : ts.ScriptKind.JSX;
@@ -409,6 +438,12 @@ export function checkSource(file: string, text: string): Problem[] {
     if (complete) checkRequired(element, settings, at);
   };
 
+  const checkImport = (specifier: ts.StringLiteral | ts.NoSubstitutionTemplateLiteral) => {
+    const refused = importRefusal(file, specifier.text);
+
+    if (refused) push('import_not_allowed', refused, specifier);
+  };
+
   const checkCall = (call: ts.CallExpression) => {
     const callee = unwrap(call.expression);
     const [first, second] = call.arguments;
@@ -435,13 +470,26 @@ export function checkSource(file: string, text: string): Problem[] {
     if (callee.kind === ts.SyntaxKind.ImportKeyword && first) {
       const target = unwrap(first);
 
-      if (isWrittenString(target) && /^([a-z][a-z0-9+.-]*:|\/\/)/i.test(target.text)) {
+      if (isWrittenString(target) && /^(https?:|\/\/)/i.test(target.text)) {
         push('network_global', `import("${target.text}"): a screen can load nothing from elsewhere; build it into the bundle.`, target);
+      } else if (isWrittenString(target)) {
+        checkImport(target);
       }
+    }
+
+    // `require('x')`, which Bun's bundler would follow like an import.
+    if (ts.isIdentifier(callee) && callee.text === 'require' && !declared.has('require') && first && isWrittenString(unwrap(first))) {
+      checkImport(unwrap(first) as ts.StringLiteral);
     }
   };
 
   const visit = (node: ts.Node): void => {
+    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+      checkImport(node.moduleSpecifier);
+    } else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference) && ts.isStringLiteral(node.moduleReference.expression)) {
+      checkImport(node.moduleReference.expression);
+    }
+
     if (ts.isJsxElement(node)) {
       checkJsx(node.openingElement, node.children);
     } else if (ts.isJsxSelfClosingElement(node)) {
