@@ -42,15 +42,16 @@ export interface FieldType {
 /**
  * The bounds a schema and a record are held to (A3-F01-S03).
  *
- * `stringChars` is the contract's 512 (§5), not the feature file's 1,000: the
- * contract is what the SDK mirrors, and a short text is a title or a name.
+ * `stringChars` is 1,000 (E1, 16 Sep: the feature file wins over contracts'
+ * old 512), the same as `bry-input`'s `INPUT_MAX`, so nothing a person can
+ * type into a text field is refused by the store.
  */
 export const FIELD_LIMITS = {
   collections: 20,
   fields: 40,
   enumValues: 50,
   enumValueChars: 64,
-  stringChars: 512,
+  stringChars: 1_000,
   textChars: 100_000,
   listEntries: 100,
   nameChars: 40,
@@ -248,7 +249,7 @@ export function valueProblem(field: string, type: FieldType, value: unknown): st
   switch (type.kind) {
     case 'string':
       return typeof value === 'string'
-        ? `${field} is longer than ${FIELD_LIMITS.stringChars} characters.`
+        ? `${field} is longer than ${FIELD_LIMITS.stringChars.toLocaleString('en-GB')} characters.`
         : `${field} must be text.`;
     case 'text':
       return typeof value === 'string'
@@ -270,7 +271,7 @@ export function valueProblem(field: string, type: FieldType, value: unknown): st
     case 'string[]':
       return Array.isArray(value) && value.length > FIELD_LIMITS.listEntries
         ? `${field} may hold at most ${FIELD_LIMITS.listEntries} entries.`
-        : `${field} must be a list of short texts, each at most ${FIELD_LIMITS.stringChars} characters.`;
+        : `${field} must be a list of short texts, each at most ${FIELD_LIMITS.stringChars.toLocaleString('en-GB')} characters.`;
   }
 }
 
