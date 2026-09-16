@@ -105,6 +105,14 @@ describe('brydio create', () => {
       // The editor plugin is on, and installed where tsserver looks for it.
       expect(json(join(dir, 'tsconfig.json')).compilerOptions.plugins).toEqual([{ name: '@brydio/cli/ts-plugin' }]);
       expect(existsSync(join(dir, 'node_modules', '@brydio', 'cli', 'ts-plugin', 'package.json'))).toBe(true);
+      // A5-F06-S03: what Issues had to add is there already. Its own types check,
+      // and git leaves out what a build and an install make.
+      const types = Bun.spawnSync(['bun', 'run', 'check-types'], { cwd: dir, stdout: 'pipe', stderr: 'pipe' });
+
+      expect(`${types.stdout}${types.stderr}`).not.toContain('error TS');
+      expect(types.exitCode).toBe(0);
+      expect(readFileSync(join(dir, '.gitignore'), 'utf8')).toContain('node_modules/');
+      expect(json(join(dir, 'package.json')).devDependencies['@brydio/manifest']).toBe(`file:${join(SDK_ROOT, 'packages/manifest')}`);
     },
     120_000,
   );
