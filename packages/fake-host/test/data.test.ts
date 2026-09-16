@@ -53,7 +53,7 @@ describe('fake data and tools', () => {
 
     host!.press(host!.byText('Rename from version 1')!);
     await host!.waitFor(() => line(1) === 'update note_0 v2', { what: 'the watch to hear the update' });
-    expect(host!.store!.records('notes').find(note => note.id === 'note_0')).toMatchObject({ title: 'Renamed', version: 2 });
+    expect(host!.store!.records('notes').find(note => note.id === 'note_0')).toMatchObject({ title: 'Renamed', version: 2, updatedBy: 'user_fixture', updatedOrigin: 'screen' });
   });
 
   test('a put from a stale version is refused as the store refuses it, and nothing changes', async () => {
@@ -64,7 +64,8 @@ describe('fake data and tools', () => {
     await host!.waitFor(() => line(2).startsWith('Refused'), { what: 'the refusal' });
 
     expect(line(2)).toBe('Refused (stale): This note changed since you read it. Here it is as it is now; make the change again on version 2.');
-    expect(host!.store!.records('notes').find(note => note.id === 'note_0')).toMatchObject({ title: 'Somebody else', version: 2 });
+    // Changed by somebody else, through the assistant, as the record says.
+    expect(host!.store!.records('notes').find(note => note.id === 'note_0')).toMatchObject({ title: 'Somebody else', version: 2, updatedBy: 'user_other', updatedOrigin: 'assistant' });
   });
 
   test('a call can be held for the person, then decided; blocked; or turned away for calling too often', async () => {

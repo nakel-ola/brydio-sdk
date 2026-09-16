@@ -41,6 +41,9 @@ export interface StoredDocument {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  /** Who last wrote it, and through which door (Brydio `569a36c`): a screen, the assistant, a migration. */
+  updatedBy: string | null;
+  updatedOrigin: 'screen' | 'assistant' | 'migration' | null;
 }
 
 export type Fixtures = Record<string, Record<string, unknown>[]>;
@@ -100,7 +103,13 @@ export class FixtureStore {
       const spec = this.#spec(collection);
 
       for (const seed of seeds) {
-        const { id, version, createdBy, ...fields } = seed as { id?: unknown; version?: unknown; createdBy?: unknown };
+        const { id, version, createdBy, updatedBy, updatedOrigin, ...fields } = seed as {
+          id?: unknown;
+          version?: unknown;
+          createdBy?: unknown;
+          updatedBy?: unknown;
+          updatedOrigin?: unknown;
+        };
         const body = checked(spec, fields, {});
 
         this.#records.get(spec.name)!.push({
@@ -108,6 +117,8 @@ export class FixtureStore {
           version: typeof version === 'number' ? version : 1,
           body,
           createdBy: typeof createdBy === 'string' ? createdBy : 'user_fixture',
+          updatedBy: typeof updatedBy === 'string' ? updatedBy : null,
+          updatedOrigin: updatedOrigin === 'screen' || updatedOrigin === 'assistant' || updatedOrigin === 'migration' ? updatedOrigin : null,
           ...this.#stamp(),
         });
       }
@@ -144,6 +155,9 @@ export class FixtureStore {
         current.body = checked(spec, changes, current.body);
         current.version += 1;
         current.updatedAt = this.#stamp().updatedAt;
+        // Somebody else: the assistant, acting for another person.
+        current.updatedBy = 'user_other';
+        current.updatedOrigin = 'assistant';
         this.#emit(spec, current, 'update');
 
         return flat(current);
@@ -154,6 +168,8 @@ export class FixtureStore {
         version: 1,
         body: checked(spec, changes, {}),
         createdBy: 'user_other',
+        updatedBy: 'user_other',
+        updatedOrigin: 'assistant',
         ...this.#stamp(),
       };
 
@@ -307,7 +323,15 @@ export class FixtureStore {
 
     switch (verb) {
       case 'create': {
-        const made: StoredDocument = { id: this.#id(spec), version: 1, body: checked(spec, input, {}), createdBy: 'user_fixture', ...this.#stamp() };
+        const made: StoredDocument = {
+          id: this.#id(spec),
+          version: 1,
+          body: checked(spec, input, {}),
+          createdBy: 'user_fixture',
+          updatedBy: 'user_fixture',
+          updatedOrigin: 'screen',
+          ...this.#stamp(),
+        };
 
         records.push(made);
         this.#emit(spec, made, 'create');
@@ -328,6 +352,9 @@ export class FixtureStore {
         current.body = checked(spec, changes, current.body);
         current.version += 1;
         current.updatedAt = this.#stamp().updatedAt;
+        // The screen, as the person testing it.
+        current.updatedBy = 'user_fixture';
+        current.updatedOrigin = 'screen';
         this.#emit(spec, current, 'update');
 
         return answer(`Changed ${label} ${current.id}; it is at version ${current.version} now.`, flat(current), `Changed ${article} ${label}`);
@@ -440,7 +467,16 @@ export class FixtureStore {
 
 /** A record as the tools hand it out: the kept fields beside the body's, flat. */
 function flat(doc: StoredDocument): Record<string, unknown> {
-  return { id: doc.id, version: doc.version, ...doc.body, createdBy: doc.createdBy, createdAt: doc.createdAt, updatedAt: doc.updatedAt };
+  return {
+    id: doc.id,
+    version: doc.version,
+    ...doc.body,
+    createdBy: doc.createdBy,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+    updatedBy: doc.updatedBy,
+    updatedOrigin: doc.updatedOrigin,
+  };
 }
 
 /** The store's rules for a write, from `document-store.service.ts`. */
