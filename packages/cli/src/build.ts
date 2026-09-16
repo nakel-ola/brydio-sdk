@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 
 import { DIST, readProject, sourceOf, type Problem } from './project.ts';
+import { checkSources } from './validate.ts';
 
 /**
  * `brydio build`: an app's source in, the bundle Brydio loads out (A5-F02).
@@ -41,6 +42,12 @@ export interface BuildOptions {
   outDir?: string;
   /** Smaller bundles by default; off when a stack trace should be readable. */
   minify?: boolean;
+  /**
+   * Refuse what `validate` refuses in the source first. On by default; off
+   * only for a fixture that breaks the rules on purpose, to prove the runtime
+   * or the prelude stops it.
+   */
+  checkSource?: boolean;
 }
 
 export async function build(dir: string, options: BuildOptions = {}): Promise<BuildResult> {
@@ -50,7 +57,11 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
   const problems: Problem[] = [...project.problems];
   const failed = (): BuildResult => ({ ok: false, problems, outDir, files, hash: null, bytes: 0 });
 
-  if (!project.manifest) return failed();
+  // What `validate` would refuse in the source is refused before anything is
+  // bundled (A5-F03-S01), so a build that succeeds is one that validates.
+  if (options.checkSource !== false) problems.push(...checkSources(project.root));
+
+  if (!project.manifest || problems.some(problem => problem.severity === 'error')) return failed();
 
   const manifest = project.manifest;
   // What the runtime needs to know about the app without reading a manifest

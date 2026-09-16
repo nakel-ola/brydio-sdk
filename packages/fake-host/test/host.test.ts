@@ -11,7 +11,8 @@ const screen = (name: string) => join(app, 'dist', 'screens', `${name}.js`);
 let host: FakeHost | null = null;
 
 beforeAll(async () => {
-  expect((await build(app, { minify: false })).problems).toEqual([]);
+  // The fixture reaches for fetch and sockets on purpose, to prove the prelude refuses them.
+  expect((await build(app, { minify: false, checkSource: false })).problems).toEqual([]);
 });
 
 afterEach(() => {

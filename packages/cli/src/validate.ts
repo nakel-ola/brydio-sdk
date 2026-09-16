@@ -64,19 +64,27 @@ export function validate(dir: string, options: { outDir?: string } = {}): Valida
     }
   }
 
-  const src = join(project.root, 'src');
-
-  if (existsSync(src)) {
-    for (const [path, bytes] of filesUnder(src)) {
-      if (!SOURCE_EXTENSIONS.some(extension => path.endsWith(extension)) || path.endsWith('.d.ts')) continue;
-      // Tests run in the fake host, not in a workspace; they may do what a screen may not.
-      if (/(^|\/)(test|tests|__tests__)\/|\.(test|spec)\.[jt]sx?$/.test(path)) continue;
-
-      problems.push(...checkSource(`src/${path}`, new TextDecoder().decode(bytes)));
-    }
-  }
+  problems.push(...checkSources(project.root));
 
   return { ok: !problems.some(problem => problem.severity === 'error'), problems };
+}
+
+/** What the source checks find in every screen source under `src/`, tests aside. */
+export function checkSources(root: string): Problem[] {
+  const src = join(root, 'src');
+  const problems: Problem[] = [];
+
+  if (!existsSync(src)) return problems;
+
+  for (const [path, bytes] of filesUnder(src)) {
+    if (!SOURCE_EXTENSIONS.some(extension => path.endsWith(extension)) || path.endsWith('.d.ts')) continue;
+    // Tests run in the fake host, not in a workspace; they may do what a screen may not.
+    if (/(^|\/)(test|tests|__tests__)\/|\.(test|spec)\.[jt]sx?$/.test(path)) continue;
+
+    problems.push(...checkSource(`src/${path}`, new TextDecoder().decode(bytes)));
+  }
+
+  return problems;
 }
 
 /** Every file under a folder, by its `/`-separated path inside it. */

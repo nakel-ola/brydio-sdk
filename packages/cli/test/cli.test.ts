@@ -91,6 +91,15 @@ describe('brydio build', () => {
     expect(validate(root)).toEqual({ ok: true, problems: [] });
   });
 
+  test('refuses to build a screen validate would refuse, before bundling it', async () => {
+    const root = app({ '.brydio/app.json': manifest(), 'src/screens/home.tsx': 'export const Home = () => <bry-stack gap="9" />;\n' });
+    const result = await build(root);
+
+    expect(result.ok).toBe(false);
+    expect(result.problems.map(problem => [problem.file, problem.line, problem.code])).toEqual([['src/screens/home.tsx', 1, 'prop_value_invalid']]);
+    expect(result.files.size).toBe(0);
+  });
+
   test('refuses a manifest the server would refuse, with the server’s code', async () => {
     const result = await build(app({ '.brydio/app.json': manifest({ placements: [{ kind: 'project-tab', screen: 'nowhere' }] }) }));
 
