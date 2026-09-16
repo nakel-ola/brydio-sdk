@@ -7,7 +7,8 @@
     "broken": { "entry": "screens/broken.js" },
     "silent": { "entry": "screens/silent.js" },
     "walls": { "entry": "screens/walls.js" },
-    "flood": { "entry": "screens/flood.js" }
+    "flood": { "entry": "screens/flood.js" },
+    "where": { "entry": "screens/where.js" }
   },
   "grants": { "tools": ["*"], "collections": ["*"], "host": ["message"] }
 }

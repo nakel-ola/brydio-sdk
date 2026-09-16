@@ -3,7 +3,7 @@ import { afterEach, beforeAll, describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { FakeHost, testApp } from '../src/index.ts';
+import { FakeHost, FixtureStore, testApp } from '../src/index.ts';
 
 const app = join(import.meta.dir, 'fixtures', 'plain');
 const manifest = JSON.parse(readFileSync(join(app, '.brydio/app.json'), 'utf8'));
@@ -143,6 +143,27 @@ test('Brydio’s prelude has taken the network and storage away before the scree
     'Worker is not available to a Brydio app.',
     'WebSocket is not available to a Brydio app.',
   ]);
+});
+
+describe('where a screen runs', () => {
+  test('starts with a placement, an instance’s scope and a selection, and sends each change the host makes', async () => {
+    host = FakeHost.start({
+      entry: screen('where'),
+      manifest,
+      context: { placement: { id: 'p', kind: 'sidebar' }, instance: { id: 'i', name: 'Plain', scope: 'project' }, selection: { id: 'note_1' } },
+    });
+
+    await host.mounted();
+    await host.waitFor(() => host!.byText('sidebar in project, light, selected {"id":"note_1"}'), { what: 'the context' });
+
+    host.setContext({ theme: 'dark', selection: null });
+    await host.waitFor(() => host!.byText('sidebar in project, dark, selected null'), { what: 'the change' });
+  });
+
+  test('refuses sample records the store would refuse', () => {
+    expect(() => FakeHost.start({ entry: screen('where'), manifest, fixtures: { notes: [{ title: 5 }] } })).toThrow();
+    expect(() => new FixtureStore(manifest, { notes: [{ title: 'Fine', pinned: 'yes' }] })).toThrow();
+  });
 });
 
 describe('testApp, for an app’s own tests', () => {
