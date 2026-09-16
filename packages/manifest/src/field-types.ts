@@ -37,6 +37,8 @@ export interface FieldType {
   optional: boolean;
   /** The allowed values, for an enumeration and for a token. */
   values?: readonly string[];
+  /** What a create that leaves the field out stores: a choice's value, or a boolean. */
+  default?: string | boolean;
 }
 
 /**
@@ -112,7 +114,11 @@ export class FieldTypeInvalid extends Error {
       | 'data_enum_empty'
       | 'data_enum_too_many'
       | 'data_enum_value_invalid'
-      | 'data_enum_duplicate',
+      | 'data_enum_duplicate'
+      | 'data_default_not_allowed'
+      | 'data_default_on_required'
+      | 'data_default_invalid'
+      | 'data_field_key_unknown',
     message: string
   ) {
     super(message);
@@ -129,6 +135,7 @@ export class FieldTypeInvalid extends Error {
  */
 export function parseFieldType(raw: unknown): FieldType {
   if (Array.isArray(raw)) return parseEnumeration(raw);
+  if (raw && typeof raw === 'object') return parseFieldObject(raw as Record<string, unknown>);
 
   if (typeof raw !== 'string') {
     throw new FieldTypeInvalid(
@@ -145,6 +152,54 @@ export function parseFieldType(raw: unknown): FieldType {
   if (SCALARS.has(name)) return { kind: name as FieldKind, optional };
 
   throw new FieldTypeInvalid('data_field_type_unknown', `"${raw}" is not a field type.`);
+}
+
+const FIELD_KEYS: ReadonlySet<string> = new Set(['type', 'optional', 'default']);
+
+/** The object form: the short form under `type`, and what it may add. */
+function parseFieldObject(raw: Record<string, unknown>): FieldType {
+  const unknown = Object.keys(raw).find(key => !FIELD_KEYS.has(key));
+
+  if (unknown) {
+    throw new FieldTypeInvalid('data_field_key_unknown', `"${unknown}" is not something a field may say; use type, optional and default.`);
+  }
+
+  if (typeof raw.type !== 'string' && !Array.isArray(raw.type)) {
+    throw new FieldTypeInvalid('data_field_type_unknown', 'A field written as an object names its type under "type".');
+  }
+
+  if (raw.optional !== undefined && typeof raw.optional !== 'boolean') {
+    throw new FieldTypeInvalid('data_field_key_unknown', '"optional" is true or false.');
+  }
+
+  const inner = parseFieldType(raw.type);
+  const type: FieldType = { ...inner, optional: inner.optional || raw.optional === true };
+
+  if (!('default' in raw)) return type;
+
+  const value = raw.default;
+
+  if (type.kind !== 'enum' && type.kind !== 'boolean') {
+    throw new FieldTypeInvalid('data_default_not_allowed', `Only a choice or a boolean may have a default, not a ${type.kind}.`);
+  }
+
+  if (!type.optional) {
+    throw new FieldTypeInvalid(
+      'data_default_on_required',
+      'A field with a default is one a create may leave out: add "optional": true (or write "boolean?").'
+    );
+  }
+
+  if (type.kind === 'enum' ? typeof value !== 'string' || !(type.values ?? []).includes(value) : typeof value !== 'boolean') {
+    throw new FieldTypeInvalid(
+      'data_default_invalid',
+      type.kind === 'enum'
+        ? `The default must be one of ${quoted(type.values ?? [])}.`
+        : 'The default of a boolean is true or false.'
+    );
+  }
+
+  return { ...type, default: value as string | boolean };
 }
 
 function parseEnumeration(values: unknown[]): FieldType {
@@ -199,7 +254,7 @@ export function structuredFields(schema: Record<string, unknown>): string[] {
 }
 
 const asType = (raw: unknown): FieldType =>
-  raw && typeof raw === 'object' && !Array.isArray(raw) && 'kind' in raw
+  raw && typeof raw === 'object' && !Array.isArray(raw) && 'kind' in raw && !('type' in raw)
     ? (raw as FieldType)
     : parseFieldType(raw);
 
@@ -307,10 +362,18 @@ export const quoted = (values: readonly string[]): string =>
 // ---------------------------------------------------------------------------
 // The SDK's own: the document type a schema describes (A5-F01-S03)
 
-type Optional<T> = T extends `${string}?` ? true : false;
+type Optional<T> = T extends `${string}?`
+  ? true
+  : T extends { optional: true }
+    ? true
+    : T extends { type: infer U }
+      ? Optional<U>
+      : false;
 
 /** The TypeScript type of one field's value, from its manifest spelling. */
-export type FieldValue<T> = T extends readonly (infer V)[]
+export type FieldValue<T> = T extends { type: infer U }
+  ? FieldValue<U>
+  : T extends readonly (infer V)[]
   ? V
   : T extends 'number' | 'number?'
     ? number
