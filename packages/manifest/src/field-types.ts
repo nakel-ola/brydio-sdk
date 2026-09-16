@@ -39,6 +39,12 @@ export interface FieldType {
   values?: readonly string[];
   /** What a create that leaves the field out stores: a choice's value, or a boolean. */
   default?: string | boolean;
+  /**
+   * How a choice's values read to a person: `{ todo: "To do" }`. Shown on the
+   * approval card and in the tools' descriptions; the stored value never
+   * changes, and a value with no label reads as itself.
+   */
+  labels?: Readonly<Record<string, string>>;
 }
 
 /**
@@ -118,6 +124,9 @@ export class FieldTypeInvalid extends Error {
       | 'data_default_not_allowed'
       | 'data_default_on_required'
       | 'data_default_invalid'
+      | 'data_labels_not_allowed'
+      | 'data_label_invalid'
+      | 'data_label_unknown_value'
       | 'data_field_key_unknown',
     message: string
   ) {
@@ -154,14 +163,17 @@ export function parseFieldType(raw: unknown): FieldType {
   throw new FieldTypeInvalid('data_field_type_unknown', `"${raw}" is not a field type.`);
 }
 
-const FIELD_KEYS: ReadonlySet<string> = new Set(['type', 'optional', 'default']);
+const FIELD_KEYS: ReadonlySet<string> = new Set(['type', 'optional', 'default', 'labels']);
+
+/** How long a choice value's label may be. */
+export const LABEL_CHARS = 60;
 
 /** The object form: the short form under `type`, and what it may add. */
 function parseFieldObject(raw: Record<string, unknown>): FieldType {
   const unknown = Object.keys(raw).find(key => !FIELD_KEYS.has(key));
 
   if (unknown) {
-    throw new FieldTypeInvalid('data_field_key_unknown', `"${unknown}" is not something a field may say; use type, optional and default.`);
+    throw new FieldTypeInvalid('data_field_key_unknown', `"${unknown}" is not something a field may say; use type, optional, default and labels.`);
   }
 
   if (typeof raw.type !== 'string' && !Array.isArray(raw.type)) {
@@ -173,7 +185,7 @@ function parseFieldObject(raw: Record<string, unknown>): FieldType {
   }
 
   const inner = parseFieldType(raw.type);
-  const type: FieldType = { ...inner, optional: inner.optional || raw.optional === true };
+  const type: FieldType = { ...inner, optional: inner.optional || raw.optional === true, ...labelsOf(inner, raw) };
 
   if (!('default' in raw)) return type;
 
@@ -201,6 +213,36 @@ function parseFieldObject(raw: Record<string, unknown>): FieldType {
 
   return { ...type, default: value as string | boolean };
 }
+
+/** A choice's `labels`, checked: one short label per value it names, and only values the choice has. */
+function labelsOf(type: FieldType, raw: Record<string, unknown>): Pick<FieldType, 'labels'> {
+  if (!('labels' in raw)) return {};
+
+  if (type.kind !== 'enum') {
+    throw new FieldTypeInvalid('data_labels_not_allowed', `Only a choice may label its values, not a ${type.kind}.`);
+  }
+
+  const labels = raw.labels;
+
+  if (!labels || typeof labels !== 'object' || Array.isArray(labels)) {
+    throw new FieldTypeInvalid('data_label_invalid', '"labels" maps each value to how it reads, such as { "todo": "To do" }.');
+  }
+
+  for (const [value, label] of Object.entries(labels)) {
+    if (!(type.values ?? []).includes(value)) {
+      throw new FieldTypeInvalid('data_label_unknown_value', `"${value}" is not one of ${quoted(type.values ?? [])}, so it can't have a label.`);
+    }
+
+    if (typeof label !== 'string' || !label.trim() || label.length > LABEL_CHARS) {
+      throw new FieldTypeInvalid('data_label_invalid', `The label for "${value}" is 1 to ${LABEL_CHARS} characters of text.`);
+    }
+  }
+
+  return { labels: { ...(labels as Record<string, string>) } };
+}
+
+/** How a choice's value reads to a person: its label, or the value itself. */
+export const labelOfValue = (type: FieldType, value: string): string => type.labels?.[value] ?? value;
 
 function parseEnumeration(values: unknown[]): FieldType {
   if (!values.length) {
@@ -338,7 +380,7 @@ export function describeType(type: FieldType): string {
     case 'text':
       return 'long text';
     case 'enum':
-      return `one of ${quoted(type.values ?? [])}`;
+      return `one of ${quoted(type.values ?? [])}${labelWords(type)}`;
     case 'token':
       return `a colour, one of ${quoted(type.values ?? [])}`;
     case 'member':
@@ -355,6 +397,13 @@ export function describeType(type: FieldType): string {
       return 'a list of short texts';
   }
 }
+
+/** ", read as \"todo\" is To do, \"done\" is Done", for a choice with labels. */
+const labelWords = (type: FieldType): string => {
+  const pairs = Object.entries(type.labels ?? {});
+
+  return pairs.length ? ` (${pairs.map(([value, label]) => `"${value}" reads as ${label}`).join(', ')})` : '';
+};
 
 export const quoted = (values: readonly string[]): string =>
   values.map(value => `"${value}"`).join(', ');

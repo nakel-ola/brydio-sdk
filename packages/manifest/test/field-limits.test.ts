@@ -14,7 +14,7 @@ describe('the limits a record is held to, as Brydio holds them', () => {
   });
 });
 
-describe('field defaults, as Brydio reads them (A3-F01-S01)', () => {
+describe('field defaults and choice labels, as Brydio reads them (A3-F01-S01, A8-F01-S04)', () => {
   const brydio = process.env.BRYDIO_DIR ?? join(import.meta.dir, '..', '..', '..', '..', 'brydio');
   const serverTypes = join(brydio, 'apps/api/src/apps/manifest/field-types.ts');
 
@@ -30,6 +30,12 @@ describe('field defaults, as Brydio reads them (A3-F01-S01)', () => {
     { type: 'boolean?', default: 'yes' },
     { kind: 'string' },
     { optional: true },
+    { type: ['todo', 'doing', 'done'], labels: { todo: 'To do', done: 'Done' } },
+    { type: 'string', labels: { a: 'A' } },
+    { type: ['todo', 'done'], labels: { blocked: 'Blocked' } },
+    { type: ['low', 'high'], labels: { low: '' } },
+    { type: ['s', 'l'], labels: { l: 'x'.repeat(61) } },
+    { type: ['s', 'l'], labels: ['S'] },
   ];
 
   const outcome = (parse: (raw: unknown) => unknown, raw: unknown) => {
@@ -53,6 +59,12 @@ describe('field defaults, as Brydio reads them (A3-F01-S01)', () => {
       { code: 'data_default_invalid' },
       { code: 'data_field_key_unknown' },
       { code: 'data_field_type_unknown' },
+      { type: { kind: 'enum', optional: false, values: ['todo', 'doing', 'done'], labels: { todo: 'To do', done: 'Done' } } },
+      { code: 'data_labels_not_allowed' },
+      { code: 'data_label_unknown_value' },
+      { code: 'data_label_invalid' },
+      { code: 'data_label_invalid' },
+      { code: 'data_label_invalid' },
     ]);
   });
 
