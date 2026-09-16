@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { GrantError, HostError, SDK_VERSION, TeardownError, ToolError, card } from '../src/index.ts';
+import { Bridge, GrantError, HostError, SDK_VERSION, TeardownError, ToolError, card } from '../src/index.ts';
 import { CONTEXT, harness, settle } from './harness.ts';
 
 const result = (structuredContent: unknown, text = 'ok') => ({ content: [{ type: 'text', text }], structuredContent });
@@ -185,6 +185,8 @@ describe('asking the host to open something, and toasts', () => {
   });
 });
 
+const bridge = (made: { bridge: Bridge }) => made.bridge;
+
 describe('grants', () => {
   test('refuse a call the manifest does not ask for, naming the grant, before it leaves', async () => {
     const { bridge, take, connect } = harness({ app: { grants: { tools: ['create_issue'], collections: ['issues'], host: [] } } });
@@ -199,6 +201,35 @@ describe('grants', () => {
     expect(await bridge.listDocuments('labels').catch(error => error.grant)).toBe('collections');
     expect(() => bridge.navigate({ kind: 'chat', id: 'x' })).toThrow('grants.host');
     expect(take()).toEqual([]);
+  });
+
+  test('grant a collection’s generated tools by the collection’s name, as the server’s grants.ts does, but only with the collection', async () => {
+    const byCollection = harness({ app: { grants: { tools: ['issues'], collections: ['issues'], host: ['*'] }, collections: { issues: { label: 'issue', plural: 'issues' } } } });
+
+    await byCollection.connect();
+    byCollection.take();
+    void bridge(byCollection).callTool('delete_issue', { id: 'x' });
+    void bridge(byCollection).listDocuments('issues');
+    await settle();
+
+    expect(byCollection.take().map(one => (one.params as { tool: string }).tool)).toEqual(['delete_issue', 'list_issues']);
+    expect((await bridge(byCollection).callTool('create_label').catch((error: GrantError) => error) as GrantError).message).toContain('grants.tools');
+    // `*` covers navigate and message, never a connection.
+    void bridge(byCollection).navigate({ kind: 'chat', id: 'c' });
+    expect(byCollection.take().map(one => one.method)).toEqual(['ui/navigate']);
+
+    // Granted by collection name without the collection itself: refused on the collection.
+    const orphan = harness({ app: { grants: { tools: ['labels', 'create_issue'], collections: ['issues'] } } });
+
+    await orphan.connect();
+    orphan.take();
+
+    expect((await bridge(orphan).callTool('create_label').catch((error: GrantError) => error) as GrantError).grant).toBe('collections');
+    // A tool named outright over a collection that isn't granted is refused too.
+    const named = harness({ app: { grants: { tools: ['get_note'], collections: ['issues'] }, collections: { notes: { label: 'note', plural: 'notes' } } } });
+
+    expect((await bridge(named).callTool('get_note').catch((error: GrantError) => error) as GrantError).grant).toBe('collections');
+    expect(orphan.take()).toEqual([]);
   });
 
   test('let "*" through for tools and collections', async () => {

@@ -10,7 +10,8 @@
     "flood": { "entry": "screens/flood.js" },
     "where": { "entry": "screens/where.js" },
     "watched": { "entry": "screens/watched.js" },
-    "opens": { "entry": "screens/opens.js" }
+    "opens": { "entry": "screens/opens.js" },
+    "reads": { "entry": "screens/reads.js" }
   },
   "grants": { "tools": ["*"], "collections": ["*"], "host": ["message", "navigate"] }
 }

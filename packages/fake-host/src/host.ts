@@ -409,11 +409,7 @@ export class FakeHost {
       case 'data/list':
         if (!this.app || message.id === undefined) break;
 
-        this.#send({
-          jsonrpc: '2.0',
-          method: 'data/error',
-          params: { id: message.id, error: { code: -32601, message: 'Reading data from a screen isn’t available yet.' } },
-        });
+        void this.#read(message.id, message.method === 'data/get' ? 'get' : 'list', params);
         break;
       case 'data/subscribe':
         if (!this.app || message.id === undefined) break;
@@ -442,6 +438,57 @@ export class FakeHost {
     }
 
     this.#changed();
+  }
+
+  /**
+   * `data/get` and `data/list`, as Brydio answers them since `5d6cd53`: the
+   * collection's own `get_*` or `list_*` tool runs, and its record or page
+   * comes back as `data/result { id, result }`. A refusal the tool wrote is
+   * `data/error` in the tool's words. The run is in `calls`, as any call is.
+   */
+  async #read(id: string | number, op: 'get' | 'list', params: Record<string, unknown>): Promise<void> {
+    const error = (code: number, message: string) =>
+      this.#send({ jsonrpc: '2.0', method: 'data/error', params: { id, error: { code, message } } });
+    const collection = params.collection;
+
+    if (!this.store || !this.#options.manifest) return error(-32601, 'Reading data from a screen isn’t available here.');
+    if (typeof collection !== 'string' || !collection || (op === 'get' && typeof params.id !== 'string')) {
+      return error(-32602, op === 'get' ? 'A read needs a collection and a record id.' : 'A read needs a collection.');
+    }
+
+    const spec = collectionsOf(this.#options.manifest).find(one => one.name === collection);
+
+    if (!spec) return error(-32000, 'There is no such collection.');
+
+    const tool = op === 'get' ? `get_${spec.label}` : `list_${spec.plural}`;
+    const input: Record<string, unknown> = {};
+
+    if (op === 'get') input.id = params.id;
+    else for (const key of ['filter', 'sort', 'limit', 'cursor']) if (params[key] !== undefined) input[key] = params[key];
+
+    const call: ToolCall = { tool, input };
+
+    this.calls.push(call);
+    this.#busy += 1;
+
+    try {
+      const result = await this.#tools[tool]!(input);
+
+      call.result = result;
+
+      if (result.isError) {
+        const text = result.content?.find(part => part.type === 'text')?.text;
+
+        error(-32000, text ? text.slice(0, 300) : 'That couldn’t be read.');
+      } else {
+        this.#send({ jsonrpc: '2.0', method: 'data/result', params: { id, result: result.structuredContent as never } });
+      }
+    } catch (failure) {
+      error(-32000, failure instanceof Error ? failure.message.slice(0, 300) : 'That didn’t work.');
+    } finally {
+      this.#busy -= 1;
+      this.#changed();
+    }
   }
 
   /**

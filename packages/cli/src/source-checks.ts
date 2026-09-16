@@ -105,6 +105,10 @@ const FACTORIES: Readonly<Record<string, ElementName>> = {
   split: 'bry-split',
   checkbox: 'bry-checkbox',
   switchElement: 'bry-switch',
+  board: 'bry-board',
+  boardColumn: 'bry-board-column',
+  markdown: 'bry-markdown',
+  diff: 'bry-diff',
 };
 
 /** Modules whose `h` and `createElement` take an element's name first. */

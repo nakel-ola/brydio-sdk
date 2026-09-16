@@ -141,6 +141,9 @@ describe('the elements added in Wren’s eight', () => {
       'prop_unknown',
       'prop_value_invalid',
     ]);
+    expect(
+      codes("import { board, boardColumn, markdown, diff } from '@brydio/app';\nboard({ cardSize: 'xl' });\nboardColumn({ title: 'x', count: -1 });\nmarkdown({ text: 'x', open: true });\ndiff({ files: [], onPress: go });", 'a.ts'),
+    ).toEqual(['prop_value_invalid', 'prop_value_invalid', 'prop_unknown', 'event_unknown']);
   });
 });
 

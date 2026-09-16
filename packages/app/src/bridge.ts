@@ -242,7 +242,7 @@ export class Bridge {
    * worker. A person's *Don't allow* arrives as a `HostError`.
    */
   callToolResult(tool: string, input: Record<string, unknown> = {}): Promise<ToolResult> {
-    const refused = this.#grant('tools', tool);
+    const refused = this.#toolGrant(tool);
 
     if (refused) return Promise.reject(refused);
     if (this.#stopped) return Promise.reject(new TeardownError());
@@ -390,13 +390,38 @@ export class Bridge {
     return { label, plural: `${label}s` };
   }
 
-  /** A grant the manifest does not ask for, as the error to fail with; null when it does. */
+  /**
+   * A grant the manifest does not ask for, as the error to fail with; null
+   * when it does. The server's `grants.ts` rules: `*` covers every collection
+   * and tool, and of the host's only `navigate` and `message`, never a
+   * `connection:<name>`, which is agreed to by name or not at all.
+   */
   #grant(grant: 'tools' | 'collections' | 'host', want: string): GrantError | null {
     if (!this.#checkGrants) return null;
 
     const list = this.#app.grants?.[grant] ?? [];
+    const all = list.includes('*') && (grant !== 'host' || HOST_CAPABILITIES.includes(want));
 
-    return list.includes(want) || (grant !== 'host' && list.includes('*')) ? null : new GrantError(grant, want);
+    return list.includes(want) || all ? null : new GrantError(grant, want);
+  }
+
+  /**
+   * A tool call's grant, as the server's `allowsTool` asks it: the tool is
+   * granted by its own name, by `*`, or by the name of the collection whose
+   * generated tool it is; and that collection must be granted too, since a
+   * tool over a collection that isn't would be a way round it.
+   */
+  #toolGrant(tool: string): GrantError | null {
+    if (!this.#checkGrants) return null;
+
+    const tools = this.#app.grants?.tools ?? [];
+    const candidates = new Set([...Object.keys(this.#app.collections ?? {}), ...tools, ...(this.#app.grants?.collections ?? [])]);
+    const collection = [...candidates].find(name => name !== '*' && generatedTools(this.#collection(name)).includes(tool));
+    const named = tools.includes('*') || tools.includes(tool);
+
+    if (!named && !(collection !== undefined && tools.includes(collection))) return new GrantError('tools', tool);
+
+    return collection === undefined ? null : this.#grant('collections', collection);
   }
 
   #receive(raw: unknown): void {
@@ -550,6 +575,19 @@ export class Bridge {
     this.#unlisten();
   }
 }
+
+/** The host capabilities `*` covers. */
+const HOST_CAPABILITIES: readonly string[] = ['navigate', 'message'];
+
+/** A collection's generated tool names, as the server names them. */
+const generatedTools = ({ label, plural }: { label: string; plural: string }) => [
+  `create_${label}`,
+  `update_${label}`,
+  `get_${label}`,
+  `list_${plural}`,
+  `search_${plural}`,
+  `delete_${label}`,
+];
 
 /** A listener's mistake is reported, never allowed to stop the bridge. */
 function run(listener: () => void): void {

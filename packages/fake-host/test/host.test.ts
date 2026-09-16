@@ -248,3 +248,16 @@ test('a screen asking to open something hears whether it opened, in the host’s
     { kind: 'item', id: 'note_gone', opened: false, error: 'There is no such note.' },
   ]);
 });
+
+test('data/get and data/list are answered through the collection’s own tools, and a refusal in their words', async () => {
+  host = FakeHost.start({ entry: screen('reads'), manifest, fixtures: { notes: [{ id: 'note_a', title: 'First' }, { id: 'note_b', title: 'Second' }] } });
+
+  await host.mounted();
+
+  const lines = host.findAll(node => node.type === 'bry-text').map(node => String(node.props.text));
+
+  expect(JSON.parse(lines[0]!)).toMatchObject({ items: [{ id: 'note_b', title: 'Second' }], nextCursor: '1' });
+  expect(JSON.parse(lines[1]!)).toMatchObject({ id: 'note_a', version: 1, title: 'First' });
+  expect(lines.slice(2)).toEqual(['-32000 There is no such note.', '-32000 There is no such collection.', '-32602 A read needs a collection and a record id.']);
+  expect(host.calls.map(call => call.tool)).toEqual(['list_notes', 'get_note', 'get_note']);
+});
