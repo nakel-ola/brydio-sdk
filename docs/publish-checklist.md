@@ -154,6 +154,7 @@ Screens may call only tools that exist:
 | `bundle_stale` (warning) | The built manifest is not the manifest as it is now. Run brydio build again. | yes | no | Run `brydio build`. |
 | `bundle_too_large` | That bundle is `<size>`, over the 1.00 MB cap. The largest file is "`<file>`" at `<size>`. | yes | publish | Make the screens smaller; start with the largest file. |
 | `bundle_file_not_code` | "`<file>`" is not a script. A bundle holds only .js files and app.json. (From `brydio build`: The "`<screen>`" screen brings in "`<file>`", which a bundle cannot hold. A Brydio app has no CSS, HTML or images: Brydio draws every element itself.) | yes | publish | Remove the import of CSS, HTML or images. |
+| `runtime_too_large` | The "`<screen>`" screen carries `<n>` KB of Brydio's runtime, over the 30 KB a screen may carry. Something in @brydio is being bundled that this screen does not use. | no: `brydio build` (minified) refuses it, and `validate` reads a build | no | Import what the screen uses from `@brydio/app`, not a schema or checking library; say so on the channel if the SDK itself leaks. |
 | `bundle_path_invalid` | "`<path>`" is not a path a bundle can hold. | yes | publish | Use plain ASCII names with no hidden segments. |
 | `bundle_manifest_missing` | That bundle has no app.json at its root. | yes | publish | Run `brydio build`. |
 | `bundle_empty` | That bundle has no screens in it, only a manifest. | yes | publish | Declare and build a screen. |

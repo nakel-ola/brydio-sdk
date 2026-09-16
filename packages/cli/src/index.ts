@@ -1,6 +1,6 @@
 /** `@brydio/cli`: the commands, as functions, for scripts and tests. */
 
-export { build, describeBuild, sdkVersionFor, type BuildOptions, type BuildResult } from './build.ts';
+export { RUNTIME_MAX_BYTES, build, describeBuild, runtimeBytesOf, sdkVersionFor, type BuildOptions, type BuildResult } from './build.ts';
 export { create, CreateRefused, SDK_ROOT, TEMPLATES, type CreateOptions, type Template } from './create.ts';
 export { dev, DevRefused, DEV_CONFIG, DEV_PATH, type DevOptions, type DevSession } from './dev.ts';
 export { DIST, MANIFEST_PATHS, formatProblem, readProject, sourceOf, type Problem, type Project } from './project.ts';

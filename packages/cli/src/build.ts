@@ -8,9 +8,9 @@ import {
   sizeOf,
 } from '@brydio/manifest';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 
 import { DIST, readProject, sourceOf, type Problem } from './project.ts';
 import { checkSources } from './validate.ts';
@@ -114,6 +114,19 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
       continue;
     }
 
+    // Minified only: a debugging build's size says nothing about what ships.
+    if (built.runtimeBytes !== null && built.runtimeBytes > RUNTIME_MAX_BYTES) {
+      problems.push({
+        code: 'runtime_too_large',
+        severity: 'error',
+        file: relative(project.root, source),
+        message:
+          `The "${screen}" screen carries ${(built.runtimeBytes / 1024).toFixed(1)} KB of Brydio's runtime, over the ${RUNTIME_MAX_BYTES / 1024} KB a screen may carry. ` +
+          'Something in @brydio is being bundled that this screen does not use.',
+      });
+      continue;
+    }
+
     files.set(entry, built.code);
   }
 
@@ -180,7 +193,58 @@ export function describeBuild(result: BuildResult, root: string): string {
  * inside `bun test` in another folder, `Bun.build` resolves against that
  * folder instead.
  */
-async function bundle(root: string, source: string, baked: object, minify: boolean): Promise<{ code: Uint8Array; others: string[] } | string> {
+/**
+ * The most of Brydio's own runtime (`@brydio/app`, `@brydio/ui`,
+ * `@brydio/manifest`, minified) one screen may carry (A5-F03-S01). The
+ * worker can fetch nothing, so each screen brings its runtime with it
+ * (contracts §11); trimming keeps that to what the screen uses, and this
+ * catches a change that makes a screen carry what it doesn't. Preact and the
+ * app's own code are not counted.
+ */
+export const RUNTIME_MAX_BYTES = 30 * 1024;
+
+/** The SDK packages whose modules count as the runtime, by their folders as `root` resolves them. */
+function runtimeFolders(root: string): string[] {
+  const folders: string[] = [];
+
+  for (const name of ['@brydio/app', '@brydio/ui', '@brydio/manifest']) {
+    try {
+      let at = dirname(Bun.resolveSync(name, root));
+
+      while (!existsSync(join(at, 'package.json')) && dirname(at) !== at) at = dirname(at);
+
+      folders.push(`${realpathSync(at)}/`);
+    } catch {
+      // Not installed in this app: nothing of it can be bundled.
+    }
+  }
+
+  return folders;
+}
+
+/** How many bytes of the output came from the runtime's modules, from `bun build`'s metafile. */
+export function runtimeBytesOf(metafile: { outputs?: Record<string, { inputs?: Record<string, { bytesInOutput?: number }> }> }, root: string): number {
+  const folders = runtimeFolders(root);
+  let bytes = 0;
+
+  for (const output of Object.values(metafile.outputs ?? {})) {
+    for (const [input, { bytesInOutput = 0 }] of Object.entries(output.inputs ?? {})) {
+      const path = resolve(root, input);
+      const real = existsSync(path) ? realpathSync(path) : path;
+
+      if (folders.some(folder => real.startsWith(folder))) bytes += bytesInOutput;
+    }
+  }
+
+  return bytes;
+}
+
+async function bundle(
+  root: string,
+  source: string,
+  baked: object,
+  minify: boolean,
+): Promise<{ code: Uint8Array; others: string[]; runtimeBytes: number | null } | string> {
   const scratch = mkdtempSync(join(tmpdir(), 'brydio-build-'));
 
   try {
@@ -194,6 +258,7 @@ async function bundle(root: string, source: string, baked: object, minify: boole
         // A folder, not one file, so a stylesheet or an image the screen
         // imports is written beside it where it can be seen and refused.
         `--outdir=${scratch}`,
+        `--metafile=${join(scratch, '..', `${basename(scratch)}.meta.json`)}`,
         '--entry-naming=screen.[ext]',
         `--define=__BRYDIO_APP__=${JSON.stringify(JSON.stringify(baked))}`,
         '--define=process.env.NODE_ENV="production"',
@@ -207,9 +272,13 @@ async function bundle(root: string, source: string, baked: object, minify: boole
 
     const others = (readdirSync(scratch, { recursive: true }) as string[]).filter(name => name !== 'screen.js' && !statSync(join(scratch, name)).isDirectory());
 
-    return { code: new Uint8Array(readFileSync(join(scratch, 'screen.js'))), others: others.sort() };
+    const meta = join(scratch, '..', `${basename(scratch)}.meta.json`);
+    const runtimeBytes = minify && existsSync(meta) ? runtimeBytesOf(JSON.parse(readFileSync(meta, 'utf8')), root) : null;
+
+    return { code: new Uint8Array(readFileSync(join(scratch, 'screen.js'))), others: others.sort(), runtimeBytes };
   } finally {
     rmSync(scratch, { recursive: true, force: true });
+    rmSync(join(scratch, '..', `${basename(scratch)}.meta.json`), { force: true });
   }
 }
 
