@@ -26,6 +26,11 @@ export interface Problem {
   column?: number;
   /** Where in the manifest, like `placements.0.screen`. */
   path?: string;
+  /**
+   * What to do about it, said after the message. Kept apart so `message` is
+   * word for word the sentence Brydio's host (and the fake host) refuses with.
+   */
+  hint?: string;
 }
 
 export interface Project {
@@ -90,5 +95,5 @@ export function sourceOf(root: string, entry: string): string | null {
 export function formatProblem(problem: Problem): string {
   const where = problem.file ? `${problem.file}${problem.line ? `:${problem.line}${problem.column ? `:${problem.column}` : ''}` : ''}${problem.path ? ` (${problem.path})` : ''}` : (problem.path ?? '');
 
-  return `${problem.severity === 'error' ? 'error  ' : 'warning'} ${where ? `${where}  ` : ''}${problem.message} [${problem.code}]`;
+  return `${problem.severity === 'error' ? 'error  ' : 'warning'} ${where ? `${where}  ` : ''}${problem.message}${problem.hint ? ` ${problem.hint}` : ''} [${problem.code}]`;
 }

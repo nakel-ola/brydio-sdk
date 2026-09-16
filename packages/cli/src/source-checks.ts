@@ -1,4 +1,4 @@
-import { CATALOGUE, FORBIDDEN_PROPS, checkEvent, checkProp, eventOfHandler, isElementName, type ElementName, type ElementSpec } from '@brydio/ui';
+import { CATALOGUE, FORBIDDEN_PROPS, checkElement, checkEvent, checkProp, eventOfHandler, isElementName, refusalFor, type ElementName, type ElementSpec } from '@brydio/ui';
 import { posix } from 'node:path';
 import ts from 'typescript';
 
@@ -293,8 +293,8 @@ export function checkSource(file: string, text: string): Problem[] {
 
     return { line: line + 1, column: character + 1 };
   };
-  const push = (code: SourceProblemCode, message: string, at: ts.Node) =>
-    problems.push({ code, severity: 'error', file, ...place(at.getStart(source)), message });
+  const push = (code: SourceProblemCode, message: string, at: ts.Node, hint?: string) =>
+    problems.push({ code, severity: 'error', file, ...place(at.getStart(source)), message, ...(hint ? { hint } : {}) });
 
   // A file that does not parse says only that: anything more would be a guess.
   const syntax = (source as unknown as { parseDiagnostics?: ts.DiagnosticWithLocation[] }).parseDiagnostics ?? [];
@@ -346,7 +346,10 @@ export function checkSource(file: string, text: string): Problem[] {
     }
 
     if (!Object.prototype.hasOwnProperty.call(CATALOGUE[element].props, name)) {
-      push(Object.prototype.hasOwnProperty.call(FORBIDDEN_PROPS, name) ? 'style_forbidden' : 'prop_unknown', checkProp(element, name, undefined)!, at);
+      const forbidden = Object.prototype.hasOwnProperty.call(FORBIDDEN_PROPS, name);
+
+      // The host's sentence as the message, the reason people reach for it as the hint.
+      push(forbidden ? 'style_forbidden' : 'prop_unknown', refusalFor(element, name, undefined)!, at, forbidden ? FORBIDDEN_PROPS[name] : undefined);
 
       return;
     }
@@ -371,7 +374,7 @@ export function checkSource(file: string, text: string): Problem[] {
   const isKnownElement = (name: string, at: ts.Node): name is ElementName => {
     if (isElementName(name)) return true;
 
-    push('element_unknown', `Brydio has no element called "${name}". A screen draws with ${Object.keys(CATALOGUE).join(', ')}.`, at);
+    push('element_unknown', checkElement(name)!, at, `A screen draws with ${Object.keys(CATALOGUE).join(', ')}.`);
 
     return false;
   };
@@ -381,7 +384,7 @@ export function checkSource(file: string, text: string): Problem[] {
 
     // `<Board />` and `<ui.Row />` are components, which draw with elements themselves.
     if (!ts.isIdentifier(tag) || !/^[a-z]/.test(tag.text)) {
-      if (ts.isJsxNamespacedName(tag)) push('element_unknown', `Brydio has no element called "${tag.getText(source)}".`, tag);
+      if (ts.isJsxNamespacedName(tag)) push('element_unknown', checkElement(tag.getText(source))!, tag);
 
       return;
     }
