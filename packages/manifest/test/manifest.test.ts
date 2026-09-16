@@ -78,7 +78,7 @@ describe('the Issues manifest', () => {
       name: 'issues',
       label: 'issue',
       plural: 'issues',
-      structured: ['status', 'assignee', 'labels', 'project'],
+      structured: ['status', 'assignee', 'project'],
       sortable: ['status', 'assignee', 'project'],
       projectField: 'project',
     });
@@ -127,7 +127,8 @@ describe('validateManifest', () => {
 
     expect(result.ok).toBe(false);
     expect(result.problems[0]).toMatchObject({ code: 'manifest_invalid', path: 'screens.board.entry' });
-    expect(codesOf(CORPUS[8])).toEqual(['manifest_invalid']);
+    // A custom tool with no description and no handler: both refused (A3-F08-S01).
+    expect(codesOf(CORPUS[8])).toEqual(['manifest_invalid', 'manifest_invalid']);
   });
 
   test('takes an .mjs entry as it takes a .js one, and nothing else', () => {

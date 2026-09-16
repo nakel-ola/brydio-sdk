@@ -70,11 +70,39 @@ const screenSchema = z.object({
     .regex(/^(?!\/)(?!.*\.\.)[A-Za-z0-9_\-./]+\.m?js$/, 'An entry is a .js or .mjs path inside the bundle.'),
 });
 
+/** Most custom tools one app may declare (A3-F08). */
+export const MAX_CUSTOM_TOOLS = 20;
+
+/** A tool name the model and a policy row can both use as it is. */
+export const CUSTOM_TOOL_NAME = /^[a-z][a-z0-9_]{0,59}$/;
+
+/**
+ * A tool the app writes itself (A3-F08-S01): a handler file in its bundle,
+ * run on Brydio's side in a box, taking `input` in the field-type grammar.
+ */
+const customToolSchema = z.object({
+  name: z.string().regex(CUSTOM_TOOL_NAME, 'A tool name is lower case letters, digits and underscores, starting with a letter.'),
+  description: z.string().min(1).max(1024),
+  /** Relative to the bundle's root: `handlers/list_prs.js`. */
+  handler: z
+    .string()
+    .min(1)
+    .max(200)
+    .regex(/^(?!\/)(?!.*\.\.)[A-Za-z0-9_\-./]+\.m?js$/, 'A handler is a .js or .mjs path inside the bundle.'),
+  /** Field name to type, as a collection's schema writes it (`"string?"`). */
+  input: z.record(z.string(), z.unknown()).optional(),
+  /** True when running it changes something: it asks first, like a generated write. */
+  write: z.boolean().optional(),
+  /** The collection it works on, when it works on one: its grant then needs that collection too. */
+  collection: z.string().optional(),
+});
+
+export type CustomToolSpec = z.infer<typeof customToolSchema>;
+
 const toolsSchema = z.object({
   /** Off only when the app supplies every tool itself (A3-F08). */
   generated: z.boolean().optional(),
-  /** Tools with handler scripts arrive in Phase 3; empty until then. */
-  custom: z.array(z.unknown()).max(0, 'Custom tools are not available yet.').optional(),
+  custom: z.array(customToolSchema).max(MAX_CUSTOM_TOOLS).optional(),
 });
 
 const grantsSchema = z.object({
@@ -124,6 +152,10 @@ export type DataProblemCode =
   | 'data_search_unknown_field'
   | 'data_search_not_text'
   | 'grant_collection_missing'
+  | 'grant_tool_missing'
+  | 'custom_name_taken'
+  | 'custom_collection_unknown'
+  | 'custom_input_invalid'
   | 'placement_screen_unknown';
 
 type Additions = z.infer<z.ZodObject<typeof extensionShape>>;
@@ -279,6 +311,8 @@ export function dataProblems(additions: Additions, options: { grants?: boolean }
     }
   }
 
+  problems.push(...customToolProblems(additions, options));
+
   const screens = new Set(Object.keys(additions.screens ?? {}));
 
   for (const placement of additions.placements ?? []) {
@@ -293,13 +327,91 @@ export function dataProblems(additions: Additions, options: { grants?: boolean }
   return problems;
 }
 
+/**
+ * A custom tool must be granted by name (or `*`), take a name no generated
+ * tool has, name a collection the app keeps, and take input in the field-type
+ * grammar (A3-F08-S01). That its handler file is in the bundle is checked
+ * where the files are: `POST /apps/publish`.
+ */
+function customToolProblems(additions: Additions, options: { grants?: boolean }): DataProblem[] {
+  const problems: DataProblem[] = [];
+  const custom = additions.tools?.custom ?? [];
+  // Named from the manifest directly: `collectionsOf` validates through this
+  // very check, and would come back here.
+  const generated =
+    additions.tools?.generated === false
+      ? new Set<string>()
+      : new Set(
+          Object.entries(additions.data ?? {}).flatMap(([name, declared]) => {
+            const label = labelOf(name, declared.label);
+            const plural = `${label}s`;
+
+            return [
+              `create_${label}`,
+              `update_${label}`,
+              `get_${label}`,
+              `delete_${label}`,
+              `list_${plural}`,
+              `search_${plural}`,
+              `batch_${plural}`,
+            ];
+          })
+        );
+  const seen = new Set<string>();
+  const granted = additions.grants?.tools ?? [];
+
+  for (const tool of custom) {
+    if (generated.has(tool.name) || seen.has(tool.name)) {
+      problems.push({
+        code: 'custom_name_taken',
+        message: `${tool.name} is already a tool this app has: give the custom tool another name, or switch generated tools off.`,
+      });
+    }
+
+    seen.add(tool.name);
+
+    if (tool.collection !== undefined && !additions.data?.[tool.collection]) {
+      problems.push({
+        code: 'custom_collection_unknown',
+        collection: tool.collection,
+        message: `${tool.name} works on ${tool.collection}, which the app does not keep.`,
+      });
+    }
+
+    for (const [field, raw] of Object.entries(tool.input ?? {})) {
+      try {
+        parseFieldType(raw);
+      } catch (error: unknown) {
+        problems.push({
+          code: 'custom_input_invalid',
+          field,
+          message: `${tool.name}'s input ${field}: ${error instanceof Error ? error.message : 'not a field type'}`,
+        });
+      }
+    }
+
+    if (options.grants !== false && !granted.includes('*') && !granted.includes(tool.name)) {
+      problems.push({
+        code: 'grant_tool_missing',
+        message: `${tool.name} is a custom tool but not asked for: add it to grants.tools.`,
+      });
+    }
+  }
+
+  return problems;
+}
+
 const refuse = (additions: Additions, ctx: z.RefinementCtx, options: { grants?: boolean } = {}) => {
   for (const problem of dataProblems(additions, options)) {
     ctx.addIssue({
       code: 'custom',
       message: problem.message,
-      path: problem.code.startsWith('grant_')
+      path: problem.code === 'grant_tool_missing'
+        ? ['grants', 'tools']
+        : problem.code.startsWith('grant_')
         ? ['grants', 'collections']
+        : problem.code.startsWith('custom_')
+        ? ['tools', 'custom']
         : problem.collection
           ? ['data', problem.collection, ...(problem.field ? ['schema', problem.field] : [])]
           : [],

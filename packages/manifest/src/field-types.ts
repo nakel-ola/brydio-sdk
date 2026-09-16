@@ -95,7 +95,12 @@ export const RESERVED_FIELDS: ReadonlySet<string> = new Set([
 export const FIELD_NAME = /^[a-z][a-zA-Z0-9_]*$/;
 export const COLLECTION_NAME = /^[a-z][a-z0-9_]*$/;
 
-/** Kept in the plain `fields` column: filterable, and sortable unless a list. */
+/**
+ * Kept in the plain `fields` column: filterable and sortable. Words never
+ * are: `string`, `text` and `string[]` live only in the encrypted body
+ * (A3-F01-S02, A3-F02-S01; E1, 16 Sep), so a list of labels is found by
+ * search, not by a filter.
+ */
 const STRUCTURED: ReadonlySet<FieldKind> = new Set<FieldKind>([
   'enum',
   'member',
@@ -103,7 +108,6 @@ const STRUCTURED: ReadonlySet<FieldKind> = new Set<FieldKind>([
   'date',
   'number',
   'boolean',
-  'string[]',
   'token',
 ]);
 
@@ -276,8 +280,7 @@ function parseEnumeration(values: unknown[]): FieldType {
 export const isStructured = (type: FieldType): boolean => STRUCTURED.has(type.kind);
 
 /** True for a type a list can be ordered by: structured, and one value. */
-export const isSortable = (type: FieldType): boolean =>
-  STRUCTURED.has(type.kind) && type.kind !== 'string[]';
+export const isSortable = (type: FieldType): boolean => STRUCTURED.has(type.kind);
 
 export const isSearchable = (type: FieldType): boolean => SEARCHABLE.has(type.kind);
 

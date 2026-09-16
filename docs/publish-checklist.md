@@ -62,6 +62,9 @@ first.
 | `data_label_invalid` | `<collection>.<field>`: The label for "<value>" is 1 to `<n>` characters of text. | yes | publish | Give each label 1 to `<n>` characters. |
 | `data_label_unknown_value` | `<collection>.<field>`: "<value>" is not one of the choice's values, so it can't have a label. | yes | publish | Label only values the choice allows. |
 | `data_field_key_unknown` | `<collection>.<field>`: "<key>" is not something a field may say; use type, optional and default. | yes | publish | Keep to type, optional and default. |
+| `custom_name_taken` | `tools.custom`: <name> is already a tool this app has: give the custom tool another name, or switch generated tools off. | yes | publish | Rename the custom tool. |
+| `custom_collection_unknown` | `tools.custom`: <name> works on <collection>, which the app does not keep. | yes | publish | Name a collection in `data`, or leave `collection` out. |
+| `custom_input_invalid` | `tools.custom`: <name>'s input <field>: not a field type. | yes | publish | Write the input in the field-type grammar. |
 | `data_search_unknown_field` | `<collection>` searches `<field>`, which is not one of its fields. | yes | publish | Search only declared fields. |
 | `data_search_not_text` | `<collection>.<field>` cannot be searched: only text fields can. | yes | publish | Search only text fields. |
 | `manifest_sdk_overwritten` (warning, from `brydio build`) | The manifest says "sdk": `<value>`, which brydio build writes itself. The build says `<version>`; take the line out of the manifest. | build | no | Delete `sdk` from the manifest. |

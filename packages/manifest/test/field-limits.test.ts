@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { FIELD_LIMITS, parseFieldType, valueProblem } from '../src/field-types.ts';
+import { FIELD_LIMITS, isStructured, parseFieldType, valueProblem } from '../src/field-types.ts';
 
 describe('the limits a record is held to, as Brydio holds them', () => {
   test('a short text takes 1,000 characters, what bry-input lets a person type, and no more', () => {
@@ -74,3 +74,11 @@ describe('field defaults and choice labels, as Brydio reads them (A3-F01-S01, A8
     expect(cases.map(raw => outcome(parseFieldType, raw))).toEqual(cases.map(raw => outcome(server.parseFieldType, raw)));
   });
 });
+
+describe('what is kept in plain, as Brydio keeps it (A3-F01-S02)', () => {
+  test('words are never filterable: short text, long text and a list of words', () => {
+    for (const raw of ['string', 'text?', 'string[]']) expect(isStructured(parseFieldType(raw))).toBe(false);
+    for (const raw of [['a', 'b'], 'member?', 'project?', 'date', 'number', 'boolean', 'token']) expect(isStructured(parseFieldType(raw))).toBe(true);
+  });
+});
+
