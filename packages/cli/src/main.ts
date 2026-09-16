@@ -1,5 +1,5 @@
 import { build, describeBuild } from './build.ts';
-import { dev } from './dev.ts';
+import { dev, DevRefused } from './dev.ts';
 import { formatProblem, type Problem } from './project.ts';
 import { publish } from './publish.ts';
 import { test } from './test.ts';
@@ -17,7 +17,9 @@ const HELP = `brydio — build and check a Brydio app
   brydio publish [folder]    Build, validate, and upload the bundle to Brydio as a new version
                              signed in with BRYDIO_TOKEN, to BRYDIO_API_URL
                              --api <url>    the API's address, instead of BRYDIO_API_URL
-  brydio dev [folder]        Build, serve dist/ on localhost, and build again on change
+  brydio dev [folder]        Build, serve dist/ on localhost, show it as a tab in a project, and build again on change
+                             --project <id> the project (asked once, then kept in .brydio/dev.json)
+                             --api <url>    Brydio's API (BRYDIO_API_URL); signs in with BRYDIO_TOKEN
                              --port <n>     the port (5174)
                              --brydio <dir> Brydio's checkout, for the printed load command
 
@@ -72,13 +74,30 @@ export async function main(argv: string[], out: (line: string) => void = console
     case 'publish':
       return publish(dir, { out, ...(flags.has('api') ? { apiUrl: flags.get('api')! } : {}) });
     case 'dev': {
-      await dev(dir, {
-        ...(flags.has('port') ? { port: Number(flags.get('port')) } : {}),
-        ...(flags.has('brydio') ? { brydio: flags.get('brydio')! } : {}),
-      });
+      let session: Awaited<ReturnType<typeof dev>>;
 
-      // Runs until stopped.
-      return new Promise<number>(() => {});
+      try {
+        session = await dev(dir, {
+          out,
+          ...(flags.has('port') ? { port: Number(flags.get('port')) } : {}),
+          ...(flags.has('brydio') ? { brydio: flags.get('brydio')! } : {}),
+          ...(flags.has('api') ? { apiUrl: flags.get('api')! } : {}),
+          ...(flags.has('project') ? { projectId: flags.get('project')! } : {}),
+        });
+      } catch (error) {
+        if (!(error instanceof DevRefused)) throw error;
+        out(error.message);
+
+        return 1;
+      }
+
+      // Runs until stopped, and takes its tab out of Brydio on the way.
+      return new Promise<number>(done => {
+        const end = () => void session.stop().then(() => done(0));
+
+        process.once('SIGINT', end);
+        process.once('SIGTERM', end);
+      });
     }
     case undefined:
     case 'help':
