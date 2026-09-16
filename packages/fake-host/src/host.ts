@@ -141,6 +141,7 @@ export class FakeHost {
   #busy = 0;
   #ended = false;
   #listeners = new Set<() => void>();
+  #closed = false;
   readonly #watches = new Map<string, Watch>();
 
   private constructor(options: FakeHostOptions) {
@@ -173,6 +174,14 @@ export class FakeHost {
 
     this.#worker = new Worker(URL.createObjectURL(new Blob([source], { type: 'text/javascript' })), { type: 'module' });
     this.#worker.addEventListener('message', event => this.#receive(event.data));
+    // A worker with nothing left to wait on ends by itself, as a browser's
+    // never does. Bun then must not be asked to terminate it: terminating a
+    // worker that has already closed leaves the next worker started in this
+    // process unable to run its script, which stopped an unrelated test
+    // for "ready" (a screen that says ready and draws nothing, then any other).
+    this.#worker.addEventListener('close', () => {
+      this.#closed = true;
+    });
     this.#worker.addEventListener('error', event => {
       event.preventDefault?.();
 
@@ -351,7 +360,9 @@ export class FakeHost {
 
     for (const collection of [...this.#watches.keys()]) this.#drop(collection);
 
-    setTimeout(() => this.#worker.terminate(), 0);
+    setTimeout(() => {
+      if (!this.#closed) this.#worker.terminate();
+    }, 0);
     this.#changed();
   }
 
