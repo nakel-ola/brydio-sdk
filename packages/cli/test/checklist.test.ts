@@ -164,6 +164,14 @@ describe('what the screens call, against the grants', () => {
     expect(screen('router.navigate("/");')).toEqual([]);
   });
 
+  test('refuses names asked without their grants, from the Preact hooks and the bridge alike', () => {
+    expect(found(screen("import { useMembers, useProjects } from '@brydio/app/preact';\nconst people = useMembers(ids);\nconst places = useProjects(ids);"))).toEqual([
+      ['grant_host_missing', 'members is called here but not asked for: add "members" to grants.host.'],
+      ['grant_host_missing', 'projects is called here but not asked for: add "projects" to grants.host.'],
+    ]);
+    expect(screen("import { useMembers } from '@brydio/app/preact';\nuseMembers(ids);", { tools: ['*'], collections: ['*'], host: ['members'] })).toEqual([]);
+  });
+
   test('warns about a grant that names nothing, or that no screen uses, and still passes', () => {
     const root = built(issues('0.2.0', { title: 'string' }, { grants: { tools: ['issues', 'list_tickets'], collections: ['issues', 'labels', 'tickets'], host: ['navigate', 'message'] } }), {
       'src/screens/board.tsx': "const go = () => router.navigate('/');",
@@ -184,7 +192,7 @@ describe('what the publish route refuses, found first', () => {
     const root = built(issues('0.2.0', { title: 'string' }, { grants: { tools: ['*'], collections: ['*'], host: ['camera'] } }));
 
     expect(found(validate(root).problems)).toEqual([
-      ['grant_unknown', 'app.json asks for "camera", which Brydio does not grant. An app may ask for navigate, message or connection:<name>.'],
+      ['grant_unknown', 'app.json asks for "camera", which Brydio does not grant. An app may ask for navigate, message, members, projects or connection:<name>.'],
     ]);
   });
 

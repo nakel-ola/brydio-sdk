@@ -196,7 +196,7 @@ the assistant rather than a screen.
 | `grant_collection_missing` | app.json: "grants.collections": `<collection>` is kept but not asked for: add it to grants.collections. | yes | publish | Add the collection, or `*`, to `grants.collections`. |
 | `grant_tool_missing` | "`<tool>`" is called here but not asked for: add it, or its collection `<collection>`, to grants.tools. | yes | runtime | Add the tool or its collection to `grants.tools`. |
 | `grant_host_missing` | navigate is called here but not asked for: add "navigate" to grants.host. | yes | runtime | Add `navigate` to `grants.host`. |
-| `grant_unknown` | app.json asks for "`<grant>`", which Brydio does not grant. An app may ask for navigate, message or connection:<name>. | yes | publish | Ask only for `navigate`, `message` or `connection:<name>`. |
+| `grant_unknown` | app.json asks for "`<grant>`", which Brydio does not grant. An app may ask for navigate, message, members, projects or connection:<name>. | yes | publish | Ask only for `navigate`, `message`, `members`, `projects` or `connection:<name>`. |
 | `grant_tool_unknown` (warning) | grants.tools asks for "`<name>`", which is neither one of this app's tools nor one of its collections. | yes | no | Remove the name, or fix its spelling. |
 | `grant_collection_unknown` (warning) | grants.collections asks for "`<name>`", which this app does not keep. | yes | no | Remove the name. |
 | `grant_host_unused` (warning) | grants.host asks for "`<grant>`", which no screen uses. Ask only for what the app does. | yes | no | Remove the grant, or use it. |

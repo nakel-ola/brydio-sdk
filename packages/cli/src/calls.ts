@@ -54,6 +54,7 @@ export function callsOf(file: string, text: string): ScreenCall[] {
   const objects = new Map<string, Readonly<Record<string, Target>>>();
   const listHooks = new Set<string>();
   const navigates = new Set<string>();
+  const nameHooks = new Map<string, 'members' | 'projects'>();
 
   for (const statement of source.statements) {
     if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
@@ -70,6 +71,7 @@ export function callsOf(file: string, text: string): ScreenCall[] {
       if (IMPORTED[from]?.[imported]) objects.set(local, IMPORTED[from][imported]!);
       if (from === '@brydio/app/preact' && imported === 'useList') listHooks.add(local);
       if (from === '@brydio/app' && imported === 'navigate') navigates.add(local);
+      if (from === '@brydio/app/preact' && (imported === 'useMembers' || imported === 'useProjects')) nameHooks.set(local, imported === 'useMembers' ? 'members' : 'projects');
     }
   }
 
@@ -94,6 +96,7 @@ export function callsOf(file: string, text: string): ScreenCall[] {
       if (ts.isIdentifier(callee)) {
         if (listHooks.has(callee.text)) named({ kind: 'collection', verb: 'list' }, first, callee);
         if (navigates.has(callee.text)) add('host', 'navigate', callee);
+        if (nameHooks.has(callee.text)) add('host', nameHooks.get(callee.text)!, callee);
       } else if (ts.isPropertyAccessExpression(callee)) {
         const method = callee.name.text;
         const object = unwrap(callee.expression);
@@ -102,6 +105,7 @@ export function callsOf(file: string, text: string): ScreenCall[] {
         if (target) named(target, first, callee);
         else if (METHODS[method]) named(METHODS[method], first, callee);
         else if (method === 'navigate') add('host', 'navigate', callee, false);
+        else if (method === 'members' || method === 'projects') add('host', method, callee, false);
       }
     }
 
