@@ -21,8 +21,8 @@ describe.skipIf(!existsSync(generated))('which generated tools write', () => {
 
     expect(found, 'WRITES in generated-tools.ts').not.toBeNull();
 
-    const server = [...found![1]!.matchAll(/'([a-z]+)'/g)].map(match => match[1]).sort();
-    const sdk = (Object.keys(TOOL_WRITES) as ToolVerb[]).filter(verb => TOOL_WRITES[verb]).sort();
+    const server = [...found![1]!.matchAll(/'([a-z]+)'/g)].map(match => match[1]!).sort();
+    const sdk: string[] = (Object.keys(TOOL_WRITES) as ToolVerb[]).filter(verb => TOOL_WRITES[verb]).sort();
 
     expect(sdk).toEqual(server);
   });
