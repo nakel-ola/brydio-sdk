@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { join } from 'node:path';
 
-import { collection, setDefaultBridge } from '../src/index.ts';
+import { collection } from '../src/data.ts';
+import { setDefaultBridge } from '../src/index.ts';
 import { harness, settle } from './harness.ts';
 
 const ISSUE = { title: 'string', status: ['todo', 'doing', 'done'], assignee: 'member?' } as const;

@@ -121,7 +121,6 @@ export {
   type BuiltCollection,
   type WatchListener,
 } from './bridge.ts';
-export { collection, type Collection, type PutOf } from './data.ts';
 export { workerPort, type Port } from './port.ts';
 export {
   RemoteElement,

@@ -13,7 +13,12 @@ import type { DataChange, ListQuery, ListResult } from './protocol.ts';
  * like any write, and a field or value the schema doesn't allow doesn't
  * compile.
  *
+ * Its own entry point, `@brydio/app/data`, so an app that doesn't use it
+ * carries none of it.
+ *
  * ```ts
+ * import { collection } from '@brydio/app/data';
+ *
  * const ISSUE = { title: 'string', status: ['todo', 'doing', 'done'] } as const;
  * const issues = collection('issues', ISSUE);
  *
