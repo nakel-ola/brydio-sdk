@@ -48,7 +48,7 @@ export function refusalFor(type: ElementName, name: string, value: unknown): str
     case 'options':
       return isOptions(value, spec.max)
         ? null
-        : `${type} ${name} must be a list of at most ${spec.max} choices, each with a value and a label of at most ${LABEL_MAX} characters, and no value twice.`;
+        : `${type} ${name} must be a list of at most ${spec.max} choices, each with a value and a label of at most ${LABEL_MAX} characters (and optionally a member id as avatar), and no value twice.`;
     case 'list':
     case 'shape':
       return refusalForValue(`${type} ${name}`, spec, value);
@@ -121,9 +121,11 @@ function isOptions(value: unknown, max: number): boolean {
   for (const choice of value as unknown[]) {
     if (!choice || typeof choice !== 'object' || Array.isArray(choice)) return false;
 
-    const { value: key, label, ...rest } = choice as Record<string, unknown>;
+    // `avatar`: a member id, drawn as the label's initials, so a picker of people shows faces (G16).
+    const { value: key, label, avatar, ...rest } = choice as Record<string, unknown>;
 
     if (Object.keys(rest).length > 0) return false;
+    if (avatar !== undefined && (typeof avatar !== 'string' || avatar.length === 0 || avatar.length > 128)) return false;
     if (typeof key !== 'string' || key.length === 0 || key.length > LABEL_MAX || seen.has(key)) return false;
     if (typeof label !== 'string' || label.length === 0 || label.length > LABEL_MAX) return false;
 

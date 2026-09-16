@@ -18,7 +18,7 @@ export type ValueOf<S extends PropSpec> = S extends { kind: 'enum'; values: read
       : S extends { kind: 'int' }
         ? number
         : S extends { kind: 'options' }
-          ? { value: string; label: string }[]
+          ? { value: string; label: string; avatar?: string }[]
           : S extends { kind: 'list'; of: infer Of extends PropSpec }
             ? ValueOf<Of>[]
             : S extends { kind: 'shape'; fields: infer Fields extends Readonly<Record<string, PropSpec>> }

@@ -246,10 +246,12 @@ describe('the same as Brydio’s receiver', () => {
 
     expect(refusalFor('bry-select', 'options', [one, { value: 'b', label: 'B' }])).toBeNull();
     expect(refusalFor('bry-select', 'options', [])).toBeNull();
+    // G16: a person's choice may carry their member id, drawn as their initials.
+    expect(refusalFor('bry-select', 'options', [{ value: 'u1', label: 'Ada Lovelace', avatar: 'user_ada' }])).toBeNull();
 
     for (const bad of [[one, one], [{ value: 'a', label: '' }], [{ value: '', label: 'A' }], [{ ...one, colour: 'red' }], 'a', [null]]) {
       expect(refusalFor('bry-select', 'options', bad)).toBe(
-        'bry-select options must be a list of at most 100 choices, each with a value and a label of at most 200 characters, and no value twice.',
+        'bry-select options must be a list of at most 100 choices, each with a value and a label of at most 200 characters (and optionally a member id as avatar), and no value twice.',
       );
     }
   });
