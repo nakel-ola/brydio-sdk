@@ -58,6 +58,9 @@ first.
 | `data_default_not_allowed` | `<collection>.<field>`: Only a choice or a boolean may have a default, not a <type>. | yes | publish | Take the default out, or make the field a choice or a boolean. |
 | `data_default_on_required` | `<collection>.<field>`: A field with a default is one a create may leave out: add "optional": true (or write "boolean?"). | yes | publish | Make the field optional, or take the default out. |
 | `data_default_invalid` | `<collection>.<field>`: The default must be one of the choice's values (or true or false for a boolean). | yes | publish | Use one of the allowed values. |
+| `data_labels_not_allowed` | `<collection>.<field>`: Only a choice may label its values, not a <type>. | yes | publish | Take `labels` out, or make the field a choice. |
+| `data_label_invalid` | `<collection>.<field>`: The label for "<value>" is 1 to `<n>` characters of text. | yes | publish | Give each label 1 to `<n>` characters. |
+| `data_label_unknown_value` | `<collection>.<field>`: "<value>" is not one of the choice's values, so it can't have a label. | yes | publish | Label only values the choice allows. |
 | `data_field_key_unknown` | `<collection>.<field>`: "<key>" is not something a field may say; use type, optional and default. | yes | publish | Keep to type, optional and default. |
 | `data_search_unknown_field` | `<collection>` searches `<field>`, which is not one of its fields. | yes | publish | Search only declared fields. |
 | `data_search_not_text` | `<collection>.<field>` cannot be searched: only text fields can. | yes | publish | Search only text fields. |
