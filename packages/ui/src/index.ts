@@ -10,16 +10,16 @@ export {
   CATALOGUE,
   ELEMENT_NAMES,
   FORBIDDEN_PROPS,
+  GAPS,
+  LABEL_MAX,
+  MAX_TEXT,
+  PADDINGS,
+  PARAGRAPH_MAX,
   TEXT_NODE,
-  type BooleanSpec,
   type Catalogue,
-  type ChildrenSpec,
   type ElementName,
   type ElementSpec,
-  type EnumSpec,
-  type EventSpec,
   type PropSpec,
-  type TextSpec,
 } from './catalogue.ts';
 
 export {
@@ -27,20 +27,23 @@ export {
   checkElement,
   checkEvent,
   checkProp,
+  checkText,
   elementSpec,
   eventOfHandler,
   handlerName,
   isElementName,
+  refusalFor,
+  refusalForProps,
 } from './checks.ts';
 
 export type {
   BryEvent,
-  ChildrenKind,
   ElementAttributes,
   ElementEvent,
   ElementHandlers,
   ElementProps,
   EventDetails,
   HandlerName,
+  HoldsChildren,
   ValueOf,
 } from './types.ts';

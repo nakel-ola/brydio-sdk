@@ -15,17 +15,28 @@ export type ValueOf<S extends PropSpec> = S extends { kind: 'enum'; values: read
     ? boolean
     : S extends { kind: 'text' }
       ? string
-      : never;
+      : S extends { kind: 'int' }
+        ? number
+        : never;
 
-/** Every setting an element takes, all optional. */
-export type ElementProps<E extends ElementName> = Simplify<{
-  -readonly [K in keyof Catalogue[E]['props']]?: Catalogue[E]['props'][K] extends PropSpec
-    ? ValueOf<Catalogue[E]['props'][K]>
-    : never;
-}>;
+type PropsOf<E extends ElementName> = Catalogue[E]['props'];
+type RequiredOf<E extends ElementName> = Catalogue[E] extends { required: readonly (infer R)[] } ? R & string : never;
+
+/** Every setting an element takes: the ones the host requires, then the rest, optional. */
+export type ElementProps<E extends ElementName> = Simplify<
+  {
+    -readonly [K in keyof PropsOf<E> as K extends RequiredOf<E> ? K : never]-?: PropsOf<E>[K] extends PropSpec
+      ? ValueOf<PropsOf<E>[K]>
+      : never;
+  } & {
+    -readonly [K in keyof PropsOf<E> as K extends RequiredOf<E> ? never : K]?: PropsOf<E>[K] extends PropSpec
+      ? ValueOf<PropsOf<E>[K]>
+      : never;
+  }
+>;
 
 /** The events an element raises, by name. */
-export type ElementEvent<E extends ElementName> = keyof Catalogue[E]['events'] & string;
+export type ElementEvent<E extends ElementName> = Catalogue[E]['events'][number] & string;
 
 /** What each event carries. `press` carries nothing. */
 export interface EventDetails {
@@ -54,5 +65,5 @@ export type ElementHandlers<E extends ElementName> = Simplify<{
 /** Settings and handlers together: what `<bry-button …>` or `button({…})` takes. */
 export type ElementAttributes<E extends ElementName> = Simplify<ElementProps<E> & ElementHandlers<E>>;
 
-/** What an element may hold, as the catalogue says. */
-export type ChildrenKind<E extends ElementName> = Catalogue[E]['children'];
+/** Whether an element may hold other nodes. */
+export type HoldsChildren<E extends ElementName> = Catalogue[E]['children'];
