@@ -179,8 +179,8 @@ Read against Brydio at `f28d98b` plus Kestrel's uncommitted
 29. **Not in the CLI:** screenshots (it says no pictures were attached) and
     the "only the first publisher or one they name" rule, which is the
     server's alone.
-30. **Which SDK built a version** (A5-F04-S03; Hodler's proposal at 14:44 and
-    his code on disk at 14:50, not yet committed when copied). `brydio build`
+30. **Which SDK built a version** (A5-F04-S03; Hodler's proposal at 14:44,
+    built as `84712c6`). `brydio build`
     writes `"sdk"`, the version of the `@brydio/app` the app's folder
     resolves (or the CLI's own when it resolves none), into `dist/app.json`,
     overwriting and warning (`manifest_sdk_overwritten`) about one written by
