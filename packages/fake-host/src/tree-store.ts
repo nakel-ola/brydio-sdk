@@ -82,6 +82,9 @@ export class TreeStore {
   private rootId: string | null = null;
   private refusals = 0;
   private pending = false;
+  /** While held, changes are applied but nobody is told; see `hold`. */
+  private held = false;
+  private heldChanges = false;
   private stopped: TreeStop | null = null;
   private version = 0;
 
@@ -373,9 +376,32 @@ export class TreeStore {
     return { refused, stop: reason };
   }
 
+  /**
+   * Holds the drawing while the screen's panel is hidden (A4-F06): patches
+   * still arrive, are checked and applied, so a cap or a refusal still stops
+   * the app, but nothing draws. Letting go draws once, whatever changed.
+   */
+  hold(held: boolean): void {
+    if (this.held === held) return;
+
+    this.held = held;
+
+    if (!held && this.heldChanges) {
+      this.heldChanges = false;
+      this.version -= 1;
+      this.changed();
+    }
+  }
+
   /** One notification per frame, however many patches arrived in it. */
   private changed(): void {
     this.version += 1;
+
+    if (this.held) {
+      this.heldChanges = true;
+
+      return;
+    }
 
     if (this.pending) return;
 
