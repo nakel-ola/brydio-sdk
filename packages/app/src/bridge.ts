@@ -1,0 +1,431 @@
+import { workerPort, type Port } from './port.ts';
+import {
+  PROTOCOL,
+  type AppDocument,
+  type AppInfo,
+  type HostContext,
+  type ListQuery,
+  type ListResult,
+  type NavigateTarget,
+  type RpcError,
+  type RpcMessage,
+  type ToastTone,
+  type ToolResult,
+  type TreeEventParams,
+  type TreeRefusedParams,
+  type WorkerMethod,
+} from './protocol.ts';
+import { SDK_VERSION } from './version.ts';
+
+/**
+ * The app's end of the bridge to Brydio (contracts §9, as built).
+ *
+ * Everything an app can ask of the host goes through here, and nothing here
+ * decides anything: a tool call is answered by the permission model and the
+ * generated tools, a toast by the shell. The bridge's own jobs are to say
+ * hello first, to hold each call until its answer arrives, and to hand host
+ * events to whoever is listening.
+ *
+ * Order at the start is the host's: `worker/ready` is the first message a
+ * worker sends, the host answers with `host/context`, and the tree goes up
+ * straight after (the root waits on `connected`). The host stops an app that
+ * has not mounted within two seconds of `worker/ready`.
+ */
+
+/** A collection's tool names, as `brydio build` works them out from the manifest. */
+export interface BuiltCollection {
+  label: string;
+  plural: string;
+}
+
+/** What `brydio build` bakes into a bundle: the manifest's name, version, grants and collections. */
+export interface BuiltApp extends AppInfo {
+  grants?: { tools?: string[]; collections?: string[]; host?: string[] };
+  collections?: Record<string, BuiltCollection>;
+}
+
+declare const __BRYDIO_APP__: string | undefined;
+
+/** The app a bundle was built as, or null when this code was not built by `brydio build`. */
+export function builtApp(): BuiltApp | null {
+  try {
+    return typeof __BRYDIO_APP__ === 'string' ? (JSON.parse(__BRYDIO_APP__) as BuiltApp) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The host refused or failed a call: `tools/error`. `code` is JSON-RPC's (-32000 for a refusal). */
+export class HostError extends Error {
+  readonly code: number;
+
+  constructor(error: unknown) {
+    const shape = error && typeof error === 'object' ? (error as Partial<RpcError>) : {};
+
+    super(typeof shape.message === 'string' ? shape.message : 'Brydio refused that call.');
+    this.name = 'HostError';
+    this.code = typeof shape.code === 'number' ? shape.code : -32000;
+  }
+}
+
+/**
+ * A tool ran and said no: a result with `isError`. `code` is the tool's own
+ * word for it when it gave one (`stale`, `refused`, `invalid`), and `data` is
+ * what it sent with it: for `stale`, the record as it is now under `current`.
+ */
+export class ToolError extends Error {
+  readonly code: string | undefined;
+  readonly data: unknown;
+  readonly result: ToolResult;
+
+  constructor(tool: string, result: ToolResult) {
+    const text = result.content?.find(part => typeof part.text === 'string')?.text ?? `${tool} did not work.`;
+    const data = result.structuredContent;
+    const code = data && typeof data === 'object' ? (data as { error?: unknown }).error : undefined;
+
+    // The first line: a stale refusal follows its sentence with the record as JSON.
+    super(text.split('\n')[0]!);
+    this.name = 'ToolError';
+    this.code = typeof code === 'string' ? code : undefined;
+    this.data = data;
+    this.result = result;
+  }
+}
+
+/** The app asked for something its manifest does not ask to be granted. */
+export class GrantError extends Error {
+  constructor(
+    readonly grant: 'tools' | 'collections' | 'host',
+    readonly want: string,
+  ) {
+    super(
+      `This app's manifest does not ask for ${want}. Add "${want}"${grant === 'host' ? '' : ' (or "*")'} to grants.${grant} in .brydio/app.json.`,
+    );
+    this.name = 'GrantError';
+  }
+}
+
+/** The host stopped the worker before an answer arrived. */
+export class TeardownError extends Error {
+  constructor() {
+    super('The host stopped this screen.');
+    this.name = 'TeardownError';
+  }
+}
+
+interface Pending {
+  tool: string;
+  resolve(result: ToolResult): void;
+  reject(error: Error): void;
+}
+
+export interface BridgeOptions {
+  /** The app's name, version, grants and collections. Defaults to what the build baked in. */
+  app?: BuiltApp;
+  /**
+   * Whether to check calls against the grants before they leave the worker.
+   * On when the app knows its grants.
+   */
+  checkGrants?: boolean;
+}
+
+export class Bridge {
+  readonly #port: Port;
+  readonly #app: BuiltApp;
+  readonly #checkGrants: boolean;
+  readonly #pending = new Map<string, Pending>();
+  readonly #contextListeners = new Set<(context: HostContext) => void>();
+  readonly #eventListeners = new Set<(event: TreeEventParams) => void>();
+  readonly #refusedListeners = new Set<(refusal: TreeRefusedParams) => void>();
+  readonly #teardownListeners = new Set<() => void>();
+  readonly #connected: Promise<HostContext>;
+  readonly #unlisten: () => void;
+  #resolveConnected: (context: HostContext) => void = () => {};
+  #context: HostContext | null = null;
+  #said = false;
+  #stopped = false;
+  #nextId = 0;
+
+  constructor(port: Port, options: BridgeOptions = {}) {
+    this.#port = port;
+    this.#app = options.app ?? builtApp() ?? { name: 'unbuilt', version: '0.0.0' };
+    this.#checkGrants = options.checkGrants ?? this.#app.grants !== undefined;
+    this.#connected = new Promise(resolve => {
+      this.#resolveConnected = resolve;
+    });
+    this.#unlisten = port.listen(message => this.#receive(message));
+  }
+
+  get app(): AppInfo {
+    return { name: this.#app.name, version: this.#app.version };
+  }
+
+  /** Where the screen is running, once the host has said; null before. */
+  get context(): HostContext | null {
+    return this.#context;
+  }
+
+  /** Resolves with the first `host/context`. */
+  get connected(): Promise<HostContext> {
+    return this.#connected;
+  }
+
+  get stopped(): boolean {
+    return this.#stopped;
+  }
+
+  /** Says `worker/ready` (once) and resolves when the host has answered with the context. */
+  connect(): Promise<HostContext> {
+    if (!this.#said && !this.#stopped) {
+      this.#said = true;
+      this.notify('worker/ready', { protocol: PROTOCOL, app: this.app, sdk: SDK_VERSION });
+    }
+
+    return this.#connected;
+  }
+
+  /** Called with the context each time the host sends it. Returns a function that stops. */
+  subscribe(listener: (context: HostContext) => void): () => void {
+    this.#contextListeners.add(listener);
+
+    return () => this.#contextListeners.delete(listener);
+  }
+
+  onEvent(listener: (event: TreeEventParams) => void): () => void {
+    this.#eventListeners.add(listener);
+
+    return () => this.#eventListeners.delete(listener);
+  }
+
+  /** What the host refused in the tree. With nobody listening, it is logged. */
+  onRefused(listener: (refusal: TreeRefusedParams) => void): () => void {
+    this.#refusedListeners.add(listener);
+
+    return () => this.#refusedListeners.delete(listener);
+  }
+
+  onTeardown(listener: () => void): () => void {
+    this.#teardownListeners.add(listener);
+
+    return () => this.#teardownListeners.delete(listener);
+  }
+
+  /** A message nobody answers. Dropped once the host has stopped the worker. */
+  notify(method: WorkerMethod, params: object): void {
+    if (this.#stopped) return;
+
+    this.#port.post({ jsonrpc: '2.0', method, params });
+  }
+
+  /**
+   * Calls a tool and hands back its whole answer, `isError` and all.
+   *
+   * A write may wait for the person to agree on an inline card (contracts §7),
+   * so there is no timeout: the call ends when the host answers or stops the
+   * worker. A person's *Don't allow* arrives as a `HostError`.
+   */
+  callToolResult(tool: string, input: Record<string, unknown> = {}): Promise<ToolResult> {
+    const refused = this.#grant('tools', tool);
+
+    if (refused) return Promise.reject(refused);
+    if (this.#stopped) return Promise.reject(new TeardownError());
+
+    const id = String(++this.#nextId);
+
+    return new Promise<ToolResult>((resolve, reject) => {
+      this.#pending.set(id, { tool, resolve, reject });
+      this.#port.post({ jsonrpc: '2.0', id, method: 'tools/call', params: { id, tool, input } });
+    });
+  }
+
+  /**
+   * Calls a tool and resolves with what it returned (`structuredContent`), or
+   * rejects with a `ToolError` when the tool said no and a `HostError` when
+   * the host did.
+   */
+  async callTool<T = unknown>(tool: string, input: Record<string, unknown> = {}): Promise<T> {
+    const result = await this.callToolResult(tool, input);
+
+    if (result?.isError) throw new ToolError(tool, result);
+
+    return result?.structuredContent as T;
+  }
+
+  /**
+   * One record, through the collection's generated `get_*` tool.
+   *
+   * §9's `data/get` is answered `data/error` until Phase 1, so Phase 0 reads
+   * through the tools, which the host checks and audits the same way.
+   */
+  getDocument<D = AppDocument>(collection: string, id: string): Promise<D> {
+    const refused = this.#grant('collections', collection);
+
+    if (refused) return Promise.reject(refused);
+
+    return this.callTool<D>(`get_${this.#collection(collection).label}`, { id });
+  }
+
+  /** A page of records, through the collection's generated `list_*` tool. */
+  async listDocuments<D = AppDocument>(collection: string, query: ListQuery = {}): Promise<ListResult<D>> {
+    const refused = this.#grant('collections', collection);
+
+    if (refused) throw refused;
+
+    const page = await this.callTool<Partial<ListResult<D>> | undefined>(`list_${this.#collection(collection).plural}`, { ...query });
+
+    return {
+      items: Array.isArray(page?.items) ? page.items : [],
+      nextCursor: typeof page?.nextCursor === 'string' ? page.nextCursor : null,
+      ...(typeof page?.note === 'string' ? { note: page.note } : {}),
+    };
+  }
+
+  /** Needs the `navigate` host grant. The host drops it until Phase 1. */
+  navigate(to: NavigateTarget): void {
+    const refused = this.#grant('host', 'navigate');
+
+    if (refused) throw refused;
+
+    this.notify('ui/navigate', { to });
+  }
+
+  /** A sentence in Brydio's toast. The host cuts it at 200 characters. */
+  toast(text: string, tone?: ToastTone): void {
+    this.notify('ui/toast', tone ? { text, tone } : { text });
+  }
+
+  /**
+   * A collection's tool names: the built manifest's, or worked out the way
+   * the server works them out when there is no build (a label is the name
+   * without a trailing "s"; the plural is the label with one).
+   */
+  #collection(collection: string): { label: string; plural: string } {
+    const built = this.#app.collections?.[collection];
+
+    if (built) return built;
+
+    const label = collection.length > 1 && collection.endsWith('s') ? collection.slice(0, -1) : collection;
+
+    return { label, plural: `${label}s` };
+  }
+
+  /** A grant the manifest does not ask for, as the error to fail with; null when it does. */
+  #grant(grant: 'tools' | 'collections' | 'host', want: string): GrantError | null {
+    if (!this.#checkGrants) return null;
+
+    const list = this.#app.grants?.[grant] ?? [];
+
+    return list.includes(want) || (grant !== 'host' && list.includes('*')) ? null : new GrantError(grant, want);
+  }
+
+  #receive(raw: unknown): void {
+    if (!raw || typeof raw !== 'object' || this.#stopped) return;
+
+    const message = raw as RpcMessage;
+
+    if (typeof message.method !== 'string') return;
+
+    const params = (message.params && typeof message.params === 'object' ? message.params : {}) as Record<string, unknown>;
+
+    switch (message.method) {
+      case 'host/context':
+        this.#takeContext(params as unknown as HostContext);
+
+        return;
+      case 'tree/event':
+        if (typeof params.node === 'string' && typeof params.name === 'string') {
+          const event = params as unknown as TreeEventParams;
+
+          for (const listener of this.#eventListeners) run(() => listener(event));
+        }
+
+        return;
+      case 'tools/result':
+        this.#settle(String(params.id), pending => pending.resolve((params.result ?? {}) as ToolResult));
+
+        return;
+      case 'tools/error':
+        this.#settle(String(params.id), pending => pending.reject(new HostError(params.error)));
+
+        return;
+      case 'tree/refused': {
+        const refusal: TreeRefusedParams = {
+          op: String(params.op ?? ''),
+          ...(typeof params.node === 'string' ? { node: params.node } : {}),
+          reason: String(params.reason ?? ''),
+        };
+
+        if (this.#refusedListeners.size === 0) {
+          console.error(`Brydio refused part of this screen (${refusal.op}${refusal.node ? ` ${refusal.node}` : ''}): ${refusal.reason}`);
+        }
+
+        for (const listener of this.#refusedListeners) run(() => listener(refusal));
+
+        return;
+      }
+      case 'worker/teardown':
+        this.#teardown();
+
+        return;
+      default:
+        // `data/result`, `data/error` and anything a newer host says: nothing
+        // here asks for them. Ignored rather than refused, because the host
+        // is the side that decides what a version means.
+        return;
+    }
+  }
+
+  #takeContext(context: HostContext): void {
+    const first = this.#context === null;
+
+    this.#context = context;
+
+    if (first) this.#resolveConnected(context);
+
+    for (const listener of this.#contextListeners) run(() => listener(context));
+  }
+
+  #settle(id: string, settle: (pending: Pending) => void): void {
+    const pending = this.#pending.get(id);
+
+    // An answer to nothing, or a second answer to one call: the first stands.
+    if (!pending) return;
+
+    this.#pending.delete(id);
+    settle(pending);
+  }
+
+  #teardown(): void {
+    for (const listener of this.#teardownListeners) run(listener);
+
+    this.#stopped = true;
+
+    for (const pending of this.#pending.values()) pending.reject(new TeardownError());
+
+    this.#pending.clear();
+    this.#unlisten();
+  }
+}
+
+/** A listener's mistake is reported, never allowed to stop the bridge. */
+function run(listener: () => void): void {
+  try {
+    listener();
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+let current: Bridge | null = null;
+
+/** The bridge of the worker this code runs in, made on first use. */
+export function defaultBridge(): Bridge {
+  current ??= new Bridge(workerPort());
+
+  return current;
+}
+
+/** Replaces the default bridge. For tests, which have no worker to talk through. */
+export function setDefaultBridge(bridge: Bridge | null): void {
+  current = bridge;
+}
