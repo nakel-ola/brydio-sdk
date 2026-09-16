@@ -83,8 +83,9 @@ Read against Brydio at `f28d98b` plus Kestrel's uncommitted
 
 ## Data, tools and host calls
 
-15. **`data/get` and `data/list` are refused until Phase 1.** The host answers
-    both with `data/error { id, error: { code: -32601 } }`. `@brydio/app`'s
+15. **`data/get` and `data/list` were refused in Phase 0.** The host answered
+    both with `data/error { id, error: { code: -32601 } }`; since Brydio
+    `5d6cd53` it reads through the same tools and answers them. `@brydio/app`'s
     `data.get` and `data.list` therefore call the collection's generated
     `get_<label>` and `list_<plural>` tools, which the host checks and audits
     like any other screen call. `data.list` answers `{ items, nextCursor }`,
@@ -104,9 +105,19 @@ Read against Brydio at `f28d98b` plus Kestrel's uncommitted
     `issues`/`issue` the two agree; for a `people` collection labelled
     `person` it is `list_persons`. `brydio build` bakes each collection's
     label and plural into the bundle so the runtime never has to guess.
-18. **`ui/navigate` is dropped until Phase 1**, and `ui/toast` is cut at 200
-    characters. The runtime still sends both; `navigate` needs the `navigate`
-    host grant locally.
+18. **`ui/navigate` is a request** (Brydio `bc42f2d`), and `ui/toast` is cut at
+    200 characters. `navigate` sends an envelope `id`, answered
+    `ui/result { id, result: { opened: true } }` or `ui/error { id, error }`
+    (`-32602` for anything but a chat, a file or an item; the API's words when
+    the grant or the person says no), and needs the `navigate` host grant
+    locally. Watching is `data/subscribe { collection }` (Brydio `db37cd7`,
+    `3be0495`): answered `data/result { id, result: { watching: true } }`, then
+    `data/changed { collection, changes: [{ id, op, version }] }` gathered for
+    100 ms, and `data/ended { collection, message }` when it stops by itself,
+    at most five collections per open app. There is no filter: the contract
+    leaves it to the screens lane and the host has none. A watch the API
+    refuses (no such collection, no right to read) is answered `watching: true`
+    first and ended after, because the stream opens after the answer.
 19. **Grants are checked locally only when the bundle knows them.** The host
     grants everything in Phase 0; the runtime refuses a call its built
     manifest does not ask for, before it leaves, so a missing grant is found

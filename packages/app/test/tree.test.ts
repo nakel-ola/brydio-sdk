@@ -6,12 +6,16 @@ import {
   SDK_VERSION,
   TreeError,
   badge,
+  board,
+  boardColumn,
   button,
   card,
   checkbox,
   dialog,
+  diff,
   emptyState,
   listRow,
+  markdown,
   select,
   switchElement,
   table,
@@ -274,7 +278,7 @@ describe('the cap (5,000 nodes, the root included)', () => {
 describe('refusals, in the host’s words, at the line that made the mistake', () => {
   test('an element outside the catalogue', () => {
     expect(() => createElement('div' as never)).toThrow('Brydio has no element called "div".');
-    expect(() => createElement('bry-board' as never)).toThrow(TreeError);
+    expect(() => createElement('bry-kanban' as never)).toThrow(TreeError);
   });
 
   test('a setting the element does not take, or a value it does not allow', () => {
@@ -283,7 +287,7 @@ describe('refusals, in the host’s words, at the line that made the mistake', (
     expect(() => node.setAttribute('style', 'color: red')).toThrow('bry-stack has no setting called "style". Brydio draws every element in its own style');
     expect(() => node.setAttribute('className', 'box')).toThrow('no classes');
     expect(() => node.setAttribute('gap', '9')).toThrow('bry-stack gap must be one of 1, 2, 3, 4, 5, 6, 7, 8.');
-    expect(() => heading({ text: 'x', level: '2' as never })).toThrow('bry-heading level must be a whole number from 1 to 3.');
+    expect(() => heading({ text: 'x', level: '2' as never })).toThrow('bry-heading level must be a whole number from 1 to 4.');
     expect(() => button({ label: 'x'.repeat(201) })).toThrow('bry-button label must be text of at most 200 characters.');
     expect(() => node.style).toThrow('has no style');
     expect(() => {
@@ -394,6 +398,56 @@ describe('events (tree/event)', () => {
       'bry-table columns[0].align must be one of start, end.',
     );
     expect(() => switchElement({ label: 'x' }).append(text({ text: 'on' }))).toThrow('bry-switch can’t hold other nodes.');
+  });
+
+  test('reach a board, its columns and a diff, and a move is confirmed by moving the card and refused by settling it', async () => {
+    const { root, connect, hostSays, take } = harness();
+    const seen: unknown[] = [];
+    const crash = card({ title: 'Crash on save' });
+    const todo = boardColumn({ title: 'To do', onRange: event => seen.push([event.detail.start, event.detail.end]) }, crash);
+    const doing = boardColumn({ title: 'Doing', limit: 2 }, card({ title: 'Broken link' }));
+    const issues = board({ label: 'Issues', cardSize: 'md', onMove: event => seen.push(event.detail) }, todo, doing);
+    const changes = diff({
+      files: [{ path: 'src/a.ts', status: 'modified', patch: '@@ -1 +1 @@\n-a\n+b' }, { path: 'src/big.ts' }],
+      onExpand: event => seen.push(event.detail.file),
+      onSelect: event => seen.push(event.detail),
+    });
+
+    root.append(issues, changes, markdown({ text: '**Done** at last' }));
+    await connect();
+    take();
+
+    hostSays('tree/event', { node: issues.id, name: 'move', detail: { card: crash.id, from: todo.id, to: doing.id, position: 1 } });
+    hostSays('tree/event', { node: todo.id, name: 'range', detail: { start: 0, end: 30 } });
+    hostSays('tree/event', { node: changes.id, name: 'expand', detail: { file: 'src/big.ts' } });
+    hostSays('tree/event', { node: changes.id, name: 'select', detail: { file: 'src/a.ts', side: 'new', start: 1, end: 1 } });
+
+    expect(seen).toEqual([
+      { card: crash.id, from: todo.id, to: doing.id, position: 1 },
+      [0, 30],
+      'src/big.ts',
+      { file: 'src/a.ts', side: 'new', start: 1, end: 1 },
+    ]);
+
+    // Confirm one move, then refuse the next twice over: the same card, sent both times.
+    doing.appendChild(crash);
+    await settle();
+    issues.setAttribute('settled', crash.id);
+    await settle();
+    issues.setAttribute('settled', crash.id);
+    await settle();
+
+    expect(take().flatMap(one => opsOf(one))).toEqual([
+      { op: 'move', id: crash.id, parent: doing.id, index: 1 },
+      { op: 'props', id: issues.id, props: { settled: crash.id } },
+      { op: 'props', id: issues.id, props: { settled: crash.id } },
+    ]);
+    expect(() => boardColumn({ title: 'x', limit: 0 })).toThrow('bry-board-column limit must be a whole number from 1 to 100000.');
+    expect(() => diff({ files: [{ path: 'a', status: 'moved' }] } as never)).toThrow('bry-diff files[0].status must be one of added, modified, removed, renamed.');
+    // Only a board's answer is sent again unchanged; a setting that is state is not.
+    doing.setAttribute('title', 'Doing');
+    await settle();
+    expect(take()).toEqual([]);
   });
 
   test('reach a listener registered the way Preact registers one', async () => {

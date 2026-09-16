@@ -23,6 +23,8 @@ import {
 /** Brydio's own declaration, when a checkout sits beside this repository. */
 const brydio = process.env.BRYDIO_DIR ?? join(import.meta.dir, '..', '..', '..', '..', 'brydio');
 const catalogueDir = 'packages/app/src/apps/catalogue';
+/** The kit's generated token names, which the host's `spec.ts` imports as `@repo/ui/token-names`. */
+const tokenNames = 'packages/ui/src/lib/token-names.ts';
 const hasHost = existsSync(join(brydio, catalogueDir, 'elements.ts'));
 
 /**
@@ -40,11 +42,16 @@ let committed: Promise<{ host: Record<string, any>; unlanded: string[] }> | null
 const hostAtHead = () =>
   (committed ??= (async () => {
     const scratch = mkdtempSync(join(tmpdir(), 'brydio-catalogue-'));
-    const archive = Bun.spawnSync(['git', '-C', brydio, 'archive', 'HEAD', catalogueDir]);
+    const archive = Bun.spawnSync(['git', '-C', brydio, 'archive', 'HEAD', catalogueDir, tokenNames]);
 
     if (archive.exitCode !== 0) throw new Error(`git archive failed: ${archive.stderr.toString()}`);
 
     Bun.spawnSync(['tar', '-x', '-C', scratch], { stdin: archive.stdout });
+
+    // The workspace alias can't resolve from a scratch folder, so it points at the exported file.
+    const spec = join(scratch, catalogueDir, 'spec.ts');
+
+    writeFileSync(spec, readFileSync(spec, 'utf8').replace('"@repo/ui/token-names"', JSON.stringify(join(scratch, tokenNames))));
 
     const list = join(scratch, catalogueDir, 'elements.ts');
     const source = readFileSync(list, 'utf8');
@@ -65,7 +72,7 @@ const hostAtHead = () =>
   })());
 
 describe('the catalogue as a whole', () => {
-  test('has the first twenty-three, all named bry-', () => {
+  test('has the first twenty-seven, all named bry-', () => {
     expect(ELEMENT_NAMES).toEqual([
       'bry-stack',
       'bry-heading',
@@ -90,6 +97,10 @@ describe('the catalogue as a whole', () => {
       'bry-split',
       'bry-checkbox',
       'bry-switch',
+      'bry-board',
+      'bry-board-column',
+      'bry-markdown',
+      'bry-diff',
     ]);
   });
 
@@ -104,7 +115,7 @@ describe('the catalogue as a whole', () => {
   test('keeps free text to the settings that are words for a person', () => {
     for (const name of ELEMENT_NAMES) {
       for (const [prop, spec] of Object.entries(CATALOGUE[name].props) as [string, PropSpec][]) {
-        if (spec.kind === 'text') expect(['text', 'label', 'title', 'value', 'placeholder', 'error', 'name', 'description', 'meta', 'action', 'empty', 'selected', 'cancel', 'min', 'max']).toContain(prop);
+        if (spec.kind === 'text') expect(['text', 'label', 'title', 'value', 'placeholder', 'error', 'name', 'description', 'meta', 'action', 'empty', 'selected', 'cancel', 'min', 'max', 'settled']).toContain(prop);
       }
     }
   });
@@ -185,6 +196,25 @@ describe('the same as Brydio’s receiver', () => {
       ['bry-split', 'ratio', 90],
       ['bry-checkbox', 'checked', 'true'],
       ['bry-switch', 'onChange', 'x'],
+      // The board, the button's icon and the heading's variant.
+      ['bry-board', 'cardSize', '120px'],
+      ['bry-board', 'indicator', 'line'],
+      ['bry-board', 'settled', 'x'.repeat(129)],
+      ['bry-board-column', 'limit', 0],
+      ['bry-board-column', 'count', 100_001],
+      ['bry-button', 'icon', 'rocket'],
+      ['bry-button', 'hideLabel', 'yes'],
+      ['bry-heading', 'level', 5],
+      ['bry-heading', 'variant', 'display'],
+      ['bry-avatar', 'size', 'xl'],
+      ['bry-text', 'tone', 'loud'],
+      ['bry-text', 'variant', 'heading'],
+      ['bry-markdown', 'text', 'x'.repeat(50_001)],
+      ['bry-markdown', 'expanded', 'yes'],
+      ['bry-diff', 'files', [{ path: 'a.ts', status: 'moved' }]],
+      ['bry-diff', 'files', [{ patch: '@@' }]],
+      ['bry-diff', 'files', [{ path: 'a.ts', patch: 'x'.repeat(200_001) }]],
+      ['bry-diff', 'files', Array.from({ length: 301 }, (_, at) => ({ path: `f${at}` }))],
     ];
 
     for (const [type, name, value] of later) {
@@ -192,7 +222,7 @@ describe('the same as Brydio’s receiver', () => {
       expect(refusalFor(type as never, name, value)).toBe(host.refusalFor(type, name, value));
     }
 
-    for (const type of ['bry-table', 'bry-virtual-list', 'bry-dialog', 'bry-menu', 'bry-checkbox', 'bry-switch']) {
+    for (const type of ['bry-table', 'bry-virtual-list', 'bry-dialog', 'bry-menu', 'bry-checkbox', 'bry-switch', 'bry-board', 'bry-board-column', 'bry-markdown', 'bry-diff']) {
       expect(refusalForProps(type as never, {})).toBe(host.refusalForProps(type, {}));
     }
   });
@@ -234,10 +264,16 @@ describe('checks', () => {
 
   test('refuse a setting the element does not take, saying why for the web’s favourites', () => {
     expect(checkProp('bry-text', 'tone', 'muted')).toBeNull();
-    expect(checkProp('bry-text', 'tone', 'loud')).toBe('bry-text tone must be one of default, muted, danger.');
+    expect(checkProp('bry-text', 'tone', 'loud')).toBe('bry-text tone must be one of default, muted, neutral, brand, success, warn, danger.');
+    expect(checkProp('bry-text', 'tone', 'success')).toBeNull();
+    expect(checkProp('bry-text', 'variant', 'caption')).toBeNull();
     expect(checkProp('bry-text', 'style', 'color: red')).toContain('there is no style setting');
     expect(checkProp('bry-heading', 'level', 2)).toBeNull();
-    expect(checkProp('bry-heading', 'level', '2')).toContain('whole number from 1 to 3');
+    expect(checkProp('bry-heading', 'level', '2')).toContain('whole number from 1 to 4');
+    expect(checkProp('bry-heading', 'variant', 'subheading')).toBeNull();
+    expect(checkProp('bry-button', 'icon', 'chevronDown')).toBeNull();
+    expect(checkProp('bry-button', 'icon', 'trash')).toBeNull();
+    expect(checkProp('bry-board-column', 'limit', 0)).toBe('bry-board-column limit must be a whole number from 1 to 100000.');
   });
 
   test('require the words an element cannot be drawn without', () => {
@@ -316,9 +352,33 @@ describe('checks', () => {
     // @ts-expect-error a split raises nothing
     const dragged: ElementAttributes<'bry-split'> = { ratio: 50, onChange: () => {} };
 
+    const board: ElementAttributes<'bry-board'> = {
+      label: 'Issues',
+      cardSize: 'md',
+      onMove: event => `${event.detail.card} ${event.detail.from} ${event.detail.to} ${event.detail.position.toFixed()}`,
+    };
+    const column: ElementAttributes<'bry-board-column'> = { title: 'To do', count: 250, onRange: event => event.detail.end - event.detail.start };
+    // @ts-expect-error a column needs its title
+    const untitled: ElementAttributes<'bry-board-column'> = { count: 3 };
+    // @ts-expect-error a board's cards are sized by name
+    const pixels: ElementAttributes<'bry-board'> = { cardSize: '120px' };
+    const iconic: ElementAttributes<'bry-button'> = { label: 'More', icon: 'more', hideLabel: true };
+    // @ts-expect-error a button's icons are the shell's own
+    const rocket: ElementAttributes<'bry-button'> = { label: 'Go', icon: 'rocket' };
+    const small: ElementAttributes<'bry-heading'> = { text: 'Doing', level: 4, variant: 'label' };
+    const notes: ElementAttributes<'bry-markdown'> = { text: '**Done**', expanded: true };
+    const changes: ElementAttributes<'bry-diff'> = {
+      files: [{ path: 'src/a.ts', status: 'modified', patch: '@@ -1 +1 @@' }, { path: 'src/big.ts' }],
+      onExpand: event => event.detail.file.trim(),
+      onSelect: event => `${event.detail.file} ${event.detail.side satisfies 'old' | 'new'} ${event.detail.start + event.detail.end}`,
+    };
+    // @ts-expect-error a diff needs its files
+    const fileless: ElementAttributes<'bry-diff'> = { label: 'Changes' };
+
     expect([
       fine, unlabelled, wide, pressed, typed, chosen, choiceless, loud, submitted,
       sorted, headless, centred, long, asked, more, drawn, due, ticked, worded, dragged,
-    ]).toHaveLength(20);
+      board, column, untitled, pixels, iconic, rocket, small, notes, changes, fileless,
+    ]).toHaveLength(30);
   });
 });

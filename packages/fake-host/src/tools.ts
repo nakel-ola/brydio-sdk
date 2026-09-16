@@ -45,6 +45,14 @@ export interface StoredDocument {
 
 export type Fixtures = Record<string, Record<string, unknown>[]>;
 
+/** A committed change, as Brydio's document events carry it: never the record. */
+export interface StoreChange {
+  collection: string;
+  id: string;
+  op: 'create' | 'update' | 'delete';
+  version: number;
+}
+
 /** One tool of the fake host: given the input, an answer. */
 export type ToolHandler = (input: Record<string, unknown>) => ToolResultShape | Promise<ToolResultShape>;
 
@@ -78,6 +86,7 @@ class Refused extends Error {
 export class FixtureStore {
   readonly #specs: CollectionSpec[];
   readonly #records = new Map<string, StoredDocument[]>();
+  readonly #listeners = new Set<(change: StoreChange) => void>();
   #clock: number;
   #next = 0;
 
@@ -108,6 +117,78 @@ export class FixtureStore {
   /** A collection's records as they stand, flat, oldest first. */
   records(collection: string): Record<string, unknown>[] {
     return (this.#records.get(this.#spec(collection).name) ?? []).map(flat);
+  }
+
+  /** Hears every change after it is made, by a tool or by a test. Returns a function that stops. */
+  onChange(listener: (change: StoreChange) => void): () => void {
+    this.#listeners.add(listener);
+
+    return () => this.#listeners.delete(listener);
+  }
+
+  /**
+   * Changes a record as somebody other than the screen would: another person,
+   * an agent, a tool call elsewhere. With an `id` that exists, the fields are
+   * merged in and the version goes up; otherwise a record is made, with that
+   * id if one is given. Checked as the store checks a write. Answers the
+   * record as the tools hand it out.
+   */
+  put(collection: string, fields: Record<string, unknown>): Record<string, unknown> {
+    const spec = this.#spec(collection);
+    const { id, version: _version, ...changes } = fields;
+    const records = this.#records.get(spec.name)!;
+    const current = typeof id === 'string' ? records.find(record => record.id === id) : undefined;
+
+    try {
+      if (current) {
+        current.body = checked(spec, changes, current.body);
+        current.version += 1;
+        current.updatedAt = this.#stamp().updatedAt;
+        this.#emit(spec, current, 'update');
+
+        return flat(current);
+      }
+
+      const made: StoredDocument = {
+        id: typeof id === 'string' ? id : this.#id(spec),
+        version: 1,
+        body: checked(spec, changes, {}),
+        createdBy: 'user_other',
+        ...this.#stamp(),
+      };
+
+      records.push(made);
+      this.#emit(spec, made, 'create');
+
+      return flat(made);
+    } catch (error) {
+      if (error instanceof Refused) throw new Error(error.message);
+
+      throw error;
+    }
+  }
+
+  /** Deletes a record as somebody other than the screen would. */
+  remove(collection: string, id: string): void {
+    const spec = this.#spec(collection);
+    const records = this.#records.get(spec.name)!;
+    const found = records.find(record => record.id === id);
+
+    if (!found) throw new Error(`There is no such ${spec.label}.`);
+
+    records.splice(records.indexOf(found), 1);
+    this.#emit(spec, found, 'delete');
+  }
+
+  /** Whether the manifest declares this collection. */
+  has(collection: string): boolean {
+    return this.#specs.some(one => one.name === collection);
+  }
+
+  #emit(spec: CollectionSpec, doc: StoredDocument, op: StoreChange['op']): void {
+    const change: StoreChange = { collection: spec.name, id: doc.id, op, version: doc.version };
+
+    for (const listener of [...this.#listeners]) listener(change);
   }
 
   /** Every generated tool, by name. */
@@ -147,6 +228,7 @@ export class FixtureStore {
         const made: StoredDocument = { id: this.#id(spec), version: 1, body: checked(spec, input, {}), createdBy: 'user_fixture', ...this.#stamp() };
 
         records.push(made);
+        this.#emit(spec, made, 'create');
 
         return answer(`Created ${label} ${made.id}.`, flat(made), `Created ${article} ${label}`);
       }
@@ -164,6 +246,7 @@ export class FixtureStore {
         current.body = checked(spec, changes, current.body);
         current.version += 1;
         current.updatedAt = this.#stamp().updatedAt;
+        this.#emit(spec, current, 'update');
 
         return answer(`Changed ${label} ${current.id}; it is at version ${current.version} now.`, flat(current), `Changed ${article} ${label}`);
       }
@@ -183,6 +266,7 @@ export class FixtureStore {
         const found = this.#find(spec, String(input.id));
 
         records.splice(records.indexOf(found), 1);
+        this.#emit(spec, found, 'delete');
 
         return answer(`Deleted ${label} ${found.id}.`, { id: found.id }, `Deleted ${article} ${label}`);
       }

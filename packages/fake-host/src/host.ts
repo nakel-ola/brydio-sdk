@@ -4,7 +4,7 @@ import { isAbsolute, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { workerPrelude } from './prelude.ts';
-import { FixtureStore, type Fixtures, type ToolHandler, type ToolResultShape } from './tools.ts';
+import { FixtureStore, type Fixtures, type StoreChange, type ToolHandler, type ToolResultShape } from './tools.ts';
 import { TreeStore, type Refusal, type TreeNode } from './tree-store.ts';
 
 /**
@@ -62,8 +62,19 @@ export interface FakeHostOptions {
   asks?: AskAnswer | ((call: ToolCall) => AskAnswer);
   /** Run Brydio's prelude before the screen. On unless a test needs it off. */
   prelude?: boolean;
+  /**
+   * What happens when the screen asks to open a chat, a file or an item.
+   * Opened unless this throws; what it throws is the sentence the screen gets.
+   */
+  navigate?: (to: NavigateTo) => void | Promise<void>;
   /** The host's budgets, in milliseconds. A test can shorten them; a longer one is held to the host's. */
   budgets?: { ready?: number; start?: number };
+}
+
+/** What a screen may ask Brydio to open. */
+export interface NavigateTo {
+  kind: 'chat' | 'file' | 'item';
+  id: string;
 }
 
 /** A call the screen made, and what became of it. */
@@ -88,6 +99,16 @@ const MAX_MESSAGE_BYTES = 512 * 1024;
 const READY_BUDGET = 10_000;
 const START_BUDGET = 2_000;
 const MAX_TOAST = 200;
+/** How long the host gathers one collection's changes before it tells the app. */
+export const COALESCE_MS = 100;
+/** How many collections one open app may watch. */
+export const MAX_WATCHES = 5;
+
+/** One collection being watched, and the changes gathered since the app was last told. */
+interface Watch {
+  pending: Map<string, { id: string; op: StoreChange['op']; version: number }>;
+  timer: ReturnType<typeof setTimeout> | null;
+}
 
 export class FakeHost {
   readonly tree = new TreeStore();
@@ -97,6 +118,8 @@ export class FakeHost {
   readonly calls: ToolCall[] = [];
   readonly refusals: Refusal[] = [];
   readonly toasts: { text: string; tone: 'info' | 'success' | 'danger' }[] = [];
+  /** What the screen asked to open, and whether it was. */
+  readonly navigations: (NavigateTo & { opened: boolean; error?: string })[] = [];
   /** What the worker threw, or failed to load with. */
   readonly errors: string[] = [];
   app: { name: string; version: string } | null = null;
@@ -118,6 +141,7 @@ export class FakeHost {
   #busy = 0;
   #ended = false;
   #listeners = new Set<() => void>();
+  readonly #watches = new Map<string, Watch>();
 
   private constructor(options: FakeHostOptions) {
     this.#options = options;
@@ -128,6 +152,7 @@ export class FakeHost {
     this.#context = { ...DEFAULT_CONTEXT, ...options.context };
     this.store = options.manifest ? new FixtureStore(options.manifest, options.fixtures) : null;
     this.#tools = { ...this.store?.tools(), ...options.tools };
+    this.store?.onChange(change => this.#gather(change));
     this.#writes = new Set(
       options.manifest && options.manifest.tools?.generated !== false
         ? collectionsOf(options.manifest).flatMap(spec =>
@@ -236,6 +261,23 @@ export class FakeHost {
     if (this.app) this.#send({ jsonrpc: '2.0', method: 'host/context', params: this.#context as never });
   }
 
+  /** The collections the screen is watching now. */
+  get watching(): string[] {
+    return [...this.#watches.keys()];
+  }
+
+  /**
+   * Stops a watch as the host does when it ends on its own (the connection
+   * dropped, or the person may no longer read the collection): the app hears
+   * `data/ended` with the message.
+   */
+  endWatch(collection: string, message = 'The app stopped hearing about changes.'): void {
+    if (!this.#watches.has(collection)) return;
+
+    this.#drop(collection);
+    this.#send({ jsonrpc: '2.0', method: 'data/ended', params: { collection, message } });
+  }
+
   /** Answers the oldest held approval card. */
   answer(decision: 'allow' | 'deny'): Promise<void> {
     const held = this.#held.shift();
@@ -306,6 +348,9 @@ export class FakeHost {
     for (const timer of this.#timers) clearTimeout(timer);
 
     this.#timers.clear();
+
+    for (const collection of [...this.#watches.keys()]) this.#drop(collection);
+
     setTimeout(() => this.#worker.terminate(), 0);
     this.#changed();
   }
@@ -370,6 +415,18 @@ export class FakeHost {
           params: { id: message.id, error: { code: -32601, message: 'Reading data from a screen isn’t available yet.' } },
         });
         break;
+      case 'data/subscribe':
+        if (!this.app || message.id === undefined) break;
+
+        this.#watch(message.id, params.collection);
+        break;
+      case 'data/unsubscribe':
+        if (!this.app || message.id === undefined) break;
+
+        if (typeof params.collection === 'string') this.#drop(params.collection);
+
+        this.#send({ jsonrpc: '2.0', method: 'data/result', params: { id: message.id, result: { watching: false } } });
+        break;
       case 'ui/toast': {
         const text = typeof params.text === 'string' ? params.text.slice(0, MAX_TOAST) : '';
         const tone = params.tone === 'success' || params.tone === 'danger' ? params.tone : 'info';
@@ -377,10 +434,113 @@ export class FakeHost {
         if (this.app && text) this.toasts.push({ text, tone });
         break;
       }
-      // `ui/navigate` is dropped until Phase 1, as the host drops it.
+      case 'ui/navigate':
+        if (!this.app) break;
+
+        void this.#navigate(message.id, params.to);
+        break;
     }
 
     this.#changed();
+  }
+
+  /**
+   * `ui/navigate`, as `screen-session.ts` answers it: a request when it has an
+   * id (`ui/result { opened }` or `ui/error`), a notice when it hasn't.
+   */
+  async #navigate(id: string | number | undefined, to: unknown): Promise<void> {
+    const target = to as { kind?: unknown; id?: unknown } | null;
+    const fail = (error: { code: number; message: string }) => {
+      if (id !== undefined) this.#send({ jsonrpc: '2.0', method: 'ui/error', params: { id, error } });
+    };
+
+    if (!target || (target.kind !== 'chat' && target.kind !== 'file' && target.kind !== 'item') || typeof target.id !== 'string' || !target.id) {
+      fail({ code: -32602, message: 'An app can open a chat, a file or one of its own items, by id.' });
+
+      return;
+    }
+
+    const asked: NavigateTo = { kind: target.kind, id: target.id };
+
+    this.#busy += 1;
+
+    try {
+      await this.#options.navigate?.(asked);
+      this.navigations.push({ ...asked, opened: true });
+
+      if (id !== undefined) this.#send({ jsonrpc: '2.0', method: 'ui/result', params: { id, result: { opened: true } } });
+    } catch (error) {
+      const message = (error instanceof Error ? error.message : 'That didn’t work.').slice(0, 300);
+
+      this.navigations.push({ ...asked, opened: false, error: message });
+      fail({ code: -32000, message });
+    } finally {
+      this.#busy -= 1;
+      this.#changed();
+    }
+  }
+
+  /**
+   * `data/subscribe`, answered as `screen-session.ts` answers it: one watch per
+   * collection however often asked, at most `MAX_WATCHES`. A collection the
+   * manifest doesn't declare is watched and then ended, since Brydio refuses
+   * it when the stream opens, after the answer has gone.
+   */
+  #watch(id: string | number, collection: unknown): void {
+    const error = (code: number, message: string) =>
+      this.#send({ jsonrpc: '2.0', method: 'data/error', params: { id, error: { code, message } } });
+
+    if (!this.store) return error(-32601, 'Watching data isn’t available here.');
+    if (typeof collection !== 'string' || !collection) return error(-32602, 'A watch needs a collection.');
+
+    if (!this.#watches.has(collection)) {
+      if (this.#watches.size >= MAX_WATCHES) return error(-32000, `An app can watch at most ${MAX_WATCHES} collections at once.`);
+
+      this.#watches.set(collection, { pending: new Map(), timer: null });
+    }
+
+    this.#send({ jsonrpc: '2.0', method: 'data/result', params: { id, result: { watching: true } } });
+
+    if (!this.store.has(collection)) this.endWatch(collection, 'There is no such collection.');
+  }
+
+  /** A change the store made, gathered for `COALESCE_MS`, each record once at its latest. */
+  #gather(change: StoreChange): void {
+    const watch = this.#watches.get(change.collection);
+
+    if (!watch || this.stopped || this.#ended) return;
+
+    watch.pending.set(change.id, { id: change.id, op: change.op, version: change.version });
+
+    if (watch.timer) return;
+
+    // Counted as work, so `idle()` waits for the app to be told.
+    this.#busy += 1;
+    watch.timer = setTimeout(() => {
+      watch.timer = null;
+      this.#busy -= 1;
+
+      if (this.#watches.get(change.collection) !== watch || !watch.pending.size) return;
+
+      const changes = [...watch.pending.values()];
+
+      watch.pending.clear();
+      this.#send({ jsonrpc: '2.0', method: 'data/changed', params: { collection: change.collection, changes } as never });
+      this.#changed();
+    }, COALESCE_MS);
+  }
+
+  #drop(collection: string): void {
+    const watch = this.#watches.get(collection);
+
+    if (!watch) return;
+
+    this.#watches.delete(collection);
+
+    if (watch.timer) {
+      clearTimeout(watch.timer);
+      this.#busy -= 1;
+    }
   }
 
   async #call(id: string | number, params: Record<string, unknown>): Promise<void> {

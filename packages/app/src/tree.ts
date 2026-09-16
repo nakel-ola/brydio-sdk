@@ -67,6 +67,13 @@ const $structure = Symbol('structure');
 const $dirty = Symbol('dirty');
 const $check = Symbol('check');
 
+/**
+ * Settings that are an answer rather than a state, so saying the same again
+ * is sent again: a board's `settled` puts a card back each time it arrives,
+ * even when it names the card it named last time.
+ */
+const ANSWERS: Partial<Record<ElementName, readonly string[]>> = { 'bry-board': ['settled'] };
+
 let lastId = 0;
 
 /** Ids are unique across the worker, which runs one screen. Short, well inside the host's 128. */
@@ -278,7 +285,7 @@ export class RemoteElement<E extends ElementName = ElementName> extends RemoteNo
 
     if (refused) throw new TreeError('prop', refused);
 
-    if (this.#props[name] === value) return;
+    if (this.#props[name] === value && !ANSWERS[this.#type]?.includes(name)) return;
 
     this.#props[name] = value as PropValue;
     this[$root]?.[$dirty](this, name);
@@ -810,7 +817,8 @@ export function createRoot(options: RootOptions = {}): RemoteRoot {
 
 // One factory per element, with the same settings as the JSX element. Those
 // that hold children (a stack, a card, a label, a grid, a list row, a virtual
-// list, a dialog, a menu, a split) take them after the settings; the rest
+// list, a dialog, a menu, a split, a board and its columns) take them after
+// the settings; the rest
 // take their words as a setting. `switch` is a reserved word, so a switch's
 // factory is `switchElement`, as Brydio names it.
 
@@ -863,3 +871,18 @@ export const split = (attributes?: ElementAttributes<'bry-split'> | null, ...chi
 export const checkbox = (attributes: ElementAttributes<'bry-checkbox'>) => createElement('bry-checkbox', attributes);
 
 export const switchElement = (attributes: ElementAttributes<'bry-switch'>) => createElement('bry-switch', attributes);
+
+/**
+ * A board, whose children are its columns. A `move` is confirmed by moving
+ * the card's node (`column.insertBefore(card, …)`), which is sent as a
+ * `move`, and refused with `board.setAttribute('settled', card)`, which is
+ * sent every time, even for the card named last time.
+ */
+export const board = (attributes?: ElementAttributes<'bry-board'> | null, ...columns: Child[]) => createElement('bry-board', attributes, ...columns);
+
+export const boardColumn = (attributes: ElementAttributes<'bry-board-column'>, ...cards: Child[]) =>
+  createElement('bry-board-column', attributes, ...cards);
+
+export const markdown = (attributes: ElementAttributes<'bry-markdown'>) => createElement('bry-markdown', attributes);
+
+export const diff = (attributes: ElementAttributes<'bry-diff'>) => createElement('bry-diff', attributes);

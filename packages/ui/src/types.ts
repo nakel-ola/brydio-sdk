@@ -98,6 +98,23 @@ export interface ElementEventDetails {
     /** Whether it is on now. */
     change: { checked: boolean };
   };
+  'bry-board': {
+    /**
+     * A card moved: the card's node id, the columns' node ids, and its index
+     * in `to` afterwards. Answer by moving the card, or by setting `settled`.
+     */
+    move: { card: string; from: string; to: string; position: number };
+  };
+  'bry-board-column': {
+    /** The cards now wanted, `end` excluded: the ones to send, from `start`. */
+    range: { start: number; end: number };
+  };
+  'bry-diff': {
+    /** A file listed without its `patch` was opened: send it. `file` is its path. */
+    expand: { file: string };
+    /** Lines chosen in one file, on one side, `start` to `end` inclusive. */
+    select: { file: string; side: 'old' | 'new'; start: number; end: number };
+  };
 }
 
 /** What an element's event carries: its own detail if it has one, else the shared one. */

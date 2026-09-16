@@ -3,6 +3,7 @@ import {
   PROTOCOL,
   type AppDocument,
   type AppInfo,
+  type DataChange,
   type HostContext,
   type ListQuery,
   type ListResult,
@@ -113,6 +114,17 @@ export class TeardownError extends Error {
   }
 }
 
+/** What a watch hears: a burst of changes, and, if it stops on its own, why. */
+export interface WatchListener {
+  onChange(changes: DataChange[]): void;
+  onEnd?(error: HostError): void;
+}
+
+/** One collection the host is watching for this worker, and who in the worker is listening. */
+interface Watch {
+  listeners: Set<WatchListener>;
+}
+
 interface Pending {
   tool: string;
   resolve(result: ToolResult): void;
@@ -138,6 +150,11 @@ export class Bridge {
   readonly #eventListeners = new Set<(event: TreeEventParams) => void>();
   readonly #refusedListeners = new Set<(refusal: TreeRefusedParams) => void>();
   readonly #teardownListeners = new Set<() => void>();
+  readonly #watches = new Map<string, Watch>();
+  /** Subscribe calls not yet answered, by call id, with the watch each one started. */
+  readonly #subscribing = new Map<string, { collection: string; watch: Watch }>();
+  /** `ui/navigate` requests waiting on `ui/result` or `ui/error`, by call id. */
+  readonly #asking = new Map<string, { resolve(result: { opened: boolean }): void; reject(error: Error): void }>();
   readonly #connected: Promise<HostContext>;
   readonly #unlisten: () => void;
   #resolveConnected: (context: HostContext) => void = () => {};
@@ -254,7 +271,7 @@ export class Bridge {
   /**
    * One record, through the collection's generated `get_*` tool.
    *
-   * §9's `data/get` is answered `data/error` until Phase 1, so Phase 0 reads
+   * §9's `data/get` was answered `data/error` in Phase 0, so the SDK reads
    * through the tools, which the host checks and audits the same way.
    */
   getDocument<D = AppDocument>(collection: string, id: string): Promise<D> {
@@ -280,13 +297,77 @@ export class Bridge {
     };
   }
 
-  /** Needs the `navigate` host grant. The host drops it until Phase 1. */
-  navigate(to: NavigateTarget): void {
-    const refused = this.#grant('host', 'navigate');
+  /**
+   * Hears about changes to one of the app's collections until the returned
+   * function is called (contracts §9, `data/subscribe`).
+   *
+   * `onChange` gets each burst the host gathered: ids, ops and versions, never
+   * the records, so read them again with `listDocuments` or `getDocument`.
+   * `onEnd` hears why, when the host refuses the watch or it stops on its
+   * own; stopping it yourself says nothing. However many parts of a screen
+   * watch one collection, the host is asked once, and let go when the last
+   * stops. The host allows five collections per open app.
+   */
+  watch(collection: string, onChange: WatchListener['onChange'], onEnd?: WatchListener['onEnd']): () => void {
+    const refused = this.#grant('collections', collection);
 
     if (refused) throw refused;
 
-    this.notify('ui/navigate', { to });
+    const listener: WatchListener = { onChange, ...(onEnd ? { onEnd } : {}) };
+    let watch = this.#watches.get(collection);
+
+    if (!watch) {
+      const started: Watch = { listeners: new Set() };
+
+      watch = started;
+      this.#watches.set(collection, started);
+      // The host hears nothing from a worker before `worker/ready`, so the
+      // subscribe waits for the context that answers it.
+      void this.#connected.then(() => {
+        if (this.#watches.get(collection) !== started || this.#stopped) return;
+
+        const id = String(++this.#nextId);
+
+        this.#subscribing.set(id, { collection, watch: started });
+        this.#port.post({ jsonrpc: '2.0', id, method: 'data/subscribe', params: { collection } });
+      });
+    }
+
+    watch.listeners.add(listener);
+
+    const current = watch;
+
+    return () => {
+      if (!current.listeners.delete(listener) || current.listeners.size || this.#watches.get(collection) !== current) return;
+
+      this.#watches.delete(collection);
+
+      if (this.#stopped || this.#context === null) return;
+
+      this.#port.post({ jsonrpc: '2.0', id: String(++this.#nextId), method: 'data/unsubscribe', params: { collection } });
+    };
+  }
+
+  /**
+   * Asks Brydio to open a chat, a file or one of the app's own items (an item
+   * becomes the screen's selection). A request: resolves with `{ opened }`
+   * once it is open, and rejects with a `HostError` in words when the install
+   * lacks the grant, the person can't open it, or it isn't a chat, a file or
+   * an item. Throws at once when the manifest doesn't ask for the `navigate`
+   * host grant.
+   */
+  navigate(to: NavigateTarget): Promise<{ opened: boolean }> {
+    const refused = this.#grant('host', 'navigate');
+
+    if (refused) throw refused;
+    if (this.#stopped) return Promise.reject(new TeardownError());
+
+    const id = String(++this.#nextId);
+
+    return new Promise((resolve, reject) => {
+      this.#asking.set(id, { resolve, reject });
+      this.#port.post({ jsonrpc: '2.0', id, method: 'ui/navigate', params: { to } });
+    });
   }
 
   /** A sentence in Brydio's toast. The host cuts it at 200 characters. */
@@ -363,16 +444,73 @@ export class Bridge {
 
         return;
       }
+      case 'ui/result': {
+        const asked = this.#asking.get(String(params.id));
+        const result = params.result as { opened?: unknown } | undefined;
+
+        this.#asking.delete(String(params.id));
+        asked?.resolve({ opened: result?.opened === true });
+
+        return;
+      }
+      case 'ui/error': {
+        const asked = this.#asking.get(String(params.id));
+
+        this.#asking.delete(String(params.id));
+        asked?.reject(new HostError(params.error));
+
+        return;
+      }
+      case 'data/error': {
+        const call = this.#subscribing.get(String(params.id));
+
+        if (!call) return;
+
+        this.#subscribing.delete(String(params.id));
+        this.#endWatch(call.collection, call.watch, new HostError(params.error));
+
+        return;
+      }
+      case 'data/result':
+        this.#subscribing.delete(String(params.id));
+
+        return;
+      case 'data/changed': {
+        const watch = typeof params.collection === 'string' ? this.#watches.get(params.collection) : undefined;
+        const changes = Array.isArray(params.changes) ? (params.changes as DataChange[]) : [];
+
+        if (!watch || !changes.length) return;
+
+        for (const listener of [...watch.listeners]) run(() => listener.onChange(changes));
+
+        return;
+      }
+      case 'data/ended': {
+        const collection = String(params.collection ?? '');
+        const watch = this.#watches.get(collection);
+
+        if (watch) this.#endWatch(collection, watch, new HostError({ code: -32000, message: params.message }));
+
+        return;
+      }
       case 'worker/teardown':
         this.#teardown();
 
         return;
       default:
-        // `data/result`, `data/error` and anything a newer host says: nothing
-        // here asks for them. Ignored rather than refused, because the host
-        // is the side that decides what a version means.
+        // Anything a newer host says. Ignored rather than refused, because
+        // the host is the side that decides what a version means.
         return;
     }
+  }
+
+  /** A watch the host stopped or refused: forgotten, so watching again asks again, and each listener told. */
+  #endWatch(collection: string, watch: Watch, error: HostError): void {
+    if (this.#watches.get(collection) !== watch) return;
+
+    this.#watches.delete(collection);
+
+    for (const listener of watch.listeners) if (listener.onEnd) run(() => listener.onEnd!(error));
   }
 
   #takeContext(context: HostContext): void {
@@ -403,6 +541,12 @@ export class Bridge {
     for (const pending of this.#pending.values()) pending.reject(new TeardownError());
 
     this.#pending.clear();
+
+    for (const asked of this.#asking.values()) asked.reject(new TeardownError());
+
+    this.#asking.clear();
+    this.#watches.clear();
+    this.#subscribing.clear();
     this.#unlisten();
   }
 }

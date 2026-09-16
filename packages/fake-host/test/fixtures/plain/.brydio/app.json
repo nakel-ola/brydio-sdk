@@ -8,7 +8,9 @@
     "silent": { "entry": "screens/silent.js" },
     "walls": { "entry": "screens/walls.js" },
     "flood": { "entry": "screens/flood.js" },
-    "where": { "entry": "screens/where.js" }
+    "where": { "entry": "screens/where.js" },
+    "watched": { "entry": "screens/watched.js" },
+    "opens": { "entry": "screens/opens.js" }
   },
-  "grants": { "tools": ["*"], "collections": ["*"], "host": ["message"] }
+  "grants": { "tools": ["*"], "collections": ["*"], "host": ["message", "navigate"] }
 }

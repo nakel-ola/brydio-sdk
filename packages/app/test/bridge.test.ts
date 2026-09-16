@@ -123,19 +123,40 @@ describe('data, through the generated tools', () => {
   });
 });
 
-describe('notifications', () => {
-  test('navigate and toast go out as ui/navigate and ui/toast', async () => {
-    const { bridge, take, connect } = harness();
+describe('asking the host to open something, and toasts', () => {
+  test('navigate is a request, answered ui/result once it is open or ui/error saying why not; a toast is a notice', async () => {
+    const { bridge, take, connect, hostSays } = harness();
 
     await connect();
     take();
-    bridge.navigate({ kind: 'chat', id: 'ch_1' });
+
+    const chat = bridge.navigate({ kind: 'chat', id: 'ch_1' });
+    const missing = bridge.navigate({ kind: 'item', id: 'issue_9' });
+
     bridge.toast('Saved', 'success');
 
     expect(take()).toEqual([
-      { jsonrpc: '2.0', method: 'ui/navigate', params: { to: { kind: 'chat', id: 'ch_1' } } },
+      { jsonrpc: '2.0', id: '1', method: 'ui/navigate', params: { to: { kind: 'chat', id: 'ch_1' } } },
+      { jsonrpc: '2.0', id: '2', method: 'ui/navigate', params: { to: { kind: 'item', id: 'issue_9' } } },
       { jsonrpc: '2.0', method: 'ui/toast', params: { text: 'Saved', tone: 'success' } },
     ]);
+
+    hostSays('ui/error', { id: '2', error: { code: -32000, message: 'There is no such issue.' } });
+    hostSays('ui/result', { id: '1', result: { opened: true } });
+    // A second answer to the same call changes nothing.
+    hostSays('ui/error', { id: '1', error: { code: -32000, message: 'late' } });
+
+    expect(await chat).toEqual({ opened: true });
+
+    const refused = (await missing.catch(error => error)) as HostError;
+
+    expect(refused).toBeInstanceOf(HostError);
+    expect([refused.message, refused.code]).toEqual(['There is no such issue.', -32000]);
+
+    const waiting = bridge.navigate({ kind: 'file', id: 'file_1' });
+
+    hostSays('worker/teardown');
+    expect(await waiting.catch(error => error)).toBeInstanceOf(TeardownError);
   });
 
   test('the host context reaches subscribers each time it is sent', async () => {
@@ -212,6 +233,92 @@ describe('teardown', () => {
     root.appendChild(card());
     bridge.toast('too late');
     await settle();
+
+    expect(take()).toEqual([]);
+  });
+});
+
+describe('watching data (contracts §9, data/subscribe)', () => {
+  const data = (method: string) => (message: { method?: string }) => message.method === method;
+
+  test('asks once per collection after the host has answered ready, and lets go when the last listener stops', async () => {
+    const { bridge, take, hostSays, connect } = harness();
+    const heard: unknown[] = [];
+
+    // Before the context: nothing goes, because the host drops what comes before ready.
+    const first = bridge.watch('issues', changes => heard.push(['first', changes]));
+
+    expect(take().filter(data('data/subscribe'))).toEqual([]);
+
+    await connect();
+
+    const second = bridge.watch('issues', changes => heard.push(['second', changes]));
+
+    await settle();
+
+    expect(take().filter(one => one.method?.startsWith('data/'))).toEqual([
+      { jsonrpc: '2.0', id: '1', method: 'data/subscribe', params: { collection: 'issues' } },
+    ]);
+
+    hostSays('data/result', { id: '1', result: { watching: true } });
+    hostSays('data/changed', { collection: 'issues', changes: [{ id: 'issue_1', op: 'update', version: 2 }] });
+    hostSays('data/changed', { collection: 'labels', changes: [{ id: 'label_1', op: 'create', version: 1 }] });
+
+    expect(heard).toEqual([
+      ['first', [{ id: 'issue_1', op: 'update', version: 2 }]],
+      ['second', [{ id: 'issue_1', op: 'update', version: 2 }]],
+    ]);
+
+    first();
+    expect(take()).toEqual([]);
+
+    second();
+    second();
+    expect(take()).toEqual([{ jsonrpc: '2.0', id: '2', method: 'data/unsubscribe', params: { collection: 'issues' } }]);
+
+    hostSays('data/changed', { collection: 'issues', changes: [{ id: 'issue_1', op: 'delete', version: 2 }] });
+    expect(heard).toHaveLength(2);
+  });
+
+  test('tells each listener why the host refused or ended a watch, and asks again next time', async () => {
+    const { bridge, take, hostSays, connect } = harness();
+    const ended: [string, number][] = [];
+
+    await connect();
+    take();
+    bridge.watch('a', () => {}, error => ended.push([error.message, error.code]));
+    await settle();
+    hostSays('data/error', { id: '1', error: { code: -32000, message: 'An app can watch at most 5 collections at once.' } });
+
+    bridge.watch('b', () => {}, error => ended.push([error.message, error.code]));
+    await settle();
+    hostSays('data/result', { id: '2', result: { watching: true } });
+    hostSays('data/ended', { collection: 'b', message: 'The app stopped hearing about changes.' });
+
+    expect(ended).toEqual([
+      ['An app can watch at most 5 collections at once.', -32000],
+      ['The app stopped hearing about changes.', -32000],
+    ]);
+
+    bridge.watch('b', () => {});
+    await settle();
+
+    expect(take().filter(data('data/subscribe')).map(one => one.params)).toEqual([{ collection: 'a' }, { collection: 'b' }, { collection: 'b' }]);
+  });
+
+  test('refuses a collection the manifest doesn’t grant, and sends nothing after teardown', async () => {
+    const { bridge, take, hostSays, connect } = harness({ app: { grants: { collections: ['issues'] } } });
+
+    expect(() => bridge.watch('secrets', () => {})).toThrow(GrantError);
+
+    await connect();
+
+    const stop = bridge.watch('issues', () => {});
+
+    await settle();
+    take();
+    hostSays('worker/teardown');
+    stop();
 
     expect(take()).toEqual([]);
   });

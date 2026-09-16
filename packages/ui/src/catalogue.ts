@@ -50,8 +50,13 @@ export const PARAGRAPH_MAX = 4_000;
 export const GAPS = ['1', '2', '3', '4', '5', '6', '7', '8'] as const;
 export const PADDINGS = ['2', '3', '4', '5', '6'] as const;
 
-/** The five tones a status can be shown in (A6-F01-S02). */
+/**
+ * The tones a status can be shown in, and the sizes an element may name.
+ * Brydio generates these from its kit's `tokens.css` (A6-F01-S02, A6-F05-S03),
+ * so the catalogue can't offer one the stylesheet doesn't have.
+ */
 export const TONES = ['neutral', 'brand', 'success', 'warn', 'danger'] as const;
+export const SIZES = ['sm', 'md', 'lg'] as const;
 
 /** The most a one-line field holds. */
 export const INPUT_MAX = 1_000;
@@ -100,6 +105,26 @@ export const MENU_ICONS = [
   'trash',
 ] as const;
 
+/**
+ * The icons a button may show, by name, from the shell's own set: a menu's,
+ * plus the few a button needs that a menu item doesn't. An app can't supply a
+ * picture.
+ */
+export const BUTTON_ICONS = [...MENU_ICONS, 'more', 'close', 'arrowRight', 'chevronRight', 'chevronDown', 'chevronUp'] as const;
+
+/** The most cards a board column can say it holds. */
+export const BOARD_CARDS = 100_000;
+
+/** The most text one `bry-markdown` holds. Longer belongs in more than one. */
+export const MARKDOWN_MAX = 50_000;
+
+/** The most files one diff lists. */
+export const DIFF_FILES = 300;
+/** A file's path, and where it was. */
+const DIFF_PATH = 1_000;
+/** One file's unified diff text. A larger one is sent when the person opens it, or not at all. */
+export const DIFF_PATCH = 200_000;
+
 /** An ISO date is ten characters: `2026-09-16`. */
 const ISO_DATE = 10;
 
@@ -120,7 +145,14 @@ export const CATALOGUE = {
     children: true,
   },
   'bry-heading': {
-    props: { level: { kind: 'int', min: 1, max: 3 }, text: { kind: 'text', max: LABEL_MAX } },
+    // `level` is its place in the outline, `variant` its size, chosen apart
+    // so a small heading never lies about its level. Without a `variant`,
+    // the level picks one.
+    props: {
+      level: { kind: 'int', min: 1, max: 4 },
+      text: { kind: 'text', max: LABEL_MAX },
+      variant: { kind: 'enum', values: ['title', 'heading', 'subheading', 'label'] },
+    },
     required: ['text'],
     events: [],
     children: false,
@@ -128,7 +160,11 @@ export const CATALOGUE = {
   'bry-text': {
     props: {
       text: { kind: 'text', max: PARAGRAPH_MAX },
-      tone: { kind: 'enum', values: ['default', 'muted', 'danger'] },
+      // The five status tones, plus the two ink levels text has.
+      tone: { kind: 'enum', values: ['default', 'muted', ...TONES] },
+      // The type role it is set in. `size` is the older way to say body or
+      // ui; `variant` wins when both are given.
+      variant: { kind: 'enum', values: ['body', 'ui', 'caption', 'label'] },
       size: { kind: 'enum', values: ['sm', 'md'] },
     },
     required: ['text'],
@@ -143,6 +179,10 @@ export const CATALOGUE = {
       disabled: { kind: 'boolean' },
       // Disabled, showing progress, while what it started is running.
       working: { kind: 'boolean' },
+      // An icon beside the label, or instead of it with `hideLabel`: the
+      // label is still what a screen reader says.
+      icon: { kind: 'enum', values: BUTTON_ICONS },
+      hideLabel: { kind: 'boolean' },
     },
     required: ['label'],
     events: ['press'],
@@ -218,7 +258,8 @@ export const CATALOGUE = {
     children: true,
   },
   'bry-grid': {
-    // Children in equal columns; the app picks how many from the width it is given.
+    // Children in equal columns. `columns` is the most there are when there is
+    // room: the grid drops columns as its container narrows, down to one.
     props: {
       columns: { kind: 'enum', values: ['1', '2', '3', '4', '5', '6'] },
       gap: { kind: 'enum', values: GAPS },
@@ -240,7 +281,7 @@ export const CATALOGUE = {
     // Initials only: a picture address would let an app load anything from anywhere.
     props: {
       name: { kind: 'text', max: LABEL_MAX },
-      size: { kind: 'enum', values: ['sm', 'md', 'lg'] },
+      size: { kind: 'enum', values: SIZES },
     },
     required: ['name'],
     events: [],
@@ -445,6 +486,86 @@ export const CATALOGUE = {
     },
     required: ['label'],
     events: ['change'],
+    children: false,
+  },
+  'bry-board': {
+    // Columns of cards a person moves between (A6-F03-S01). Its children are
+    // `bry-board-column`s, in order, and theirs are the cards. Every card on a
+    // board is one height, `cardSize`, so a long column is windowed.
+    //
+    // A card dragged, or moved with the keyboard, raises `move` with
+    // `{ card, from, to, position }`: node ids, and the card's index in `to`
+    // afterwards. It is drawn there at once. The app confirms by changing the
+    // columns' cards (moving the card there), or refuses by sending `settled`
+    // with the card's id, and the card goes back. A move with no answer goes
+    // back after fifteen seconds.
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      cardSize: { kind: 'enum', values: ['sm', 'md', 'lg'] },
+      settled: { kind: 'text', max: KEY_MAX },
+      loading: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+    },
+    events: ['move'],
+    children: true,
+  },
+  'bry-board-column': {
+    // One column of a board. `count` is how many cards it holds when the app
+    // sends only some, `start` the index of the first sent; like a virtual
+    // list it raises `range` with `{ start, end }` when it needs others. A
+    // column at its `limit` refuses a drop, and says so.
+    props: {
+      title: { kind: 'text', max: LABEL_MAX },
+      count: { kind: 'int', min: 0, max: BOARD_CARDS },
+      limit: { kind: 'int', min: 1, max: BOARD_CARDS },
+      start: { kind: 'int', min: 0, max: BOARD_CARDS },
+      loading: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['title'],
+    events: ['range'],
+    children: true,
+  },
+  'bry-markdown': {
+    // Formatted text, drawn the way the assistant's messages are. Raw HTML is
+    // shown as the characters it is; a link is `https` only and asks the
+    // person first; a picture loads only from Brydio's own file store. Past
+    // 4,000 characters the rest waits behind "Show more", unless `expanded`.
+    props: {
+      text: { kind: 'text', max: MARKDOWN_MAX },
+      expanded: { kind: 'boolean' },
+    },
+    required: ['text'],
+    events: [],
+    children: false,
+  },
+  'bry-diff': {
+    // A pull request's changes. `files` lists each changed file with its
+    // unified diff text in `patch`; a file sent without `patch` is listed, and
+    // opening it raises `expand` with `{ file }` so the app can send it.
+    // Pressing a line number chooses that line, and Shift the range to it;
+    // either raises `select` with `{ file, side, start, end }`.
+    props: {
+      files: {
+        kind: 'list',
+        max: DIFF_FILES,
+        of: {
+          kind: 'shape',
+          fields: {
+            path: { kind: 'text', max: DIFF_PATH },
+            previous: { kind: 'text', max: DIFF_PATH },
+            status: { kind: 'enum', values: ['added', 'modified', 'removed', 'renamed'] },
+            patch: { kind: 'text', max: DIFF_PATCH },
+          },
+          required: ['path'],
+        },
+      },
+      label: { kind: 'text', max: LABEL_MAX },
+      loading: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['files'],
+    events: ['expand', 'select'],
     children: false,
   },
 } as const satisfies Readonly<Record<`bry-${string}`, ElementSpec>>;

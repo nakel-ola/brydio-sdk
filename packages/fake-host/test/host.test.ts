@@ -189,3 +189,62 @@ describe('testApp, for an app’s own tests', () => {
     await expect(testApp(app)).rejects.toThrow(/did not build[\s\S]*network_global/);
   });
 });
+
+describe('a screen watching its data', () => {
+  test('sees a record another person changes, gathered once per burst, and its own writes too', async () => {
+    host = FakeHost.start({ entry: screen('watched'), manifest, fixtures: { notes: [{ id: 'note_a', title: 'First' }] } });
+
+    await host.mounted();
+    await host.waitFor(() => host!.byText('1 notes: First'), { what: 'the first read' });
+    await host.waitFor(() => host!.byText('Elsewhere: There is no such collection.'), { what: 'the refused watch' });
+
+    expect(host.watching).toEqual(['notes']);
+    expect(host.received.filter(one => one.method === 'data/subscribe').map(one => one.params)).toEqual([
+      { collection: 'notes' },
+      { collection: 'elsewhere' },
+    ]);
+
+    // Somebody else, twice in a burst: the screen is told once, with the record at its latest.
+    host.store!.put('notes', { id: 'note_a', title: 'Renamed' });
+    host.store!.put('notes', { id: 'note_a', title: 'Renamed again' });
+    host.store!.put('notes', { id: 'note_b', title: 'Second' });
+    await host.waitFor(() => host!.byText('2 notes: Second, Renamed again'), { what: 'the screen to follow' });
+
+    expect(host.byText('update note_a v3; create note_b v1')).toBeDefined();
+
+    host.store!.remove('notes', 'note_b');
+    await host.waitFor(() => host!.byText('1 notes: Renamed again'), { what: 'the delete' });
+    await host.idle();
+
+    expect(host.byText('delete note_b v1')).toBeDefined();
+
+    host.endWatch('notes', 'The app stopped hearing about changes.');
+    await host.waitFor(() => host!.byText('Ended: The app stopped hearing about changes.'), { what: 'the end' });
+
+    expect(host.watching).toEqual([]);
+  });
+});
+
+test('a screen asking to open something hears whether it opened, in the host’s words', async () => {
+  host = FakeHost.start({
+    entry: screen('opens'),
+    manifest,
+    navigate: to => {
+      if (to.id === 'note_gone') throw new Error('There is no such note.');
+    },
+  });
+
+  await host.mounted();
+  await host.waitFor(() => host!.byText('url https://example.com: An app can open a chat, a file or one of its own items, by id.'), { what: 'the last answer' });
+
+  expect(host.findAll(node => node.type === 'bry-text').map(node => node.props.text)).toEqual([
+    'Opening',
+    'chat conv_1: opened',
+    'item note_gone: There is no such note.',
+    'url https://example.com: An app can open a chat, a file or one of its own items, by id.',
+  ]);
+  expect(host.navigations).toEqual([
+    { kind: 'chat', id: 'conv_1', opened: true },
+    { kind: 'item', id: 'note_gone', opened: false, error: 'There is no such note.' },
+  ]);
+});

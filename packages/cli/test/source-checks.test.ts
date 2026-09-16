@@ -26,7 +26,7 @@ describe('elements and settings, in JSX', () => {
 
   test('a value outside the setting’s list, written out or in either branch of a condition', () => {
     expect(found('<bry-stack gap="9" />')).toEqual([[1, 'prop_value_invalid']]);
-    expect(codes('<bry-heading text="Hi" level={4} />')).toEqual(['prop_value_invalid']);
+    expect(codes('<bry-heading text="Hi" level={5} />')).toEqual(['prop_value_invalid']);
     expect(codes('<bry-heading text="Hi" level="2" />')).toEqual(['prop_value_invalid']);
     expect(codes('<bry-button label="Go" disabled="yes" />')).toEqual(['prop_value_invalid']);
     expect(codes('<bry-text text="Hi" tone={done ? "muted" : "loud"} />')).toEqual(['prop_value_invalid']);

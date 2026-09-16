@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
-import { ROOT_ID, type ElementAttributes, type TreeMountParams, type TreePatchParams } from '../src/index.ts';
-import { Button, render, useList, useState } from '../src/preact/index.ts';
+import { ROOT_ID, type ElementAttributes, type RemoteElement, type TreeMountParams, type TreePatchParams } from '../src/index.ts';
+import { Button, render, useBoard, useList, useState } from '../src/preact/index.ts';
 import { harness, settle } from './harness.ts';
 
 describe('the Preact adapter', () => {
@@ -145,6 +145,144 @@ describe('the Preact adapter', () => {
     expect(seen).toEqual(['bin', true, '2026-10-01']);
     expect(sent.filter(one => one.method === 'tree/patch').flatMap(one => (one.params as TreePatchParams).ops)).toEqual([
       { op: 'props', id: of('bry-table').id, props: { sort: { key: 'title', direction: 'desc' } } },
+    ]);
+  });
+
+  test('confirms a board’s move by rendering the card in its new column, and refuses one by settling it, every time', async () => {
+    const { root, connect, sent, hostSays, take } = harness();
+    type Status = 'todo' | 'doing';
+    const moves: unknown[] = [];
+    let refuse = false;
+
+    function Issues() {
+      const [issues, setIssues] = useState([
+        { id: 'a', title: 'Crash on save', status: 'todo' as Status },
+        { id: 'b', title: 'Add dark mode', status: 'todo' as Status },
+        { id: 'c', title: 'Broken link', status: 'doing' as Status },
+      ]);
+      const keys = useBoard<string, Status>();
+
+      return (
+        <bry-board
+          label="Issues"
+          onMove={event => {
+            const move = keys.read(event);
+
+            moves.push(move);
+            if (!move) return;
+            if (refuse) return keys.refuse(event);
+
+            const moved = issues.find(one => one.id === move.card)!;
+            const rest = issues.filter(one => one !== moved);
+            const inTo = rest.filter(one => one.status === move.to);
+            const before = inTo[move.position];
+
+            rest.splice(before ? rest.indexOf(before) : rest.length, 0, { ...moved, status: move.to });
+            setIssues(rest);
+          }}
+        >
+          {(['todo', 'doing'] as const).map(status => (
+            <bry-board-column key={status} ref={keys.column(status)} title={status === 'todo' ? 'To do' : 'Doing'}>
+              {issues
+                .filter(one => one.status === status)
+                .map(issue => (
+                  <bry-card key={issue.id} ref={keys.card(issue.id)} title={issue.title} />
+                ))}
+            </bry-board-column>
+          ))}
+        </bry-board>
+      );
+    }
+
+    render(<Issues />, root);
+    await connect();
+
+    const mount = sent.find(one => one.method === 'tree/mount')!.params as TreeMountParams;
+    const node = (type: string, words: string) => mount.nodes.find(one => one.type === type && Object.values(one.props ?? {}).includes(words))!;
+    const [board, todo, doing, a] = [mount.nodes.find(one => one.type === 'bry-board')!, node('bry-board-column', 'To do'), node('bry-board-column', 'Doing'), node('bry-card', 'Crash on save')];
+
+    take();
+    hostSays('tree/event', { node: board.id, name: 'move', detail: { card: a.id, from: todo.id, to: doing.id, position: 1 } });
+    await settle();
+
+    expect(moves).toEqual([{ card: 'a', from: 'todo', to: 'doing', position: 1 }]);
+
+    // Preact draws a keyed card that changed parent afresh: the old node goes, and a new one arrives where the move put it.
+    const ops = take().flatMap(one => (one.params as TreePatchParams).ops);
+    const inserted = ops.find(op => op.op === 'insert')!;
+
+    expect(ops).toEqual([
+      { op: 'remove', id: a.id },
+      { op: 'insert', parent: doing.id, index: 1, node: { id: inserted.op === 'insert' ? inserted.node.id : '', type: 'bry-card', props: { title: 'Crash on save' } } },
+    ]);
+    expect((root.nodeById(doing.id) as RemoteElement).childNodes.map(one => (one as RemoteElement).getAttribute('title'))).toEqual(['Broken link', 'Crash on save']);
+
+    // The new node answers to the same key, so the next move reads right.
+    const moved = inserted.op === 'insert' ? inserted.node.id : '';
+
+    refuse = true;
+    hostSays('tree/event', { node: board.id, name: 'move', detail: { card: moved, from: doing.id, to: todo.id, position: 0 } });
+    await settle();
+    hostSays('tree/event', { node: board.id, name: 'move', detail: { card: moved, from: doing.id, to: todo.id, position: 0 } });
+    await settle();
+
+    expect(moves.slice(1)).toEqual([
+      { card: 'a', from: 'doing', to: 'todo', position: 0 },
+      { card: 'a', from: 'doing', to: 'todo', position: 0 },
+    ]);
+    expect(take().flatMap(one => (one.params as TreePatchParams).ops)).toEqual([
+      { op: 'props', id: board.id, props: { settled: moved } },
+      { op: 'props', id: board.id, props: { settled: moved } },
+    ]);
+
+    // A move naming a card that has gone reads as nothing.
+    hostSays('tree/event', { node: board.id, name: 'move', detail: { card: a.id, from: todo.id, to: doing.id, position: 0 } });
+    await settle();
+
+    expect(moves.at(-1)).toBeNull();
+  });
+
+  test('reads a watched list again when the collection changes, and stops watching when it leaves', async () => {
+    const { root, connect, sent, hostSays, take } = harness();
+    let pages = 0;
+
+    function Count({ live }: { live: boolean }) {
+      const { items } = useList('issues', {}, { watch: live });
+
+      return <bry-text text={`${items.length} issues`} />;
+    }
+
+    render(<Count live />, root);
+    await connect();
+
+    const answer = (count: number) => {
+      const call = [...sent].reverse().find(one => one.method === 'tools/call')!;
+
+      pages += 1;
+      hostSays('tools/result', { id: call.id, result: { structuredContent: { items: Array.from({ length: count }, (_, at) => ({ id: `i${at}`, version: 1 })), nextCursor: null } } });
+    };
+
+    answer(1);
+    await settle();
+    expect(take().filter(one => one.method === 'data/subscribe')).toEqual([
+      { jsonrpc: '2.0', id: '2', method: 'data/subscribe', params: { collection: 'issues' } },
+    ]);
+
+    hostSays('data/changed', { collection: 'issues', changes: [{ id: 'i1', op: 'create', version: 1 }] });
+    await settle();
+    answer(2);
+    await settle();
+
+    expect(pages).toBe(2);
+    // The first read was call 1, the watch 2, and the read the change set off 3.
+    expect(sent.filter(one => one.method === 'tools/call').map(one => one.id)).toEqual(['3']);
+    expect(root.firstChild).toMatchObject({ props: { text: '2 issues' } });
+
+    render(null, root);
+    await settle();
+
+    expect(take().filter(one => one.method === 'data/unsubscribe')).toEqual([
+      { jsonrpc: '2.0', id: '4', method: 'data/unsubscribe', params: { collection: 'issues' } },
     ]);
   });
 

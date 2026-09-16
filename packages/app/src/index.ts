@@ -1,5 +1,5 @@
 import { defaultBridge, type Bridge } from './bridge.ts';
-import type { AppDocument, HostContext, ListQuery, ListResult, NavigateTarget, ToastTone, ToolResult } from './protocol.ts';
+import type { AppDocument, DataChange, HostContext, ListQuery, ListResult, NavigateTarget, ToastTone, ToolResult } from './protocol.ts';
 import { createRoot, type RemoteRoot, type RootOptions } from './tree.ts';
 
 /**
@@ -46,8 +46,7 @@ export const tools = {
 
 /**
  * Reads of the app's collections, through the generated `get_*` and `list_*`
- * tools (the host answers §9's `data/*` with an error until Phase 1). Writes
- * go through `tools.call`.
+ * tools, and watches on them. Writes go through `tools.call`.
  */
 export const data = {
   get<D = AppDocument>(collection: string, id: string): Promise<D> {
@@ -56,11 +55,29 @@ export const data = {
   list<D = AppDocument>(collection: string, query: ListQuery = {}): Promise<ListResult<D>> {
     return defaultBridge().listDocuments<D>(collection, query);
   },
+  /**
+   * Calls `onChange` with each burst of changes to a collection, whoever made
+   * them, until the returned function is called. A change names a record
+   * (`{ id, op, version }`) and never says what it holds, so read it again.
+   * `onEnd` hears why the host refused or stopped the watch. At most five
+   * collections per open app.
+   *
+   * ```ts
+   * const stop = data.watch('issues', () => void redraw());
+   * ```
+   */
+  watch(collection: string, onChange: (changes: DataChange[]) => void, onEnd?: (error: Error) => void): () => void {
+    return defaultBridge().watch(collection, onChange, onEnd);
+  },
 };
 
-/** Opens a chat, a file or an item in Brydio. Needs the `navigate` host grant; the host drops it until Phase 1. */
-export function navigate(to: NavigateTarget): void {
-  defaultBridge().navigate(to);
+/**
+ * Asks Brydio to open a chat, a file or one of the app's items, and resolves
+ * with `{ opened }` once it is open; rejects with a `HostError` saying why
+ * not. Needs the `navigate` host grant.
+ */
+export function navigate(to: NavigateTarget): Promise<{ opened: boolean }> {
+  return defaultBridge().navigate(to);
 }
 
 /** A short message in Brydio's own toast. */
@@ -102,6 +119,7 @@ export {
   type BridgeOptions,
   type BuiltApp,
   type BuiltCollection,
+  type WatchListener,
 } from './bridge.ts';
 export { workerPort, type Port } from './port.ts';
 export {
@@ -112,6 +130,8 @@ export {
   TreeError,
   avatar,
   badge,
+  board,
+  boardColumn,
   button,
   card,
   checkbox,
@@ -120,6 +140,7 @@ export {
   createText,
   date,
   dialog,
+  diff,
   emptyState,
   grid,
   h,
@@ -127,6 +148,7 @@ export {
   input,
   label,
   listRow,
+  markdown,
   menu,
   select,
   skeleton,

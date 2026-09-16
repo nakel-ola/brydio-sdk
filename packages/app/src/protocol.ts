@@ -157,6 +157,22 @@ export interface ListResult<D = AppDocument> {
   note?: string;
 }
 
+/** How many collections one open app may watch. The next is refused. */
+export const MAX_WATCHES = 5;
+
+/** How long the host gathers one collection's changes before it tells the app. */
+export const COALESCE_MS = 100;
+
+/**
+ * That one record changed: its id, what happened and its version after. Never
+ * what it says: the app reads it again, and the read is checked then.
+ */
+export interface DataChange {
+  id: string;
+  op: 'create' | 'update' | 'delete';
+  version: number;
+}
+
 export type NavigateTarget = { kind: 'chat' | 'file' | 'item'; id: string };
 
 export type ToastTone = 'info' | 'success' | 'danger';
@@ -195,8 +211,24 @@ export interface UiToastParams {
   tone?: ToastTone;
 }
 
-/** The methods a worker sends. `data/get` and `data/list` exist in §9 but the host refuses them in Phase 0. */
-export const WORKER_METHODS = ['worker/ready', 'tree/mount', 'tree/patch', 'tools/call', 'data/get', 'data/list', 'ui/navigate', 'ui/toast'] as const;
+/** `data/subscribe` and `data/unsubscribe`: the envelope's `id` is the call's, answered `data/result` or `data/error`. */
+export interface DataWatchParams {
+  collection: string;
+}
+
+/** The methods a worker sends. */
+export const WORKER_METHODS = [
+  'worker/ready',
+  'tree/mount',
+  'tree/patch',
+  'tools/call',
+  'data/get',
+  'data/list',
+  'data/subscribe',
+  'data/unsubscribe',
+  'ui/navigate',
+  'ui/toast',
+] as const;
 
 export type WorkerMethod = (typeof WORKER_METHODS)[number];
 
@@ -231,6 +263,30 @@ export interface TreeRefusedParams {
   reason: string;
 }
 
+/** A watched collection's changes, gathered for `COALESCE_MS`, each record once at its latest. */
+export interface DataChangedParams {
+  collection: string;
+  changes: DataChange[];
+}
+
+/** A watch stopped without being asked to, and why, in a sentence. */
+export interface DataEndedParams {
+  collection: string;
+  message: string;
+}
+
+/** `data/result` for a subscribe: `{ id, result: { watching } }`. */
+export interface DataResultParams {
+  id: string | number;
+  result: unknown;
+}
+
+/** `ui/result` answers a `ui/navigate` that carried an id: it is open. `ui/error` carries `{ id, error }`. */
+export interface UiResultParams {
+  id: string | number;
+  result: { opened: boolean };
+}
+
 export const HOST_METHODS = [
   'host/context',
   'tree/event',
@@ -239,6 +295,10 @@ export const HOST_METHODS = [
   'tools/error',
   'data/result',
   'data/error',
+  'data/changed',
+  'data/ended',
+  'ui/result',
+  'ui/error',
   'worker/teardown',
 ] as const;
 

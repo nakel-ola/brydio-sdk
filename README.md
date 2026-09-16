@@ -169,11 +169,11 @@ The building blocks and their settings:
 | Block | Settings | Tells the screen |
 |---|---|---|
 | `bry-stack` | `direction` row or column, `gap` 1–8, `align`, `justify`, `wrap` | nothing |
-| `bry-grid` | `columns` 1–6, `gap` 1–8, `align` | nothing |
-| `bry-heading` | `text` (needed), `level` 1–3 | nothing |
-| `bry-text` | `text` (needed), `tone` default, muted or danger, `size` sm or md | nothing |
+| `bry-grid` | `columns` 1–6 (the most, dropping to one as it narrows), `gap` 1–8, `align` | nothing |
+| `bry-heading` | `text` (needed), `level` 1–4, `variant` title, heading, subheading or label | nothing |
+| `bry-text` | `text` (needed), `tone` default, muted, neutral, brand, success, warn or danger, `variant` body, ui, caption or label, `size` sm or md | nothing |
 | `bry-label` | `text` (needed), `required`; holds the control it names | nothing |
-| `bry-button` | `label` (needed), `variant` primary, secondary, ghost or danger, `size`, `disabled`, `working` | `onPress` |
+| `bry-button` | `label` (needed), `variant` primary, secondary, ghost or danger, `size`, `disabled`, `working`, `icon` (one of `BUTTON_ICONS`), `hideLabel` | `onPress` |
 | `bry-input` | `value`, `placeholder`, `label`, `kind` text, email, url or search, `maxLength`, `required`, `disabled`, `error` | `onChange` and `onSubmit`, with `{ value }` |
 | `bry-textarea` | `value`, `placeholder`, `label`, `maxLength`, `required`, `disabled`, `error` | `onChange`, with `{ value }` |
 | `bry-select` | `options` (needed, up to 100 `{ value, label }`), `value`, `placeholder`, `label`, `size`, `disabled`, `error` | `onChange`, with `{ value }` |
@@ -191,10 +191,55 @@ The building blocks and their settings:
 | `bry-split` | `ratio` 20–80, `label`; holds its two panes | nothing |
 | `bry-checkbox` | `label` (needed), `checked`, `disabled`, `error` | `onChange`, with `{ checked }` |
 | `bry-switch` | `label` (needed), `checked`, `disabled`, `error` | `onChange`, with `{ checked }` |
+| `bry-board` | `label`, `cardSize` sm, md or lg, `settled`, `loading`, `empty`; holds its columns | `onMove` with `{ card, from, to, position }`, node ids |
+| `bry-board-column` | `title` (needed), `count`, `limit`, `start`, `loading`, `empty`; holds its cards | `onRange` with `{ start, end }` |
+| `bry-markdown` | `text` (needed, up to 50,000), `expanded` | nothing |
+| `bry-diff` | `files` (needed, up to 300 `{ path, previous, status, patch }`), `label`, `loading`, `empty` | `onExpand` with `{ file }`, `onSelect` with `{ file, side, start, end }` |
 
-A stack, a grid, a label, a card, a list row, a virtual list, a dialog, a menu
-and a split hold other blocks; the rest take their words as a setting. Each has
-a plain factory of the same name in `@brydio/app` (`listRow`, `emptyState`,
-`virtualList`) for a screen written without Preact; a switch's is
-`switchElement`, since `switch` is a reserved word. A menu item's `icon` is one
-of `MENU_ICONS` from `@brydio/ui`.
+A stack, a grid, a label, a card, a list row, a virtual list, a dialog, a menu,
+a split, a board and a board column hold other blocks; the rest take their
+words as a setting. Each has a plain factory of the same name in `@brydio/app`
+(`listRow`, `emptyState`, `virtualList`, `boardColumn`) for a screen written
+without Preact; a switch's is `switchElement`, since `switch` is a reserved
+word. A menu item's `icon` is one of `MENU_ICONS` from `@brydio/ui`.
+
+**A board.** Brydio draws a moved card in its new place at once and raises
+`move`. The app answers by changing its state so the card renders in the new
+column, which confirms it, or by refusing, which puts it back. `useBoard` turns
+the event's node ids into your own keys:
+
+```tsx
+const keys = useBoard<string, Status>();
+
+<bry-board label="Issues" onMove={async event => {
+  const move = keys.read(event); // { card: issue id, from, to: Status, position }
+  if (!move) return;
+  try {
+    await tools.call('update_issue', { id: move.card, version, status: move.to });
+    await refetch(); // the card renders under move.to: confirmed
+  } catch {
+    keys.refuse(event); // sends `settled`: the card goes back
+  }
+}}>
+  {COLUMNS.map(status => (
+    <bry-board-column key={status} ref={keys.column(status)} title={title(status)}>
+      {issues.filter(one => one.status === status).map(issue => (
+        <bry-card key={issue.id} ref={keys.card(issue.id)} title={issue.title} />
+      ))}
+    </bry-board-column>
+  ))}
+</bry-board>
+```
+
+**Watching data.** `useList('issues', query, { watch: true })` reads the list
+again whenever a record in the collection changes, whoever changed it.
+`useWatch(collection, changes => …)`, or `data.watch` without Preact, hears
+each burst as `{ id, op, version }`; a change never carries the record. An
+open app may watch five collections. In `@brydio/fake-host`,
+`host.store.put(collection, fields)` and `host.store.remove(collection, id)`
+change a record as somebody else would, and `host.endWatch(collection)` ends a
+watch.
+
+**Opening things.** `await navigate({ kind: 'chat' | 'file' | 'item', id })`
+resolves with `{ opened }` or rejects with a `HostError` saying why not. It
+needs the `navigate` host grant.
