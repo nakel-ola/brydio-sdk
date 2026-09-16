@@ -12,7 +12,8 @@ import { join, relative, resolve } from 'node:path';
 
 import { callsOf, type ScreenCall } from './calls.ts';
 import { grantProblems } from './grant-checks.ts';
-import { DIST, SOURCE_EXTENSIONS, readProject, type Problem } from './project.ts';
+import { DIST, readProject, type Problem } from './project.ts';
+import { isScreenSource } from './screen-sources.ts';
 import { checkSource } from './source-checks.ts';
 
 /**
@@ -119,9 +120,7 @@ function screenSources(root: string): [string, string][] {
   if (!existsSync(src)) return [];
 
   return [...filesUnder(src)]
-    .filter(([path]) => SOURCE_EXTENSIONS.some(extension => path.endsWith(extension)) && !path.endsWith('.d.ts'))
-    // Tests run in the fake host, not in a workspace; they may do what a screen may not.
-    .filter(([path]) => !/(^|\/)(test|tests|__tests__)\/|\.(test|spec)\.[jt]sx?$/.test(path))
+    .filter(([path]) => isScreenSource(`src/${path}`))
     .map(([path, bytes]) => [`src/${path}`, new TextDecoder().decode(bytes)]);
 }
 

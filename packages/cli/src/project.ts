@@ -2,6 +2,8 @@ import { validateManifest, type AppManifestWithData, type ManifestProblem } from
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 
+import { SOURCE_EXTENSIONS } from './screen-sources.ts';
+
 /**
  * Where an app's parts are, by convention (A5-F02).
  *
@@ -13,7 +15,7 @@ import { join, relative, resolve } from 'node:path';
  */
 
 export const MANIFEST_PATHS = ['.brydio/app.json', 'app.json'] as const;
-export const SOURCE_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js'] as const;
+export { SOURCE_EXTENSIONS } from './screen-sources.ts';
 export const DIST = 'dist';
 
 /** One thing wrong, named down to the file and line where there is one. */
