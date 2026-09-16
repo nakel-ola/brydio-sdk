@@ -186,7 +186,8 @@ export interface ProjectName {
   name: string;
 }
 
-export type NavigateTarget = { kind: 'chat' | 'file' | 'item'; id: string };
+/** What `ui/navigate` opens. `{ kind: 'item', id: null }` closes the open item and returns to the screen (Brydio's G14). */
+export type NavigateTarget = { kind: 'chat' | 'file' | 'item'; id: string } | { kind: 'item'; id: null };
 
 export type ToastTone = 'info' | 'success' | 'danger';
 

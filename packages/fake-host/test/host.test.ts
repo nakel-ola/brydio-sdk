@@ -235,7 +235,7 @@ test('a screen asking to open something hears whether it opened, in the host’s
   });
 
   await host.mounted();
-  await host.waitFor(() => host!.byText('selected {"kind":"item","id":"note_a"}'), { what: 'the item to become the selection' });
+  await host.waitFor(() => host!.byText('selected nothing'), { what: 'the item to be closed' });
 
   expect(host.findAll(node => node.type === 'bry-text').map(node => node.props.text)).toEqual([
     'Opening',
@@ -245,6 +245,9 @@ test('a screen asking to open something hears whether it opened, in the host’s
     'item note_a: opened',
     // Opening one of the app's own items makes it the screen's selection, as Brydio's screen does.
     'selected {"kind":"item","id":"note_a"}',
+    // And `id: null` closes it again, without asking the host's navigate (G14).
+    'item closed: opened',
+    'selected nothing',
   ]);
   expect(host.navigations).toEqual([
     { kind: 'chat', id: 'conv_1', opened: true },

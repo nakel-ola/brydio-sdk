@@ -6,7 +6,7 @@ void mount(async root => {
     try {
       const { opened } = await navigate(to);
 
-      root.append(text({ text: `${to.kind} ${to.id}: ${opened ? 'opened' : 'not opened'}` }));
+      root.append(text({ text: `${to.kind} ${to.id ?? 'closed'}: ${opened ? 'opened' : 'not opened'}` }));
     } catch (error) {
       root.append(text({ text: `${to.kind} ${to.id}: ${error instanceof HostError ? error.message : String(error)}` }));
     }
@@ -14,10 +14,11 @@ void mount(async root => {
 
   root.append(text({ text: 'Opening' }));
   host.subscribe(context => {
-    if (context.selection) root.append(text({ text: `selected ${JSON.stringify(context.selection)}` }));
+    root.append(text({ text: context.selection ? `selected ${JSON.stringify(context.selection)}` : 'selected nothing' }));
   });
   await said({ kind: 'chat', id: 'conv_1' });
   await said({ kind: 'item', id: 'note_gone' });
   await said({ kind: 'url' as never, id: 'https://example.com' });
   await said({ kind: 'item', id: 'note_a' });
+  await said({ kind: 'item', id: null });
 });

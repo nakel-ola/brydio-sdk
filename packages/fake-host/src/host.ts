@@ -664,13 +664,24 @@ export class FakeHost {
       if (id !== undefined) this.#send({ jsonrpc: '2.0', method: 'ui/error', params: { id, error } });
     };
 
-    if (!target || (target.kind !== 'chat' && target.kind !== 'file' && target.kind !== 'item') || typeof target.id !== 'string' || !target.id) {
+    // `{ kind: 'item', id: null }` goes back from an item to the screen, without asking (G14).
+    const closing = target?.kind === 'item' && target.id === null;
+
+    if (!target || (target.kind !== 'chat' && target.kind !== 'file' && target.kind !== 'item') || (!closing && (typeof target.id !== 'string' || !target.id))) {
       fail({ code: -32602, message: 'An app can open a chat, a file or one of its own items, by id.' });
 
       return;
     }
 
-    const asked: NavigateTo = { kind: target.kind, id: target.id };
+    if (closing) {
+      if (id !== undefined) this.#send({ jsonrpc: '2.0', method: 'ui/result', params: { id, result: { opened: true } } });
+
+      this.setContext({ selection: undefined });
+
+      return;
+    }
+
+    const asked: NavigateTo = { kind: target.kind, id: target.id as string };
 
     this.#busy += 1;
 
