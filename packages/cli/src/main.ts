@@ -14,6 +14,7 @@ const HELP = `brydio — build and check a Brydio app
   brydio validate [folder]   Check the manifest, the built bundle and the source
                              --previous <app.json>  the version published before, whose
                                             schema this one must migrate from
+                             Every check it runs, with its code: docs/publish-checklist.md
   brydio test [folder] [-- <bun test words>]
                              Build, then run the app's *.test.ts against the build
                              with @brydio/fake-host

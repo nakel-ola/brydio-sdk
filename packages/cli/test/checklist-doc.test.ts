@@ -68,4 +68,16 @@ describe('the publish checklist', () => {
   test('is linked from the README', () => {
     expect(readFileSync(join(packages, '..', 'README.md'), 'utf8')).toContain('(docs/publish-checklist.md)');
   });
+
+  test('is named by validate\'s help, so the list of checks is one command away', async () => {
+    const { main } = await import('../src/main.ts');
+    const printed: string[] = [];
+
+    await main(['help'], line => void printed.push(line));
+
+    const help = printed.join('\n');
+
+    expect(help).toContain('brydio validate');
+    expect(help).toContain('docs/publish-checklist.md');
+  });
 });
