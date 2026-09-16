@@ -263,6 +263,7 @@ test('the command line answers with an exit code and says what it did', async ()
 
   expect(await main(['build', template], line => lines.push(line))).toBe(0);
   expect(lines.join('\n')).toMatch(/Fingerprint [0-9a-f]{64}/);
+  expect(lines.join('\n')).toContain(`screens/home.js  ${(readFileSync(join(template, 'dist/screens/home.js')).length / 1024).toFixed(1)} KB  sha256 ${sha(readFileSync(join(template, 'dist/screens/home.js')))}`);
   expect(await main(['validate', template], line => lines.push(line))).toBe(0);
   expect(await main(['nonsense'], line => lines.push(line))).toBe(2);
 });

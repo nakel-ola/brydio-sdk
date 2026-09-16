@@ -7,6 +7,7 @@ import {
   collectionsOf,
   sizeOf,
 } from '@brydio/manifest';
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
@@ -144,7 +145,8 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
 export function describeBuild(result: BuildResult, root: string): string {
   const lines = [...result.files]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([path, bytes]) => `  ${join(relative(root, result.outDir) || '.', path)}  ${sizeOf(bytes.length)}`);
+    // Each file's own sha256, the one its line of the fingerprint is made from.
+    .map(([path, bytes]) => `  ${join(relative(root, result.outDir) || '.', path)}  ${sizeOf(bytes.length)}  sha256 ${createHash('sha256').update(bytes).digest('hex')}`);
 
   return [
     'Built:',
