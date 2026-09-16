@@ -1,0 +1,39 @@
+# The SDK's checks, on every pull request and every push to the default branch.
+#
+# Tests that compare the SDK with Brydio's own files (the field types, the
+# publish route's wording) skip themselves when `../brydio` isn't there, so
+# this runs the SDK on its own. Brydio's CI runs the two together.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Types and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Type-check
+        run: bun run check-types
+
+      - name: Tests
+        run: bun test
