@@ -13,6 +13,7 @@
       "name": "@brydio/app",
       "version": "0.1.0-alpha.0",
       "dependencies": {
+        "@brydio/manifest": "0.1.0-alpha.0",
         "@brydio/ui": "0.1.0-alpha.0",
         "preact": "10.29.8",
       },

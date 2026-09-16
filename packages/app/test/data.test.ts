@@ -1,0 +1,68 @@
+import { afterEach, describe, expect, test } from 'bun:test';
+
+import { collection, setDefaultBridge } from '../src/index.ts';
+import { harness, settle } from './harness.ts';
+
+const ISSUE = { title: 'string', status: ['todo', 'doing', 'done'], assignee: 'member?' } as const;
+const result = (structuredContent: unknown) => ({ content: [{ type: 'text', text: 'ok' }], structuredContent });
+
+afterEach(() => setDefaultBridge(null as never));
+
+describe('a collection, typed from its schema', () => {
+  test('puts a new record through its create tool, and an existing one through its update tool', async () => {
+    // A5-F01-S02: data.put reaches the app's collections through the host.
+    const { bridge, take, hostSays, connect } = harness();
+
+    setDefaultBridge(bridge);
+    await connect();
+    take();
+
+    const issues = collection('issues', ISSUE);
+    const created = issues.put({ title: 'Fix the login', status: 'todo' });
+
+    expect(take()).toMatchObject([{ method: 'tools/call', params: { tool: 'create_issue', input: { title: 'Fix the login', status: 'todo' } } }]);
+    hostSays('tools/result', { id: '1', result: result({ id: 'issue_1', version: 1, title: 'Fix the login', status: 'todo' }) });
+    expect(await created).toMatchObject({ id: 'issue_1', version: 1 });
+
+    const moved = issues.put({ id: 'issue_1', version: 1, status: 'doing' });
+
+    expect(take()).toMatchObject([{ method: 'tools/call', params: { tool: 'update_issue', input: { id: 'issue_1', version: 1, status: 'doing' } } }]);
+    hostSays('tools/result', { id: '2', result: result({ id: 'issue_1', version: 2, status: 'doing' }) });
+    expect((await moved).version).toBe(2);
+  });
+
+  test('queries and subscribes through the host, with the collection named once', async () => {
+    const { bridge, take, connect } = harness();
+
+    setDefaultBridge(bridge);
+    await connect();
+    take();
+
+    const issues = collection('issues', ISSUE);
+
+    void issues.query({ limit: 20 });
+    // Reads go through the collection's own generated tool.
+    expect(JSON.stringify(take())).toContain('list_issues');
+
+    const stop = issues.subscribe(() => {});
+
+    await settle();
+    expect(JSON.stringify(take())).toContain('"collection":"issues"');
+    stop();
+  });
+
+  test('refuses, at type level, a status the schema does not list and a field it does not have', () => {
+    // A5-F01-S03: data.put on an issue rejects a status the schema does not list.
+    const issues = collection('issues', ISSUE);
+    const unused = () => {
+      // @ts-expect-error "blocked" is not a status
+      void issues.put({ title: 'x', status: 'blocked' });
+      // @ts-expect-error there is no "priority" field
+      void issues.put({ title: 'x', status: 'todo', priority: 1 });
+      // @ts-expect-error an update names the version it read
+      void issues.put({ id: 'issue_1', status: 'done' });
+    };
+
+    expect(typeof unused).toBe('function');
+  });
+});

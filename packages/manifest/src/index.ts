@@ -87,3 +87,4 @@ export {
   type ManifestProblemCode,
   type ManifestValidation,
 } from './validate.ts';
+export { defineManifest, type ManifestShape, type ScreenNameOf, type WithDeclaredScreens } from './define.ts';
