@@ -5,12 +5,11 @@
     "things": {
       "schema": {
         "a": "string", "b": "string?", "c": "text", "d": "text?",
-        "e": ["one", "two"], "f": "member", "g": "member?", "h": "project", "i": "project?",
-        "j": "date", "k": "date?", "l": "number", "m": "number?", "n": "boolean",
+        "e": ["one", "two"], "f": "member", "g": "member?", "h": "project?",
+        "j": "date", "k": "date?", "l": "number", "m": "number?", "n": "boolean", "n2": "boolean?",
         "o": "string[]", "p": "token"
       },
-      "search": ["a", "c"],
-      "index": ["a"],
+      "search": ["a", "c", "o"],
       "label": "thing"
     }
   }

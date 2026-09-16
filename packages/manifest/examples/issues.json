@@ -2,7 +2,6 @@
   "name": "issues",
   "version": "0.1.0",
   "displayName": "Issues",
-  "defaultPrompts": ["What is open in this project?", "Make an issue for …", "Move … to Done"],
   "placements": [
     { "kind": "project-tab", "screen": "board", "label": "Issues", "icon": "kanban" },
     { "kind": "project-sidebar", "screen": "board", "label": "Issues", "icon": "kanban" },
