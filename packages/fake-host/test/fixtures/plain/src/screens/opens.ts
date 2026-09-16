@@ -18,6 +18,8 @@ void mount(async root => {
   });
   await said({ kind: 'chat', id: 'conv_1' });
   await said({ kind: 'item', id: 'note_gone' });
+  await said({ kind: 'project', id: 'proj_1' });
+  await said({ kind: 'project', id: 'proj_hidden' });
   await said({ kind: 'url' as never, id: 'https://example.com' });
   await said({ kind: 'item', id: 'note_a' });
   await said({ kind: 'item', id: null });

@@ -231,6 +231,7 @@ test('a screen asking to open something hears whether it opened, in the host’s
     manifest,
     navigate: to => {
       if (to.id === 'note_gone') throw new Error('There is no such note.');
+      if (to.id === 'proj_hidden') throw new Error('There is no such project.');
     },
   });
 
@@ -241,7 +242,10 @@ test('a screen asking to open something hears whether it opened, in the host’s
     'Opening',
     'chat conv_1: opened',
     'item note_gone: There is no such note.',
-    'url https://example.com: An app can open a chat, a file or one of its own items, by id.',
+    // A project's page, which the host opens only when the person can (Brydio `24d7144`).
+    'project proj_1: opened',
+    'project proj_hidden: There is no such project.',
+    'url https://example.com: An app can open a chat, a file, a project or one of its own items, by id.',
     'item note_a: opened',
     // Opening one of the app's own items makes it the screen's selection, as Brydio's screen does.
     'selected {"kind":"item","id":"note_a"}',
@@ -252,6 +256,8 @@ test('a screen asking to open something hears whether it opened, in the host’s
   expect(host.navigations).toEqual([
     { kind: 'chat', id: 'conv_1', opened: true },
     { kind: 'item', id: 'note_gone', opened: false, error: 'There is no such note.' },
+    { kind: 'project', id: 'proj_1', opened: true },
+    { kind: 'project', id: 'proj_hidden', opened: false, error: 'There is no such project.' },
     { kind: 'item', id: 'note_a', opened: true },
   ]);
 });

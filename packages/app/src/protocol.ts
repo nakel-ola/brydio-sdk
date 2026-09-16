@@ -186,8 +186,11 @@ export interface ProjectName {
   name: string;
 }
 
-/** What `ui/navigate` opens. `{ kind: 'item', id: null }` closes the open item and returns to the screen (Brydio's G14). */
-export type NavigateTarget = { kind: 'chat' | 'file' | 'item'; id: string } | { kind: 'item'; id: null };
+/**
+ * What `ui/navigate` opens: a chat, a project's file, a project's page (Brydio `24d7144`, one the person can open)
+ * or one of the app's own items. `{ kind: 'item', id: null }` closes the open item and returns to the screen (Brydio's G14).
+ */
+export type NavigateTarget = { kind: 'chat' | 'file' | 'item' | 'project'; id: string } | { kind: 'item'; id: null };
 
 export type ToastTone = 'info' | 'success' | 'danger';
 

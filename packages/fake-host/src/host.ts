@@ -85,7 +85,7 @@ export interface FakeHostOptions {
 
 /** What a screen may ask Brydio to open. */
 export interface NavigateTo {
-  kind: 'chat' | 'file' | 'item';
+  kind: 'chat' | 'file' | 'item' | 'project';
   id: string;
 }
 
@@ -718,8 +718,8 @@ export class FakeHost {
     // `{ kind: 'item', id: null }` goes back from an item to the screen, without asking (G14).
     const closing = target?.kind === 'item' && target.id === null;
 
-    if (!target || (target.kind !== 'chat' && target.kind !== 'file' && target.kind !== 'item') || (!closing && (typeof target.id !== 'string' || !target.id))) {
-      fail({ code: -32602, message: 'An app can open a chat, a file or one of its own items, by id.' });
+    if (!target || (target.kind !== 'chat' && target.kind !== 'file' && target.kind !== 'item' && target.kind !== 'project') || (!closing && (typeof target.id !== 'string' || !target.id))) {
+      fail({ code: -32602, message: 'An app can open a chat, a file, a project or one of its own items, by id.' });
 
       return;
     }
