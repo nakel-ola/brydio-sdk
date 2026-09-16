@@ -119,5 +119,44 @@ describe('the editor plugin (A5-F03-S03)', () => {
   test('ships built from the current source', async () => {
     expect(readFileSync(join(cli, 'ts-plugin', 'plugin.cjs'), 'utf8')).toBe(await buildPlugin());
     expect(JSON.parse(readFileSync(join(cli, 'package.json'), 'utf8')).exports['./ts-plugin']).toBe('./ts-plugin/index.cjs');
+    // tsserver resolves a plugin the old Node way, without `exports`: a folder, its package.json's main, as CommonJS.
+    expect(JSON.parse(readFileSync(join(cli, 'ts-plugin', 'package.json'), 'utf8'))).toEqual({ type: 'commonjs', main: 'index.cjs' });
+
   });
+
+  test.skipIf(!Bun.which('node'))('loads in a real tsserver, found from an app’s own node_modules', async () => {
+    // What an editor does: tsserver in Node, the plugin named and looked for beside the app.
+    const app = join(cli, '..', '..', 'templates', 'plain');
+    const server = Bun.spawn(['node', require.resolve('typescript/lib/tsserver.js'), '--globalPlugins', '@brydio/cli/ts-plugin', '--pluginProbeLocations', app], {
+      cwd: app,
+      stdin: 'pipe',
+      stdout: 'pipe',
+      stderr: 'ignore',
+    });
+    const file = join(app, 'src', 'screens', 'probe.ts');
+    const send = (seq: number, command: string, args: object) => server.stdin.write(`${JSON.stringify({ seq, type: 'request', command, arguments: args })}\n`);
+    const reader = server.stdout.getReader();
+    let text = '';
+
+    send(1, 'open', { file, fileContent: "import { stack } from '@brydio/app';\nstack({ gap: '9' });\n", scriptKindName: 'TS', projectRootPath: app });
+    send(2, 'semanticDiagnosticsSync', { file });
+
+    try {
+      const deadline = Date.now() + 20_000;
+
+      while (!text.includes('"command":"semanticDiagnosticsSync"') && Date.now() < deadline) {
+        const { value, done } = await reader.read();
+
+        if (done) break;
+
+        text += new TextDecoder().decode(value);
+      }
+    } finally {
+      server.kill();
+    }
+
+    const answer = JSON.parse(text.split('\n').find(line => line.includes('"command":"semanticDiagnosticsSync"'))!) as { body: { text: string; source?: string }[] };
+
+    expect(answer.body.filter(one => one.source === 'brydio').map(one => one.text)).toEqual(['bry-stack gap must be one of 1, 2, 3, 4, 5, 6, 7, 8. [prop_value_invalid]']);
+  }, 30_000);
 });
