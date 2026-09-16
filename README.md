@@ -34,7 +34,7 @@ it is Issues, in `../brydio-issues`.
 | `packages/manifest` | The rules for a manifest, the tools Brydio makes from it, and the bundle rules and fingerprint. Copies of Brydio's server rules. |
 | `packages/app` | What runs inside a screen: it keeps the screen's tree of building blocks, talks to Brydio, and lets you write screens with Preact (a small React). |
 | `packages/fake-host` | A pretend Brydio for tests: it runs a built screen, remembers what it drew, lets a test press buttons, and answers tools from sample records. |
-| `packages/cli` | The `brydio` command: `build`, `validate` and `dev`. |
+| `packages/cli` | The `brydio` command: `build`, `validate`, `test`, `dev` and `publish`. |
 | `templates/preact` | A starter app (a checklist) to copy. |
 | `CONTRACT-NOTES.md` | Every place the plan and Brydio's actual code differed, and which way this went. |
 
@@ -61,9 +61,52 @@ Run these in an app's folder (they need [Bun](https://bun.sh) 1.3):
   | `dom_global`, `network_global`, `storage_global`, `worker_global`, `eval_forbidden` | A screen reaches for what its worker does not have |
   | `source_syntax` | A source file does not parse |
 
+- `brydio test` builds the app, then runs its `*.test.ts` files with
+  `bun test` against that build. Words after `--` go to `bun test`
+  (`brydio test -- --test-name-pattern adds`). A build that fails runs no
+  tests.
 - `brydio dev` builds, serves `dist/` on `http://localhost:5174`, builds again
   whenever a file changes, and prints the command that loads the build into a
   local Brydio.
+
+## Testing a screen
+
+`@brydio/fake-host` is a pretend Brydio: it runs a built screen in a worker
+behind Brydio's own prelude, keeps the tree in a copy of Brydio's receiver
+(so it refuses what a workspace refuses, in the same words), stops the app
+for the same budgets, and answers the generated tools from sample records.
+
+```ts
+import { testApp } from '@brydio/fake-host';
+import { afterEach, expect, test } from 'bun:test';
+
+const app = await testApp(import.meta.dir); // the app above this test, built
+afterEach(() => app.stopAll());
+
+test('ticks an item off', async () => {
+  const host = app.start('home', { fixtures: { items: [{ title: 'Water the plants', done: false }] } });
+
+  await host.mounted();
+  host.press(await host.waitFor(() => host.byText('Done')));
+  await host.waitFor(() => host.byText('Undo'));
+
+  expect(host.calls.map(call => call.tool)).toEqual(['list_items', 'update_item', 'list_items']);
+});
+```
+
+What a test can do with a host:
+
+| | |
+|---|---|
+| `mounted()`, `idle()`, `waitFor(check)` | wait for the first tree, for quiet, or for anything |
+| `byText(words)`, `findAll(check)`, `parentOf(node)`, `outline()` | look at the tree; `outline()` is readable in a diff |
+| `press(node)`, `event(node, name, detail)`, `setContext({ theme })` | do what a person or Brydio does |
+| `asks: 'allow' \| 'deny' \| 'hold'`, `answer(decision)` | answer a write's approval card, now or later |
+| `fixtures`, `tools`, `store.records(collection)` | sample records, tools of the test's own, the records after |
+| `calls`, `refusals`, `toasts`, `stopped` | what the screen did, what was refused, and why it was stopped |
+
+Under `brydio test` the app is built once, before the tests. Under a plain
+`bun test` (an editor's test button), `testApp` builds it on first use.
 
 ## Working on the SDK itself
 

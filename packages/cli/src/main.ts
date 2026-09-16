@@ -1,12 +1,16 @@
 import { build, describeBuild } from './build.ts';
 import { dev } from './dev.ts';
 import { formatProblem, type Problem } from './project.ts';
+import { test } from './test.ts';
 import { validate } from './validate.ts';
 
 const HELP = `brydio — build and check a Brydio app
 
   brydio build [folder]      Build every screen into dist/, and print the fingerprint
   brydio validate [folder]   Check the manifest, the built bundle and the source
+  brydio test [folder] [-- <bun test words>]
+                             Build, then run the app's *.test.ts against the build
+                             with @brydio/fake-host
   brydio dev [folder]        Build, serve dist/ on localhost, and build again on change
                              --port <n>     the port (5174)
                              --brydio <dir> Brydio's checkout, for the printed load command
@@ -15,7 +19,11 @@ The folder is the app's, the current one unless given.`;
 
 /** Runs one command. Answers the exit code rather than exiting, so a test can call it. */
 export async function main(argv: string[], out: (line: string) => void = console.log): Promise<number> {
-  const [command, ...rest] = argv;
+  const [command, ...words] = argv;
+  // Everything after `--` belongs to the command a command runs (`bun test`'s filters).
+  const split = words.indexOf('--');
+  const rest = split < 0 ? words : words.slice(0, split);
+  const passed = split < 0 ? [] : words.slice(split + 1);
   const flags = new Map<string, string>();
   const positional: string[] = [];
 
@@ -53,6 +61,8 @@ export async function main(argv: string[], out: (line: string) => void = console
 
       return result.ok ? 0 : 1;
     }
+    case 'test':
+      return test(dir, { args: passed, ...(out === console.log ? {} : { out }) });
     case 'dev': {
       await dev(dir, {
         ...(flags.has('port') ? { port: Number(flags.get('port')) } : {}),

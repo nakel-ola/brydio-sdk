@@ -7,7 +7,7 @@
     "build": "brydio build",
     "validate": "brydio validate",
     "dev": "brydio dev",
-    "test": "bun test",
+    "test": "brydio test",
     "check-types": "tsc -p tsconfig.json"
   },
   "dependencies": {

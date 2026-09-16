@@ -3,7 +3,7 @@ import { afterEach, beforeAll, describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { FakeHost } from '../src/index.ts';
+import { FakeHost, testApp } from '../src/index.ts';
 
 const app = join(import.meta.dir, 'fixtures', 'plain');
 const manifest = JSON.parse(readFileSync(join(app, '.brydio/app.json'), 'utf8'));
@@ -124,4 +124,28 @@ test('Brydio’s prelude has taken the network and storage away before the scree
     'Worker is not available to a Brydio app.',
     'WebSocket is not available to a Brydio app.',
   ]);
+});
+
+describe('testApp, for an app’s own tests', () => {
+  const template = join(import.meta.dir, '..', '..', '..', 'templates', 'preact');
+
+  test('finds the app above a test, builds it, and starts a screen by its name', async () => {
+    const found = await testApp(join(template, 'test', 'home.test.ts'));
+
+    expect(found.root).toBe(template);
+    expect(found.manifest.name).toBe('checklist');
+
+    const started = found.start('home');
+
+    await started.mounted();
+    expect(started.app).toEqual({ name: 'checklist', version: '0.1.0' });
+    expect(() => found.start('nowhere')).toThrow('The manifest has no "nowhere" screen. It has home.');
+
+    found.stopAll();
+  });
+
+  test('refuses to test an app that does not build, saying why', async () => {
+    // This fixture reaches for fetch on purpose, which a real build refuses.
+    await expect(testApp(app)).rejects.toThrow(/did not build[\s\S]*network_global/);
+  });
 });

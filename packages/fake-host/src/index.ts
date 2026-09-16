@@ -3,6 +3,7 @@
  * nothing drawn and nothing stored, and look at what it did.
  */
 
+export { BUILT_ENV, testApp, type TestApp } from './app.ts';
 export {
   DEFAULT_CONTEXT,
   FakeHost,

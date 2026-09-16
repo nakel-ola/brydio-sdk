@@ -174,6 +174,54 @@ describe('brydio validate', () => {
   });
 });
 
+describe('brydio test', () => {
+  test('builds the app, then runs its tests against the build, saying which build', async () => {
+    const root = app({ '.brydio/app.json': manifest(), 'src/screens/home.ts': 'export const home = 1;\n' });
+
+    mkdirSync(join(root, 'test'));
+    writeFileSync(
+      join(root, 'test/home.test.ts'),
+      [
+        "import { expect, test } from 'bun:test';",
+        "import { existsSync } from 'node:fs';",
+        "test('sees the build', () => {",
+        "  expect(existsSync('dist/screens/home.js')).toBe(true);",
+        `  expect(process.env.BRYDIO_TEST_BUILT).toBe(${JSON.stringify(root)});`,
+        '});',
+      ].join('\n'),
+    );
+    const lines: string[] = [];
+
+    expect(await main(['test', root], line => lines.push(line))).toBe(0);
+    expect(lines.join('\n')).toContain('1 pass');
+  });
+
+  test('answers 1 when a test fails, and passes words after -- to bun test', async () => {
+    const root = app({
+      '.brydio/app.json': manifest(),
+      'src/screens/home.ts': 'export const home = 1;\n',
+      'test/home.test.ts': "import { expect, test } from 'bun:test';\ntest('right', () => {});\ntest('wrong', () => expect(1).toBe(2));\n",
+    });
+    const lines: string[] = [];
+
+    expect(await main(['test', root], line => lines.push(line))).toBe(1);
+    expect(await main(['test', root, '--', '--test-name-pattern', 'right'], line => lines.push(line))).toBe(0);
+  });
+
+  test('runs no test when the app does not build', async () => {
+    const root = app({
+      '.brydio/app.json': manifest(),
+      'src/screens/home.tsx': 'export const Home = () => <div />;\n',
+      'test/home.test.ts': "import { test } from 'bun:test';\ntest('never', () => { throw new Error('ran'); });\n",
+    });
+    const lines: string[] = [];
+
+    expect(await main(['test', root], line => lines.push(line))).toBe(1);
+    expect(lines.join('\n')).toContain('Not built, so not tested.');
+    expect(lines.join('\n')).not.toContain('ran');
+  });
+});
+
 test('the command line answers with an exit code and says what it did', async () => {
   const lines: string[] = [];
 
