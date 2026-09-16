@@ -808,8 +808,9 @@ export function createRoot(options: RootOptions = {}): RemoteRoot {
   return new RemoteRoot(options);
 }
 
-// One factory per element, with the same settings as the JSX element. Only a
-// stack and a card hold children; the rest take their words as a setting.
+// One factory per element, with the same settings as the JSX element. Those
+// that hold children (a stack, a card, a label, a grid, a list row) take them
+// after the settings; the rest take their words as a setting.
 
 export const stack = (attributes?: ElementAttributes<'bry-stack'> | null, ...children: Child[]) =>
   createElement('bry-stack', attributes, ...children);
@@ -822,3 +823,25 @@ export const button = (attributes: ElementAttributes<'bry-button'>) => createEle
 
 export const card = (attributes?: ElementAttributes<'bry-card'> | null, ...children: Child[]) =>
   createElement('bry-card', attributes, ...children);
+
+export const input = (attributes?: ElementAttributes<'bry-input'> | null) => createElement('bry-input', attributes);
+
+export const textarea = (attributes?: ElementAttributes<'bry-textarea'> | null) => createElement('bry-textarea', attributes);
+
+export const select = (attributes: ElementAttributes<'bry-select'>) => createElement('bry-select', attributes);
+
+export const label = (attributes: ElementAttributes<'bry-label'>, ...children: Child[]) => createElement('bry-label', attributes, ...children);
+
+export const grid = (attributes?: ElementAttributes<'bry-grid'> | null, ...children: Child[]) => createElement('bry-grid', attributes, ...children);
+
+export const badge = (attributes: ElementAttributes<'bry-badge'>) => createElement('bry-badge', attributes);
+
+export const avatar = (attributes: ElementAttributes<'bry-avatar'>) => createElement('bry-avatar', attributes);
+
+export const listRow = (attributes?: ElementAttributes<'bry-list-row'> | null, ...children: Child[]) =>
+  createElement('bry-list-row', attributes, ...children);
+
+export const emptyState = (attributes: ElementAttributes<'bry-empty-state'>) => createElement('bry-empty-state', attributes);
+
+export const skeleton = (attributes?: ElementAttributes<'bry-skeleton'> | null) => createElement('bry-skeleton', attributes);
+

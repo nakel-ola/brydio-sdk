@@ -1,4 +1,4 @@
-import { CATALOGUE, FORBIDDEN_PROPS, MAX_TEXT, TEXT_NODE, type ElementName, type ElementSpec, type PropSpec } from './catalogue.ts';
+import { CATALOGUE, FORBIDDEN_PROPS, LABEL_MAX, MAX_TEXT, TEXT_NODE, type ElementName, type ElementSpec, type PropSpec } from './catalogue.ts';
 
 /**
  * The checks every reader of the catalogue shares.
@@ -45,7 +45,32 @@ export function refusalFor(type: ElementName, name: string, value: unknown): str
       return Number.isInteger(value) && (value as number) >= spec.min && (value as number) <= spec.max
         ? null
         : `${type} ${name} must be a whole number from ${spec.min} to ${spec.max}.`;
+    case 'options':
+      return isOptions(value, spec.max)
+        ? null
+        : `${type} ${name} must be a list of at most ${spec.max} choices, each with a value and a label of at most ${LABEL_MAX} characters, and no value twice.`;
   }
+}
+
+/** A select's choices: a short list of distinct `{ value, label }`, both non-empty text. The host's rule. */
+function isOptions(value: unknown, max: number): boolean {
+  if (!Array.isArray(value) || value.length > max) return false;
+
+  const seen = new Set<string>();
+
+  for (const choice of value as unknown[]) {
+    if (!choice || typeof choice !== 'object' || Array.isArray(choice)) return false;
+
+    const { value: key, label, ...rest } = choice as Record<string, unknown>;
+
+    if (Object.keys(rest).length > 0) return false;
+    if (typeof key !== 'string' || key.length === 0 || key.length > LABEL_MAX || seen.has(key)) return false;
+    if (typeof label !== 'string' || label.length === 0 || label.length > LABEL_MAX) return false;
+
+    seen.add(key);
+  }
+
+  return true;
 }
 
 /** Why a node's settings as a whole can't be drawn, or `null`. The host's words. */

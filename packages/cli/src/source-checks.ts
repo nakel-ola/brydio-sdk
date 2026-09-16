@@ -87,6 +87,16 @@ const FACTORIES: Readonly<Record<string, ElementName>> = {
   text: 'bry-text',
   button: 'bry-button',
   card: 'bry-card',
+  input: 'bry-input',
+  textarea: 'bry-textarea',
+  select: 'bry-select',
+  label: 'bry-label',
+  grid: 'bry-grid',
+  badge: 'bry-badge',
+  avatar: 'bry-avatar',
+  listRow: 'bry-list-row',
+  emptyState: 'bry-empty-state',
+  skeleton: 'bry-skeleton',
 };
 
 /** Modules whose `h` and `createElement` take an element's name first. */

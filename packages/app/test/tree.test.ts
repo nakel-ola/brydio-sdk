@@ -5,8 +5,12 @@ import {
   ROOT_ID,
   SDK_VERSION,
   TreeError,
+  badge,
   button,
   card,
+  emptyState,
+  listRow,
+  select,
   createElement,
   createText,
   heading,
@@ -334,6 +338,23 @@ describe('events (tree/event)', () => {
     hostSays('tree/event', { node: save.id, name: 'press' });
 
     expect(seen).toEqual(['press', undefined, save]);
+  });
+
+  test('reach the plain factories of the elements added after Phase 0, with what they carry', async () => {
+    const { root, connect, hostSays, sent } = harness();
+    const seen: unknown[] = [];
+    const status = select({ options: [{ value: 'todo', label: 'To do' }], onChange: event => seen.push(event.detail.value) });
+    const empty = emptyState({ title: 'No issues yet', action: 'New issue', onAction: event => seen.push(event.type) });
+
+    root.append(listRow({ title: 'Fix the door' }, badge({ text: 'bug', tone: 'danger' }), status), empty);
+    await connect();
+
+    hostSays('tree/event', { node: status.id, name: 'change', detail: { value: 'todo' } });
+    hostSays('tree/event', { node: empty.id, name: 'action' });
+
+    expect(seen).toEqual(['todo', 'action']);
+    expect(JSON.stringify(sent)).toContain('"type":"bry-list-row"');
+    expect(() => badge({ text: 'x', onPress: () => {} } as never)).toThrow('bry-badge raises no events, so it takes no onPress.');
   });
 
   test('reach a listener registered the way Preact registers one', async () => {

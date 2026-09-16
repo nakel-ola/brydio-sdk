@@ -65,6 +65,43 @@ describe('the Preact adapter', () => {
     expect((patches[0]!.params as TreePatchParams).ops).toEqual([{ op: 'props', id: words.id, props: { text: 'Pressed 1 times' } }]);
   });
 
+  test('hands a field’s change and submit to onChange and onSubmit, with what was typed', async () => {
+    const { root, connect, sent, hostSays, take } = harness();
+    const submitted: string[] = [];
+
+    function Form() {
+      const [title, setTitle] = useState('');
+
+      return (
+        <bry-label text="Title">
+          <bry-input value={title} onChange={event => setTitle(event.detail.value)} onSubmit={event => submitted.push(event.detail.value)} />
+          <bry-badge text={title || 'empty'} tone="neutral" />
+        </bry-label>
+      );
+    }
+
+    render(<Form />, root);
+    await connect();
+
+    const mount = sent.find(one => one.method === 'tree/mount')!.params as TreeMountParams;
+    const field = mount.nodes.find(node => node.type === 'bry-input')!;
+    const badge = mount.nodes.find(node => node.type === 'bry-badge')!;
+
+    take();
+    hostSays('tree/event', { node: field.id, name: 'change', detail: { value: 'Fix the door' } });
+    await settle();
+
+    expect(take().filter(one => one.method === 'tree/patch').flatMap(one => (one.params as TreePatchParams).ops)).toEqual([
+      { op: 'props', id: field.id, props: { value: 'Fix the door' } },
+      { op: 'props', id: badge.id, props: { text: 'Fix the door' } },
+    ]);
+
+    hostSays('tree/event', { node: field.id, name: 'submit', detail: { value: 'Fix the door' } });
+    await settle();
+
+    expect(submitted).toEqual(['Fix the door']);
+  });
+
   test('refuses what the host would refuse, where it was written', () => {
     const { root } = harness();
 

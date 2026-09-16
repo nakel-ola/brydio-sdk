@@ -23,7 +23,9 @@ export type PropSpec =
   | { readonly kind: 'enum'; readonly values: readonly string[] }
   | { readonly kind: 'text'; readonly max: number }
   | { readonly kind: 'boolean' }
-  | { readonly kind: 'int'; readonly min: number; readonly max: number };
+  | { readonly kind: 'int'; readonly min: number; readonly max: number }
+  /** A list of `{ value, label }` choices, at most `max` of them: a select's options. */
+  | { readonly kind: 'options'; readonly max: number };
 
 export interface ElementSpec {
   readonly props: Readonly<Record<string, PropSpec>>;
@@ -44,7 +46,19 @@ export const PARAGRAPH_MAX = 4_000;
 export const GAPS = ['1', '2', '3', '4', '5', '6', '7', '8'] as const;
 export const PADDINGS = ['2', '3', '4', '5', '6'] as const;
 
-/** The five elements of Phase 0, as the host declares them. */
+/** The five tones a status can be shown in (A6-F01-S02). */
+export const TONES = ['neutral', 'brand', 'success', 'warn', 'danger'] as const;
+
+/** The most a one-line field holds. */
+export const INPUT_MAX = 1_000;
+
+/** The most choices a select offers. A longer list wants a search. */
+export const SELECT_MAX = 100;
+
+/**
+ * Every element an app may use, as the host declares them: Phase 0's five,
+ * then each one Brydio has added since, in the order it registers them.
+ */
 export const CATALOGUE = {
   'bry-stack': {
     props: {
@@ -79,6 +93,8 @@ export const CATALOGUE = {
       variant: { kind: 'enum', values: ['primary', 'secondary', 'ghost', 'danger'] },
       size: { kind: 'enum', values: ['sm', 'md'] },
       disabled: { kind: 'boolean' },
+      // Disabled, showing progress, while what it started is running.
+      working: { kind: 'boolean' },
     },
     required: ['label'],
     events: ['press'],
@@ -90,9 +106,129 @@ export const CATALOGUE = {
       title: { kind: 'text', max: LABEL_MAX },
       padding: { kind: 'enum', values: PADDINGS },
       pressable: { kind: 'boolean' },
+      // Draws the shell's loading placeholder in the card's place.
+      loading: { kind: 'boolean' },
     },
     events: ['press'],
     children: true,
+  },
+  'bry-input': {
+    // One line the person types. `change` carries `{ value }` on every
+    // keystroke and Enter raises `submit` with the same; the field keeps what
+    // was typed until the app sends a different `value`.
+    props: {
+      value: { kind: 'text', max: INPUT_MAX },
+      placeholder: { kind: 'text', max: LABEL_MAX },
+      label: { kind: 'text', max: LABEL_MAX },
+      kind: { kind: 'enum', values: ['text', 'email', 'url', 'search'] },
+      maxLength: { kind: 'int', min: 1, max: INPUT_MAX },
+      required: { kind: 'boolean' },
+      disabled: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    events: ['change', 'submit'],
+    children: false,
+  },
+  'bry-textarea': {
+    // Like `bry-input` over more than one line, without `submit`: Enter starts a new line.
+    props: {
+      value: { kind: 'text', max: PARAGRAPH_MAX },
+      placeholder: { kind: 'text', max: LABEL_MAX },
+      label: { kind: 'text', max: LABEL_MAX },
+      maxLength: { kind: 'int', min: 1, max: PARAGRAPH_MAX },
+      required: { kind: 'boolean' },
+      disabled: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    events: ['change'],
+    children: false,
+  },
+  'bry-select': {
+    // One choice from a short list. Choosing raises `change` with `{ value }`;
+    // what is shown stays the app's `value` until the app sends a new one.
+    props: {
+      value: { kind: 'text', max: LABEL_MAX },
+      options: { kind: 'options', max: SELECT_MAX },
+      placeholder: { kind: 'text', max: LABEL_MAX },
+      label: { kind: 'text', max: LABEL_MAX },
+      size: { kind: 'enum', values: ['sm', 'md'] },
+      disabled: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['options'],
+    events: ['change'],
+    children: false,
+  },
+  'bry-label': {
+    // A field's name, above the control it holds, which it names for a screen reader.
+    props: {
+      text: { kind: 'text', max: LABEL_MAX },
+      required: { kind: 'boolean' },
+    },
+    required: ['text'],
+    events: [],
+    children: true,
+  },
+  'bry-grid': {
+    // Children in equal columns; the app picks how many from the width it is given.
+    props: {
+      columns: { kind: 'enum', values: ['1', '2', '3', '4', '5', '6'] },
+      gap: { kind: 'enum', values: GAPS },
+      align: { kind: 'enum', values: ['start', 'center', 'end', 'stretch'] },
+    },
+    events: [],
+    children: true,
+  },
+  'bry-badge': {
+    props: {
+      text: { kind: 'text', max: LABEL_MAX },
+      tone: { kind: 'enum', values: TONES },
+    },
+    required: ['text'],
+    events: [],
+    children: false,
+  },
+  'bry-avatar': {
+    // Initials only: a picture address would let an app load anything from anywhere.
+    props: {
+      name: { kind: 'text', max: LABEL_MAX },
+      size: { kind: 'enum', values: ['sm', 'md', 'lg'] },
+    },
+    required: ['name'],
+    events: [],
+    children: false,
+  },
+  'bry-list-row': {
+    // Children sit at the end of the row (a badge, an avatar).
+    props: {
+      title: { kind: 'text', max: LABEL_MAX },
+      description: { kind: 'text', max: LABEL_MAX },
+      meta: { kind: 'text', max: LABEL_MAX },
+      pressable: { kind: 'boolean' },
+      selected: { kind: 'boolean' },
+      loading: { kind: 'boolean' },
+    },
+    events: ['press'],
+    children: true,
+  },
+  'bry-empty-state': {
+    // `action` is one button's label; pressing it raises `action`.
+    props: {
+      title: { kind: 'text', max: LABEL_MAX },
+      text: { kind: 'text', max: PARAGRAPH_MAX },
+      action: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['title'],
+    events: ['action'],
+    children: false,
+  },
+  'bry-skeleton': {
+    props: {
+      shape: { kind: 'enum', values: ['line', 'block', 'row'] },
+      count: { kind: 'int', min: 1, max: 12 },
+    },
+    events: [],
+    children: false,
   },
 } as const satisfies Readonly<Record<`bry-${string}`, ElementSpec>>;
 

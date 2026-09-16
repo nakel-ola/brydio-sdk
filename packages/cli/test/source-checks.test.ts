@@ -86,6 +86,33 @@ describe('elements and settings, without JSX', () => {
   });
 });
 
+describe('the elements added after Phase 0', () => {
+  test('are known, with their own settings, events and children', () => {
+    const source = [
+      '<bry-grid columns="3" gap="4">',
+      '  <bry-label text="Status" required><bry-select options={statuses} value={status} onChange={pick} /></bry-label>',
+      '  <bry-list-row title="Fix the door" pressable onPress={open}><bry-badge text="bug" tone="danger" /><bry-avatar name="Ada" size="sm" /></bry-list-row>',
+      '  <bry-empty-state title="No issues yet" action="New issue" onAction={create} />',
+      '  <bry-input value={title} kind="email" onChange={type} onSubmit={save} />',
+      '  <bry-textarea value={body} maxLength={4000} onChange={type} />',
+      '  <bry-skeleton shape="row" count={3} />',
+      '</bry-grid>;',
+    ].join('\n');
+
+    expect(checkSource('a.tsx', source)).toEqual([]);
+    expect(found('<bry-grid columns="7" />')).toEqual([[1, 'prop_value_invalid']]);
+    expect(codes('<bry-select value="a" />')).toEqual(['prop_required']);
+    expect(codes('<bry-badge text="x" tone="muted" onPress={go} />')).toEqual(['prop_value_invalid', 'event_unknown']);
+    expect(codes('<bry-textarea onSubmit={go} />')).toEqual(['event_unknown']);
+    expect(codes('<bry-avatar name="Ada" src="https://x/a.png" />')).toEqual(['prop_unknown']);
+    expect(codes('<bry-empty-state title="x">more</bry-empty-state>')).toEqual(['children_not_allowed']);
+    expect(codes("import { listRow, skeleton } from '@brydio/app';\nlistRow({ tone: 'x' });\nskeleton({ count: 20 });", 'a.ts')).toEqual([
+      'prop_unknown',
+      'prop_value_invalid',
+    ]);
+  });
+});
+
 describe('what a worker does not have', () => {
   test('a page, a network, storage and other workers, each with its own code', () => {
     const source = [

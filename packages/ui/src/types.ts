@@ -17,7 +17,9 @@ export type ValueOf<S extends PropSpec> = S extends { kind: 'enum'; values: read
       ? string
       : S extends { kind: 'int' }
         ? number
-        : never;
+        : S extends { kind: 'options' }
+          ? { value: string; label: string }[]
+          : never;
 
 type PropsOf<E extends ElementName> = Catalogue[E]['props'];
 type RequiredOf<E extends ElementName> = Catalogue[E] extends { required: readonly (infer R)[] } ? R & string : never;
@@ -38,9 +40,15 @@ export type ElementProps<E extends ElementName> = Simplify<
 /** The events an element raises, by name. */
 export type ElementEvent<E extends ElementName> = Catalogue[E]['events'][number] & string;
 
-/** What each event carries. `press` carries nothing. */
+/** What each event carries. `press` carries nothing; a field's `change` and `submit` carry its text. */
 export interface EventDetails {
   press: undefined;
+  /** What the field holds now, on every keystroke. */
+  change: { value: string };
+  /** What the field held when Enter was pressed. */
+  submit: { value: string };
+  /** An empty state's one button was pressed. */
+  action: undefined;
 }
 
 /** The object a handler receives, in the plain factories and in Preact alike. */
