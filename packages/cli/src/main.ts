@@ -1,6 +1,7 @@
 import { build, describeBuild } from './build.ts';
 import { dev } from './dev.ts';
 import { formatProblem, type Problem } from './project.ts';
+import { publish } from './publish.ts';
 import { test } from './test.ts';
 import { validate } from './validate.ts';
 
@@ -11,6 +12,9 @@ const HELP = `brydio — build and check a Brydio app
   brydio test [folder] [-- <bun test words>]
                              Build, then run the app's *.test.ts against the build
                              with @brydio/fake-host
+  brydio publish [folder]    Build, validate, and upload the bundle to Brydio as a new version
+                             signed in with BRYDIO_TOKEN, to BRYDIO_API_URL
+                             --api <url>    the API's address, instead of BRYDIO_API_URL
   brydio dev [folder]        Build, serve dist/ on localhost, and build again on change
                              --port <n>     the port (5174)
                              --brydio <dir> Brydio's checkout, for the printed load command
@@ -63,6 +67,8 @@ export async function main(argv: string[], out: (line: string) => void = console
     }
     case 'test':
       return test(dir, { args: passed, ...(out === console.log ? {} : { out }) });
+    case 'publish':
+      return publish(dir, { out, ...(flags.has('api') ? { apiUrl: flags.get('api')! } : {}) });
     case 'dev': {
       await dev(dir, {
         ...(flags.has('port') ? { port: Number(flags.get('port')) } : {}),

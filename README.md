@@ -65,6 +65,13 @@ Run these in an app's folder (they need [Bun](https://bun.sh) 1.3):
   `bun test` against that build. Words after `--` go to `bun test`
   (`brydio test -- --test-name-pattern adds`). A build that fails runs no
   tests.
+- `brydio publish` builds and validates the app, then uploads `dist/` to
+  Brydio as a new version, signed in as you. Set `BRYDIO_TOKEN` to a Brydio
+  session token and `BRYDIO_API_URL` to the API's address (or pass
+  `--api <url>`). It prints the version, the fingerprint and each screen's
+  address. Publishing exactly what is already published is not an error; a
+  version number already used by different code is refused, in Brydio's
+  words, naming both fingerprints.
 - `brydio dev` builds, serves `dist/` on `http://localhost:5174`, builds again
   whenever a file changes, and prints the command that loads the build into a
   local Brydio.

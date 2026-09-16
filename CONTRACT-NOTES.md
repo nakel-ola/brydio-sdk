@@ -158,3 +158,28 @@ Read against Brydio at `f28d98b` plus Kestrel's uncommitted
     built, so `brydio dev` serves `dist/` with the bundle route's headers but a
     local Brydio can only load a build through
     `apps/api/scripts/put-app-bundle.ts`, one new version number at a time.
+
+## Publishing
+
+27. **`brydio publish` targets Hodler's route as built** (`ad80184`,
+    `apps/api/src/apps/publishing/app-publish.controller.ts`, and his post of
+    16 Sep 14:24): `POST /api/v1/apps/publish` with `{ archiveBase64 }`, the
+    built folder zipped, signed in with a bearer token (`BRYDIO_TOKEN`, the
+    Clerk session token `auth.ts`'s `sessionFrom` verifies). 201 is a new
+    version and 200 (`created: false`) the same version again, both with
+    `{ appKey, version, versionId, bundleHash, publishedBy, publishedAt,
+    files }`, `files` being API paths the CLI prefixes with the address;
+    409 `{ reason: 'version_exists', message }`; 422 `{ reason, message, at }`;
+    423 Apps off. The contracts file has no section for the route yet.
+28. **The zip is the SDK's own writer** (`packages/cli/src/zip.ts`): deflate,
+    unix file modes, no timestamps, sorted, so the same build is the same
+    upload. `publish.test.ts` unpacks it with the server's `unpack` whenever a
+    Brydio checkout sits beside this repository.
+29. **Not built on the server yet, so not in the CLI:** the supported-SDK
+    range route Hodler's 14:13 plan mentions (a version built against an SDK
+    the host no longer supports), the "only the first publisher or one they
+    name" rule, and screenshots. The CLI sends no SDK version with the
+    upload, and says that no pictures were attached. If the route starts
+    reading an SDK version, the bundle already carries it in each screen
+    (`worker/ready`'s `sdk`) but not in `app.json`.
+
