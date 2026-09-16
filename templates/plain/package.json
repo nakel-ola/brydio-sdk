@@ -1,0 +1,20 @@
+{
+  "name": "brydio-template-plain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "brydio build",
+    "validate": "brydio validate",
+    "dev": "brydio dev",
+    "test": "brydio test",
+    "check-types": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@brydio/app": "0.1.0-alpha.0"
+  },
+  "devDependencies": {
+    "@brydio/cli": "0.1.0-alpha.0",
+    "@brydio/fake-host": "0.1.0-alpha.0"
+  }
+}

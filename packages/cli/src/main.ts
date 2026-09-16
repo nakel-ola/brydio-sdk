@@ -1,4 +1,5 @@
 import { build, describeBuild } from './build.ts';
+import { create, CreateRefused, TEMPLATES, type Template } from './create.ts';
 import { dev, DevRefused } from './dev.ts';
 import { formatProblem, type Problem } from './project.ts';
 import { publish } from './publish.ts';
@@ -7,6 +8,8 @@ import { validate } from './validate.ts';
 
 const HELP = `brydio — build and check a Brydio app
 
+  brydio create <name>       Make a new app in ./<name> from a template, and install it
+                             --template <preact|plain>  asked when not given
   brydio build [folder]      Build every screen into dist/, and print the fingerprint
   brydio validate [folder]   Check the manifest, the built bundle and the source
                              --previous <app.json>  the version published before, whose
@@ -46,6 +49,26 @@ export async function main(argv: string[], out: (line: string) => void = console
   const report = (problems: Problem[]) => problems.forEach(problem => out(formatProblem(problem)));
 
   switch (command) {
+    case 'create': {
+      const template = flags.get('template');
+
+      if (template !== undefined && !TEMPLATES.includes(template as Template)) {
+        out(`There is no "${template}" template. Choose ${TEMPLATES.join(' or ')}.`);
+
+        return 2;
+      }
+
+      try {
+        await create(positional[0] ?? '', { out, ...(template ? { template: template as Template } : {}) });
+      } catch (error) {
+        if (!(error instanceof CreateRefused)) throw error;
+        out(error.message);
+
+        return 1;
+      }
+
+      return 0;
+    }
     case 'build': {
       const result = await build(dir);
 
