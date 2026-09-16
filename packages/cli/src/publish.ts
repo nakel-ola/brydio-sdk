@@ -220,6 +220,11 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
 
 /** What to tell the builder when Brydio turns a request away before looking at the app. */
 function turnedAway(status: number, apiUrl: string, body: Record<string, unknown> | null): string {
+  // A refusal with its own words (a 403 `not_publisher`) is not a bad token: say what Brydio said.
+  if (status !== 401 && typeof body?.message === 'string') {
+    return `Brydio refused this: ${body.message}${typeof body.reason === 'string' ? ` [${body.reason}]` : ''}`;
+  }
+
   switch (status) {
     case 423:
       return 'Apps are not on for your workspace, so nothing can be published to it.';

@@ -13,6 +13,7 @@ import {
   RESERVED_FIELDS,
   type FieldType,
 } from './field-types.ts';
+import { migrationsSchema } from './migrations.ts';
 
 export {
   COLOUR_TOKENS,
@@ -89,6 +90,12 @@ const extensionShape = {
   screens: z.record(z.string(), screenSchema).optional(),
   grants: grantsSchema.optional(),
   /**
+   * How records move when the schema changes between versions (A3-F07).
+   * Checked against the previous version when a version is published, and
+   * again when a workspace's pin moves; here only its shape.
+   */
+  migrations: migrationsSchema.optional(),
+  /**
    * The `@brydio/app` version the bundle was built against, written by
    * `brydio build` and never by hand. Optional, so a bundle from before it
    * still loads; `POST /apps/publish` requires it and checks it (A5-F04-S03).
@@ -116,6 +123,7 @@ export type DataProblemCode =
   | 'data_project_field_twice'
   | 'data_search_unknown_field'
   | 'data_search_not_text'
+  | 'grant_collection_missing'
   | 'placement_screen_unknown';
 
 type Additions = z.infer<z.ZodObject<typeof extensionShape>>;
@@ -127,7 +135,7 @@ type Additions = z.infer<z.ZodObject<typeof extensionShape>>;
  * report; the zod schemas below run it too, so a parse never accepts what
  * this refuses.
  */
-export function dataProblems(additions: Additions): DataProblem[] {
+export function dataProblems(additions: Additions, options: { grants?: boolean } = {}): DataProblem[] {
   const problems: DataProblem[] = [];
   const collections = Object.entries(additions.data ?? {});
 
@@ -254,6 +262,23 @@ export function dataProblems(additions: Additions): DataProblem[] {
     }
   }
 
+  // What the app keeps must be what it asks to keep (A3-F06-S01): a
+  // collection the grants leave out would be data a workspace never agreed to
+  // hold, found only when the first write is refused.
+  const granted = additions.grants?.collections ?? [];
+
+  if (options.grants !== false && !granted.includes('*')) {
+    for (const [collection] of collections) {
+      if (!granted.includes(collection)) {
+        problems.push({
+          code: 'grant_collection_missing',
+          collection,
+          message: `${collection} is kept but not asked for: add it to grants.collections.`,
+        });
+      }
+    }
+  }
+
   const screens = new Set(Object.keys(additions.screens ?? {}));
 
   for (const placement of additions.placements ?? []) {
@@ -268,24 +293,33 @@ export function dataProblems(additions: Additions): DataProblem[] {
   return problems;
 }
 
-const refuse = (additions: Additions, ctx: z.RefinementCtx) => {
-  for (const problem of dataProblems(additions)) {
+const refuse = (additions: Additions, ctx: z.RefinementCtx, options: { grants?: boolean } = {}) => {
+  for (const problem of dataProblems(additions, options)) {
     ctx.addIssue({
       code: 'custom',
       message: problem.message,
-      path: problem.collection
-        ? ['data', problem.collection, ...(problem.field ? ['schema', problem.field] : [])]
-        : [],
+      path: problem.code.startsWith('grant_')
+        ? ['grants', 'collections']
+        : problem.collection
+          ? ['data', problem.collection, ...(problem.field ? ['schema', problem.field] : [])]
+          : [],
       params: { code: problem.code },
     });
   }
 };
 
 /** The additions alone, for code that has the rest of the manifest already. */
-export const manifestExtensionsSchema = z.object(extensionShape).superRefine(refuse);
+export const manifestExtensionsSchema = z.object(extensionShape).superRefine((additions, ctx) => refuse(additions, ctx));
+
+/**
+ * The additions as code reads a manifest that was checked whole when it was
+ * published. Everything but the grants cross-check: what is granted is the
+ * install's record to answer (A3-F06), not the stored manifest's.
+ */
+export const storedExtensionsSchema = z.object(extensionShape).superRefine((additions, ctx) => refuse(additions, ctx, { grants: false }));
 
 /** E5's manifest with the additions: the whole `.brydio/app.json` of an app. */
-export const appManifestSchema = manifestSchema.extend(extensionShape).superRefine(refuse);
+export const appManifestSchema = manifestSchema.extend(extensionShape).superRefine((additions, ctx) => refuse(additions, ctx));
 
 export type ManifestExtensions = z.infer<typeof manifestExtensionsSchema>;
 export type AppManifestWithData = z.infer<typeof appManifestSchema>;
@@ -325,7 +359,7 @@ export function labelOf(collection: string, label?: string): string {
  * when they were stored, and a bad one here is a bug, not input.
  */
 export function collectionsOf(manifest: { data?: ManifestExtensions['data'] }): CollectionSpec[] {
-  const parsed = manifestExtensionsSchema.parse({ data: manifest.data ?? {} });
+  const parsed = storedExtensionsSchema.parse({ data: manifest.data ?? {} });
 
   return Object.entries(parsed.data ?? {}).map(([name, declared]) => {
     const fields = Object.fromEntries(

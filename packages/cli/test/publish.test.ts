@@ -166,6 +166,16 @@ describe('brydio publish', () => {
     expect((await run(tiny(), server(404, () => ({ statusCode: 404 })))).text).toContain('has no publish route');
     expect((await run(tiny(), server(423, () => ({ statusCode: 423 })))).text).toContain('Apps are not on');
     expect((await run(tiny(), server(401, () => ({ statusCode: 401 })))).text).toContain('did not accept the token in BRYDIO_TOKEN');
+    expect((await run(tiny(), server(403, () => ({ statusCode: 403 })))).text).toContain('did not accept the token in BRYDIO_TOKEN');
+  });
+
+  test('says what Brydio said when a signed-in account may not publish the app, not that the token is bad', async () => {
+    const message = 'tiny is published by other accounts. Ask one of them to add you as a publisher.';
+    const { code, text } = await run(tiny(), server(403, () => ({ statusCode: 403, reason: 'not_publisher', message })));
+
+    expect(code).toBe(1);
+    expect(text).toContain(`Brydio refused this: ${message} [not_publisher]`);
+    expect(text).not.toContain('token');
   });
 
   test('asks for the sign-in and the address before building anything', async () => {

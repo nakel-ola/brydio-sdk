@@ -11,5 +11,5 @@
   },
   "tools": { "generated": true },
   "screens": { "home": { "entry": "screens/home.js" } },
-  "grants": { "tools": ["*"], "collections": ["*"], "host": ["message"] }
+  "grants": { "tools": ["*"], "collections": ["*"] }
 }

@@ -49,12 +49,32 @@ export {
   dataProblems,
   labelOf,
   manifestExtensionsSchema,
+  storedExtensionsSchema,
   type AppManifestWithData,
   type CollectionSpec,
   type DataProblem,
   type DataProblemCode,
   type ManifestExtensions,
 } from './schema.ts';
+
+export { KNOWN_HOST_GRANTS, unknownHostGrant } from './grants.ts';
+
+export {
+  diffSchemas,
+  migrationProblems,
+  migrationSchema,
+  migrationStepSchema,
+  migrationsSchema,
+  publishedMigrationProblems,
+  schemaOf,
+  type Migration,
+  type MigrationCode,
+  type MigrationProblem,
+  type MigrationStep,
+  type SchemaChange,
+} from './migrations.ts';
+
+export { SECRET_MESSAGE, findSecrets, type SecretFound } from './secrets.ts';
 
 export { compareVersions, sdkRefusal, type SdkSupport } from './sdk.ts';
 

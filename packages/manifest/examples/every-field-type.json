@@ -12,5 +12,6 @@
       "search": ["a", "c", "o"],
       "label": "thing"
     }
-  }
+  },
+  "grants": { "collections": ["things"] }
 }

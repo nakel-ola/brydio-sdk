@@ -1,7 +1,17 @@
-import { BUNDLE_MANIFEST, bundleProblem, isScriptPath } from '@brydio/manifest';
+import {
+  BUNDLE_MANIFEST,
+  bundleProblem,
+  compareVersions,
+  findSecrets,
+  isScriptPath,
+  publishedMigrationProblems,
+  unknownHostGrant,
+} from '@brydio/manifest';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 
+import { callsOf, type ScreenCall } from './calls.ts';
+import { grantProblems } from './grant-checks.ts';
 import { DIST, SOURCE_EXTENSIONS, readProject, type Problem } from './project.ts';
 import { checkSource } from './source-checks.ts';
 
@@ -12,8 +22,12 @@ import { checkSource } from './source-checks.ts';
  * The manifest, by the server's schema. The built bundle, by the store's
  * rules and the version record's (every screen's entry a script in the
  * bundle). The source, parsed, by what the catalogue and the worker allow
- * (`source-checks.ts`). Run it
- * after `brydio build`; it reads the bundle as it was built.
+ * (`source-checks.ts`), and what the screens call against the grants
+ * (`grant-checks.ts`). Run it after `brydio build`; it reads the bundle as
+ * it was built.
+ *
+ * `docs/publish-checklist.md` lists every check, its code and its sentence,
+ * and which of them Brydio's publish route runs again (A8-F04-S03).
  */
 
 export interface ValidateResult {
@@ -21,14 +35,31 @@ export interface ValidateResult {
   problems: Problem[];
 }
 
-export function validate(dir: string, options: { outDir?: string } = {}): ValidateResult {
+export interface ValidateOptions {
+  outDir?: string;
+  /**
+   * The manifest of the version published before this one, as a file, or a
+   * folder holding `app.json` (a built bundle) or `.brydio/app.json`. Without
+   * it, a built `dist/app.json` with a lower version stands in, and without
+   * that the migration check is left to the publish route.
+   */
+  previous?: string;
+}
+
+export function validate(dir: string, options: ValidateOptions = {}): ValidateResult {
   const project = readProject(dir);
   const problems: Problem[] = [...project.problems];
   const outDir = join(project.root, options.outDir ?? DIST);
   const dist = relative(project.root, outDir);
+  const manifestFile = relative(project.root, project.manifestFile);
+  const grant = unknownHostGrant(project.raw);
+
+  if (grant) problems.push({ code: grant.code, severity: 'error', file: manifestFile, path: grant.path, message: grant.message });
 
   if (project.manifest) {
     const built = existsSync(outDir) ? filesUnder(outDir) : null;
+
+    problems.push(...migrationCheck(project.raw, manifestFile, built, dist, options.previous, project.root));
 
     if (!built) {
       problems.push({ code: 'bundle_not_built', severity: 'error', message: `There is no ${dist}/ yet. Run brydio build first.` });
@@ -40,7 +71,8 @@ export function validate(dir: string, options: { outDir?: string } = {}): Valida
             code: 'screen_not_built',
             severity: 'error',
             path: `screens.${screen}.entry`,
-            message: `The "${screen}" screen names "${entry}", which is not a script in ${dist}/. Run brydio build.`,
+            file: `${dist}/`,
+            message: `The "${screen}" screen names "${entry}", which is not a script in this bundle. Run brydio build.`,
           });
         }
       }
@@ -49,6 +81,10 @@ export function validate(dir: string, options: { outDir?: string } = {}): Valida
 
       if (refused) {
         problems.push({ code: refused.code, severity: 'error', message: refused.message, ...(refused.file ? { file: `${dist}/${refused.file}` } : {}) });
+      }
+
+      for (const secret of findSecrets(built)) {
+        problems.push({ code: secret.code, severity: 'error', file: `${dist}/${secret.path.split('.json')[0]}.json`, path: secret.path, message: secret.message });
       }
 
       const shipped = built.get(BUNDLE_MANIFEST);
@@ -69,25 +105,111 @@ export function validate(dir: string, options: { outDir?: string } = {}): Valida
 
   problems.push(...checkSources(project.root));
 
+  if (project.manifest && existsSync(join(project.root, 'src'))) {
+    problems.push(...grantProblems(project.manifest, screenCalls(project.root), manifestFile));
+  }
+
   return { ok: !problems.some(problem => problem.severity === 'error'), problems };
+}
+
+/** Every screen source under `src/`, tests aside, by its path from the app's root. */
+function screenSources(root: string): [string, string][] {
+  const src = join(root, 'src');
+
+  if (!existsSync(src)) return [];
+
+  return [...filesUnder(src)]
+    .filter(([path]) => SOURCE_EXTENSIONS.some(extension => path.endsWith(extension)) && !path.endsWith('.d.ts'))
+    // Tests run in the fake host, not in a workspace; they may do what a screen may not.
+    .filter(([path]) => !/(^|\/)(test|tests|__tests__)\/|\.(test|spec)\.[jt]sx?$/.test(path))
+    .map(([path, bytes]) => [`src/${path}`, new TextDecoder().decode(bytes)]);
 }
 
 /** What the source checks find in every screen source under `src/`, tests aside. */
 export function checkSources(root: string): Problem[] {
-  const src = join(root, 'src');
-  const problems: Problem[] = [];
+  return screenSources(root).flatMap(([file, text]) => checkSource(file, text));
+}
 
-  if (!existsSync(src)) return problems;
+/** Every tool, collection and host grant the screens name plainly, with where. */
+export function screenCalls(root: string): (ScreenCall & { file: string })[] {
+  return screenSources(root).flatMap(([file, text]) => {
+    try {
+      return callsOf(file, text).map(call => ({ ...call, file }));
+    } catch {
+      // A file that does not parse is `source_syntax` already.
+      return [];
+    }
+  });
+}
 
-  for (const [path, bytes] of filesUnder(src)) {
-    if (!SOURCE_EXTENSIONS.some(extension => path.endsWith(extension)) || path.endsWith('.d.ts')) continue;
-    // Tests run in the fake host, not in a workspace; they may do what a screen may not.
-    if (/(^|\/)(test|tests|__tests__)\/|\.(test|spec)\.[jt]sx?$/.test(path)) continue;
+/**
+ * A schema change without its migration, against the version before this
+ * one, in the words of `POST /apps/publish` (`migration_missing`, at
+ * `migrations`). One item per problem, where the route stops at the first.
+ */
+function migrationCheck(
+  raw: Record<string, unknown>,
+  manifestFile: string,
+  built: Map<string, Uint8Array> | null,
+  dist: string,
+  previous: string | undefined,
+  root: string,
+): Problem[] {
+  const version = raw.version as string;
+  let before: Record<string, unknown> | null = null;
+  let from = '';
 
-    problems.push(...checkSource(`src/${path}`, new TextDecoder().decode(bytes)));
+  if (previous !== undefined) {
+    const path = resolve(root, previous);
+    const file = [path, join(path, BUNDLE_MANIFEST), join(path, '.brydio', BUNDLE_MANIFEST)].find(one => existsSync(one) && statSync(one).isFile());
+
+    if (!file) {
+      return [{ code: 'previous_unreadable', severity: 'error', message: `There is no manifest at ${previous} to compare this version with.` }];
+    }
+
+    try {
+      before = JSON.parse(readFileSync(file, 'utf8'));
+    } catch {
+      return [{ code: 'previous_unreadable', severity: 'error', file: relative(root, file), message: `${relative(root, file)} is not valid JSON, so this version can't be compared with it.` }];
+    }
+
+    from = relative(root, file);
+
+    if (typeof before?.version !== 'string' || compareVersions(before.version, version) >= 0) {
+      return [
+        {
+          code: 'previous_not_older',
+          severity: 'error',
+          file: from,
+          message: `${from} is version ${String(before?.version)}, not one before ${version}, so it can't say what this version changes.`,
+        },
+      ];
+    }
+  } else {
+    const shipped = built?.get(BUNDLE_MANIFEST);
+
+    try {
+      const parsed = shipped ? JSON.parse(new TextDecoder().decode(shipped)) : null;
+
+      // A build of an earlier version, not yet rebuilt: the version this one follows.
+      if (typeof parsed?.version === 'string' && compareVersions(parsed.version, version) < 0) {
+        before = parsed;
+        from = `${dist}/${BUNDLE_MANIFEST}`;
+      }
+    } catch {
+      // An unreadable built manifest is the bundle checks' to report.
+    }
   }
 
-  return problems;
+  if (!before) return [];
+
+  return publishedMigrationProblems(before, raw).map(problem => ({
+    code: 'migration_missing',
+    severity: 'error' as const,
+    file: manifestFile,
+    path: 'migrations',
+    message: `${problem.message} (${version} against ${before.version}, the version before it.)`,
+  }));
 }
 
 /** Every file under a folder, by its `/`-separated path inside it. */

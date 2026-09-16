@@ -47,7 +47,9 @@ Run these in an app's folder (they need [Bun](https://bun.sh) 1.3):
   per screen plus `app.json` (with `"sdk"`, the SDK version it was built
   against, written by the build and never by hand), and prints each file's
   size and hash and the fingerprint.
-- `brydio validate` checks everything Brydio would refuse: the manifest, the
+- `brydio validate` checks everything Brydio would refuse (the whole list,
+  with each check's sentence and whether Brydio's publish route runs it too,
+  is [the publish checklist](docs/publish-checklist.md)): the manifest, the
   built bundle (only scripts, under 1 MB, every screen built), and the screens'
   source, read with TypeScript's parser (only the catalogue's elements, only
   their settings and values, the settings each needs, no children where an
@@ -56,7 +58,7 @@ Run these in an app's folder (they need [Bun](https://bun.sh) 1.3):
 
   | Code | What it means |
   |---|---|
-  | `manifest_missing`, `manifest_not_json`, `manifest_invalid`, `data_*`, `placement_*` | The manifest, in the server's own codes |
+  | `manifest_missing`, `manifest_not_json`, `manifest_invalid`, `data_*`, `placement_*`, `grant_collection_missing` | The manifest, in the server's own codes |
   | `bundle_not_built`, `screen_not_built`, `bundle_stale` (warning) | `dist/` is missing, lacks a screen, or is older than the manifest |
   | `bundle_too_large`, `bundle_file_not_code`, `bundle_path_invalid`, `bundle_manifest_missing`, `bundle_empty` | What the bundle store refuses |
   | `element_unknown`, `prop_unknown`, `prop_value_invalid`, `prop_required`, `event_unknown`, `children_not_allowed` | A screen asks for something the catalogue does not have |
@@ -64,6 +66,10 @@ Run these in an app's folder (they need [Bun](https://bun.sh) 1.3):
   | `dom_global`, `network_global`, `storage_global`, `worker_global`, `eval_forbidden` | A screen reaches for what its worker does not have |
   | `import_not_allowed` | A screen imports something other than `@brydio/*`, Preact (`preact`, `preact/hooks`, `preact/jsx-runtime`) or the app's own files: a bare package, an absolute path, a `file:` URL, or a relative path out of the app's folder |
   | `source_syntax` | A source file does not parse |
+  | `migration_missing`, `previous_unreadable`, `previous_not_older` | A collection's schema changed since the version before (given with `--previous <app.json>`, or a `dist/` built from it) without its migration step |
+  | `tool_unknown`, `collection_unknown`, `grant_tool_missing`, `grant_host_missing`, `grant_unknown` | A screen calls a tool or reads a collection the app does not have or does not ask for, or the manifest asks for a host grant Brydio does not know |
+  | `grant_tool_unknown`, `grant_collection_unknown`, `grant_host_unused` (warnings) | A grant names nothing, or no screen uses it |
+  | `secret_in_bundle` | Brydio's secret scan found a declared credential |
 
 - `brydio test` builds the app, then runs its `*.test.ts` files with
   `bun test` against that build. Words after `--` go to `bun test`

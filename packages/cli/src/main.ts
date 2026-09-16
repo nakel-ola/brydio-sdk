@@ -9,6 +9,8 @@ const HELP = `brydio — build and check a Brydio app
 
   brydio build [folder]      Build every screen into dist/, and print the fingerprint
   brydio validate [folder]   Check the manifest, the built bundle and the source
+                             --previous <app.json>  the version published before, whose
+                                            schema this one must migrate from
   brydio test [folder] [-- <bun test words>]
                              Build, then run the app's *.test.ts against the build
                              with @brydio/fake-host
@@ -58,7 +60,7 @@ export async function main(argv: string[], out: (line: string) => void = console
       return 0;
     }
     case 'validate': {
-      const result = validate(dir);
+      const result = validate(dir, flags.has('previous') ? { previous: flags.get('previous')! } : {});
 
       report(result.problems);
       out(result.ok ? `Valid${result.problems.length ? `, with ${result.problems.length} warning${result.problems.length === 1 ? '' : 's'}` : ''}.` : 'Not valid.');

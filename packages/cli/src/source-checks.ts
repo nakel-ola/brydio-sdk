@@ -143,7 +143,7 @@ const scriptKindOf = (file: string): ts.ScriptKind =>
 /** A value the screen will send, when it is written out; `undefined` when it is worked out at run time. */
 type Literal = { value: unknown } | undefined;
 
-function literalsOf(expression: ts.Expression | undefined): Literal[] {
+export function literalsOf(expression: ts.Expression | undefined): Literal[] {
   if (!expression) return [undefined];
 
   const node = unwrap(expression);
@@ -162,7 +162,7 @@ function literalsOf(expression: ts.Expression | undefined): Literal[] {
 }
 
 /** The expression inside parentheses and type assertions, which change nothing at run time. */
-function unwrap(node: ts.Expression): ts.Expression {
+export function unwrap(node: ts.Expression): ts.Expression {
   let at = node;
 
   while (ts.isParenthesizedExpression(at) || ts.isAsExpression(at) || ts.isSatisfiesExpression(at) || ts.isNonNullExpression(at)) {
