@@ -1,0 +1,12 @@
+{
+  "name": "plain",
+  "version": "1.0.0",
+  "data": { "notes": { "schema": { "title": "string", "pinned": "boolean?" } } },
+  "screens": {
+    "counter": { "entry": "screens/counter.js" },
+    "broken": { "entry": "screens/broken.js" },
+    "silent": { "entry": "screens/silent.js" },
+    "walls": { "entry": "screens/walls.js" }
+  },
+  "grants": { "tools": ["*"], "collections": ["*"], "host": ["message"] }
+}

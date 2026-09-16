@@ -1,0 +1,20 @@
+{
+  "name": "@brydio/cli",
+  "version": "0.1.0-alpha.0",
+  "description": "brydio build, validate and dev: turn an app's source into the bundle Brydio loads.",
+  "type": "module",
+  "bin": {
+    "brydio": "./bin/brydio.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "dependencies": {
+    "@brydio/manifest": "0.1.0-alpha.0",
+    "@brydio/ui": "0.1.0-alpha.0"
+  }
+}
