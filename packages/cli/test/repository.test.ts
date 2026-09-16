@@ -37,7 +37,7 @@ test('no package imports anything from Brydio’s own repository', () => {
   const sources = readdirSync(join(repository, 'packages'), { withFileTypes: true })
     .filter(entry => entry.isDirectory())
     .map(entry => join(repository, 'packages', entry.name, 'src'));
-  const allowed = /^(node:|bun:|\.\.?\/|@brydio\/|preact(\/|$)|typescript$|zod$)/;
+  const allowed = /^(node:|bun:|\.\.?\/|@brydio\/|preact(\/|$)|@prefresh\/core$|typescript$|zod$)/;
   const imports = sources.flatMap(importsUnder);
 
   expect(imports.length).toBeGreaterThan(20);

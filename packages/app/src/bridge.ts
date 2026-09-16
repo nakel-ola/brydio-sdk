@@ -6,6 +6,7 @@ import {
   type DataChange,
   type MemberName,
   type ProjectName,
+  type DevUpdateParams,
   type HostContext,
   type ListQuery,
   type ListResult,
@@ -163,6 +164,8 @@ export class Bridge {
   readonly #unlisten: () => void;
   #resolveConnected: (context: HostContext) => void = () => {};
   #context: HostContext | null = null;
+  /** What takes a new build in place, in a development build that can (`@brydio/app/hot`). */
+  #devUpdate: ((update: DevUpdateParams) => void) | null = null;
   #said = false;
   #stopped = false;
   #nextId = 0;
@@ -199,10 +202,24 @@ export class Bridge {
   connect(): Promise<HostContext> {
     if (!this.#said && !this.#stopped) {
       this.#said = true;
-      this.notify('worker/ready', { protocol: PROTOCOL, app: this.app, sdk: SDK_VERSION });
+      this.notify('worker/ready', {
+        protocol: PROTOCOL,
+        app: this.app,
+        sdk: SDK_VERSION,
+        ...(this.#devUpdate ? { capabilities: ['hot'] } : {}),
+      });
     }
 
     return this.#connected;
+  }
+
+  /**
+   * Takes `dev/update` (`brydio dev` only). Set before `connect`, so
+   * `worker/ready` can say the worker is able to (`capabilities: ['hot']`).
+   * Without it, an update is answered `dev/restart`.
+   */
+  onDevUpdate(handler: (update: DevUpdateParams) => void): void {
+    this.#devUpdate = handler;
   }
 
   /** Called with the context each time the host sends it. Returns a function that stops. */
@@ -560,6 +577,15 @@ export class Bridge {
         const watch = this.#watches.get(collection);
 
         if (watch) this.#endWatch(collection, watch, new HostError({ code: -32000, message: params.message }));
+
+        return;
+      }
+      case 'dev/update': {
+        const update = { entry: String(params.entry ?? ''), build: Number(params.build ?? 0) };
+        const handler = this.#devUpdate;
+
+        if (handler) run(() => handler(update));
+        else this.notify('dev/restart', { build: update.build, reason: 'This build cannot be updated in place.' });
 
         return;
       }

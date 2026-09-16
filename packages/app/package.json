@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./data": "./src/data.ts",
+    "./hot": "./src/hot.ts",
     "./protocol": "./src/protocol.ts",
     "./preact": "./src/preact/index.ts",
     "./preact/jsx-runtime": "./src/preact/jsx-runtime.ts",
@@ -17,6 +18,7 @@
   "dependencies": {
     "@brydio/manifest": "0.1.0-alpha.0",
     "@brydio/ui": "0.1.0-alpha.0",
+    "@prefresh/core": "1.5.11",
     "preact": "10.29.8"
   }
 }

@@ -49,6 +49,13 @@ export interface BuildOptions {
    * or the prelude stops it.
    */
   checkSource?: boolean;
+  /**
+   * A development build a screen can take in place (`brydio dev`, A5-F02-S02):
+   * each screen's entry holds only the app's code, and one shared chunk beside
+   * it holds Preact, the runtime and `@brydio/app/hot`. Never for a bundle
+   * that is published: `publish` and `build` leave it off.
+   */
+  hot?: boolean;
 }
 
 export async function build(dir: string, options: BuildOptions = {}): Promise<BuildResult> {
@@ -88,7 +95,7 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
       continue;
     }
 
-    const built = await bundle(project.root, source, baked, options.minify ?? true);
+    const built = await bundle(project.root, source, baked, options.minify ?? true, options.hot === true);
 
     if (typeof built === 'string') {
       problems.push({
@@ -128,6 +135,10 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
     }
 
     files.set(entry, built.code);
+
+    // Beside the entry, which imports them as `./chunk-….js`. Screens that
+    // share a runtime share its file.
+    for (const [name, bytes] of built.chunks) files.set(join(dirname(entry), name), bytes);
   }
 
   if (problems.some(problem => problem.severity === 'error')) return failed();
@@ -239,27 +250,66 @@ export function runtimeBytesOf(metafile: { outputs?: Record<string, { inputs?: R
   return bytes;
 }
 
+/** What a hot build's shared chunk is made from, as `root` resolves them. */
+const HOT_RUNTIME = ['@brydio/app/hot', '@brydio/app', '@brydio/app/preact', '@brydio/app/preact/jsx-runtime', '@brydio/app/preact/jsx-dev-runtime'];
+
+/**
+ * The two entries of a hot build, written into `scratch`: the screen, with
+ * the hot runtime imported first so components can register, and the runtime
+ * alone. What both import is what the bundler moves into the shared chunk.
+ */
+function hotEntries(root: string, source: string, scratch: string): string[] | string {
+  const runtime: string[] = [];
+
+  for (const name of HOT_RUNTIME) {
+    try {
+      runtime.push(Bun.resolveSync(name, root));
+    } catch {
+      if (name === '@brydio/app/hot') return 'this app\'s @brydio/app has no hot runtime. Update @brydio/app.';
+    }
+  }
+
+  const imports = (paths: string[]) => paths.map(path => `import ${JSON.stringify(path)};`).join('\n');
+  const screen = join(scratch, 'entries', 'screen.ts');
+  const shared = join(scratch, 'entries', 'runtime.ts');
+
+  mkdirSync(dirname(screen), { recursive: true });
+  writeFileSync(screen, `${imports([runtime[0]!, source])}\n`);
+  writeFileSync(shared, `${imports(runtime)}\n`);
+
+  return [screen, shared];
+}
+
+/** A hot build's output files that are its own: the two entries and the shared chunks. */
+const CHUNK_FILE = /^chunk-[a-z0-9]+\.js$/;
+
 async function bundle(
   root: string,
   source: string,
   baked: object,
   minify: boolean,
-): Promise<{ code: Uint8Array; others: string[]; runtimeBytes: number | null } | string> {
+  hot = false,
+): Promise<{ code: Uint8Array; chunks: Map<string, Uint8Array>; others: string[]; runtimeBytes: number | null } | string> {
   const scratch = mkdtempSync(join(tmpdir(), 'brydio-build-'));
+  const out = hot ? join(scratch, 'out') : scratch;
 
   try {
+    const entries = hot ? hotEntries(root, source, scratch) : [source];
+
+    if (typeof entries === 'string') return entries;
+
     const child = Bun.spawn(
       [
         process.execPath,
         'build',
-        source,
+        ...entries,
+        ...(hot ? ['--splitting', '--react-fast-refresh', '--chunk-naming=chunk-[hash].[ext]', '--entry-naming=[name].[ext]'] : ['--entry-naming=screen.[ext]']),
         '--target=browser',
         '--format=esm',
         // A folder, not one file, so a stylesheet or an image the screen
         // imports is written beside it where it can be seen and refused.
-        `--outdir=${scratch}`,
+        `--outdir=${out}`,
         `--metafile=${join(scratch, '..', `${basename(scratch)}.meta.json`)}`,
-        '--entry-naming=screen.[ext]',
         `--define=__BRYDIO_APP__=${JSON.stringify(JSON.stringify(baked))}`,
         '--define=process.env.NODE_ENV="production"',
         ...(minify ? ['--minify'] : []),
@@ -270,12 +320,17 @@ async function bundle(
 
     if (code !== 0) return (stderr || stdout).trim().split('\n').filter(Boolean).slice(-6).join(' ');
 
-    const others = (readdirSync(scratch, { recursive: true }) as string[]).filter(name => name !== 'screen.js' && !statSync(join(scratch, name)).isDirectory());
+    const written = (readdirSync(out, { recursive: true }) as string[]).filter(name => !statSync(join(out, name)).isDirectory());
+    const chunks = new Map<string, Uint8Array>();
+
+    if (hot) for (const name of written.filter(one => CHUNK_FILE.test(one))) chunks.set(name, new Uint8Array(readFileSync(join(out, name))));
+
+    const others = written.filter(name => name !== 'screen.js' && !(hot && (name === 'runtime.js' || chunks.has(name))));
 
     const meta = join(scratch, '..', `${basename(scratch)}.meta.json`);
-    const runtimeBytes = minify && existsSync(meta) ? runtimeBytesOf(JSON.parse(readFileSync(meta, 'utf8')), root) : null;
+    const runtimeBytes = minify && !hot && existsSync(meta) ? runtimeBytesOf(JSON.parse(readFileSync(meta, 'utf8')), root) : null;
 
-    return { code: new Uint8Array(readFileSync(join(scratch, 'screen.js'))), others: others.sort(), runtimeBytes };
+    return { code: new Uint8Array(readFileSync(join(out, 'screen.js'))), chunks, others: others.sort(), runtimeBytes };
   } finally {
     rmSync(scratch, { recursive: true, force: true });
     rmSync(join(scratch, '..', `${basename(scratch)}.meta.json`), { force: true });

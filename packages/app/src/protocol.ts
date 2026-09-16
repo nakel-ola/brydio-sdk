@@ -229,6 +229,28 @@ export interface DataWatchParams {
   collection: string;
 }
 
+/**
+ * What a worker can do beyond the protocol, said in `worker/ready`'s
+ * `capabilities`. `hot`: a development build that takes `dev/update`.
+ */
+export type WorkerCapability = 'hot';
+
+/**
+ * `dev/update` (host to worker, `brydio dev` only): a new build of the
+ * screen is at `entry`. The worker swaps its components in place and says
+ * `dev/updated`, or says `dev/restart` with why, and the host starts it over.
+ */
+export interface DevUpdateParams {
+  entry: string;
+  build: number;
+}
+
+/** `dev/updated` and `dev/restart`: which build, and for a restart why, in a sentence. */
+export interface DevUpdatedParams {
+  build: number;
+  reason?: string;
+}
+
 /** The methods a worker sends. */
 export const WORKER_METHODS = [
   'worker/ready',
@@ -243,6 +265,8 @@ export const WORKER_METHODS = [
   'ui/toast',
   'host/members',
   'host/projects',
+  'dev/updated',
+  'dev/restart',
 ] as const;
 
 export type WorkerMethod = (typeof WORKER_METHODS)[number];
@@ -316,6 +340,7 @@ export const HOST_METHODS = [
   'ui/error',
   'host/result',
   'host/error',
+  'dev/update',
   'worker/teardown',
 ] as const;
 

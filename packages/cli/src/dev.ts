@@ -80,6 +80,9 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
   let development: DevSession['development'] = null;
   let running: Promise<unknown> = Promise.resolve();
   let again = false;
+  // A Preact app's saves are taken in place, keeping what's on screen; a
+  // plain app has no components to keep, and starts over.
+  const hot = usesPreact(root);
 
   if (signedIn && !/^https?:\/\//.test(apiUrl)) {
     throw new DevRefused(`Set ${API_URL_ENV} to your Brydio's API address, like http://localhost:4000.`);
@@ -102,7 +105,7 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
   };
 
   const rebuild = async (): Promise<BuildResult> => {
-    const result = await build(root, { minify: false });
+    const result = await build(root, { minify: false, hot });
 
     if (!result.ok) {
       for (const problem of result.problems) out(formatProblem(problem));
@@ -294,7 +297,9 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
         `Serving ${relative(root, outDir) || '.'}/ at ${url}.`,
         `Open the project in Brydio: the "${titleOf(project.raw)}" tab is marked development, and only you can see it.`,
         `  /projects/${development.projectId}?tab=app-${development.placementId}`,
-        'Every saved change builds again and starts the tab over with the new code. Stop with Ctrl-C to remove the tab.',
+        hot
+          ? 'Every saved change builds again and is swapped into the open tab, keeping what is on it (or starts it over when it cannot be). Stop with Ctrl-C to remove the tab.'
+          : 'Every saved change builds again and starts the tab over with the new code. Stop with Ctrl-C to remove the tab.',
         '',
       ].join('\n'),
     );
@@ -330,6 +335,13 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
     },
     stop,
   };
+}
+
+/** Whether the app's JSX is Preact's through `@brydio/app/preact`, as the preact template's tsconfig says. */
+export function usesPreact(root: string): boolean {
+  const tsconfig = join(root, 'tsconfig.json');
+
+  return existsSync(tsconfig) && /"jsxImportSource"\s*:\s*"@brydio\/app\/preact"/.test(readFileSync(tsconfig, 'utf8'));
 }
 
 /** A build problem as the tab shows it: the words, and the file and line when there are some. */

@@ -44,12 +44,20 @@ export function render(vnode: ComponentChild, root: RemoteRoot): void {
  * effects clean up.
  */
 export async function mount(screen: ComponentType | ComponentChild, options: RootOptions = {}): Promise<RemoteRoot> {
+  // A development build's next version, imported by `@brydio/app/hot`: its
+  // components are swapped into the screen already drawn, so nothing mounts twice.
+  const hot = (globalThis as { __BRYDIO_HOT__?: { root?: RemoteRoot } }).__BRYDIO_HOT__;
+
+  if (hot?.root && !options.bridge) return hot.root;
+
   const bridge = options.bridge ?? defaultBridge();
   const root = createRoot({ ...options, bridge });
 
   await bridge.connect();
   render(typeof screen === 'function' ? h(screen as ComponentType, null) : screen, root);
   bridge.onTeardown(() => render(null, root));
+
+  if (hot && !options.bridge) hot.root = root;
 
   return root;
 }

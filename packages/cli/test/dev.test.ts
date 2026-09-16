@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
@@ -208,6 +208,45 @@ describe('brydio dev, signed in', () => {
     const off = brydio({ 'GET /api/v1/extensions?kind=app': () => [423, { message: 'Locked' }] });
 
     await expect(run(tiny(), off, { projectId: 'p_1' })).rejects.toThrow(/Apps aren't switched on/);
+  });
+});
+
+describe('brydio dev and hot reload', () => {
+  test("serves a Preact app's shared chunk beside its screen, and says saves keep what is on the tab", async () => {
+    // A5-F02-S02: the entry imports `./chunk-….js`, which the frame fetches
+    // from here with the same headers. `hot.test.ts` runs the swap itself.
+    const root = app({
+      '.brydio/app.json': JSON.stringify({
+        name: 'counter',
+        version: '1.0.0',
+        placements: [{ kind: 'project-tab', screen: 'home' }],
+        screens: { home: { entry: 'screens/home.js' } },
+      }),
+      'tsconfig.json': JSON.stringify({ compilerOptions: { jsx: 'react-jsx', jsxImportSource: '@brydio/app/preact' } }),
+      'src/screens/home.tsx': "import { mount } from '@brydio/app/preact';\n\nvoid mount(() => <bry-text text=\"Hello\" />);\n",
+    });
+
+    symlinkSync(join(import.meta.dir, '..', '..', '..', 'templates', 'preact', 'node_modules'), join(root, 'node_modules'));
+
+    const { session, lines } = await run(root, brydio());
+    const entry = await (await fetch(`${session.url}/screens/home.js?build=1`)).text();
+    const chunk = /from "\.\/(chunk-[a-z0-9]+\.js)"/.exec(entry)?.[1];
+
+    expect(chunk).toBeDefined();
+
+    const shared = await fetch(`${session.url}/screens/${chunk}`);
+
+    expect(shared.status).toBe(200);
+    expect(shared.headers.get('access-control-allow-origin')).toBe('*');
+    expect(await shared.text()).toContain('__PREFRESH__');
+    expect(lines.join('\n')).toContain('swapped into the open tab, keeping what is on it');
+  });
+
+  test('builds an app that is not Preact whole, and starts its tab over on a save', async () => {
+    const { session, lines } = await run(tiny(), brydio());
+
+    expect(await (await fetch(`${session.url}/screens/home.js`)).text()).not.toContain('chunk-');
+    expect(lines.join('\n')).toContain('starts the tab over with the new code');
   });
 });
 
