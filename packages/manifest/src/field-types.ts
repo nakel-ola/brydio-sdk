@@ -55,13 +55,21 @@ export interface FieldType {
  * type into a text field is refused by the store.
  */
 export const FIELD_LIMITS = {
+  /** Collections one app may keep. */
   collections: 20,
+  /** Fields one collection may have. */
   fields: 40,
+  /** Values one choice may allow. */
   enumValues: 50,
+  /** Characters in one of a choice's values. */
   enumValueChars: 64,
+  /** Characters in a `string` value, the same as `bry-input` lets a person type. */
   stringChars: 1_000,
+  /** Characters in a `text` value. */
   textChars: 100_000,
+  /** Entries in a `string[]` value. */
   listEntries: 100,
+  /** Characters in a collection, label, field or screen name. */
   nameChars: 40,
 } as const;
 

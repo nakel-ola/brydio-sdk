@@ -57,6 +57,8 @@ export {
   type ManifestExtensions,
 } from './schema.ts';
 
+export { DOCUMENT_LIMITS } from './document-limits.ts';
+
 export { HOST_CAPABILITIES, KNOWN_HOST_GRANTS, isHostCapability, unknownHostGrant } from './grants.ts';
 
 export {

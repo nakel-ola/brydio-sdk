@@ -185,7 +185,7 @@ export function dataProblems(additions: Additions, options: { grants?: boolean }
       problems.push({
         code: 'data_collection_name_format',
         collection,
-        message: `${collection} is not a collection name: lower-case letters, digits and _, starting with a letter.`,
+        message: `${collection} is not a collection name: lower-case letters, digits and _, starting with a letter, at most ${FIELD_LIMITS.nameChars} characters.`,
       });
     }
 
@@ -195,7 +195,7 @@ export function dataProblems(additions: Additions, options: { grants?: boolean }
       problems.push({
         code: 'data_label_format',
         collection,
-        message: `${collection}'s label must be one lower-case word the tools can be named with.`,
+        message: `${collection}'s label must be one lower-case word the tools can be named with, at most ${FIELD_LIMITS.nameChars} characters.`,
       });
     } else if (labels.has(label)) {
       // Two collections called "issue" would give two `create_issue` tools.
@@ -237,7 +237,7 @@ export function dataProblems(additions: Additions, options: { grants?: boolean }
           code: 'data_field_name_format',
           collection,
           field,
-          message: `${collection}.${field} is not a field name: letters, digits and _, starting with a lower-case letter.`,
+          message: `${collection}.${field} is not a field name: letters, digits and _, starting with a lower-case letter, at most ${FIELD_LIMITS.nameChars} characters.`,
         });
         continue;
       }

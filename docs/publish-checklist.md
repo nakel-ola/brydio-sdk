@@ -43,12 +43,12 @@ first.
 | `manifest_invalid` | The schema's sentence for the field at `<path>`. For example, the name must be lowercase letters, digits and dashes; the version must look like 1.2.0; "Custom tools are not available yet." | yes | publish | Change the field the path names. |
 | `placement_screen_unknown` | A `<kind>` placement opens "`<screen>`", which is not one of the app's screens. | yes | publish | Declare the screen under `screens`, or point the placement at one that is declared. |
 | `data_too_many_collections` | An app may keep at most `<n>` collections. | yes | publish | Keep fewer collections. |
-| `data_collection_name_format` | `<collection>` is not a collection name: lower-case letters, digits and _, starting with a letter. | yes | publish | Rename the collection. |
-| `data_label_format` | `<collection>`'s label must be one lower-case word the tools can be named with. | yes | publish | Give `label` one lower-case word. |
+| `data_collection_name_format` | `<collection>` is not a collection name: lower-case letters, digits and _, starting with a letter, at most 40 characters. | yes | publish | Rename the collection. |
+| `data_label_format` | `<collection>`'s label must be one lower-case word the tools can be named with, at most 40 characters. | yes | publish | Give `label` one lower-case word. |
 | `data_label_taken` | `<collection>` and `<other>` would both make tools called `<label>`. | yes | publish | Give one of them a different `label`. |
 | `data_too_many_fields` | A collection may have at most `<n>` fields. | yes | publish | Split the collection or drop fields. |
 | `data_field_reserved` | `<collection>.<field>`: Brydio keeps `<field>` on every record itself. | yes | publish | Rename the field; Brydio already keeps it. |
-| `data_field_name_format` | `<collection>.<field>` is not a field name: letters, digits and _, starting with a lower-case letter. | yes | publish | Rename the field. |
+| `data_field_name_format` | `<collection>.<field>` is not a field name: letters, digits and _, starting with a lower-case letter, at most 40 characters. | yes | publish | Rename the field. |
 | `data_project_field_twice` | `<collection>` links to a project twice (`<a>` and `<b>`); keep one. | yes | publish | Keep one `project` field. |
 | `data_field_type_unknown` | `<collection>.<field>`: "`<type>`" is not a field type. | yes | publish | Use one of the field types in the README. |
 | `data_enum_empty` | `<collection>.<field>`: A choice needs at least one allowed value. | yes | publish | List at least one value. |
