@@ -177,7 +177,18 @@ The building blocks and their settings:
 | `bry-avatar` | `name` (needed), `size` sm, md or lg; initials, never a picture | nothing |
 | `bry-empty-state` | `title` (needed), `text`, `action` | `onAction` |
 | `bry-skeleton` | `shape` line, block or row, `count` 1–12 | nothing |
+| `bry-table` | `columns` (needed, up to 12 `{ key, heading, align, sortable }`), `rows` (up to 500 `{ id, cells }`), `sort` `{ key, direction }`, `label`, `selectable`, `selected`, `loading`, `empty` | `onSort` with `{ key, direction }`, `onSelect` with `{ row }` |
+| `bry-virtual-list` | `count` (needed), `start`, `rowSize` sm, md or lg, `label`, `selectable`, `selected`, `loading`, `empty`; holds only the rows in view | `onRange` with `{ start, end }`, `onSelect` with `{ index }` |
+| `bry-dialog` | `title` (needed), `open`, `description`, `actions` (up to 3 `{ id, label, tone, disabled }`), `cancel` | `onAction` with `{ id }`, `onClose` (with `{ refused }` when another dialog is open) |
+| `bry-menu` | `items` (needed, up to 20 `{ id, label, icon, tone, separator, disabled }`); holds the button that opens it | `onSelect` with `{ id }` |
+| `bry-date` | `value`, `min`, `max` as ISO dates, `label`, `placeholder`, `disabled`, `error` | `onChange`, with `{ value }` |
+| `bry-split` | `ratio` 20–80, `label`; holds its two panes | nothing |
+| `bry-checkbox` | `label` (needed), `checked`, `disabled`, `error` | `onChange`, with `{ checked }` |
+| `bry-switch` | `label` (needed), `checked`, `disabled`, `error` | `onChange`, with `{ checked }` |
 
-A stack, a grid, a label, a card and a list row hold other blocks; the rest
-take their words as a setting. Each has a plain factory of the same name in
-`@brydio/app` (`listRow`, `emptyState`) for a screen written without Preact.
+A stack, a grid, a label, a card, a list row, a virtual list, a dialog, a menu
+and a split hold other blocks; the rest take their words as a setting. Each has
+a plain factory of the same name in `@brydio/app` (`listRow`, `emptyState`,
+`virtualList`) for a screen written without Preact; a switch's is
+`switchElement`, since `switch` is a reserved word. A menu item's `icon` is one
+of `MENU_ICONS` from `@brydio/ui`.

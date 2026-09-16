@@ -10,10 +10,10 @@ const codes = (source: string, file = 'screen.tsx') => checkSource(file, source)
 
 describe('elements and settings, in JSX', () => {
   test('an element Brydio does not have, with its file, line and column', () => {
-    const [problem] = checkSource('src/screens/home.tsx', 'const a = 1;\nconst x = (\n  <bry-stack>\n    <bry-table />\n  </bry-stack>\n);');
+    const [problem] = checkSource('src/screens/home.tsx', 'const a = 1;\nconst x = (\n  <bry-stack>\n    <bry-chart />\n  </bry-stack>\n);');
 
     expect(problem).toMatchObject({ code: 'element_unknown', file: 'src/screens/home.tsx', line: 4, column: 6 });
-    expect(problem!.message).toContain('"bry-table"');
+    expect(problem!.message).toContain('"bry-chart"');
     expect(codes('const x = <div />;')).toEqual(['element_unknown']);
     expect(codes('const x = <svg:rect />;')).toEqual(['element_unknown']);
   });
@@ -107,6 +107,37 @@ describe('the elements added after Phase 0', () => {
     expect(codes('<bry-avatar name="Ada" src="https://x/a.png" />')).toEqual(['prop_unknown']);
     expect(codes('<bry-empty-state title="x">more</bry-empty-state>')).toEqual(['children_not_allowed']);
     expect(codes("import { listRow, skeleton } from '@brydio/app';\nlistRow({ tone: 'x' });\nskeleton({ count: 20 });", 'a.ts')).toEqual([
+      'prop_unknown',
+      'prop_value_invalid',
+    ]);
+  });
+});
+
+describe('the elements added in Wren’s eight', () => {
+  test('are known, with their own settings, events and children', () => {
+    const source = [
+      '<bry-split ratio={40} label="Issues and detail">',
+      '  <bry-virtual-list count={issues.length} start={start} rowSize="md" selectable onRange={load} onSelect={open}>{rows}</bry-virtual-list>',
+      '  <bry-stack>',
+      '    <bry-table columns={columns} rows={rows} sort={sort} selectable selected="a" empty="No issues" onSort={order} onSelect={open} />',
+      '    <bry-menu items={items} onSelect={act}><bry-button label="More" /></bry-menu>',
+      '    <bry-dialog open={asking} title="Delete this issue?" cancel="Keep it" actions={actions} onAction={act} onClose={close}><bry-text text="It goes for everyone." /></bry-dialog>',
+      '    <bry-date value="2026-09-16" min="2026-01-01" label="Due" onChange={due} />',
+      '    <bry-checkbox label="Done" checked onChange={tick} />',
+      '    <bry-switch label="Notify me" checked={false} onChange={tick} />',
+      '  </bry-stack>',
+      '</bry-split>;',
+    ].join('\n');
+
+    expect(checkSource('a.tsx', source)).toEqual([]);
+    expect(found('<bry-split ratio={90} />')).toEqual([[1, 'prop_value_invalid']]);
+    expect(codes('<bry-table rows={rows} />')).toEqual(['prop_required']);
+    expect(codes('<bry-checkbox checked />')).toEqual(['prop_required']);
+    expect(codes('<bry-virtual-list count={3} rowSize="xl" onPress={go} />')).toEqual(['prop_value_invalid', 'event_unknown']);
+    expect(codes('<bry-split onChange={go} />')).toEqual(['event_unknown']);
+    expect(codes('<bry-date value="16 September 2026" />')).toEqual(['prop_value_invalid']);
+    expect(codes('<bry-switch label="x">on</bry-switch>')).toEqual(['children_not_allowed']);
+    expect(codes("import { table, switchElement } from '@brydio/app';\ntable({ columns, width: 3 });\nswitchElement({ label: 'x', checked: 'yes' });", 'a.ts')).toEqual([
       'prop_unknown',
       'prop_value_invalid',
     ]);

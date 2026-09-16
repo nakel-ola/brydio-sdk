@@ -54,8 +54,12 @@ export interface RpcMessage {
 
 export type NodeId = string;
 
-/** A setting's value on the wire. Handlers never travel; they stay in the worker. */
-export type PropValue = string | number | boolean;
+/**
+ * A setting's value on the wire: a word, a number or a flag, or a list or a
+ * record of them (a select's options, a table's columns). Handlers never
+ * travel; they stay in the worker.
+ */
+export type PropValue = string | number | boolean | readonly PropValue[] | { readonly [field: string]: PropValue };
 
 /**
  * One node. An element's `children` are ids, in order; only a mount sends

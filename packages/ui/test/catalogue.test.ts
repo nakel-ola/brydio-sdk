@@ -15,6 +15,7 @@ import {
   handlerName,
   refusalFor,
   refusalForProps,
+  refusalForValue,
   type ElementAttributes,
   type PropSpec,
 } from '../src/index.ts';
@@ -64,7 +65,7 @@ const hostAtHead = () =>
   })());
 
 describe('the catalogue as a whole', () => {
-  test('has the first fifteen, all named bry-', () => {
+  test('has the first twenty-three, all named bry-', () => {
     expect(ELEMENT_NAMES).toEqual([
       'bry-stack',
       'bry-heading',
@@ -81,6 +82,14 @@ describe('the catalogue as a whole', () => {
       'bry-list-row',
       'bry-empty-state',
       'bry-skeleton',
+      'bry-table',
+      'bry-virtual-list',
+      'bry-dialog',
+      'bry-menu',
+      'bry-date',
+      'bry-split',
+      'bry-checkbox',
+      'bry-switch',
     ]);
   });
 
@@ -95,7 +104,7 @@ describe('the catalogue as a whole', () => {
   test('keeps free text to the settings that are words for a person', () => {
     for (const name of ELEMENT_NAMES) {
       for (const [prop, spec] of Object.entries(CATALOGUE[name].props) as [string, PropSpec][]) {
-        if (spec.kind === 'text') expect(['text', 'label', 'title', 'value', 'placeholder', 'error', 'name', 'description', 'meta', 'action']).toContain(prop);
+        if (spec.kind === 'text') expect(['text', 'label', 'title', 'value', 'placeholder', 'error', 'name', 'description', 'meta', 'action', 'empty', 'selected', 'cancel', 'min', 'max']).toContain(prop);
       }
     }
   });
@@ -150,6 +159,56 @@ describe('the same as Brydio’s receiver', () => {
     for (const type of ['bry-select', 'bry-label', 'bry-badge', 'bry-avatar', 'bry-empty-state']) {
       expect(refusalForProps(type as never, {})).toBe(host.refusalForProps(type, {}));
     }
+
+    // Wren's eight, whose lists and records name the path to the field they refuse.
+    const column = { key: 'title', heading: 'Title' };
+    const later: [string, string, unknown][] = [
+      ['bry-table', 'columns', [{ ...column, align: 'middle' }]],
+      ['bry-table', 'columns', [column, { key: 'x' }]],
+      ['bry-table', 'columns', [{ ...column, width: 3 }]],
+      ['bry-table', 'columns', Array.from({ length: 13 }, (_, at) => ({ key: `c${at}`, heading: 'x' }))],
+      ['bry-table', 'columns', 'title'],
+      ['bry-table', 'columns', [null]],
+      ['bry-table', 'rows', [{ id: 'a', cells: ['x', 7] }]],
+      ['bry-table', 'rows', [{ id: 'x'.repeat(129), cells: [] }]],
+      ['bry-table', 'sort', { key: 'title', direction: 'up' }],
+      ['bry-table', 'sort', { key: 'title' }],
+      ['bry-table', 'selected', 'x'.repeat(129)],
+      ['bry-virtual-list', 'count', 1_000_001],
+      ['bry-virtual-list', 'rowSize', 'xl'],
+      ['bry-dialog', 'actions', [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }, { id: 'd', label: 'D' }]],
+      ['bry-dialog', 'actions', [{ id: 'a', label: 'A', tone: 'warn' }]],
+      ['bry-dialog', 'description', 'x'.repeat(4_001)],
+      ['bry-menu', 'items', [{ id: 'a', label: 'A', icon: 'rocket' }]],
+      ['bry-menu', 'items', [{ id: 'a', label: 'A', icon: 'trash', tone: 'danger', separator: 'yes' }]],
+      ['bry-date', 'value', '2026-09-16T00:00'],
+      ['bry-split', 'ratio', 90],
+      ['bry-checkbox', 'checked', 'true'],
+      ['bry-switch', 'onChange', 'x'],
+    ];
+
+    for (const [type, name, value] of later) {
+      expect(refusalFor(type as never, name, value)).not.toBeNull();
+      expect(refusalFor(type as never, name, value)).toBe(host.refusalFor(type, name, value));
+    }
+
+    for (const type of ['bry-table', 'bry-virtual-list', 'bry-dialog', 'bry-menu', 'bry-checkbox', 'bry-switch']) {
+      expect(refusalForProps(type as never, {})).toBe(host.refusalForProps(type, {}));
+    }
+  });
+
+  test('refuses inside a table’s columns and a menu’s items with the path to the field', () => {
+    expect(refusalFor('bry-table', 'columns', [{ key: 'title', heading: 'Title', align: 'end', sortable: true }])).toBeNull();
+    expect(refusalFor('bry-table', 'columns', [{ key: 'title', heading: 'Title', align: 'middle' }])).toBe(
+      'bry-table columns[0].align must be one of start, end.',
+    );
+    expect(refusalFor('bry-table', 'columns', [{ key: 'a', heading: 'A' }, { key: 'b' }])).toBe('bry-table columns[1] needs a heading.');
+    expect(refusalFor('bry-table', 'rows', [{ id: 'a', cells: ['x', 7] }])).toBe('bry-table rows[0].cells[1] must be text of at most 200 characters.');
+    expect(refusalFor('bry-table', 'sort', [])).toBe('bry-table sort must be a record with key, direction.');
+    expect(refusalFor('bry-menu', 'items', [{ id: 'a', label: 'A', href: '/x' }])).toBe('bry-menu items[0] has no field called "href".');
+    expect(refusalFor('bry-dialog', 'actions', 'save')).toBe('bry-dialog actions must be a list of at most 3.');
+    expect(refusalFor('bry-menu', 'items', [{ id: 'a', label: 'A', icon: undefined }])).toBeNull();
+    expect(refusalForValue('bry-x list[0]', { kind: 'options', max: 1 }, [])).toBe("bry-x list[0] can't hold a list of choices.");
   });
 
   test('checks a select’s choices: distinct values, non-empty labels, nothing else, at most a hundred', () => {
@@ -225,6 +284,41 @@ describe('checks', () => {
     // @ts-expect-error a textarea has no submit
     const submitted: ElementAttributes<'bry-textarea'> = { onSubmit: () => {} };
 
-    expect([fine, unlabelled, wide, pressed, typed, chosen, choiceless, loud, submitted]).toHaveLength(9);
+    const sorted: ElementAttributes<'bry-table'> = {
+      columns: [{ key: 'title', heading: 'Title', sortable: true }],
+      rows: [{ id: 'a', cells: ['Fix the door'] }],
+      sort: { key: 'title', direction: 'asc' },
+      onSort: event => event.detail.direction satisfies 'asc' | 'desc',
+      onSelect: event => event.detail.row.trim(),
+    };
+    // @ts-expect-error a column needs its heading
+    const headless: ElementAttributes<'bry-table'> = { columns: [{ key: 'title' }] };
+    // @ts-expect-error a column aligns to the start or the end
+    const centred: ElementAttributes<'bry-table'> = { columns: [{ key: 'title', heading: 'Title', align: 'center' }] };
+    const long: ElementAttributes<'bry-virtual-list'> = {
+      count: 10_000,
+      onRange: event => event.detail.start + event.detail.end,
+      onSelect: event => event.detail.index.toFixed(),
+    };
+    const asked: ElementAttributes<'bry-dialog'> = {
+      title: 'Delete?',
+      actions: [{ id: 'delete', label: 'Delete', tone: 'danger' }],
+      onAction: event => event.detail.id.trim(),
+      onClose: event => event.detail?.refused.trim(),
+    };
+    const more: ElementAttributes<'bry-menu'> = { items: [{ id: 'bin', label: 'Delete', icon: 'trash' }], onSelect: event => event.detail.id.trim() };
+    // @ts-expect-error a menu's icons are the shell's own
+    const drawn: ElementAttributes<'bry-menu'> = { items: [{ id: 'bin', label: 'Delete', icon: 'rocket' }] };
+    const due: ElementAttributes<'bry-date'> = { value: '2026-09-16', onChange: event => event.detail.value.trim() };
+    const ticked: ElementAttributes<'bry-checkbox'> = { label: 'Done', onChange: event => event.detail.checked satisfies boolean };
+    // @ts-expect-error a switch's change carries whether it is on, not text
+    const worded: ElementAttributes<'bry-switch'> = { label: 'On', onChange: event => event.detail.value };
+    // @ts-expect-error a split raises nothing
+    const dragged: ElementAttributes<'bry-split'> = { ratio: 50, onChange: () => {} };
+
+    expect([
+      fine, unlabelled, wide, pressed, typed, chosen, choiceless, loud, submitted,
+      sorted, headless, centred, long, asked, more, drawn, due, ticked, worded, dragged,
+    ]).toHaveLength(20);
   });
 });

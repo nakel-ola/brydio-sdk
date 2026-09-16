@@ -25,7 +25,11 @@ export type PropSpec =
   | { readonly kind: 'boolean' }
   | { readonly kind: 'int'; readonly min: number; readonly max: number }
   /** A list of `{ value, label }` choices, at most `max` of them: a select's options. */
-  | { readonly kind: 'options'; readonly max: number };
+  | { readonly kind: 'options'; readonly max: number }
+  /** A list of at most `max` values, each checked against `of`: a table's columns. */
+  | { readonly kind: 'list'; readonly max: number; readonly of: PropSpec }
+  /** One record with named fields, each checked on its own: a column. No other field is allowed. */
+  | { readonly kind: 'shape'; readonly fields: Readonly<Record<string, PropSpec>>; readonly required?: readonly string[] };
 
 export interface ElementSpec {
   readonly props: Readonly<Record<string, PropSpec>>;
@@ -54,6 +58,50 @@ export const INPUT_MAX = 1_000;
 
 /** The most choices a select offers. A longer list wants a search. */
 export const SELECT_MAX = 100;
+
+/** The most columns a table has. More belongs in a detail view. */
+export const TABLE_COLUMNS = 12;
+/** The most rows a table holds at once. A longer list is a `bry-virtual-list`. */
+export const TABLE_ROWS = 500;
+/** A column's key and a row's id: short, and never shown. */
+export const KEY_MAX = 128;
+
+/** The most rows a virtual list can say it has. */
+export const VIRTUAL_ROWS = 1_000_000;
+
+/** The most buttons a dialog has, not counting Cancel. */
+export const DIALOG_ACTIONS = 3;
+
+/** The most items a menu has. */
+export const MENU_ITEMS = 20;
+
+/**
+ * The icons a menu item may show, by name, from the shell's own set. An app
+ * can't supply a picture, and a name outside this list is refused.
+ */
+export const MENU_ICONS = [
+  'add',
+  'archive',
+  'calendar',
+  'check',
+  'copy',
+  'dismiss',
+  'docs',
+  'info',
+  'mail',
+  'members',
+  'notes',
+  'pin',
+  'rename',
+  'retry',
+  'search',
+  'settings',
+  'tasks',
+  'trash',
+] as const;
+
+/** An ISO date is ten characters: `2026-09-16`. */
+const ISO_DATE = 10;
 
 /**
  * Every element an app may use, as the host declares them: Phase 0's five,
@@ -228,6 +276,175 @@ export const CATALOGUE = {
       count: { kind: 'int', min: 1, max: 12 },
     },
     events: [],
+    children: false,
+  },
+  'bry-table': {
+    // Rows of text under column headings. Sorting is the app's: a header press
+    // raises `sort` with `{ key, direction }`, the app re-orders `rows` and
+    // sends `sort` back. With `selectable`, choosing a row raises `select`
+    // with `{ row }`, the row's id.
+    props: {
+      columns: {
+        kind: 'list',
+        max: TABLE_COLUMNS,
+        of: {
+          kind: 'shape',
+          fields: {
+            key: { kind: 'text', max: KEY_MAX },
+            heading: { kind: 'text', max: LABEL_MAX },
+            align: { kind: 'enum', values: ['start', 'end'] },
+            sortable: { kind: 'boolean' },
+          },
+          required: ['key', 'heading'],
+        },
+      },
+      rows: {
+        kind: 'list',
+        max: TABLE_ROWS,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            cells: { kind: 'list', max: TABLE_COLUMNS, of: { kind: 'text', max: LABEL_MAX } },
+          },
+          required: ['id', 'cells'],
+        },
+      },
+      sort: {
+        kind: 'shape',
+        fields: { key: { kind: 'text', max: KEY_MAX }, direction: { kind: 'enum', values: ['asc', 'desc'] } },
+        required: ['key', 'direction'],
+      },
+      label: { kind: 'text', max: LABEL_MAX },
+      selectable: { kind: 'boolean' },
+      selected: { kind: 'text', max: KEY_MAX },
+      loading: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['columns'],
+    events: ['sort', 'select'],
+    children: false,
+  },
+  'bry-virtual-list': {
+    // A long list that keeps only the rows in view. The app says how many rows
+    // there are and sends, as children, only those it is asked for, the first
+    // being row `start`. `range` carries `{ start, end }`, `end` excluded;
+    // `select` carries `{ index }`.
+    props: {
+      count: { kind: 'int', min: 0, max: VIRTUAL_ROWS },
+      start: { kind: 'int', min: 0, max: VIRTUAL_ROWS },
+      rowSize: { kind: 'enum', values: ['sm', 'md', 'lg'] },
+      label: { kind: 'text', max: LABEL_MAX },
+      selectable: { kind: 'boolean' },
+      selected: { kind: 'int', min: 0, max: VIRTUAL_ROWS },
+      loading: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['count'],
+    events: ['range', 'select'],
+    children: true,
+  },
+  'bry-dialog': {
+    // A question answered before going on. Escape, the backdrop and Cancel
+    // always close it and raise `close`; an action raises `action` with
+    // `{ id }` and the dialog stays open until the app closes it. A second
+    // dialog asking to open stays shut and raises `close` with `{ refused }`.
+    props: {
+      open: { kind: 'boolean' },
+      title: { kind: 'text', max: LABEL_MAX },
+      description: { kind: 'text', max: PARAGRAPH_MAX },
+      actions: {
+        kind: 'list',
+        max: DIALOG_ACTIONS,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            label: { kind: 'text', max: LABEL_MAX },
+            tone: { kind: 'enum', values: ['default', 'primary', 'danger'] },
+            disabled: { kind: 'boolean' },
+          },
+          required: ['id', 'label'],
+        },
+      },
+      cancel: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['title'],
+    events: ['action', 'close'],
+    children: true,
+  },
+  'bry-menu': {
+    // A short list of things to do, opened from its one child, the anchor.
+    // Choosing an item raises `select` with `{ id }`.
+    props: {
+      items: {
+        kind: 'list',
+        max: MENU_ITEMS,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            label: { kind: 'text', max: LABEL_MAX },
+            icon: { kind: 'enum', values: MENU_ICONS },
+            tone: { kind: 'enum', values: ['default', 'danger'] },
+            separator: { kind: 'boolean' },
+            disabled: { kind: 'boolean' },
+          },
+          required: ['id', 'label'],
+        },
+      },
+    },
+    required: ['items'],
+    events: ['select'],
+    children: true,
+  },
+  'bry-date': {
+    // A day picked from a calendar. `value`, `min`, `max` and what `change`
+    // carries as `{ value }` are ISO dates; the person sees their own locale.
+    props: {
+      value: { kind: 'text', max: ISO_DATE },
+      min: { kind: 'text', max: ISO_DATE },
+      max: { kind: 'text', max: ISO_DATE },
+      label: { kind: 'text', max: LABEL_MAX },
+      placeholder: { kind: 'text', max: LABEL_MAX },
+      disabled: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    events: ['change'],
+    children: false,
+  },
+  'bry-split': {
+    // Two panes, its two children, with a handle between. `ratio` is the
+    // first pane's starting share in percent. Where there isn't room they stack.
+    props: {
+      ratio: { kind: 'int', min: 20, max: 80 },
+      label: { kind: 'text', max: LABEL_MAX },
+    },
+    events: [],
+    children: true,
+  },
+  'bry-checkbox': {
+    // A yes or no with its label. Pressing it raises `change` with `{ checked }`.
+    props: {
+      checked: { kind: 'boolean' },
+      label: { kind: 'text', max: LABEL_MAX },
+      disabled: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['label'],
+    events: ['change'],
+    children: false,
+  },
+  'bry-switch': {
+    // The same contract as `bry-checkbox`, drawn as the shell's switch.
+    props: {
+      checked: { kind: 'boolean' },
+      label: { kind: 'text', max: LABEL_MAX },
+      disabled: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['label'],
+    events: ['change'],
     children: false,
   },
 } as const satisfies Readonly<Record<`bry-${string}`, ElementSpec>>;

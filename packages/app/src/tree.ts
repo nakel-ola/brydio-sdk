@@ -809,8 +809,10 @@ export function createRoot(options: RootOptions = {}): RemoteRoot {
 }
 
 // One factory per element, with the same settings as the JSX element. Those
-// that hold children (a stack, a card, a label, a grid, a list row) take them
-// after the settings; the rest take their words as a setting.
+// that hold children (a stack, a card, a label, a grid, a list row, a virtual
+// list, a dialog, a menu, a split) take them after the settings; the rest
+// take their words as a setting. `switch` is a reserved word, so a switch's
+// factory is `switchElement`, as Brydio names it.
 
 export const stack = (attributes?: ElementAttributes<'bry-stack'> | null, ...children: Child[]) =>
   createElement('bry-stack', attributes, ...children);
@@ -845,3 +847,19 @@ export const emptyState = (attributes: ElementAttributes<'bry-empty-state'>) => 
 
 export const skeleton = (attributes?: ElementAttributes<'bry-skeleton'> | null) => createElement('bry-skeleton', attributes);
 
+export const table = (attributes: ElementAttributes<'bry-table'>) => createElement('bry-table', attributes);
+
+export const virtualList = (attributes: ElementAttributes<'bry-virtual-list'>, ...children: Child[]) =>
+  createElement('bry-virtual-list', attributes, ...children);
+
+export const dialog = (attributes: ElementAttributes<'bry-dialog'>, ...children: Child[]) => createElement('bry-dialog', attributes, ...children);
+
+export const menu = (attributes: ElementAttributes<'bry-menu'>, ...children: Child[]) => createElement('bry-menu', attributes, ...children);
+
+export const date = (attributes?: ElementAttributes<'bry-date'> | null) => createElement('bry-date', attributes);
+
+export const split = (attributes?: ElementAttributes<'bry-split'> | null, ...children: Child[]) => createElement('bry-split', attributes, ...children);
+
+export const checkbox = (attributes: ElementAttributes<'bry-checkbox'>) => createElement('bry-checkbox', attributes);
+
+export const switchElement = (attributes: ElementAttributes<'bry-switch'>) => createElement('bry-switch', attributes);

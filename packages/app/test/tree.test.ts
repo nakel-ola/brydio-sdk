@@ -8,9 +8,14 @@ import {
   badge,
   button,
   card,
+  checkbox,
+  dialog,
   emptyState,
   listRow,
   select,
+  switchElement,
+  table,
+  virtualList,
   createElement,
   createText,
   heading,
@@ -355,6 +360,40 @@ describe('events (tree/event)', () => {
     expect(seen).toEqual(['todo', 'action']);
     expect(JSON.stringify(sent)).toContain('"type":"bry-list-row"');
     expect(() => badge({ text: 'x', onPress: () => {} } as never)).toThrow('bry-badge raises no events, so it takes no onPress.');
+  });
+
+  test('reach the plain factories of Wren’s eight, with what each one carries', async () => {
+    const { root, connect, hostSays, sent } = harness();
+    const seen: unknown[] = [];
+    const issues = table({
+      columns: [{ key: 'title', heading: 'Title', sortable: true }],
+      rows: [{ id: 'a', cells: ['Fix the door'] }],
+      onSort: event => seen.push(event.detail.direction),
+      onSelect: event => seen.push(event.detail.row),
+    });
+    const long = virtualList({ count: 10_000, onRange: event => seen.push(event.detail.end - event.detail.start) }, text({ text: 'Row 0' }));
+    const asking = dialog(
+      { open: true, title: 'Delete?', actions: [{ id: 'delete', label: 'Delete', tone: 'danger' }], onAction: event => seen.push(event.detail.id), onClose: event => seen.push(event.detail) },
+      checkbox({ label: 'Also its comments', onChange: event => seen.push(event.detail.checked) }),
+    );
+    const notify = switchElement({ label: 'Notify me', onChange: event => seen.push(event.detail.checked) });
+
+    root.append(issues, long, asking, notify);
+    await connect();
+
+    hostSays('tree/event', { node: issues.id, name: 'sort', detail: { key: 'title', direction: 'desc' } });
+    hostSays('tree/event', { node: issues.id, name: 'select', detail: { row: 'a' } });
+    hostSays('tree/event', { node: long.id, name: 'range', detail: { start: 10, end: 40 } });
+    hostSays('tree/event', { node: asking.id, name: 'action', detail: { id: 'delete' } });
+    hostSays('tree/event', { node: asking.id, name: 'close' });
+    hostSays('tree/event', { node: notify.id, name: 'change', detail: { checked: true } });
+
+    expect(seen).toEqual(['desc', 'a', 30, 'delete', undefined, true]);
+    expect(JSON.stringify(sent)).toContain('"type":"bry-virtual-list"');
+    expect(() => table({ columns: [{ key: 'title', heading: 'Title', align: 'middle' }] } as never)).toThrow(
+      'bry-table columns[0].align must be one of start, end.',
+    );
+    expect(() => switchElement({ label: 'x' }).append(text({ text: 'on' }))).toThrow('bry-switch can’t hold other nodes.');
   });
 
   test('reach a listener registered the way Preact registers one', async () => {

@@ -49,6 +49,66 @@ export function refusalFor(type: ElementName, name: string, value: unknown): str
       return isOptions(value, spec.max)
         ? null
         : `${type} ${name} must be a list of at most ${spec.max} choices, each with a value and a label of at most ${LABEL_MAX} characters, and no value twice.`;
+    case 'list':
+    case 'shape':
+      return refusalForValue(`${type} ${name}`, spec, value);
+  }
+}
+
+/**
+ * Why a value inside a `list` or a `shape` can't be drawn, or `null` when it
+ * can. `label` is the path to it so far (`bry-table columns[2].align`), so
+ * the sentence the builder reads points at the exact field. The host's words.
+ *
+ * `options` has its own rule in `refusalFor` and isn't allowed in here.
+ */
+export function refusalForValue(label: string, spec: PropSpec, value: unknown): string | null {
+  switch (spec.kind) {
+    case 'enum':
+      return typeof value === 'string' && spec.values.includes(value) ? null : `${label} must be one of ${spec.values.join(', ')}.`;
+    case 'text':
+      return typeof value === 'string' && value.length <= spec.max ? null : `${label} must be text of at most ${spec.max} characters.`;
+    case 'boolean':
+      return typeof value === 'boolean' ? null : `${label} must be true or false.`;
+    case 'int':
+      return Number.isInteger(value) && (value as number) >= spec.min && (value as number) <= spec.max
+        ? null
+        : `${label} must be a whole number from ${spec.min} to ${spec.max}.`;
+    case 'options':
+      return `${label} can't hold a list of choices.`;
+    case 'list': {
+      if (!Array.isArray(value) || value.length > spec.max) return `${label} must be a list of at most ${spec.max}.`;
+
+      for (const [index, item] of value.entries()) {
+        const refused = refusalForValue(`${label}[${index}]`, spec.of, item);
+
+        if (refused) return refused;
+      }
+
+      return null;
+    }
+    case 'shape': {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return `${label} must be a record with ${Object.keys(spec.fields).join(', ')}.`;
+      }
+
+      for (const [field, item] of Object.entries(value)) {
+        const fieldSpec = spec.fields[field];
+
+        if (!fieldSpec) return `${label} has no field called "${field}".`;
+        if (item === undefined) continue;
+
+        const refused = refusalForValue(`${label}.${field}`, fieldSpec, item);
+
+        if (refused) return refused;
+      }
+
+      for (const field of spec.required ?? []) {
+        if ((value as Record<string, unknown>)[field] === undefined) return `${label} needs a ${field}.`;
+      }
+
+      return null;
+    }
   }
 }
 

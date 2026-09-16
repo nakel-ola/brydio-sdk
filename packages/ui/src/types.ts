@@ -19,7 +19,18 @@ export type ValueOf<S extends PropSpec> = S extends { kind: 'enum'; values: read
         ? number
         : S extends { kind: 'options' }
           ? { value: string; label: string }[]
-          : never;
+          : S extends { kind: 'list'; of: infer Of extends PropSpec }
+            ? ValueOf<Of>[]
+            : S extends { kind: 'shape'; fields: infer Fields extends Readonly<Record<string, PropSpec>> }
+              ? ShapeOf<Fields, S extends { required: readonly (infer R)[] } ? R & string : never>
+              : never;
+
+/** A record's fields: the ones it requires, then the rest, optional. */
+type ShapeOf<Fields extends Readonly<Record<string, PropSpec>>, Required extends string> = Simplify<
+  { -readonly [K in keyof Fields as K extends Required ? K : never]-?: ValueOf<Fields[K]> } & {
+    -readonly [K in keyof Fields as K extends Required ? never : K]?: ValueOf<Fields[K]>;
+  }
+>;
 
 type PropsOf<E extends ElementName> = Catalogue[E]['props'];
 type RequiredOf<E extends ElementName> = Catalogue[E] extends { required: readonly (infer R)[] } ? R & string : never;
@@ -51,6 +62,55 @@ export interface EventDetails {
   action: undefined;
 }
 
+/**
+ * What an event carries where one element's differs from `EventDetails`: a
+ * checkbox's `change` is whether it is ticked, not text, and a dialog's
+ * `action` names the button. Looked up first, by element.
+ */
+export interface ElementEventDetails {
+  'bry-table': {
+    /** The column whose heading was pressed, and the direction it asks for. */
+    sort: { key: string; direction: 'asc' | 'desc' };
+    /** The id of the row chosen. */
+    select: { row: string };
+  };
+  'bry-virtual-list': {
+    /** The rows now in view, `end` excluded: the ones to send, from `start`. */
+    range: { start: number; end: number };
+    /** The index of the row chosen. */
+    select: { index: number };
+  };
+  'bry-dialog': {
+    /** The id of the action pressed. The dialog stays open until the app closes it. */
+    action: { id: string };
+    /** Nothing when the person closed it; `{ refused }` when another dialog was already open. */
+    close: { refused: string } | undefined;
+  };
+  'bry-menu': {
+    /** The id of the item chosen. */
+    select: { id: string };
+  };
+  'bry-checkbox': {
+    /** Whether it is ticked now. */
+    change: { checked: boolean };
+  };
+  'bry-switch': {
+    /** Whether it is on now. */
+    change: { checked: boolean };
+  };
+}
+
+/** What an element's event carries: its own detail if it has one, else the shared one. */
+export type DetailOf<E extends ElementName, K extends string> = E extends keyof ElementEventDetails
+  ? K extends keyof ElementEventDetails[E]
+    ? ElementEventDetails[E][K]
+    : K extends keyof EventDetails
+      ? EventDetails[K]
+      : unknown
+  : K extends keyof EventDetails
+    ? EventDetails[K]
+    : unknown;
+
 /** The object a handler receives, in the plain factories and in Preact alike. */
 export interface BryEvent<D = undefined> {
   /** The event's name as it was registered. */
@@ -66,7 +126,7 @@ export type HandlerName<Event extends string> = `on${Capitalize<Event>}`;
 /** The handler settings an element takes: one per event. */
 export type ElementHandlers<E extends ElementName> = Simplify<{
   [K in ElementEvent<E> as HandlerName<K>]?: (
-    event: BryEvent<K extends keyof EventDetails ? EventDetails[K] : unknown>,
+    event: BryEvent<DetailOf<E, K>>,
   ) => void;
 }>;
 

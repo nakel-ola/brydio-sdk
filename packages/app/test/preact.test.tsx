@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { ROOT_ID, type TreeMountParams, type TreePatchParams } from '../src/index.ts';
+import { ROOT_ID, type ElementAttributes, type TreeMountParams, type TreePatchParams } from '../src/index.ts';
 import { Button, render, useList, useState } from '../src/preact/index.ts';
 import { harness, settle } from './harness.ts';
 
@@ -100,6 +100,52 @@ describe('the Preact adapter', () => {
     await settle();
 
     expect(submitted).toEqual(['Fix the door']);
+  });
+
+  test('hands a table’s sort, a menu’s choice and a checkbox’s tick to their handlers, typed per element', async () => {
+    const { root, connect, sent, hostSays } = harness();
+    const seen: unknown[] = [];
+    // Kept outside the render: a list written inline is a new value each time, and is sent again.
+    const columns = [{ key: 'title', heading: 'Title', sortable: true }];
+    const rows = [{ id: 'a', cells: ['Fix the door'] }];
+    const items: ElementAttributes<'bry-menu'>['items'] = [{ id: 'bin', label: 'Delete', icon: 'trash', tone: 'danger' }];
+
+    function Board() {
+      const [direction, setDirection] = useState<'asc' | 'desc'>('asc');
+
+      return (
+        <bry-split ratio={40}>
+          <bry-table
+            columns={columns}
+            rows={rows}
+            sort={{ key: 'title', direction }}
+            onSort={event => setDirection(event.detail.direction)}
+          />
+          <bry-menu items={items} onSelect={event => seen.push(event.detail.id)}>
+            <bry-button label="More" />
+          </bry-menu>
+          <bry-checkbox label="Done" onChange={event => seen.push(event.detail.checked)} />
+          <bry-date value="2026-09-16" onChange={event => seen.push(event.detail.value)} />
+        </bry-split>
+      );
+    }
+
+    render(<Board />, root);
+    await connect();
+
+    const mount = sent.find(one => one.method === 'tree/mount')!.params as TreeMountParams;
+    const of = (type: string) => mount.nodes.find(node => node.type === type)!;
+
+    hostSays('tree/event', { node: of('bry-table').id, name: 'sort', detail: { key: 'title', direction: 'desc' } });
+    hostSays('tree/event', { node: of('bry-menu').id, name: 'select', detail: { id: 'bin' } });
+    hostSays('tree/event', { node: of('bry-checkbox').id, name: 'change', detail: { checked: true } });
+    hostSays('tree/event', { node: of('bry-date').id, name: 'change', detail: { value: '2026-10-01' } });
+    await settle();
+
+    expect(seen).toEqual(['bin', true, '2026-10-01']);
+    expect(sent.filter(one => one.method === 'tree/patch').flatMap(one => (one.params as TreePatchParams).ops)).toEqual([
+      { op: 'props', id: of('bry-table').id, props: { sort: { key: 'title', direction: 'desc' } } },
+    ]);
   });
 
   test('refuses what the host would refuse, where it was written', () => {

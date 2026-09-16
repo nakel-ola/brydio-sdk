@@ -97,6 +97,14 @@ const FACTORIES: Readonly<Record<string, ElementName>> = {
   listRow: 'bry-list-row',
   emptyState: 'bry-empty-state',
   skeleton: 'bry-skeleton',
+  table: 'bry-table',
+  virtualList: 'bry-virtual-list',
+  dialog: 'bry-dialog',
+  menu: 'bry-menu',
+  date: 'bry-date',
+  split: 'bry-split',
+  checkbox: 'bry-checkbox',
+  switchElement: 'bry-switch',
 };
 
 /** Modules whose `h` and `createElement` take an element's name first. */
