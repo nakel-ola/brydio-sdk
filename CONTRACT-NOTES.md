@@ -132,10 +132,11 @@ Read against Brydio at `f28d98b` plus Kestrel's uncommitted
     mount (`screen-mount.service.spec.ts` pins `board.mjs`) took `.mjs` too.
     Hodler (16 Sep 14:04) and E1 (14:12) settled it: the schema gives. The SDK
     accepts `.mjs` entries everywhere it checks one (the schema, `build`,
-    `validate`, `dev`) ahead of the server's one-line change, and keeps the
-    server's refusal sentence word for word ("An entry is a .js path inside
-    the bundle."). Until HEAD's regex widens, `manifest.test.ts` leaves the
-    `.mjs` case out of the comparison with the server's schema.
+    `validate`, `dev`), with the refusal sentence of the data helper's
+    widened regex ("An entry is a .js or .mjs path inside the bundle.", on
+    disk in `manifest-ext.schema.ts` on 16 Sep, not yet committed). While a
+    Brydio checkout's regex still says `.js` only, `manifest.test.ts` leaves
+    the `.mjs` case out of the comparison with the server's schema.
 22. **`index` on a collection** (contracts §5, "unless listed in `index`") is
     not in the server's schema. It parses and is dropped. The SDK example no
     longer uses it.

@@ -151,7 +151,10 @@ describe('validateManifest', () => {
       expect({ manifest, ok: ours.success }).toEqual({ manifest, ok: theirs.success });
 
       if (!ours.success && !theirs.success) {
-        expect(ours.error.issues.map(issue => issue.message)).toEqual(theirs.error.issues.map((issue: { message: string }) => issue.message));
+        // The entry sentence changed with the regex; before it, only the refusal itself is compared.
+        const words = (message: string) => (serverTakesMjs || !message.startsWith('An entry is') ? message : 'An entry is …');
+
+        expect(ours.error.issues.map(issue => words(issue.message))).toEqual(theirs.error.issues.map((issue: { message: string }) => words(issue.message)));
       } else if (ours.success && theirs.success) {
         expect(ours.data).toEqual(theirs.data);
       }

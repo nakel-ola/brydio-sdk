@@ -66,7 +66,7 @@ const screenSchema = z.object({
     .string()
     .min(1)
     .max(200)
-    .regex(/^(?!\/)(?!.*\.\.)[A-Za-z0-9_\-./]+\.m?js$/, 'An entry is a .js path inside the bundle.'),
+    .regex(/^(?!\/)(?!.*\.\.)[A-Za-z0-9_\-./]+\.m?js$/, 'An entry is a .js or .mjs path inside the bundle.'),
 });
 
 const toolsSchema = z.object({
