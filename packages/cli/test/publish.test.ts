@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-import { build, publish, sdkVersionFor, zipFiles } from '../src/index.ts';
+import { build, publish, sdkVersionFor, zipFiles, type PublishOptions } from '../src/index.ts';
 
 const brydio = process.env.BRYDIO_DIR ?? join(import.meta.dir, '..', '..', '..', '..', 'brydio');
 const serverPublish = join(brydio, 'apps/api/src/apps/publishing/app-publish.service.ts');
@@ -36,6 +36,7 @@ interface Sent {
   url: string;
   headers: Headers;
   archive: Uint8Array;
+  body: Record<string, unknown>;
 }
 
 /** What the pretend Brydio says at `GET /apps/sdk`: a range, or a status with nothing behind it. */
@@ -58,6 +59,7 @@ function server(status: number, body: (sent: Sent) => unknown, sdk: SdkAnswer = 
       url,
       headers: new Headers(init.headers),
       archive: new Uint8Array(Buffer.from(JSON.parse(String(init.body)).archiveBase64, 'base64')),
+      body: JSON.parse(String(init.body)) as Record<string, unknown>,
     };
 
     sent.push(one);
@@ -68,17 +70,63 @@ function server(status: number, body: (sent: Sent) => unknown, sdk: SdkAnswer = 
   return { sent, asked, fetch };
 }
 
-const run = async (root: string, route: ReturnType<typeof server> | null, options: { token?: string; apiUrl?: string } = {}) => {
+const run = async (
+  root: string,
+  route: ReturnType<typeof server> | null,
+  options: { token?: string; apiUrl?: string; screenshots?: PublishOptions['screenshots'] } = {},
+) => {
   const lines: string[] = [];
   const code = await publish(root, {
     apiUrl: options.apiUrl ?? 'http://brydio.test/',
     token: options.token ?? 'session-token',
     out: line => lines.push(line),
+    // The pictures are their own tests below; these are about the upload.
+    screenshots: 'screenshots' in options ? options.screenshots : false,
     ...(route ? { fetch: route.fetch } : { fetch: () => Promise.reject(new Error('no request expected')) }),
   });
 
   return { code, text: lines.join('\n') };
 };
+
+describe('pictures of each screen at publish (A5-F04-S04)', () => {
+  const tree = { root: 'root', nodes: [{ id: 'root', type: 'bry-stack', children: [] }] };
+  const created = (hash: string) => ({ created: true, appKey: 'tiny', version: '1.0.0', versionId: 'v', bundleHash: hash, publishedBy: 'u', publishedAt: 'now', files: [] });
+
+  test('sends the rendered trees with the bundle, one per screen, width and theme', async () => {
+    const root = tiny();
+    const built = await build(root);
+    const route = server(201, () => created(built.hash!));
+    const pictures = (['narrow', 'wide'] as const).flatMap(width => (['light', 'dark'] as const).map(theme => ({ screen: 'home', width, theme, tree })));
+    const { code, text } = await run(root, route, { screenshots: async () => ({ screenshots: pictures, problems: [] }) });
+
+    expect(code).toBe(0);
+    expect(text).toContain('Pictured 1 screen(s), 4 pictures.');
+    expect(route.sent[0]!.body).toMatchObject({ screenshots: pictures });
+  });
+
+  test('stops before uploading when a screen can’t be pictured, naming it', async () => {
+    const root = tiny();
+    const route = server(201, () => ({}));
+    const { code, text } = await run(root, route, {
+      screenshots: async () => ({ screenshots: [], problems: [{ screen: 'home', width: 'wide', theme: 'dark', message: 'It drew nothing.' }] }),
+    });
+
+    expect(code).toBe(1);
+    expect(text).toContain('error   home, wide, dark: It drew nothing. [screenshot_failed]');
+    expect(text).toContain('A screen could not be pictured, so nothing was published.');
+    expect(route.sent).toEqual([]);
+  });
+
+  test('says how to get pictures when @brydio/fake-host can’t be found from the app', async () => {
+    const root = tiny();
+    const route = server(201, () => ({}));
+    const { code, text } = await run(root, route, { screenshots: undefined });
+
+    expect(code).toBe(1);
+    expect(text).toContain('bun add -d @brydio/fake-host');
+    expect(route.sent).toEqual([]);
+  });
+});
 
 describe('brydio publish', () => {
   test('builds, validates, and uploads the bundle as a zip, signed in with the token', async () => {

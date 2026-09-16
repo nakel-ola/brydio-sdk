@@ -202,6 +202,7 @@ own step.
 | Code | Refused with | validate | server | How to fix |
 |---|---|---|---|---|
 | `sdk_unsupported` | This app was built with SDK `<v>`. Brydio runs apps built with SDK `<oldest>` or newer, before `<before>`. (Or: app.json does not say which SDK built it. Build it with brydio build. …) | no: `brydio publish` checks it before uploading, against `GET /api/v1/apps/sdk` | publish | Build with an SDK in the range. |
+| `screenshot_failed` | `<screen>, <narrow or wide>, <light or dark>`: the screen stopped, had a node refused, threw, or drew nothing, when pictured in the fake host with `.brydio/samples.json`. (Or: pictures need `@brydio/fake-host` in the app's devDependencies.) | no: `brydio publish` pictures every screen before uploading | publish, as `screenshot_invalid` for a picture the server refuses | Fix the screen so it draws with the sample records, or fix `.brydio/samples.json`. |
 | `version_exists` | `<app> <version>` was already published on `<date>` `<how it differs>`. A version is never replaced; publish this as a new version number. | no | publish (409) | Raise the version number. |
 | `not_publisher` | `<app>` is published by other accounts. Ask one of them to add you as a publisher. | no | publish (403) | Ask a publisher to add you. |
 | `manifest_unreadable` | app.json is not valid JSON. (Or: app.json is not a JSON object.) | no: `manifest_not_json` covers it | publish | Fix the JSON. |

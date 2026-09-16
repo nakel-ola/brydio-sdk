@@ -9,6 +9,16 @@ export { checkSources, screenCalls, validate, type ValidateOptions, type Validat
 export { callsOf, type ScreenCall } from './calls.ts';
 export { grantProblems } from './grant-checks.ts';
 export { main } from './main.ts';
-export { API_URL_ENV, PUBLISH_PATH, SDK_PATH, TOKEN_ENV, publish, type PublishOptions, type Published } from './publish.ts';
+export {
+  API_URL_ENV,
+  PUBLISH_PATH,
+  SDK_PATH,
+  TOKEN_ENV,
+  publish,
+  type PublishOptions,
+  type Published,
+  type PublishedScreenshot,
+  type Renderer,
+} from './publish.ts';
 export { zipFiles } from './zip.ts';
 export { test, type TestOptions } from './test.ts';

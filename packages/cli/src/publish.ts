@@ -1,7 +1,7 @@
 import { BUNDLE_MANIFEST, sdkRefusal, sizeOf, type SdkSupport } from '@brydio/manifest';
 
 import { build } from './build.ts';
-import { formatProblem } from './project.ts';
+import { formatProblem, readProject } from './project.ts';
 import { validate } from './validate.ts';
 import { zipFiles } from './zip.ts';
 
@@ -50,6 +50,39 @@ export interface PublishOptions {
   out?: (line: string) => void;
   /** For tests: the request, made some other way. */
   fetch?: (url: string, init: RequestInit) => Promise<Response>;
+  /**
+   * Pictures of every screen (A5-F04-S04). By default `@brydio/fake-host`,
+   * found from the app's own folder, renders them; `false` publishes without.
+   */
+  screenshots?: false | Renderer;
+}
+
+/** A screen's picture: the tree Brydio draws, at a width and in a theme. */
+export interface PublishedScreenshot {
+  screen: string;
+  width: 'narrow' | 'wide';
+  theme: 'light' | 'dark';
+  tree: { root: string; nodes: unknown[] };
+}
+
+export type Renderer = (root: string) => Promise<{
+  screenshots: PublishedScreenshot[];
+  problems: { screen: string; width?: string; theme?: string; message: string }[];
+}>;
+
+/**
+ * The fake host's renderer, loaded from the app's folder. The CLI can't
+ * depend on `@brydio/fake-host`, which depends on it, and an app that tests
+ * its screens has it already.
+ */
+async function fakeHostRenderer(root: string): Promise<Renderer | null> {
+  try {
+    const found = (await import(Bun.resolveSync('@brydio/fake-host', root))) as { renderScreenshots?: Renderer };
+
+    return typeof found.renderScreenshots === 'function' ? found.renderScreenshots : null;
+  } catch {
+    return null;
+  }
 }
 
 /** What the server answers for a version, published now or before. */
@@ -145,6 +178,35 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
     }
   }
 
+  let screenshots: PublishedScreenshot[] = [];
+
+  if (options.screenshots !== false) {
+    const root = readProject(dir).root;
+    const render = options.screenshots ?? (await fakeHostRenderer(root));
+
+    if (!render) {
+      out('Pictures of each screen are taken with @brydio/fake-host. Add it to this app\'s devDependencies (bun add -d @brydio/fake-host), then publish again.');
+      out('Not published.');
+
+      return 1;
+    }
+
+    const rendered = await render(root);
+
+    for (const problem of rendered.problems) {
+      out(`error   ${[problem.screen, problem.width, problem.theme].filter(Boolean).join(', ')}: ${problem.message} [screenshot_failed]`);
+    }
+
+    if (rendered.problems.length) {
+      out('A screen could not be pictured, so nothing was published.');
+
+      return 1;
+    }
+
+    screenshots = rendered.screenshots;
+    out(`Pictured ${new Set(screenshots.map(one => one.screen)).size} screen(s), ${screenshots.length} pictures.`);
+  }
+
   const archive = zipFiles(built.files);
   const url = `${apiUrl}${PUBLISH_PATH}`;
   let response: Response;
@@ -155,7 +217,7 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
     response = await request(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...headers },
-      body: JSON.stringify({ archiveBase64: Buffer.from(archive).toString('base64') }),
+      body: JSON.stringify({ archiveBase64: Buffer.from(archive).toString('base64'), ...(screenshots.length ? { screenshots } : {}) }),
     });
   } catch (error) {
     out(`Could not reach ${apiUrl}: ${error instanceof Error ? error.message : String(error)}`);

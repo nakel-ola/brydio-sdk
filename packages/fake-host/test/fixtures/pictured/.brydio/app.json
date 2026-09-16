@@ -1,0 +1,12 @@
+{
+  "name": "pictured",
+  "version": "1.0.0",
+  "placements": [{ "kind": "project-tab", "screen": "home", "label": "Pictured" }],
+  "data": { "notes": { "schema": { "title": "string" } } },
+  "screens": {
+    "home": { "entry": "screens/home.js" },
+    "blank": { "entry": "screens/blank.js" },
+    "wrong": { "entry": "screens/wrong.js" }
+  },
+  "grants": { "tools": ["*"], "collections": ["*"] }
+}
