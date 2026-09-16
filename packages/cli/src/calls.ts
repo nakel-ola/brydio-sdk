@@ -54,7 +54,7 @@ export function callsOf(file: string, text: string): ScreenCall[] {
   const objects = new Map<string, Readonly<Record<string, Target>>>();
   const listHooks = new Set<string>();
   const navigates = new Set<string>();
-  const nameHooks = new Map<string, 'members' | 'projects'>();
+  const nameHooks = new Map<string, 'members' | 'projects' | 'message'>();
 
   for (const statement of source.statements) {
     if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
@@ -71,6 +71,7 @@ export function callsOf(file: string, text: string): ScreenCall[] {
       if (IMPORTED[from]?.[imported]) objects.set(local, IMPORTED[from][imported]!);
       if (from === '@brydio/app/preact' && imported === 'useList') listHooks.add(local);
       if (from === '@brydio/app' && imported === 'navigate') navigates.add(local);
+      if (from === '@brydio/app/ask' && imported === 'askAbout') nameHooks.set(local, 'message');
       if (from === '@brydio/app/preact' && (imported === 'useMembers' || imported === 'useProjects')) nameHooks.set(local, imported === 'useMembers' ? 'members' : 'projects');
     }
   }

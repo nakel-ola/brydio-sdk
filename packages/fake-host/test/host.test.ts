@@ -317,3 +317,21 @@ test('host/members with no ids lists the people the app may name, by name, filte
 
   expect(host.findAll(node => node.type === 'bry-text').map(node => node.props.text)).toEqual(['Ada Lovelace, Adam Smith, Cy Twombly', 'Ada Lovelace (AL)']);
 });
+
+test('askAbout drafts a chat about a record for the person to send, and never sends it', async () => {
+  host = FakeHost.start({ entry: screen('asks'), manifest, fixtures: { notes: [{ id: 'note_a', title: 'First' }] } });
+  await host.mounted();
+  await host.waitFor(() => host!.findAll(node => node.type === 'bry-text').length === 2, { what: 'both answers' });
+
+  expect(host.findAll(node => node.type === 'bry-text').map(node => node.props.text)).toEqual(['note_a: drafted', 'note_gone: There is no such record.']);
+  expect(host.asks).toEqual([{ text: 'What is left to do on this?', target: { collection: 'notes', id: 'note_a', title: 'Note note_a' } }]);
+  expect(host.received.filter(message => message.method === 'ui/message')).toHaveLength(2);
+  host.stop();
+
+  // Without the `message` grant, Brydio refuses in its words.
+  host = FakeHost.start({ entry: screen('asks'), manifest: { ...manifest, grants: { ...manifest.grants, host: [] } }, fixtures: { notes: [{ id: 'note_a', title: 'First' }] } });
+  await host.mounted();
+  await host.waitFor(() => host!.findAll(node => node.type === 'bry-text').length === 2, { what: 'both refusals' });
+  expect(host.findAll(node => node.type === 'bry-text')[0]!.props.text).toBe('note_a: plain did not ask to post messages in a chat.');
+  expect(host.asks).toEqual([]);
+});

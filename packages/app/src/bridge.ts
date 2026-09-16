@@ -322,7 +322,7 @@ export class Bridge {
     if (this.#stopped) throw new TeardownError();
 
     try {
-      return (await this.#request(method, params)) as T;
+      return (await this.request(method, params)) as T;
     } catch (error) {
       if (error instanceof HostError && error.code === -32601) {
         this.#readsThroughTools = true;
@@ -414,11 +414,16 @@ export class Bridge {
 
     if (refused) throw refused;
 
-    return this.#request('ui/navigate', { to }).then(result => ({ opened: (result as { opened?: unknown } | undefined)?.opened === true }));
+    return this.request('ui/navigate', { to }).then(result => ({ opened: (result as { opened?: unknown } | undefined)?.opened === true }));
   }
 
-  /** Sends a request with its own call id, and resolves with its answer's `result`, or rejects with a `HostError`. */
-  #request(method: string, params: Record<string, unknown>, idInParams = false): Promise<unknown> {
+  /**
+   * Sends a request with its own call id, and resolves with its answer's
+   * `result`, or rejects with a `HostError`. For the SDK's own separate entry
+   * points (`@brydio/app/ask`), so a screen that doesn't use them carries none
+   * of their code; an app calls those, not this.
+   */
+  request(method: string, params: Record<string, unknown>, idInParams = false): Promise<unknown> {
     if (this.#stopped) return Promise.reject(new TeardownError());
 
     const id = String(++this.#nextId);
@@ -465,7 +470,7 @@ export class Bridge {
       ...(Number.isInteger(options.limit) ? { limit: options.limit } : {}),
     };
 
-    return this.#request('host/members', params, true).then(result => namesIn<MemberName>(result, 'members'));
+    return this.request('host/members', params, true).then(result => namesIn<MemberName>(result, 'members'));
   }
 
   #hostCall(capability: 'members' | 'projects', ids: readonly string[]): Promise<unknown> {
@@ -474,7 +479,7 @@ export class Bridge {
     if (refused) return Promise.reject(refused);
     if (!ids.length && !this.#stopped) return Promise.resolve({ [capability]: [] });
 
-    return this.#request(`host/${capability}`, { ids: [...new Set(ids)] }, true);
+    return this.request(`host/${capability}`, { ids: [...new Set(ids)] }, true);
   }
 
   /**

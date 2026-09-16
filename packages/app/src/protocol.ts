@@ -266,6 +266,7 @@ export const WORKER_METHODS = [
   'ui/toast',
   'host/members',
   'host/projects',
+  'ui/message',
   'tree/ack',
   'dev/updated',
   'dev/restart',

@@ -149,6 +149,8 @@ export class FakeHost {
   readonly toasts: { text: string; tone: 'info' | 'success' | 'danger' }[] = [];
   /** Each names request the screen made: which kind, and the ids. */
   readonly namesAsked: { kind: 'members' | 'projects'; ids: string[] }[] = [];
+  /** Chats the screen asked Brydio to draft about a record, in order (never sent: the person sends them). */
+  readonly asks: { text: string; target: { collection: string; id: string; title?: string } }[] = [];
   /** What the screen asked to open, and whether it was. */
   readonly navigations: (NavigateTo & { opened: boolean; error?: string })[] = [];
   /** What the worker threw, or failed to load with. */
@@ -531,6 +533,11 @@ export class FakeHost {
         if (message.method === 'host/members' && params.ids === undefined) this.#listMembers(message.id, params);
         else this.#names(message.id, message.method === 'host/members' ? 'members' : 'projects', params.ids);
         break;
+      case 'ui/message':
+        if (!this.app) break;
+
+        this.#ask(message.id, params);
+        break;
       case 'ui/navigate':
         if (!this.app) break;
 
@@ -559,6 +566,50 @@ export class FakeHost {
 
     this.namesAsked.push({ kind, ids });
     this.#send({ jsonrpc: '2.0', method: 'host/result', params: { id, result } as never });
+  }
+
+  /**
+   * `ui/message`, as `screen-session.ts` answers it and the API decides it:
+   * the text and record checked, the `message` grant asked, and on success a
+   * draft recorded in `asks` and `ui/result { drafted: true }`. Nothing is sent.
+   */
+  #ask(id: string | number | undefined, params: Record<string, unknown>): void {
+    const fail = (code: number, message: string) => {
+      if (id !== undefined) this.#send({ jsonrpc: '2.0', method: 'ui/error', params: { id, error: { code, message } } });
+    };
+    const text = params.text;
+    const target = params.target as { collection?: unknown; id?: unknown; title?: unknown } | null | undefined;
+
+    if (
+      typeof text !== 'string' ||
+      !text.trim() ||
+      !target ||
+      typeof target.collection !== 'string' ||
+      !target.collection ||
+      typeof target.id !== 'string' ||
+      !target.id ||
+      (target.title !== undefined && typeof target.title !== 'string')
+    ) {
+      return fail(-32602, 'An app asks about one of its records: say what to ask, and which record.');
+    }
+
+    if (new TextEncoder().encode(text).byteLength > 64 * 1024) return fail(-32602, 'A message from an app can be at most 64 KB.');
+
+    const host = this.#options.manifest?.grants?.host ?? [];
+
+    if (!host.includes('message') && !host.includes('*')) return fail(-32000, `${this.#options.manifest?.name ?? this.app?.name} did not ask to post messages in a chat.`);
+
+    const collection = target.collection;
+
+    if (this.store && (!this.store.has(collection) || !this.store.records(collection).some(record => record.id === target.id))) {
+      return fail(-32000, 'There is no such record.');
+    }
+
+    this.asks.push({ text, target: { collection, id: target.id, ...(typeof target.title === 'string' ? { title: target.title } : {}) } });
+
+    if (id !== undefined) this.#send({ jsonrpc: '2.0', method: 'ui/result', params: { id, result: { drafted: true } } });
+
+    this.#changed();
   }
 
   /** Whether the install grants names of this kind; refuses the ask in Brydio's words if not. */
