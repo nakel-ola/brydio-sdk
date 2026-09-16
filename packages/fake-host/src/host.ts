@@ -191,9 +191,13 @@ export class FakeHost {
     this.#writes = new Set(
       options.manifest && options.manifest.tools?.generated !== false
         ? collectionsOf(options.manifest).flatMap(spec =>
-            Object.entries(toolNames(spec))
-              .filter(([verb]) => TOOL_WRITES[verb as keyof typeof TOOL_WRITES])
-              .map(([, name]) => name),
+            [
+              ...Object.entries(toolNames(spec))
+                .filter(([verb]) => TOOL_WRITES[verb as keyof typeof TOOL_WRITES])
+                .map(([, name]) => name),
+              // One approval for several writes (G13).
+              `batch_${spec.plural}`,
+            ],
           )
         : [],
     );

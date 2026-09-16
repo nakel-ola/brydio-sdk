@@ -707,6 +707,7 @@ const generatedTools = ({ label, plural }: { label: string; plural: string }) =>
   `list_${plural}`,
   `search_${plural}`,
   `delete_${label}`,
+  `batch_${plural}`,
 ];
 
 /** A listener's mistake is reported, never allowed to stop the bridge. */

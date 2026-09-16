@@ -213,9 +213,91 @@ export class FixtureStore {
           }
         };
       }
+
+      handlers[`batch_${spec.plural}`] = input => this.#batch(spec, input);
     }
 
     return handlers;
+  }
+
+  /**
+   * `batch_<plural>` (Brydio `f872f42`, G13): several creates, updates and
+   * deletes under one approval, all or none. Each change is checked by its
+   * single write's own schema and rules, in order, against the records as the
+   * changes before it left them; a refusal names the change and writes
+   * nothing. Changes are heard by a watch only once the batch has applied.
+   */
+  #batch(spec: CollectionSpec, input: Record<string, unknown>): ToolResultShape {
+    const changes = (input ?? {}).changes;
+    const plural = spec.plural;
+
+    if (!Array.isArray(changes) || changes.length < 1 || changes.length > 50) {
+      return refusal(`changes: ${Array.isArray(changes) && changes.length > 50 ? 'Too big: expected array to have <=50 items' : 'Too small: expected array to have >=1 items'}.`);
+    }
+
+    const records = this.#records.get(spec.name)!;
+    const saved = records.map(record => ({ ...record, body: { ...record.body } }));
+    const clock = this.#clock;
+    const next = this.#next;
+    const listeners = [...this.#listeners];
+    const heard: StoreChange[] = [];
+    const results: Record<string, unknown>[] = [];
+    const words = { create: 0, update: 0, delete: 0 };
+
+    // Changes are held back from any watch until every one has applied.
+    this.#listeners.clear();
+    this.#listeners.add(change => void heard.push(change));
+
+    try {
+      for (const [index, raw] of changes.entries()) {
+        const change = (raw ?? {}) as { op?: unknown; id?: unknown; version?: unknown; fields?: unknown };
+        const op = change.op;
+
+        if (op !== 'create' && op !== 'update' && op !== 'delete') return this.#undo(spec, saved, clock, next, `changes.${index}.op: Invalid input.`);
+
+        const args = op === 'create' ? (change.fields as Record<string, unknown>) : op === 'update' ? { ...(change.fields as object), id: change.id, version: change.version } : { id: change.id };
+        const parsed = inputFor(op, spec).safeParse(args ?? {});
+
+        if (!parsed.success) return this.#undo(spec, saved, clock, next, `Change ${index + 1} of ${changes.length}: ${problemOf(parsed.error)} Nothing in the batch was written.`);
+
+        try {
+          const done = this.#run(op, spec, parsed.data as Record<string, unknown>);
+
+          words[op] += 1;
+          results.push(op === 'delete' ? { op, id: String(parsed.data.id) } : { op, ...(done.structuredContent as object) });
+        } catch (error) {
+          if (!(error instanceof Refused)) throw error;
+
+          return this.#undo(spec, saved, clock, next, `Change ${index + 1} of ${changes.length}: ${error.message.split('\n')[0]} Nothing in the batch was written.`, { ...error.data, change: index });
+        }
+      }
+    } finally {
+      this.#listeners.clear();
+      for (const listener of listeners) this.#listeners.add(listener);
+    }
+
+    for (const change of heard) for (const listener of listeners) listener(change);
+
+    const summary = (['create', 'update', 'delete'] as const)
+      .filter(op => words[op] > 0)
+      .map((op, at) => {
+        const verb = { create: 'Create', update: 'change', delete: 'delete' }[op];
+        const said = at === 0 ? verb[0]!.toUpperCase() + verb.slice(1) : verb.toLowerCase();
+
+        return `${said} ${words[op]} ${words[op] === 1 ? spec.label : plural}`;
+      })
+      .join(', ');
+
+    return answer(`${summary}: done.`, { changes: results }, summary);
+  }
+
+  /** Puts a collection back as it was before a refused batch, and answers the refusal. */
+  #undo(spec: CollectionSpec, saved: StoredDocument[], clock: number, next: number, message: string, data?: Record<string, unknown>): ToolResultShape {
+    this.#records.set(spec.name, saved);
+    this.#clock = clock;
+    this.#next = next;
+
+    return refusal(message, data);
   }
 
   #run(verb: ToolVerb, spec: CollectionSpec, input: Record<string, unknown>): ToolResultShape {
