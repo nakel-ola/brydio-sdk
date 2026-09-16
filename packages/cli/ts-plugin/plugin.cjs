@@ -61,7 +61,7 @@ var __export = (target, all) => {
     });
 };
 
-// packages/cli/src/ts-plugin.ts
+// src/ts-plugin.ts
 var exports_ts_plugin = {};
 __export(exports_ts_plugin, {
   default: () => ts_plugin_default,
@@ -73,7 +73,7 @@ module.exports = __toCommonJS(exports_ts_plugin);
 var import_node_fs = require("node:fs");
 var import_node_path2 = require("node:path");
 
-// packages/ui/src/catalogue.ts
+// ../ui/src/catalogue.ts
 var LABEL_MAX = 200;
 var PARAGRAPH_MAX = 4000;
 var GAPS = ["1", "2", "3", "4", "5", "6", "7", "8"];
@@ -497,7 +497,7 @@ var FORBIDDEN_PROPS = {
   dangerouslySetInnerHTML: "A Brydio app has no HTML to set.",
   innerHTML: "A Brydio app has no HTML to set."
 };
-// packages/ui/src/checks.ts
+// ../ui/src/checks.ts
 function isElementName(value) {
   return typeof value === "string" && Object.prototype.hasOwnProperty.call(CATALOGUE, value);
 }
@@ -515,7 +515,7 @@ function refusalFor(type, name, value) {
     case "int":
       return Number.isInteger(value) && value >= spec.min && value <= spec.max ? null : `${type} ${name} must be a whole number from ${spec.min} to ${spec.max}.`;
     case "options":
-      return isOptions(value, spec.max) ? null : `${type} ${name} must be a list of at most ${spec.max} choices, each with a value and a label of at most ${LABEL_MAX} characters, and no value twice.`;
+      return isOptions(value, spec.max) ? null : `${type} ${name} must be a list of at most ${spec.max} choices, each with a value and a label of at most ${LABEL_MAX} characters (and optionally a member id as avatar), and no value twice.`;
     case "list":
     case "shape":
       return refusalForValue(`${type} ${name}`, spec, value);
@@ -572,8 +572,10 @@ function isOptions(value, max) {
   for (const choice of value) {
     if (!choice || typeof choice !== "object" || Array.isArray(choice))
       return false;
-    const { value: key, label, ...rest } = choice;
+    const { value: key, label, avatar, ...rest } = choice;
     if (Object.keys(rest).length > 0)
+      return false;
+    if (avatar !== undefined && (typeof avatar !== "string" || avatar.length === 0 || avatar.length > 128))
       return false;
     if (typeof key !== "string" || key.length === 0 || key.length > LABEL_MAX || seen.has(key))
       return false;
@@ -607,7 +609,7 @@ function checkEvent(element, event) {
     return null;
   return events.length ? `${element} raises ${events.join(", ")}, not "${event}".` : `${element} raises no events, so it takes no ${handlerName(event)}.`;
 }
-// packages/cli/src/source-checks.ts
+// src/source-checks.ts
 var import_node_path = require("node:path");
 var import_typescript = __toESM(require("typescript"));
 var PAGE = { code: "dom_global", why: "A screen has no page: it runs in a worker and draws only with the catalogue." };
@@ -983,14 +985,14 @@ function dedupe(problems) {
   });
 }
 
-// packages/cli/src/screen-sources.ts
+// src/screen-sources.ts
 var SOURCE_EXTENSIONS = [".tsx", ".ts", ".jsx", ".js"];
 function isScreenSource(path) {
   const normal = path.replace(/\\/g, "/");
   return /^src\//.test(normal) && SOURCE_EXTENSIONS.some((extension) => normal.endsWith(extension)) && !normal.endsWith(".d.ts") && !/(^|\/)(test|tests|__tests__)\/|\.(test|spec)\.[jt]sx?$/.test(normal);
 }
 
-// packages/cli/src/ts-plugin.ts
+// src/ts-plugin.ts
 var PLUGIN_SOURCE = "brydio";
 var PLUGIN_CODE = 91000;
 function appRootOf(file) {
