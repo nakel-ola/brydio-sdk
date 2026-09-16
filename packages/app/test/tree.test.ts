@@ -42,7 +42,7 @@ describe('the first messages (contracts §9)', () => {
     const connected = bridge.connect();
 
     expect(sent).toEqual([
-      { jsonrpc: '2.0', method: 'worker/ready', params: { protocol: PROTOCOL, app: { name: 'test-app', version: '1.0.0' }, sdk: SDK_VERSION } },
+      { jsonrpc: '2.0', method: 'worker/ready', params: { protocol: PROTOCOL, app: { name: 'test-app', version: '1.0.0' }, sdk: SDK_VERSION, capabilities: ['ack'] } },
     ]);
 
     hostSays('host/context', { theme: 'dark' });
@@ -437,7 +437,7 @@ describe('events (tree/event)', () => {
     issues.setAttribute('settled', crash.id);
     await settle();
 
-    expect(take().flatMap(one => opsOf(one))).toEqual([
+    expect(take().filter(one => one.method === 'tree/patch').flatMap(one => opsOf(one))).toEqual([
       { op: 'move', id: crash.id, parent: doing.id, index: 1 },
       { op: 'props', id: issues.id, props: { settled: crash.id } },
       { op: 'props', id: issues.id, props: { settled: crash.id } },

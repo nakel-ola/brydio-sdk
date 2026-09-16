@@ -208,7 +208,7 @@ describe('the Preact adapter', () => {
     expect(moves).toEqual([{ card: 'a', from: 'todo', to: 'doing', position: 1 }]);
 
     // Preact draws a keyed card that changed parent afresh: the old node goes, and a new one arrives where the move put it.
-    const ops = take().flatMap(one => (one.params as TreePatchParams).ops);
+    const ops = take().filter(one => one.method === 'tree/patch').flatMap(one => (one.params as TreePatchParams).ops);
     const inserted = ops.find(op => op.op === 'insert')!;
 
     expect(ops).toEqual([
@@ -230,7 +230,7 @@ describe('the Preact adapter', () => {
       { card: 'a', from: 'doing', to: 'todo', position: 0 },
       { card: 'a', from: 'doing', to: 'todo', position: 0 },
     ]);
-    expect(take().flatMap(one => (one.params as TreePatchParams).ops)).toEqual([
+    expect(take().filter(one => one.method === 'tree/patch').flatMap(one => (one.params as TreePatchParams).ops)).toEqual([
       { op: 'props', id: board.id, props: { settled: moved } },
       { op: 'props', id: board.id, props: { settled: moved } },
     ]);
@@ -256,10 +256,10 @@ describe('the Preact adapter', () => {
     await connect();
 
     const answer = (count: number) => {
-      const call = [...sent].reverse().find(one => one.method === 'tools/call')!;
+      const call = [...sent].reverse().find(one => one.method === 'data/list')!;
 
       pages += 1;
-      hostSays('tools/result', { id: call.id, result: { structuredContent: { items: Array.from({ length: count }, (_, at) => ({ id: `i${at}`, version: 1 })), nextCursor: null } } });
+      hostSays('data/result', { id: call.id, result: { items: Array.from({ length: count }, (_, at) => ({ id: `i${at}`, version: 1 })), nextCursor: null } });
     };
 
     answer(1);
@@ -275,7 +275,7 @@ describe('the Preact adapter', () => {
 
     expect(pages).toBe(2);
     // The first read was call 1, the watch 2, and the read the change set off 3.
-    expect(sent.filter(one => one.method === 'tools/call').map(one => one.id)).toEqual(['3']);
+    expect(sent.filter(one => one.method === 'data/list').map(one => one.id)).toEqual(['3']);
     expect(root.firstChild).toMatchObject({ props: { text: '2 issues' } });
 
     render(null, root);
@@ -297,7 +297,7 @@ describe('the Preact adapter', () => {
     expect(() => render(<bry-stack style="color: red" />, harness().root)).toThrow('there is no style setting');
   });
 
-  test('useList reads through the list tool and reads again on refetch', async () => {
+  test('useList reads through data/list and reads again on refetch', async () => {
     const { root, connect, sent, hostSays } = harness();
     let refetch: () => Promise<void> = async () => {};
 
@@ -316,10 +316,10 @@ describe('the Preact adapter', () => {
     render(<Issues />, root);
     await connect();
 
-    const call = sent.find(one => one.method === 'tools/call')!;
+    const call = sent.find(one => one.method === 'data/list')!;
 
-    expect(call.params).toEqual({ id: '1', tool: 'list_issues', input: { limit: 200 } });
-    hostSays('tools/result', { id: '1', result: { structuredContent: { items: [{ id: 'a', version: 1, title: 'First' }], nextCursor: null } } });
+    expect(call).toEqual({ jsonrpc: '2.0', id: '1', method: 'data/list', params: { collection: 'issues', limit: 200 } });
+    hostSays('data/result', { id: '1', result: { items: [{ id: 'a', version: 1, title: 'First' }], nextCursor: null } });
     await settle();
     await settle();
 
@@ -332,6 +332,6 @@ describe('the Preact adapter', () => {
     expect(texts()).toEqual(['First']);
 
     void refetch();
-    expect(sent.filter(one => one.method === 'tools/call')).toHaveLength(2);
+    expect(sent.filter(one => one.method === 'data/list')).toHaveLength(2);
   });
 });

@@ -26,7 +26,7 @@ import { TreeStore, type Refusal, type TreeNode } from './tree-store.ts';
 /** The protocol this host speaks. */
 export const TREE_PROTOCOL = 'brydio-tree/1';
 
-export type StopReason = 'cap' | 'refusals' | 'ready' | 'start' | 'load' | 'error' | 'protocol';
+export type StopReason = 'cap' | 'refusals' | 'ready' | 'start' | 'load' | 'error' | 'protocol' | 'answer';
 
 export interface HostContext {
   theme: 'light' | 'dark';
@@ -80,7 +80,7 @@ export interface FakeHostOptions {
    */
   navigate?: (to: NavigateTo) => void | Promise<void>;
   /** The host's budgets, in milliseconds. A test can shorten them; a longer one is held to the host's. */
-  budgets?: { ready?: number; start?: number };
+  budgets?: { ready?: number; start?: number; answer?: number };
 }
 
 /** What a screen may ask Brydio to open. */
@@ -126,6 +126,8 @@ const MAX_MESSAGE_BYTES = 512 * 1024;
 const READY_BUDGET = 10_000;
 const START_BUDGET = 2_000;
 const MAX_TOAST = 200;
+/** How long a worker that acks has to acknowledge an event (`screen-session.ts`'s `ANSWER_BUDGET_MS`). */
+export const ANSWER_BUDGET_MS = 5_000;
 /** How long the host gathers one collection's changes before it tells the app. */
 export const COALESCE_MS = 100;
 /** How many collections one open app may watch. */
@@ -156,7 +158,9 @@ export class FakeHost {
    * The budgets this host enforces. A test may shorten one to fail fast, but
    * a longer one would pass a screen Brydio stops, so it is held to the host's.
    */
-  readonly budgets: { ready: number; start: number };
+  readonly budgets: { ready: number; start: number; answer: number };
+  /** Whether the worker said it acknowledges events, and how many it has, in order. */
+  acks = { promised: false, sent: 0, acked: 0 };
   stopped: StopReason | null = null;
 
   readonly #worker: Worker;
@@ -178,6 +182,7 @@ export class FakeHost {
     this.budgets = {
       ready: Math.min(options.budgets?.ready ?? READY_BUDGET, READY_BUDGET),
       start: Math.min(options.budgets?.start ?? START_BUDGET, START_BUDGET),
+      answer: Math.min(options.budgets?.answer ?? ANSWER_BUDGET_MS, ANSWER_BUDGET_MS),
     };
     this.#context = { ...DEFAULT_CONTEXT, ...options.context };
     this.store = options.manifest ? new FixtureStore(options.manifest, options.fixtures) : null;
@@ -306,6 +311,15 @@ export class FakeHost {
     if (refused) throw new Error(`Brydio would never send that: ${refused}`);
 
     this.#send({ jsonrpc: '2.0', method: 'tree/event', params: detail === undefined ? { node: id, name } : { node: id, name, detail } });
+
+    // As Brydio's screen does: a worker that said it acks and doesn't, in time, is stopped for `answer`.
+    if (this.acks.promised) {
+      const sent = ++this.acks.sent;
+
+      this.#after(this.budgets.answer, () => {
+        if (!this.stopped && this.acks.acked < sent) this.stop('answer');
+      });
+    }
 
     return true;
   }
@@ -453,6 +467,7 @@ export class FakeHost {
         const app = (params.app ?? {}) as { name?: unknown; version?: unknown };
 
         this.app = { name: String(app.name ?? ''), version: String(app.version ?? '') };
+        this.acks.promised = Array.isArray(params.capabilities) && params.capabilities.includes('ack');
         this.#send({ jsonrpc: '2.0', method: 'host/context', params: this.#context as never });
         this.#after(this.budgets.start, () => {
           if (!this.#mounted && !this.stopped) this.stop('start');
@@ -500,11 +515,17 @@ export class FakeHost {
         if (this.app && text) this.toasts.push({ text, tone });
         break;
       }
+      case 'tree/ack':
+        // Acks arrive in the order events were sent; one more than was sent is ignored.
+        if (this.acks.acked < this.acks.sent) this.acks.acked += 1;
+        break;
       case 'host/members':
       case 'host/projects':
         if (!this.app || message.id === undefined) break;
 
-        this.#names(message.id, message.method === 'host/members' ? 'members' : 'projects', params.ids);
+        // `host/members` without ids lists the people the app may name, for a picker.
+        if (message.method === 'host/members' && params.ids === undefined) this.#listMembers(message.id, params);
+        else this.#names(message.id, message.method === 'host/members' ? 'members' : 'projects', params.ids);
         break;
       case 'ui/navigate':
         if (!this.app) break;
@@ -522,16 +543,7 @@ export class FakeHost {
    * the grant, at most 100 distinct ids, and an id it won't name left out.
    */
   #names(id: string | number, kind: 'members' | 'projects', asked: unknown): void {
-    const host = this.#options.manifest?.grants?.host ?? [];
-    const granted = host.includes(kind) || host.includes('*');
-
-    if (!granted) {
-      const words = kind === 'members' ? 'see the names of people' : 'see the names of projects';
-
-      this.#send({ jsonrpc: '2.0', method: 'host/error', params: { id, error: { code: -32000, message: `${this.#options.manifest?.name ?? this.app?.name} did not ask to ${words}.` } } });
-
-      return;
-    }
+    if (!this.#namesGranted(id, kind)) return;
 
     const ids = [...new Set((Array.isArray(asked) ? asked : []).filter((one): one is string => typeof one === 'string' && one.length > 0 && one.length <= 128))].slice(0, 100);
     const known = this.#options.directory?.[kind] ?? [];
@@ -543,6 +555,39 @@ export class FakeHost {
 
     this.namesAsked.push({ kind, ids });
     this.#send({ jsonrpc: '2.0', method: 'host/result', params: { id, result } as never });
+  }
+
+  /** Whether the install grants names of this kind; refuses the ask in Brydio's words if not. */
+  #namesGranted(id: string | number, kind: 'members' | 'projects'): boolean {
+    const host = this.#options.manifest?.grants?.host ?? [];
+
+    if (host.includes(kind) || host.includes('*')) return true;
+
+    const words = kind === 'members' ? 'see the names of people' : 'see the names of projects';
+
+    this.#send({ jsonrpc: '2.0', method: 'host/error', params: { id, error: { code: -32000, message: `${this.#options.manifest?.name ?? this.app?.name} did not ask to ${words}.` } } });
+
+    return false;
+  }
+
+  /**
+   * `host/members` with no ids, as Brydio lists the people an app may name for a
+   * picker (G15): the directory's people sorted by name, matching `query`
+   * (name, ignoring case), at most `limit` (1–50, 50 unless said).
+   */
+  #listMembers(id: string | number, params: Record<string, unknown>): void {
+    if (!this.#namesGranted(id, 'members')) return;
+
+    const query = typeof params.query === 'string' ? params.query.toLowerCase() : '';
+    const limit = Number.isInteger(params.limit) ? Math.max(1, Math.min(50, params.limit as number)) : 50;
+    const members = [...(this.#options.directory?.members ?? [])]
+      .filter(one => !query || one.name.toLowerCase().includes(query))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .slice(0, limit)
+      .map(one => ({ id: one.id, name: one.name, initials: initialsOf(one.name) }));
+
+    this.namesAsked.push({ kind: 'members', ids: [] });
+    this.#send({ jsonrpc: '2.0', method: 'host/result', params: { id, result: { members } } as never });
   }
 
   /**

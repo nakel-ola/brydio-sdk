@@ -114,14 +114,14 @@ describe('what the host stops an app for', () => {
   });
 
   test('budgets a test can shorten but never lengthen past the host’s', async () => {
-    host = FakeHost.start({ entry: screen('silent'), manifest, budgets: { start: 60_000 } });
+    host = FakeHost.start({ entry: screen('silent'), manifest, budgets: { start: 60_000, answer: 60_000 } });
 
-    expect(host.budgets).toEqual({ ready: 10_000, start: 2_000 });
+    expect(host.budgets).toEqual({ ready: 10_000, start: 2_000, answer: 5_000 });
 
     host.stop();
-    host = FakeHost.start({ entry: screen('silent'), manifest, budgets: { ready: 5, start: 50 } });
+    host = FakeHost.start({ entry: screen('silent'), manifest, budgets: { ready: 5, start: 50, answer: 100 } });
 
-    expect(host.budgets).toEqual({ ready: 5, start: 50 });
+    expect(host.budgets).toEqual({ ready: 5, start: 50, answer: 100 });
   });
 
   test('a module that cannot be loaded', async () => {
@@ -289,4 +289,28 @@ test('host/members and host/projects name only who and what the directory holds,
     { kind: 'members', ids: ['user_ada', 'user_nobody'] },
     { kind: 'projects', ids: ['project_web'] },
   ]);
+});
+
+test('a screen on this SDK acks every event, and one that stops acking is stopped for its answer budget', async () => {
+  host = FakeHost.start({ entry: screen('counter'), manifest, budgets: { answer: 150 } });
+  await host.mounted();
+  await host.waitFor(() => host!.byText('0 notes'));
+
+  expect(host.acks.promised).toBe(true);
+  host.press(host.byText('Add a note')!);
+  await host.waitFor(() => host!.byText('1 notes'), { what: 'the press to work' });
+  await Bun.sleep(200);
+
+  expect(host.acks).toEqual({ promised: true, sent: 1, acked: 1 });
+  expect(host.stopped).toBeNull();
+});
+
+test('host/members with no ids lists the people the app may name, by name, filtered and capped', async () => {
+  const directory = { members: [{ id: 'u_c', name: 'Cy Twombly' }, { id: 'u_a', name: 'Ada Lovelace' }, { id: 'u_b', name: 'Adam Smith' }] };
+
+  host = FakeHost.start({ entry: screen('listed'), manifest: { ...manifest, grants: { ...manifest.grants, host: ['members'] } }, directory });
+  await host.mounted();
+  await host.waitFor(() => host!.findAll(node => node.type === 'bry-text').length === 2, { what: 'both lists' });
+
+  expect(host.findAll(node => node.type === 'bry-text').map(node => node.props.text)).toEqual(['Ada Lovelace, Adam Smith, Cy Twombly', 'Ada Lovelace (AL)']);
 });

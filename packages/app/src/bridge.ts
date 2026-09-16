@@ -156,6 +156,10 @@ export class Bridge {
   readonly #watches = new Map<string, Watch>();
   /** Subscribe calls not yet answered, by call id, with the watch each one started. */
   readonly #subscribing = new Map<string, { collection: string; watch: Watch }>();
+  /** `data/get` and `data/list` reads waiting on `data/result` or `data/error`, by call id. */
+  readonly #reads = new Map<string, { resolve(result: unknown): void; reject(error: HostError): void }>();
+  /** Set once the host has said it can't answer `data/*` reads, so they go through the tools from then on. */
+  #readsThroughTools = false;
   /** `host/members` and `host/projects` requests waiting on `host/result` or `host/error`, by call id. */
   readonly #hostCalls = new Map<string, { resolve(result: unknown): void; reject(error: Error): void }>();
   /** `ui/navigate` requests waiting on `ui/result` or `ui/error`, by call id. */
@@ -206,7 +210,8 @@ export class Bridge {
         protocol: PROTOCOL,
         app: this.app,
         sdk: SDK_VERSION,
-        ...(this.#devUpdate ? { capabilities: ['hot'] } : {}),
+        // `ack`: every event is acknowledged once its handler's synchronous part returns (A4-F02-S03).
+        capabilities: this.#devUpdate ? ['ack', 'hot'] : ['ack'],
       });
     }
 
@@ -296,20 +301,52 @@ export class Bridge {
    * through the tools, which the host checks and audits the same way.
    */
   getDocument<D = AppDocument>(collection: string, id: string): Promise<D> {
-    const refused = this.#grant('collections', collection);
+    const tool = `get_${this.#collection(collection).label}`;
+    const refused = this.#grant('collections', collection) ?? this.#toolGrant(tool);
 
     if (refused) return Promise.reject(refused);
 
-    return this.callTool<D>(`get_${this.#collection(collection).label}`, { id });
+    return this.#read<D>('data/get', { collection, id }, () => this.callTool<D>(tool, { id }));
+  }
+
+  /**
+   * A read through §9's own `data/get`/`data/list` (Brydio `5d6cd53`), which
+   * the host counts against a screen's reads (120 a minute) rather than its
+   * tool calls (20), so a board that reads often never spends its buttons'
+   * budget. The host runs the same generated tool with the same checks. A host
+   * that answers -32601 (it has no reads) is asked through the tools, then and
+   * from then on.
+   */
+  async #read<T>(method: 'data/get' | 'data/list', params: Record<string, unknown>, throughTools: () => Promise<T>): Promise<T> {
+    if (this.#readsThroughTools) return throughTools();
+    if (this.#stopped) throw new TeardownError();
+
+    const id = String(++this.#nextId);
+
+    try {
+      return (await new Promise<unknown>((resolve, reject) => {
+        this.#reads.set(id, { resolve, reject });
+        this.#port.post({ jsonrpc: '2.0', id, method, params });
+      })) as T;
+    } catch (error) {
+      if (error instanceof HostError && error.code === -32601) {
+        this.#readsThroughTools = true;
+
+        return throughTools();
+      }
+
+      throw error;
+    }
   }
 
   /** A page of records, through the collection's generated `list_*` tool. */
   async listDocuments<D = AppDocument>(collection: string, query: ListQuery = {}): Promise<ListResult<D>> {
-    const refused = this.#grant('collections', collection);
+    const tool = `list_${this.#collection(collection).plural}`;
+    const refused = this.#grant('collections', collection) ?? this.#toolGrant(tool);
 
     if (refused) throw refused;
 
-    const page = await this.callTool<Partial<ListResult<D>> | undefined>(`list_${this.#collection(collection).plural}`, { ...query });
+    const page = await this.#read<Partial<ListResult<D>> | undefined>('data/list', { collection, ...query }, () => this.callTool(tool, { ...query }));
 
     return {
       items: Array.isArray(page?.items) ? page.items : [],
@@ -411,6 +448,31 @@ export class Bridge {
     return this.#hostCall('projects', ids).then(result => (Array.isArray((result as { projects?: unknown })?.projects) ? (result as { projects: ProjectName[] }).projects : []));
   }
 
+  /**
+   * The people this instance may name, for a picker: sorted by name, at most
+   * `limit` (1–50, 50 unless said), matching `query` by name or email when
+   * given (G15). Never anyone a \`member\` field would refuse, and never an
+   * email. Needs the `members` host grant.
+   */
+  listMembers(options: { query?: string; limit?: number } = {}): Promise<MemberName[]> {
+    const refused = this.#grant('host', 'members');
+
+    if (refused) return Promise.reject(refused);
+    if (this.#stopped) return Promise.reject(new TeardownError());
+
+    const id = String(++this.#nextId);
+    const params = {
+      id,
+      ...(typeof options.query === 'string' && options.query ? { query: options.query } : {}),
+      ...(Number.isInteger(options.limit) ? { limit: options.limit } : {}),
+    };
+
+    return new Promise<unknown>((resolve, reject) => {
+      this.#hostCalls.set(id, { resolve, reject });
+      this.#port.post({ jsonrpc: '2.0', id, method: 'host/members', params });
+    }).then(result => (Array.isArray((result as { members?: unknown })?.members) ? (result as { members: MemberName[] }).members : []));
+  }
+
   #hostCall(capability: 'members' | 'projects', ids: readonly string[]): Promise<unknown> {
     const refused = this.#grant('host', capability);
 
@@ -494,6 +556,10 @@ export class Bridge {
           const event = params as unknown as TreeEventParams;
 
           for (const listener of this.#eventListeners) run(() => listener(event));
+
+          // Answered as soon as the handlers' synchronous part has run, whatever
+          // they go on to await: the host stops an app that doesn't within its budget.
+          this.notify('tree/ack', { node: event.node, name: event.name });
         }
 
         return;
@@ -549,6 +615,15 @@ export class Bridge {
         return;
       }
       case 'data/error': {
+        const read = this.#reads.get(String(params.id));
+
+        if (read) {
+          this.#reads.delete(String(params.id));
+          read.reject(new HostError(params.error));
+
+          return;
+        }
+
         const call = this.#subscribing.get(String(params.id));
 
         if (!call) return;
@@ -559,6 +634,8 @@ export class Bridge {
         return;
       }
       case 'data/result':
+        this.#reads.get(String(params.id))?.resolve(params.result);
+        this.#reads.delete(String(params.id));
         this.#subscribing.delete(String(params.id));
 
         return;
@@ -640,6 +717,9 @@ export class Bridge {
 
     for (const asked of this.#asking.values()) asked.reject(new TeardownError());
     for (const call of this.#hostCalls.values()) call.reject(new TeardownError());
+    for (const read of this.#reads.values()) read.reject(new TeardownError() as never);
+
+    this.#reads.clear();
 
     this.#hostCalls.clear();
 

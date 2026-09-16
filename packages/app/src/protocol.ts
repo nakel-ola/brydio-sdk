@@ -233,7 +233,7 @@ export interface DataWatchParams {
  * What a worker can do beyond the protocol, said in `worker/ready`'s
  * `capabilities`. `hot`: a development build that takes `dev/update`.
  */
-export type WorkerCapability = 'hot';
+export type WorkerCapability = 'ack' | 'hot';
 
 /**
  * `dev/update` (host to worker, `brydio dev` only): a new build of the
@@ -265,6 +265,7 @@ export const WORKER_METHODS = [
   'ui/toast',
   'host/members',
   'host/projects',
+  'tree/ack',
   'dev/updated',
   'dev/restart',
 ] as const;

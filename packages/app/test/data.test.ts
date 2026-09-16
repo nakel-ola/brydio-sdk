@@ -43,8 +43,8 @@ describe('a collection, typed from its schema', () => {
     const issues = collection('issues', ISSUE);
 
     void issues.query({ limit: 20 });
-    // Reads go through the collection's own generated tool.
-    expect(JSON.stringify(take())).toContain('list_issues');
+    // Reads go through §9's data/list, which runs the collection's own list tool on the host.
+    expect(take()).toEqual([{ jsonrpc: '2.0', id: '1', method: 'data/list', params: { collection: 'issues', limit: 20 } }]);
 
     const stop = issues.subscribe(() => {});
 

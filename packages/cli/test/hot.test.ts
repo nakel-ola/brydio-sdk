@@ -181,7 +181,7 @@ describe('a development build takes a saved change in place', () => {
     const { root, host, save } = await started();
     const chunks = chunksOf(root);
 
-    expect(host.said.find(one => one.method === 'worker/ready')!.params.capabilities).toEqual(['hot']);
+    expect(host.said.find(one => one.method === 'worker/ready')!.params.capabilities).toEqual(['ack', 'hot']);
 
     const answer = await save(screen('Version two'), 2);
 
@@ -251,7 +251,7 @@ describe('a build that is published', () => {
     const host = run(pathToFileURL(join(root, 'dist', 'screens', 'home.js')).href);
 
     await host.until(() => host.words().includes('Pressed 0'), 'the first tree');
-    expect(host.said.find(one => one.method === 'worker/ready')!.params.capabilities).toBeUndefined();
+    expect(host.said.find(one => one.method === 'worker/ready')!.params.capabilities).not.toContain('hot');
 
     host.update('file:///nowhere.js', 2);
     expect((await host.answer(2)).params.reason).toBe('This build cannot be updated in place.');

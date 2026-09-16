@@ -334,6 +334,31 @@ export function useMembers(ids: readonly (string | null | undefined)[]): Map<str
   return useMemberNames(useBridge(), ids);
 }
 
+/**
+ * The people this instance may name, for a picker, sorted by name: asked when
+ * the screen draws and again whenever `query` changes. Empty until Brydio
+ * answers. Needs the `members` host grant.
+ */
+export function useMemberList(query = '', limit = 50): { members: MemberName[]; loading: boolean; error: Error | null } {
+  const bridge = useBridge();
+  const [state, setState] = useState<{ members: MemberName[]; loading: boolean; error: Error | null }>({ members: [], loading: true, error: null });
+
+  useLayoutEffect(() => {
+    let current = true;
+
+    bridge.listMembers({ query, limit }).then(
+      members => current && setState({ members, loading: false, error: null }),
+      error => current && setState(previous => ({ ...previous, loading: false, error: error instanceof Error ? error : new Error(String(error)) })),
+    );
+
+    return () => {
+      current = false;
+    };
+  }, [bridge, query, limit]);
+
+  return state;
+}
+
 /** The names of projects whose ids the screen holds, by id. Needs the `projects` host grant. */
 export function useProjects(ids: readonly (string | null | undefined)[]): Map<string, ProjectName> {
   return useProjectNames(useBridge(), ids);

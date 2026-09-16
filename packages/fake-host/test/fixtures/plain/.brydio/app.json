@@ -14,7 +14,8 @@
     "reads": { "entry": "screens/reads.js" },
     "drives": { "entry": "screens/drives.js" },
     "ledger": { "entry": "screens/ledger.js" },
-    "names": { "entry": "screens/names.js" }
+    "names": { "entry": "screens/names.js" },
+    "listed": { "entry": "screens/listed.js" }
   },
   "grants": { "tools": ["*"], "collections": ["*"], "host": ["message", "navigate"] }
 }

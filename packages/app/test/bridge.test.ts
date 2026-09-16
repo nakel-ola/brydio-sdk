@@ -92,24 +92,61 @@ describe('tools (contracts §9, as built)', () => {
   });
 });
 
-describe('data, through the generated tools', () => {
-  test('list reads a page through list_<plural> and answers { items, nextCursor }', async () => {
-    const { bridge, take, hostSays, connect } = harness({ app: { collections: { people: { label: 'person', plural: 'persons' } } } });
+describe('answering events and listing people', () => {
+  test('says it acknowledges events, and acks each one once its handlers’ synchronous part has run, before anything they await', async () => {
+    const { bridge, take, hostSays, connect, sent } = harness();
+    const order: string[] = [];
+
+    bridge.onEvent(event => {
+      order.push(`handled ${event.name}`);
+      void Promise.resolve().then(() => order.push(`awaited ${event.name}`));
+    });
+
+    await connect();
+    expect(sent.find(one => one.method === 'worker/ready')!.params).toMatchObject({ capabilities: ['ack'] });
+    take();
+
+    hostSays('tree/event', { node: 'n1', name: 'press' });
+    order.push(`acked ${(take().at(-1)!.params as { name: string }).name}`);
+    hostSays('tree/event', { node: 'n2', name: 'change', detail: { value: 'x' } });
+
+    expect(take()).toEqual([{ jsonrpc: '2.0', method: 'tree/ack', params: { node: 'n2', name: 'change' } }]);
+    await settle();
+    expect(order).toEqual(['handled press', 'acked press', 'handled change', 'awaited press', 'awaited change']);
+  });
+
+  test('lists the people this instance may name for a picker, with a query and a limit, as one request', async () => {
+    const { bridge, take, hostSays, connect } = harness({ app: { grants: { host: ['members'] } } });
+
+    await connect();
+    take();
+
+    const listed = bridge.listMembers({ query: 'ad', limit: 10 });
+
+    expect(take()).toEqual([{ jsonrpc: '2.0', id: '1', method: 'host/members', params: { id: '1', query: 'ad', limit: 10 } }]);
+    hostSays('host/result', { id: '1', result: { members: [{ id: 'user_ada', name: 'Ada Lovelace', initials: 'AL' }] } });
+    expect(await listed).toEqual([{ id: 'user_ada', name: 'Ada Lovelace', initials: 'AL' }]);
+
+    void bridge.listMembers();
+    expect(take()).toEqual([{ jsonrpc: '2.0', id: '2', method: 'host/members', params: { id: '2' } }]);
+  });
+});
+
+describe('data reads (contracts §9 data/get, data/list)', () => {
+  test('list reads a page through data/list, counted as a read, and answers { items, nextCursor }', async () => {
+    const { bridge, take, hostSays, connect } = harness();
 
     await connect();
     take();
 
     const page = bridge.listDocuments('issues', { limit: 200, filter: { status: 'todo' } });
 
-    expect(take()[0]?.params).toEqual({ id: '1', tool: 'list_issues', input: { limit: 200, filter: { status: 'todo' } } });
-    hostSays('tools/result', { id: '1', result: result({ items: [{ id: 'a', version: 1 }], nextCursor: 'c2' }) });
+    expect(take()).toEqual([{ jsonrpc: '2.0', id: '1', method: 'data/list', params: { collection: 'issues', limit: 200, filter: { status: 'todo' } } }]);
+    hostSays('data/result', { id: '1', result: { items: [{ id: 'a', version: 1 }], nextCursor: 'c2' } });
     expect(await page).toEqual({ items: [{ id: 'a', version: 1 }], nextCursor: 'c2' });
-
-    void bridge.listDocuments('people');
-    expect(take()[0]?.params).toMatchObject({ tool: 'list_persons' });
   });
 
-  test('get reads one record through get_<label>', async () => {
+  test('get reads one record through data/get, and a refusal comes back as a HostError in the host’s words', async () => {
     const { bridge, take, hostSays, connect } = harness();
 
     await connect();
@@ -117,9 +154,35 @@ describe('data, through the generated tools', () => {
 
     const read = bridge.getDocument('labels', 'label_1');
 
-    expect(take()[0]?.params).toEqual({ id: '1', tool: 'get_label', input: { id: 'label_1' } });
-    hostSays('tools/result', { id: '1', result: result({ id: 'label_1', version: 1, name: 'Bug' }) });
+    expect(take()).toEqual([{ jsonrpc: '2.0', id: '1', method: 'data/get', params: { collection: 'labels', id: 'label_1' } }]);
+    hostSays('data/result', { id: '1', result: { id: 'label_1', version: 1, name: 'Bug' } });
     expect(await read).toEqual({ id: 'label_1', version: 1, name: 'Bug' });
+
+    const missing = bridge.getDocument('labels', 'label_gone');
+
+    hostSays('data/error', { id: '2', error: { code: -32000, message: 'There is no such label.' } });
+    expect(await missing.catch(error => [error instanceof HostError, error.message])).toEqual([true, 'There is no such label.']);
+  });
+
+  test('a host without reads (-32601) is asked through the generated tools, then and from then on', async () => {
+    const { bridge, take, hostSays, connect } = harness({ app: { collections: { people: { label: 'person', plural: 'persons' } } } });
+
+    await connect();
+    take();
+
+    const page = bridge.listDocuments('people', { limit: 5 });
+
+    hostSays('data/error', { id: '1', error: { code: -32601, message: 'Reading data from a screen isn’t available here.' } });
+    await settle();
+    expect(take()).toEqual([
+      { jsonrpc: '2.0', id: '1', method: 'data/list', params: { collection: 'people', limit: 5 } },
+      { jsonrpc: '2.0', id: '2', method: 'tools/call', params: { id: '2', tool: 'list_persons', input: { limit: 5 } } },
+    ]);
+    hostSays('tools/result', { id: '2', result: result({ items: [], nextCursor: null }) });
+    expect(await page).toEqual({ items: [], nextCursor: null });
+
+    void bridge.getDocument('people', 'p1');
+    expect(take()[0]).toMatchObject({ method: 'tools/call', params: { tool: 'get_person', input: { id: 'p1' } } });
   });
 });
 
@@ -212,7 +275,10 @@ describe('grants', () => {
     void bridge(byCollection).listDocuments('issues');
     await settle();
 
-    expect(byCollection.take().map(one => (one.params as { tool: string }).tool)).toEqual(['delete_issue', 'list_issues']);
+    expect(byCollection.take().map(one => [one.method, (one.params as { tool?: string; collection?: string }).tool ?? (one.params as { collection: string }).collection])).toEqual([
+      ['tools/call', 'delete_issue'],
+      ['data/list', 'issues'],
+    ]);
     expect((await bridge(byCollection).callTool('create_label').catch((error: GrantError) => error) as GrantError).message).toContain('grants.tools');
     // `*` covers navigate and message, never a connection.
     void bridge(byCollection).navigate({ kind: 'chat', id: 'c' });
