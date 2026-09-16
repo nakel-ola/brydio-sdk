@@ -1,4 +1,4 @@
-import { GrantError, builtApp, defaultBridge, type Bridge } from './bridge.ts';
+import { defaultBridge, type Bridge } from './bridge.ts';
 
 /**
  * `@brydio/app/ask`: "Ask about this" (Brydio `3ed1c1c`, A4-F04-S03).
@@ -33,13 +33,7 @@ export const MAX_ASK_BYTES = 64 * 1024;
  * ```
  */
 export function askAbout(target: AskTarget, text: string, bridge: Bridge = defaultBridge()): Promise<{ drafted: boolean }> {
-  const host = builtApp()?.grants?.host;
-
-  if (host && !host.includes('message') && !host.includes('*')) return Promise.reject(new GrantError('host', 'message'));
-  if (!text.trim()) return Promise.reject(new Error('Say what to ask about it.'));
-  if (new TextEncoder().encode(text).byteLength > MAX_ASK_BYTES) return Promise.reject(new Error('A message from an app can be at most 64 KB.'));
-
-  return bridge
-    .request('ui/message', { text, target: { collection: target.collection, id: target.id, ...(target.title ? { title: target.title } : {}) } })
-    .then(result => ({ drafted: (result as { drafted?: unknown } | undefined)?.drafted === true }));
+  // The text's size, the record and the `message` grant are the host's to check, in its words:
+  // checked here too, they would only add to every screen that asks.
+  return bridge.request('ui/message', { text, target }).then(result => ({ drafted: (result as { drafted?: boolean } | undefined)?.drafted === true }));
 }

@@ -162,8 +162,6 @@ export class Bridge {
    * `host/result`/`host/error`) and `ui/navigate` (`ui/result`/`ui/error`).
    */
   readonly #requests = new Map<string, { resolve(result: unknown): void; reject(error: Error): void }>();
-  /** Set once the host has said it can't answer `data/*` reads, so they go through the tools from then on. */
-  #readsThroughTools = false;
   readonly #connected: Promise<HostContext>;
   readonly #unlisten: () => void;
   #resolveConnected: (context: HostContext) => void = () => {};
@@ -295,53 +293,25 @@ export class Bridge {
   }
 
   /**
-   * One record, through the collection's generated `get_*` tool.
-   *
-   * §9's `data/get` was answered `data/error` in Phase 0, so the SDK reads
-   * through the tools, which the host checks and audits the same way.
+   * One record, through §9's own `data/get` (Brydio `5d6cd53`): the host runs
+   * the collection's generated `get_*` tool with its checks, and counts it
+   * against a screen's reads (120 a minute) rather than its tool calls (20),
+   * so a board that reads often never spends its buttons' budget. A host from
+   * before reads were answered refuses it -32601.
    */
   getDocument<D = AppDocument>(collection: string, id: string): Promise<D> {
-    const tool = `get_${this.#collection(collection).label}`;
-    const refused = this.#grant('collections', collection) ?? this.#toolGrant(tool);
+    const refused = this.#grant('collections', collection) ?? this.#toolGrant(`get_${this.#collection(collection).label}`);
 
-    if (refused) return Promise.reject(refused);
-
-    return this.#read<D>('data/get', { collection, id }, () => this.callTool<D>(tool, { id }));
+    return refused ? Promise.reject(refused) : (this.request('data/get', { collection, id }) as Promise<D>);
   }
 
-  /**
-   * A read through §9's own `data/get`/`data/list` (Brydio `5d6cd53`), which
-   * the host counts against a screen's reads (120 a minute) rather than its
-   * tool calls (20), so a board that reads often never spends its buttons'
-   * budget. The host runs the same generated tool with the same checks. A host
-   * that answers -32601 (it has no reads) is asked through the tools, then and
-   * from then on.
-   */
-  async #read<T>(method: 'data/get' | 'data/list', params: Record<string, unknown>, throughTools: () => Promise<T>): Promise<T> {
-    if (this.#readsThroughTools) return throughTools();
-    if (this.#stopped) throw new TeardownError();
-
-    try {
-      return (await this.request(method, params)) as T;
-    } catch (error) {
-      if (error instanceof HostError && error.code === -32601) {
-        this.#readsThroughTools = true;
-
-        return throughTools();
-      }
-
-      throw error;
-    }
-  }
-
-  /** A page of records, through the collection's generated `list_*` tool. */
+  /** A page of records, through §9's `data/list`, which runs the collection's `list_*` tool. */
   async listDocuments<D = AppDocument>(collection: string, query: ListQuery = {}): Promise<ListResult<D>> {
-    const tool = `list_${this.#collection(collection).plural}`;
-    const refused = this.#grant('collections', collection) ?? this.#toolGrant(tool);
+    const refused = this.#grant('collections', collection) ?? this.#toolGrant(`list_${this.#collection(collection).plural}`);
 
     if (refused) throw refused;
 
-    const page = await this.#read<Partial<ListResult<D>> | undefined>('data/list', { collection, ...query }, () => this.callTool(tool, { ...query }));
+    const page = (await this.request('data/list', { collection, ...query })) as Partial<ListResult<D>> | undefined;
 
     return {
       items: Array.isArray(page?.items) ? page.items : [],

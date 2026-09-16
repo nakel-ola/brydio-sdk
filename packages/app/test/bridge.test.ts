@@ -164,25 +164,15 @@ describe('data reads (contracts §9 data/get, data/list)', () => {
     expect(await missing.catch(error => [error instanceof HostError, error.message])).toEqual([true, 'There is no such label.']);
   });
 
-  test('a host without reads (-32601) is asked through the generated tools, then and from then on', async () => {
-    const { bridge, take, hostSays, connect } = harness({ app: { collections: { people: { label: 'person', plural: 'persons' } } } });
+  test('a host without reads says so in its words, rather than the read quietly spending tool calls', async () => {
+    const { bridge, hostSays, connect } = harness();
 
     await connect();
-    take();
 
-    const page = bridge.listDocuments('people', { limit: 5 });
+    const page = bridge.listDocuments('issues', { limit: 5 });
 
     hostSays('data/error', { id: '1', error: { code: -32601, message: 'Reading data from a screen isn’t available here.' } });
-    await settle();
-    expect(take()).toEqual([
-      { jsonrpc: '2.0', id: '1', method: 'data/list', params: { collection: 'people', limit: 5 } },
-      { jsonrpc: '2.0', id: '2', method: 'tools/call', params: { id: '2', tool: 'list_persons', input: { limit: 5 } } },
-    ]);
-    hostSays('tools/result', { id: '2', result: result({ items: [], nextCursor: null }) });
-    expect(await page).toEqual({ items: [], nextCursor: null });
-
-    void bridge.getDocument('people', 'p1');
-    expect(take()[0]).toMatchObject({ method: 'tools/call', params: { tool: 'get_person', input: { id: 'p1' } } });
+    expect(await page.catch(error => [error instanceof HostError, error.code, error.message])).toEqual([true, -32601, 'Reading data from a screen isn’t available here.']);
   });
 });
 
