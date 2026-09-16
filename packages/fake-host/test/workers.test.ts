@@ -1,6 +1,6 @@
 import { build } from '@brydio/cli';
 import { beforeAll, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
+import { copyFileSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { FakeHost } from '../src/index.ts';
@@ -35,3 +35,34 @@ test('a screen that ends its own worker never stops the next one from starting',
 
   expect(stops).toEqual(Array(8).fill('cap'));
 }, 60_000);
+
+test('a screen built after this process first looked in dist/ still loads', async () => {
+  // Bun remembers a folder's files once it has resolved an import from it, so
+  // a screen written there later (a build during a test run, publish's
+  // pictures just after its build) was "Cannot find module".
+  const first = FakeHost.start({ entry: screen('counter'), manifest });
+
+  await first.mounted();
+  first.stop();
+
+  const late = join(app, 'dist', 'screens', `late-${Date.now().toString(36)}.js`);
+
+  copyFileSync(screen('counter'), late);
+
+  try {
+    const host = FakeHost.start({ entry: late, manifest });
+
+    await host.mounted();
+    expect(host.stopped).toBeNull();
+    host.stop();
+  } finally {
+    rmSync(late, { force: true });
+  }
+});
+
+test('a screen that is not there still stops for load', async () => {
+  const host = FakeHost.start({ entry: join(app, 'dist', 'screens', 'nowhere.js'), manifest });
+
+  await host.waitFor(() => host.stopped, { what: 'the stop' });
+  expect(host.stopped).toBe('load');
+});

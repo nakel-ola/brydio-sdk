@@ -1,7 +1,8 @@
 import { TOOL_WRITES, collectionsOf, toolNames, type ManifestExtensions } from '@brydio/manifest';
-import { TEXT_NODE } from '@brydio/ui';
+import { TEXT_NODE, checkEvent, isElementName, type DetailOf, type ElementEvent, type ElementName } from '@brydio/ui';
+import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { workerPrelude } from './prelude.ts';
 import { FixtureStore, type Fixtures, type StoreChange, type ToolHandler, type ToolResultShape } from './tools.ts';
@@ -60,6 +61,12 @@ export interface FakeHostOptions {
   context?: Partial<HostContext>;
   /** How writes are answered. `allow` unless said. */
   asks?: AskAnswer | ((call: ToolCall) => AskAnswer);
+  /**
+   * A call Brydio turns away before it runs or asks, for any tool or data
+   * read: `blocked` (the workspace switched the tool off) or `rate_limited`
+   * (the app called or read too often). Answered in the host's words.
+   */
+  refuse?: (call: ToolCall) => HostRefusal | undefined;
   /** Run Brydio's prelude before the screen. On unless a test needs it off. */
   prelude?: boolean;
   /**
@@ -77,12 +84,27 @@ export interface NavigateTo {
   id: string;
 }
 
+/** Why Brydio turns a call away before running it. */
+export type HostRefusal = 'blocked' | 'rate_limited';
+
+/**
+ * The sentences `apps/api/src/apps/screens/instance-call.service.ts` refuses
+ * with, which the host passes on as `tools/error` or `data/error`.
+ */
+export function hostRefusal(refusal: HostRefusal, tool: string, read = false): string {
+  if (refusal === 'blocked') return `${tool} is switched off for this workspace.`;
+
+  return read ? 'This app is reading too often. Try again in a minute.' : 'This app is calling too often. Try again in a minute.';
+}
+
 /** A call the screen made, and what became of it. */
 export interface ToolCall {
   tool: string;
   input: Record<string, unknown>;
   /** Whether it waited on the person, and what they said. */
   asked?: 'allow' | 'deny';
+  /** Turned away by Brydio before it ran or asked. */
+  refused?: HostRefusal;
   result?: ToolResultShape;
   error?: { code: number; message: string };
 }
@@ -164,7 +186,7 @@ export class FakeHost {
         : [],
     );
 
-    const entry = options.entry.startsWith('file:') ? options.entry : pathToFileURL(isAbsolute(options.entry) ? options.entry : resolve(options.entry)).href;
+    const entry = moduleUrl(options.entry);
     const prelude = options.prelude === false ? '' : `(${workerPrelude.toString()})(self);\n`;
     // As the frame page starts it: the prelude, then the app's module. A
     // failed import is thrown on a fresh task so it reaches `error`.
@@ -253,14 +275,44 @@ export class FakeHost {
   }
 
   /** A person pressing a node, as the host sends it. Dropped if the node has gone. */
-  press(node: string | TreeNode): void {
-    this.event(typeof node === 'string' ? node : node.id, 'press');
+  press(node: string | TreeNode): boolean {
+    return this.event(node, 'press');
   }
 
-  event(node: string, name: string, detail?: unknown): void {
-    if (this.stopped || !this.tree.has(node)) return;
+  /**
+   * What a person does to a node, as the host raises it: `change` with
+   * `{ value }`, a board's `move` with `{ card, from, to, position }`, and so
+   * on. Only events the node's element declares can be sent: Brydio never
+   * raises another, so asking for one is a mistake in the test, and it throws.
+   *
+   * An event for a node that is not in the tree is dropped, as the host
+   * drops it (a person can't press what isn't drawn), and answers false.
+   */
+  event(node: string | TreeNode, name: string, detail?: unknown): boolean {
+    const id = typeof node === 'string' ? node : node.id;
+    const drawn = this.tree.get(id);
 
-    this.#send({ jsonrpc: '2.0', method: 'tree/event', params: detail === undefined ? { node, name } : { node, name, detail } });
+    if (this.stopped || !drawn) return false;
+
+    const refused = isElementName(drawn.type) ? checkEvent(drawn.type, name) : `${drawn.type} raises no events.`;
+
+    if (refused) throw new Error(`Brydio would never send that: ${refused}`);
+
+    this.#send({ jsonrpc: '2.0', method: 'tree/event', params: detail === undefined ? { node: id, name } : { node: id, name, detail } });
+
+    return true;
+  }
+
+  /**
+   * The same, typed by element: `host.raise('bry-board', board, 'move', { card, from, to, position })`
+   * checks the detail's shape against the catalogue's types at compile time.
+   */
+  raise<E extends ElementName, K extends ElementEvent<E>>(element: E, node: string | TreeNode, name: K, ...detail: DetailOf<E, K> extends undefined ? [] : [DetailOf<E, K>]): boolean {
+    const id = typeof node === 'string' ? node : node.id;
+
+    if (this.tree.get(id) && this.tree.get(id)!.type !== element) throw new Error(`That node is a ${this.tree.get(id)!.type}, not a ${element}.`);
+
+    return this.event(id, name, detail[0]);
   }
 
   /** The screen moved, resized or changed theme. */
@@ -480,6 +532,15 @@ export class FakeHost {
     const call: ToolCall = { tool, input };
 
     this.calls.push(call);
+
+    const turnedAway = this.#options.refuse?.(call);
+
+    if (turnedAway) {
+      call.refused = turnedAway;
+
+      return error(-32000, hostRefusal(turnedAway, tool, true));
+    }
+
     this.#busy += 1;
 
     try {
@@ -621,6 +682,15 @@ export class FakeHost {
       return;
     }
 
+    const turnedAway = this.#options.refuse?.(call);
+
+    if (turnedAway) {
+      call.refused = turnedAway;
+      this.#fail(id, call, hostRefusal(turnedAway, tool));
+
+      return;
+    }
+
     if (this.#writes.has(tool)) {
       const asks = this.#options.asks ?? 'allow';
       const decision = typeof asks === 'function' ? asks(call) : asks;
@@ -708,6 +778,30 @@ export class FakeHost {
 
     return last ? ` Last: ${last}` : '';
   }
+}
+
+/**
+ * Where the worker imports the screen from.
+ *
+ * A built screen is one self-contained module, so it is handed to the worker
+ * as a `blob:` of the file's bytes, as Brydio's frame fetches it whole. Asking
+ * Bun to import the file instead failed for a file written after this process
+ * first looked in its folder (a build during the test run, publish's pictures
+ * straight after its build): Bun's module resolver remembers the folder as it
+ * was and answers "Cannot find module". A file that is missing, or that imports
+ * a neighbour by a relative path, is still imported from disk, so a missing
+ * build stops the app for `load` as before.
+ */
+function moduleUrl(given: string): string {
+  const path = given.startsWith('file:') ? fileURLToPath(given) : isAbsolute(given) ? given : resolve(given);
+
+  if (existsSync(path)) {
+    const code = readFileSync(path, 'utf8');
+
+    if (!/(?:\bfrom\s*|\bimport\s*\(?\s*)["']\.\.?\//.test(code)) return URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+  }
+
+  return pathToFileURL(path).href;
 }
 
 /** A node's words: its text, or the label, text or title setting. */

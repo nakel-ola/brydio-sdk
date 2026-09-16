@@ -11,7 +11,9 @@
     "where": { "entry": "screens/where.js" },
     "watched": { "entry": "screens/watched.js" },
     "opens": { "entry": "screens/opens.js" },
-    "reads": { "entry": "screens/reads.js" }
+    "reads": { "entry": "screens/reads.js" },
+    "drives": { "entry": "screens/drives.js" },
+    "ledger": { "entry": "screens/ledger.js" }
   },
   "grants": { "tools": ["*"], "collections": ["*"], "host": ["message", "navigate"] }
 }

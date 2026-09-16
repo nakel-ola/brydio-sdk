@@ -337,8 +337,15 @@ export class FixtureStore {
     return spec;
   }
 
+  /** A new id, never one a seeded or earlier record already has. */
   #id(spec: CollectionSpec): string {
-    return `${spec.label}_${++this.#next}`;
+    const taken = new Set(this.#records.get(spec.name)?.map(record => record.id));
+    let id: string;
+
+    do id = `${spec.label}_${++this.#next}`;
+    while (taken.has(id));
+
+    return id;
   }
 
   /** Every write a millisecond after the last, so "newest first" is never a tie. */
