@@ -1,4 +1,4 @@
-import { sizeOf } from '@brydio/manifest';
+import { BUNDLE_MANIFEST, sdkRefusal, sizeOf, type SdkSupport } from '@brydio/manifest';
 
 import { build } from './build.ts';
 import { formatProblem } from './project.ts';
@@ -27,6 +27,12 @@ import { zipFiles } from './zip.ts';
  *   file or field.
  * - 423: Apps are not on for the workspace.
  *
+ * Before any of that it asks `GET /api/v1/apps/sdk` which SDK versions the
+ * Brydio runs (`{ oldest, before }`), and refuses locally, in the server's
+ * `sdk_unsupported` words, a build it would refuse (A5-F04-S03). A Brydio
+ * with no such route is from before the check: the upload goes ahead, and the
+ * command says the version was not checked.
+ *
  * Sign-in is a token in `BRYDIO_TOKEN`, sent as a bearer token: the same
  * Clerk session token the web app sends. The address is `BRYDIO_API_URL`.
  */
@@ -34,6 +40,7 @@ import { zipFiles } from './zip.ts';
 export const TOKEN_ENV = 'BRYDIO_TOKEN';
 export const API_URL_ENV = 'BRYDIO_API_URL';
 export const PUBLISH_PATH = '/api/v1/apps/publish';
+export const SDK_PATH = '/api/v1/apps/sdk';
 
 export interface PublishOptions {
   /** Brydio's API, like `https://api.brydio.app`. `BRYDIO_API_URL` unless given. */
@@ -75,6 +82,36 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
     return 2;
   }
 
+  const request = options.fetch ?? fetch;
+  const headers = { authorization: `Bearer ${token}` };
+  let support: SdkSupport | null = null;
+
+  try {
+    const answer = await request(`${apiUrl}${SDK_PATH}`, { method: 'GET', headers });
+
+    if (answer.status === 404) {
+      out(`${apiUrl} does not check SDK versions yet, so this build's SDK was not checked before uploading.`);
+    } else if (answer.ok) {
+      const body = (await answer.json().catch(() => null)) as Partial<SdkSupport> | null;
+
+      if (typeof body?.oldest !== 'string' || typeof body?.before !== 'string') {
+        out(`${apiUrl} answered ${SDK_PATH} with something other than { oldest, before }. Not published.`);
+
+        return 1;
+      }
+
+      support = { oldest: body.oldest, before: body.before };
+    } else {
+      out(turnedAway(answer.status, apiUrl, (await answer.json().catch(() => null)) as Record<string, unknown> | null));
+
+      return 1;
+    }
+  } catch (error) {
+    out(`Could not reach ${apiUrl}: ${error instanceof Error ? error.message : String(error)}`);
+
+    return 1;
+  }
+
   const built = await build(dir);
 
   for (const problem of built.problems) out(formatProblem(problem));
@@ -95,6 +132,19 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
     return 1;
   }
 
+  if (support) {
+    const sdk = (JSON.parse(new TextDecoder().decode(built.files.get(BUNDLE_MANIFEST)!)) as { sdk?: unknown }).sdk;
+    const refused = sdkRefusal(sdk, support);
+
+    if (refused) {
+      // The server's own sentence for `sdk_unsupported`, said without uploading.
+      out(`Brydio would refuse this version at sdk: ${refused} [sdk_unsupported]`);
+      out('Not published.');
+
+      return 1;
+    }
+  }
+
   const archive = zipFiles(built.files);
   const url = `${apiUrl}${PUBLISH_PATH}`;
   let response: Response;
@@ -102,9 +152,9 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
   out(`Publishing ${sizeOf(built.bytes)}, fingerprint ${built.hash}, to ${apiUrl}.`);
 
   try {
-    response = await (options.fetch ?? fetch)(url, {
+    response = await request(url, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      headers: { 'content-type': 'application/json', ...headers },
       body: JSON.stringify({ archiveBase64: Buffer.from(archive).toString('base64') }),
     });
   } catch (error) {
@@ -150,22 +200,15 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
       out(`Brydio refused this version${typeof body?.at === 'string' ? ` at ${body.at}` : ''}: ${said('the bundle was refused.')}${typeof body?.reason === 'string' ? ` [${body.reason}]` : ''}`);
 
       return 1;
-    case 423:
-      out('Apps are not on for your workspace, so nothing can be published to it.');
-
-      return 1;
     case 400:
       out(`Brydio could not read the upload: ${said('bad request.')}`);
 
       return 1;
     case 401:
     case 403:
-      out(`Brydio did not accept the token in ${TOKEN_ENV}. Sign in again and use a fresh one.`);
-
-      return 1;
     case 404:
-      // No route at all: a Brydio from before A5-F04, or one with Apps switched off whole.
-      out(`${apiUrl} has no publish route. That Brydio is older than publishing, or has Apps switched off.`);
+    case 423:
+      out(turnedAway(response.status, apiUrl, body));
 
       return 1;
     default:
@@ -174,3 +217,20 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
       return 1;
   }
 }
+
+/** What to tell the builder when Brydio turns a request away before looking at the app. */
+function turnedAway(status: number, apiUrl: string, body: Record<string, unknown> | null): string {
+  switch (status) {
+    case 423:
+      return 'Apps are not on for your workspace, so nothing can be published to it.';
+    case 401:
+    case 403:
+      return `Brydio did not accept the token in ${TOKEN_ENV}. Sign in again and use a fresh one.`;
+    case 404:
+      // No route at all: a Brydio from before A5-F04, or one with Apps switched off whole.
+      return `${apiUrl} has no publish route. That Brydio is older than publishing, or has Apps switched off.`;
+    default:
+      return `Brydio answered ${status}: ${typeof body?.message === 'string' ? body.message : 'something went wrong.'}`;
+  }
+}
+

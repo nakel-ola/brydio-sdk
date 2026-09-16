@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-import { build, publish, zipFiles } from '../src/index.ts';
+import { build, publish, sdkVersionFor, zipFiles } from '../src/index.ts';
 
 const brydio = process.env.BRYDIO_DIR ?? join(import.meta.dir, '..', '..', '..', '..', 'brydio');
 const serverPublish = join(brydio, 'apps/api/src/apps/publishing/app-publish.service.ts');
@@ -38,10 +38,22 @@ interface Sent {
   archive: Uint8Array;
 }
 
+/** What the pretend Brydio says at `GET /apps/sdk`: a range, or a status with nothing behind it. */
+type SdkAnswer = { oldest: string; before: string } | number;
+
 /** A pretend publish route that answers with a status and a body, and remembers what it was sent. */
-function server(status: number, body: (sent: Sent) => unknown) {
+function server(status: number, body: (sent: Sent) => unknown, sdk: SdkAnswer = { oldest: '0.1.0-alpha.0', before: '0.2.0' }) {
   const sent: Sent[] = [];
+  const asked: string[] = [];
   const fetch = async (url: string, init: RequestInit) => {
+    if (url.endsWith('/api/v1/apps/sdk')) {
+      asked.push(new Headers(init.headers).get('authorization') ?? '');
+
+      return typeof sdk === 'number'
+        ? new Response(JSON.stringify({ statusCode: sdk }), { status: sdk })
+        : new Response(JSON.stringify(sdk), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+
     const one = {
       url,
       headers: new Headers(init.headers),
@@ -53,7 +65,7 @@ function server(status: number, body: (sent: Sent) => unknown) {
     return new Response(JSON.stringify(body(one)), { status, headers: { 'content-type': 'application/json' } });
   };
 
-  return { sent, fetch };
+  return { sent, asked, fetch };
 }
 
 const run = async (root: string, route: ReturnType<typeof server> | null, options: { token?: string; apiUrl?: string } = {}) => {
@@ -92,6 +104,36 @@ describe('brydio publish', () => {
     expect(text).toContain('Published tiny 1.0.0.');
     expect(text).toContain(`http://brydio.test/api/v1/apps/bundles/${built.hash}/screens/home.js`);
     expect(text).not.toContain('not the one worked out here');
+  });
+
+  test('asks which SDKs Brydio runs first, and refuses in the server’s words before uploading', async () => {
+    const route = server(201, () => ({}), { oldest: '0.2.0', before: '0.3.0' });
+    const { code, text } = await run(tiny(), route);
+
+    expect(code).toBe(1);
+    expect(route.asked).toEqual(['Bearer session-token']);
+    expect(route.sent).toEqual([]);
+    expect(text).toContain(
+      `Brydio would refuse this version at sdk: This app was built with SDK ${sdkVersionFor(tmpdir())}. Brydio runs apps built with SDK 0.2.0 or newer, before 0.3.0. [sdk_unsupported]`,
+    );
+  });
+
+  test('uploads, saying the SDK was not checked, to a Brydio with no SDK route', async () => {
+    const route = server(201, () => ({ created: true, appKey: 'tiny', version: '1.0.0', versionId: 'v', bundleHash: 'x', publishedBy: 'u', publishedAt: 't', files: [] }), 404);
+    const { code, text } = await run(tiny(), route);
+
+    expect(code).toBe(0);
+    expect(route.sent).toHaveLength(1);
+    expect(text).toContain('does not check SDK versions yet');
+    expect(JSON.parse(new TextDecoder().decode((await import('node:zlib')).inflateRawSync(sliceFirst(route.sent[0]!.archive)))).sdk).toBe(sdkVersionFor(tmpdir()));
+  });
+
+  test('stops before building when the SDK route turns the token or the workspace away', async () => {
+    const root = tiny();
+
+    expect(await run(root, server(201, () => ({}), 401))).toMatchObject({ code: 1, text: expect.stringContaining('did not accept the token') });
+    expect(await run(root, server(201, () => ({}), 423))).toMatchObject({ code: 1, text: expect.stringContaining('Apps are not on') });
+    expect(existsSync(join(root, 'dist'))).toBe(false);
   });
 
   test('says so, and succeeds, when exactly this version was already published', async () => {
@@ -139,9 +181,11 @@ describe('brydio publish', () => {
       '.brydio/app.json': JSON.stringify({ name: 'tiny', version: '1.0.0', screens: { home: { entry: 'screens/home.js' } } }),
       'src/screens/home.tsx': 'export const Home = () => <bry-stack style={{}} />;\n',
     });
-    const { code, text } = await run(root, null);
+    const route = server(201, () => ({}));
+    const { code, text } = await run(root, route);
 
     expect(code).toBe(1);
+    expect(route.sent).toEqual([]);
     expect(text).toContain('Not built, so not published.');
   });
 });
@@ -164,3 +208,13 @@ describe('the zip', () => {
     for (const [path, bytes] of built.files) expect(new Uint8Array(unpacked.get(path)!)).toEqual(new Uint8Array(bytes));
   });
 });
+
+/** The deflated bytes of a zip's first entry, which `zipFiles` sorts to `app.json`. */
+function sliceFirst(zip: Uint8Array): Uint8Array {
+  const view = Buffer.from(zip);
+  const size = view.readUInt32LE(18);
+  const start = 30 + view.readUInt16LE(26) + view.readUInt16LE(28);
+
+  return view.subarray(start, start + size);
+}
+

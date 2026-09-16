@@ -48,13 +48,14 @@ Read against Brydio at `f28d98b` plus Kestrel's uncommitted
    node when the patch is sent, with its settings as they ended up in that
    microtask, rather than as they were when it was inserted. Settings changed
    on a node that was inserted in the same patch are not sent again.
-7. **Only `bry-stack` and `bry-card` hold anything, and they hold text too.**
-   §10 is silent. The first SDK draft let `bry-text` and `bry-heading` hold
-   text nodes and refused bare text in a stack. `catalogue/elements.ts` says
-   `children: false` for heading, text and button, and `true` for stack and
-   card, with no rule about what kind of child. The SDK now matches: a text or
-   a heading takes its words as the `text` setting, the JSX types say
-   `children?: never` for them, and a `#text` node may sit in a stack or card.
+7. **Which elements hold anything, and text too.** §10 is silent. The first
+   SDK draft let `bry-text` and `bry-heading` hold text nodes and refused
+   bare text in a stack. The host's declarations say `children: true` for a
+   stack, a grid, a label, a card and a list row, and `false` for the rest,
+   with no rule about what kind of child. The SDK matches: a text or a
+   heading takes its words as the `text` setting, the JSX types say
+   `children?: never` where the host says `false`, and a `#text` node may sit
+   in any element that holds children.
 8. **Required settings and lengths.** Not in §10. The host requires `text` on
    `bry-heading` and `bry-text` and `label` on `bry-button`, caps a label, a
    title and a heading at 200 characters, a paragraph and a text node at
@@ -175,11 +176,33 @@ Read against Brydio at `f28d98b` plus Kestrel's uncommitted
     unix file modes, no timestamps, sorted, so the same build is the same
     upload. `publish.test.ts` unpacks it with the server's `unpack` whenever a
     Brydio checkout sits beside this repository.
-29. **Not built on the server yet, so not in the CLI:** the supported-SDK
-    range route Hodler's 14:13 plan mentions (a version built against an SDK
-    the host no longer supports), the "only the first publisher or one they
-    name" rule, and screenshots. The CLI sends no SDK version with the
-    upload, and says that no pictures were attached. If the route starts
-    reading an SDK version, the bundle already carries it in each screen
-    (`worker/ready`'s `sdk`) but not in `app.json`.
+29. **Not in the CLI:** screenshots (it says no pictures were attached) and
+    the "only the first publisher or one they name" rule, which is the
+    server's alone.
+30. **Which SDK built a version** (A5-F04-S03; Hodler's proposal at 14:44 and
+    his code on disk at 14:50, not yet committed when copied). `brydio build`
+    writes `"sdk"`, the version of the `@brydio/app` the app's folder
+    resolves (or the CLI's own when it resolves none), into `dist/app.json`,
+    overwriting and warning (`manifest_sdk_overwritten`) about one written by
+    hand; `validate` leaves `sdk` out when it compares the built manifest.
+    `@brydio/manifest`'s schema takes `sdk` as an optional semver, as
+    `manifest-ext.schema.ts` does. The host's range is `{ oldest, before }`
+    from `GET /api/v1/apps/sdk` (the proposal said `newest`; the code says
+    `before`, exclusive, its prereleases excluded too), so `sdkRefusal` and
+    `compareVersions` are copies of `publishing/sdk-support.ts` and
+    `versions/compare-versions.ts`, taking the range as an argument. `brydio
+    publish` asks the route first, with the token, and refuses before
+    uploading with the server's `sdk_unsupported` sentence; a 404 there means
+    a Brydio from before the check, and the upload goes ahead, saying so.
+31. **The catalogue is compared at HEAD, not on disk.** Several agents add
+    elements in the same checkout, so `catalogue.test.ts` exports
+    `packages/app/src/apps/catalogue` from `git archive HEAD` and compares
+    with that. `d92803e` registers eight elements (`bry-table`,
+    `bry-virtual-list`, `bry-dialog`, `bry-menu`, `bry-date`, `bry-split`,
+    `bry-checkbox`, `bry-switch`) whose own files are not committed, so HEAD's
+    `elements.ts` does not import on its own; the test stands in for the
+    missing files and leaves those names out until they land. Synced so far:
+    the first fifteen (`56ab13e`, `a9fce89`) and the button's `working` and
+    the card's `loading` (`d92803e`), with the host's `options` kind for a
+    select's choices.
 

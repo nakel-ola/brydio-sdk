@@ -17,8 +17,9 @@ it is Issues, in `../brydio-issues`.
   the assistant in a chat.
 - A **screen** is a small program that runs out of sight, in a sealed box with
   no internet and no page to draw on. It describes what it wants on screen
-  using **five building blocks** (a stack, a heading, a text, a button and a
-  card), and Brydio draws them. It can't use colours, styles or anything
+  using **fifteen building blocks** (stacks and grids, headings and text,
+  buttons, fields and choices, cards, rows, badges and the like), and Brydio
+  draws them. It can't use colours, styles or anything
   Brydio doesn't offer, which is why every app looks right.
 - When a screen **changes something** (a button that moves an issue), Brydio
   asks the person first.
@@ -30,7 +31,7 @@ it is Issues, in `../brydio-issues`.
 
 | Folder | What it is |
 |---|---|
-| `packages/ui` | The list of the five building blocks and what each accepts. A copy of Brydio's own list. |
+| `packages/ui` | The list of building blocks and what each accepts. A copy of Brydio's own list, as committed. |
 | `packages/manifest` | The rules for a manifest, the tools Brydio makes from it, and the bundle rules and fingerprint. Copies of Brydio's server rules. |
 | `packages/app` | What runs inside a screen: it keeps the screen's tree of building blocks, talks to Brydio, and lets you write screens with Preact (a small React). |
 | `packages/fake-host` | A pretend Brydio for tests: it runs a built screen, remembers what it drew, lets a test press buttons, and answers tools from sample records. |
@@ -43,7 +44,9 @@ it is Issues, in `../brydio-issues`.
 Run these in an app's folder (they need [Bun](https://bun.sh) 1.3):
 
 - `brydio build` turns the screens in `src/screens/` into `dist/`, one file
-  per screen plus `app.json`, and prints the size and the fingerprint.
+  per screen plus `app.json` (with `"sdk"`, the SDK version it was built
+  against, written by the build and never by hand), and prints each file's
+  size and hash and the fingerprint.
 - `brydio validate` checks everything Brydio would refuse: the manifest, the
   built bundle (only scripts, under 1 MB, every screen built), and the screens'
   source, read with TypeScript's parser (only the catalogue's elements, only
@@ -69,7 +72,8 @@ Run these in an app's folder (they need [Bun](https://bun.sh) 1.3):
 - `brydio publish` builds and validates the app, then uploads `dist/` to
   Brydio as a new version, signed in as you. Set `BRYDIO_TOKEN` to a Brydio
   session token and `BRYDIO_API_URL` to the API's address (or pass
-  `--api <url>`). It prints the version, the fingerprint and each screen's
+  `--api <url>`). It first asks Brydio which SDK versions it runs, and
+  refuses a build outside them before uploading anything. It prints the version, the fingerprint and each screen's
   address. Publishing exactly what is already published is not an error; a
   version number already used by different code is refused, in Brydio's
   words, naming both fingerprints.
@@ -154,15 +158,26 @@ function Board() {
 void mount(Board);
 ```
 
-The five building blocks and their settings:
+The building blocks and their settings:
 
 | Block | Settings | Tells the screen |
 |---|---|---|
 | `bry-stack` | `direction` row or column, `gap` 1–8, `align`, `justify`, `wrap` | nothing |
+| `bry-grid` | `columns` 1–6, `gap` 1–8, `align` | nothing |
 | `bry-heading` | `text` (needed), `level` 1–3 | nothing |
 | `bry-text` | `text` (needed), `tone` default, muted or danger, `size` sm or md | nothing |
-| `bry-button` | `label` (needed), `variant` primary, secondary, ghost or danger, `size`, `disabled` | `onPress` |
-| `bry-card` | `title`, `padding` 2–6, `pressable` | `onPress`, when pressable |
+| `bry-label` | `text` (needed), `required`; holds the control it names | nothing |
+| `bry-button` | `label` (needed), `variant` primary, secondary, ghost or danger, `size`, `disabled`, `working` | `onPress` |
+| `bry-input` | `value`, `placeholder`, `label`, `kind` text, email, url or search, `maxLength`, `required`, `disabled`, `error` | `onChange` and `onSubmit`, with `{ value }` |
+| `bry-textarea` | `value`, `placeholder`, `label`, `maxLength`, `required`, `disabled`, `error` | `onChange`, with `{ value }` |
+| `bry-select` | `options` (needed, up to 100 `{ value, label }`), `value`, `placeholder`, `label`, `size`, `disabled`, `error` | `onChange`, with `{ value }` |
+| `bry-card` | `title`, `padding` 2–6, `pressable`, `loading` | `onPress`, when pressable |
+| `bry-list-row` | `title`, `description`, `meta`, `pressable`, `selected`, `loading` | `onPress` |
+| `bry-badge` | `text` (needed), `tone` neutral, brand, success, warn or danger | nothing |
+| `bry-avatar` | `name` (needed), `size` sm, md or lg; initials, never a picture | nothing |
+| `bry-empty-state` | `title` (needed), `text`, `action` | `onAction` |
+| `bry-skeleton` | `shape` line, block or row, `count` 1–12 | nothing |
 
-Only a stack and a card can hold other blocks. There is no text box yet: a
-screen can't ask a person to type in Phase 0.
+A stack, a grid, a label, a card and a list row hold other blocks; the rest
+take their words as a setting. Each has a plain factory of the same name in
+`@brydio/app` (`listRow`, `emptyState`) for a screen written without Preact.
