@@ -57,7 +57,7 @@ export {
   type ManifestExtensions,
 } from './schema.ts';
 
-export { KNOWN_HOST_GRANTS, unknownHostGrant } from './grants.ts';
+export { HOST_CAPABILITIES, KNOWN_HOST_GRANTS, isHostCapability, unknownHostGrant } from './grants.ts';
 
 export {
   diffSchemas,

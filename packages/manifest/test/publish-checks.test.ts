@@ -3,7 +3,8 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
-  KNOWN_HOST_GRANTS,
+  HOST_CAPABILITIES,
+  isHostCapability,
   SECRET_MESSAGE,
   findSecrets,
   migrationProblems,
@@ -25,7 +26,8 @@ const api = join(brydio, 'apps/api/src');
 const serverMigrations = join(api, 'apps/manifest/migrations.ts');
 const serverSecrets = join(api, 'extensions/apps/secret-scan.ts');
 const serverCodes = join(api, 'extensions/apps/manifest-codes.ts');
-const serverDiff = join(api, 'apps/versions/diff-manifests.ts');
+const serverGrants = join(api, 'apps/manifest/grants.ts');
+const serverPublish = join(api, 'apps/publishing/app-publish.service.ts');
 const bytes = (text: string) => new TextEncoder().encode(text);
 
 const v = (version: string, schema: Record<string, unknown>, migrations?: unknown) => ({
@@ -104,13 +106,29 @@ describe('host grants', () => {
     expect(unknownHostGrant(ISSUES_MANIFEST)).toBeNull();
     expect(unknownHostGrant({ grants: { host: ['navigate', 'camera'] } })).toEqual({
       code: 'grant_unknown',
-      message: 'app.json asks for "camera", which Brydio does not grant. An app may ask for navigate and message.',
+      message: 'app.json asks for "camera", which Brydio does not grant. An app may ask for navigate, message or connection:<name>.',
       path: 'grants.host',
     });
   });
 
-  test.skipIf(!existsSync(serverDiff))('knows the grants Brydio’s diff-manifests.ts knows', async () => {
-    expect([...KNOWN_HOST_GRANTS]).toEqual([...(await import(serverDiff)).KNOWN_HOST_GRANTS]);
+  test('allows a connection by name, and nothing looser', () => {
+    expect(unknownHostGrant({ grants: { host: ['navigate', 'connection:github'] } })).toBeNull();
+    expect(unknownHostGrant({ grants: { host: ['connection:'] } })?.code).toBe('grant_unknown');
+    expect(unknownHostGrant({ grants: { host: ['connection:GitHub'] } })?.code).toBe('grant_unknown');
+  });
+
+  test.skipIf(!existsSync(serverGrants))('knows the grants Brydio’s grants.ts knows, and reads each the same way', async () => {
+    const server = await import(serverGrants);
+    const names = ['navigate', 'message', 'camera', 'connection:github', 'connection:my-crm_2', 'connection:', 'connection:GitHub', `connection:${'a'.repeat(61)}`, '*', ''];
+
+    expect([...HOST_CAPABILITIES]).toEqual([...server.HOST_CAPABILITIES]);
+    expect(names.map(isHostCapability)).toEqual(names.map(name => server.isHostCapability(name)));
+  });
+
+  test.skipIf(!existsSync(serverPublish))('refuses in the words of Brydio’s publish route', async () => {
+    const source = await Bun.file(serverPublish).text();
+
+    expect(source).toContain('`An app may ask for ${HOST_CAPABILITIES.join(\', \')} or connection:<name>.`');
   });
 });
 

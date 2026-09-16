@@ -2,27 +2,38 @@
  * The host grants Brydio has a meaning for, and its refusal of any other
  * (A5-F04-S03, A8-F04-S03).
  *
- * Copies of `KNOWN_HOST_GRANTS` in Brydio's
- * `apps/api/src/apps/versions/diff-manifests.ts` and the `grant_unknown`
- * sentence in `apps/api/src/apps/publishing/app-publish.service.ts`.
+ * Copies of `HOST_CAPABILITIES` and `isHostCapability` in Brydio's
+ * `apps/api/src/apps/manifest/grants.ts`, and the `grant_unknown` sentence in
+ * `apps/api/src/apps/publishing/app-publish.service.ts`.
  */
 
 import { BUNDLE_MANIFEST } from './bundle.ts';
 
-export const KNOWN_HOST_GRANTS: readonly string[] = ['navigate', 'message'];
+/** The host grants with a name of their own. A connection's is `connection:<name>`. */
+export const HOST_CAPABILITIES = ['navigate', 'message'] as const;
+
+/** The older name for `HOST_CAPABILITIES`, kept for what already imports it. */
+export const KNOWN_HOST_GRANTS: readonly string[] = HOST_CAPABILITIES;
+
+const CONNECTION = /^connection:[a-z0-9][a-z0-9_-]{0,59}$/;
+
+/** True for a host grant Brydio knows how to honour: a named capability, or one connection. */
+export const isHostCapability = (value: string): boolean =>
+  (HOST_CAPABILITIES as readonly string[]).includes(value) || CONNECTION.test(value);
 
 /** The server's refusal of the first host grant it does not know, or null. */
 export function unknownHostGrant(manifest: unknown): { code: 'grant_unknown'; message: string; path: 'grants.host' } | null {
   const grants = (manifest as { grants?: { host?: unknown } } | null)?.grants;
   const host = grants?.host;
-  const unknown = (Array.isArray(host) ? host : []).find(grant => typeof grant !== 'string' || !KNOWN_HOST_GRANTS.includes(grant));
+  const unknown = (Array.isArray(host) ? host : []).find(grant => typeof grant !== 'string' || !isHostCapability(grant));
 
   if (unknown === undefined) return null;
 
   return {
     code: 'grant_unknown',
     message:
-      `${BUNDLE_MANIFEST} asks for "${String(unknown)}", which Brydio does not grant. ` + `An app may ask for ${KNOWN_HOST_GRANTS.join(' and ')}.`,
+      `${BUNDLE_MANIFEST} asks for "${String(unknown)}", which Brydio does not grant. ` +
+      `An app may ask for ${HOST_CAPABILITIES.join(', ')} or connection:<name>.`,
     path: 'grants.host',
   };
 }
