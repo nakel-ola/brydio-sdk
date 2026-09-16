@@ -57,12 +57,16 @@ const collectionSchema = z.object({
 });
 
 const screenSchema = z.object({
-  /** Relative to the bundle's root: `screens/board.js`. */
+  /**
+   * Relative to the bundle's root: `screens/board.js` or `screens/board.mjs`.
+   * The server's schema said `.js` only while its store and the mount took
+   * `.mjs` too; the schema gives (E1 and Hodler, 16 Sep 14:04 and 14:12).
+   */
   entry: z
     .string()
     .min(1)
     .max(200)
-    .regex(/^(?!\/)(?!.*\.\.)[A-Za-z0-9_\-./]+\.js$/, 'An entry is a .js path inside the bundle.'),
+    .regex(/^(?!\/)(?!.*\.\.)[A-Za-z0-9_\-./]+\.m?js$/, 'An entry is a .js path inside the bundle.'),
 });
 
 const toolsSchema = z.object({

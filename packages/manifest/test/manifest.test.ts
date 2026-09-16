@@ -126,6 +126,11 @@ describe('validateManifest', () => {
     expect(codesOf(CORPUS[8])).toEqual(['manifest_invalid']);
   });
 
+  test('takes an .mjs entry as it takes a .js one, and nothing else', () => {
+    expect(validateManifest(CORPUS[7]).ok).toBe(true);
+    expect(codesOf({ ...ISSUES_MANIFEST, screens: { board: { entry: 'screens/board.ts' } } })).toEqual(['manifest_invalid']);
+  });
+
   test('says when the text is not JSON', () => {
     expect(validateManifestText('{').problems[0]?.code).toBe('manifest_not_json');
   });
@@ -133,7 +138,13 @@ describe('validateManifest', () => {
   test.skipIf(!existsSync(serverSchema))('accepts and refuses exactly what the server’s schema does', async () => {
     const server = await import(serverSchema);
 
+    // Until the server's entry regex takes `.mjs` as agreed (CONTRACT-NOTES 21),
+    // an `.mjs` entry is the one place the two are allowed to differ.
+    const serverTakesMjs = server.appManifestSchema.safeParse(CORPUS[7]).success;
+
     for (const manifest of CORPUS) {
+      if (!serverTakesMjs && JSON.stringify(manifest).includes('.mjs"')) continue;
+
       const theirs = server.appManifestSchema.safeParse(manifest);
       const ours = appManifestSchema.safeParse(manifest);
 

@@ -127,9 +127,15 @@ Read against Brydio at `f28d98b` plus Kestrel's uncommitted
     exactly what `appManifestSchema.safeParse` answers, with the server's
     `data_*` and `placement_*` codes and `manifest_invalid` for a wrong shape.
     `test/manifest.test.ts` parses a corpus with both schemas and compares.
-21. **A screen's entry is `.js`, not `.mjs`.** The server's `screenSchema`
-    regex requires `.js`, although the bundle store accepts `.mjs` files. The
-    SDK follows the schema for entries and the store for files.
+21. **A screen's entry is `.js` or `.mjs`.** The server's `screenSchema`
+    regex required `.js`, while the bundle store (`bundle-files.ts`) and the
+    mount (`screen-mount.service.spec.ts` pins `board.mjs`) took `.mjs` too.
+    Hodler (16 Sep 14:04) and E1 (14:12) settled it: the schema gives. The SDK
+    accepts `.mjs` entries everywhere it checks one (the schema, `build`,
+    `validate`, `dev`) ahead of the server's one-line change, and keeps the
+    server's refusal sentence word for word ("An entry is a .js path inside
+    the bundle."). Until HEAD's regex widens, `manifest.test.ts` leaves the
+    `.mjs` case out of the comparison with the server's schema.
 22. **`index` on a collection** (contracts §5, "unless listed in `index`") is
     not in the server's schema. It parses and is dropped. The SDK example no
     longer uses it.

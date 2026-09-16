@@ -79,6 +79,18 @@ describe('brydio build', () => {
     expect(codes(broken.problems)).toEqual(['screen_build_failed']);
   });
 
+  test('builds and validates a screen whose entry is .mjs, from the source of the same name', async () => {
+    const root = app({
+      '.brydio/app.json': manifest({ screens: { home: { entry: 'screens/home.mjs' } } }),
+      'src/screens/home.ts': 'export const home = 1;\n',
+    });
+    const result = await build(root);
+
+    expect(result.problems).toEqual([]);
+    expect([...result.files.keys()].sort()).toEqual(['app.json', 'screens/home.mjs']);
+    expect(validate(root)).toEqual({ ok: true, problems: [] });
+  });
+
   test('refuses a manifest the server would refuse, with the server’s code', async () => {
     const result = await build(app({ '.brydio/app.json': manifest({ placements: [{ kind: 'project-tab', screen: 'nowhere' }] }) }));
 
