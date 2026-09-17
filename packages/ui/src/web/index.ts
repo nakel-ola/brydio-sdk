@@ -8,6 +8,7 @@
 // The drawings go first: an element's styles are fixed when its class is made.
 import './draw/basics.ts';
 import './draw/layout.ts';
+import './draw/controls.ts';
 import { defineCatalogue } from './define.ts';
 
 export { BryElement } from './base.ts';

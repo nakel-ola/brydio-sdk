@@ -258,6 +258,94 @@ describe('the layout drawings (A6-F06-S01)', () => {
   });
 });
 
+describe('the controls (A6-F06-S01)', () => {
+  const events: { name: string; detail: unknown }[] = [];
+  const heard = new Set<string>();
+  const listen = (...names: string[]) => {
+    events.length = 0;
+    for (const name of names) {
+      if (heard.has(name)) continue;
+      heard.add(name);
+      document.body.addEventListener(name, event => events.push({ name, detail: (event as CustomEvent).detail }));
+    }
+  };
+
+  test('an input says change as the person types and submit on Enter, and keeps typing until the app sends a new value', async () => {
+    await page(`<bry-input label="Title" value="Draft" max-length="80" required></bry-input>`);
+    listen('change', 'submit');
+
+    const host = document.querySelector('bry-input') as HTMLElement & { value: string; requestUpdate(): void; updateComplete: Promise<unknown> };
+    const input = shadowOf('bry-input').querySelector('input')!;
+
+    expect([input.value, input.getAttribute('aria-label'), input.maxLength, input.required]).toEqual(['Draft', 'Title', 80, true]);
+
+    input.value = 'Renew the domain';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(events).toEqual([
+      { name: 'change', detail: { value: 'Renew the domain' } },
+      { name: 'submit', detail: { value: 'Renew the domain' } },
+    ]);
+
+    // A redraw for any other reason keeps what was typed.
+    host.requestUpdate();
+    await host.updateComplete;
+    expect(input.value).toBe('Renew the domain');
+
+    // The app saves and clears the field.
+    host.value = '';
+    await host.updateComplete;
+    expect(input.value).toBe('');
+  });
+
+  test('a field shows its error under it and points the control at it', async () => {
+    await page(`<bry-textarea label="Notes" error="Too long"></bry-textarea>`);
+
+    const root = shadowOf('bry-textarea');
+    const textarea = root.querySelector('textarea')!;
+
+    expect(textarea.getAttribute('aria-invalid')).toBe('true');
+    expect(root.getElementById(textarea.getAttribute('aria-describedby')!)!.textContent).toBe('Too long');
+  });
+
+  test('a control inside a bry-label is named by it', async () => {
+    await page(`<bry-label text="Assignee"><bry-input></bry-input></bry-label>`);
+
+    expect(shadowOf('bry-input').querySelector('input')!.getAttribute('aria-label')).toBe('Assignee');
+  });
+
+  test('a checkbox says change with checked, and its label ticks it', async () => {
+    await page(`<bry-checkbox label="Done"></bry-checkbox>`);
+    listen('change');
+
+    const root = shadowOf('bry-checkbox');
+    const box = root.querySelector('input')!;
+
+    expect(root.querySelector('label')!.getAttribute('for')).toBe(box.id);
+    box.click();
+    expect(box.checked).toBe(true);
+    expect(events).toEqual([{ name: 'change', detail: { checked: true } }]);
+  });
+
+  test('a switch is a switch a screen reader can name, flips on press, and holds still disabled', async () => {
+    await page(`<bry-switch id="on" label="Notify me" checked></bry-switch><bry-switch id="off" label="Locked" disabled></bry-switch>`);
+    listen('change');
+
+    const root = shadowOf('#on');
+    const control = root.querySelector('[role="switch"]') as HTMLButtonElement;
+
+    expect(root.getElementById(control.getAttribute('aria-labelledby')!)!.textContent).toBe('Notify me');
+    expect(control.getAttribute('aria-checked')).toBe('true');
+    control.click();
+    await (document.querySelector('#on') as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect(control.getAttribute('aria-checked')).toBe('false');
+    expect(events).toEqual([{ name: 'change', detail: { checked: false } }]);
+
+    (shadowOf('#off').querySelector('[role="switch"]') as HTMLButtonElement).click();
+    expect(events).toHaveLength(1);
+  });
+});
+
 describe('the token stylesheet (A6-F05-S01, A6-F06-S01)', () => {
   const brydio = join(import.meta.dir, '../../../../brydio/packages/ui/src/styles/tokens.css');
 
