@@ -904,6 +904,3256 @@
       "create",
       "delete",
       "update"
-    ]
+    ],
+    "tree-store-replay": {
+      "log": [
+        {
+          "method": "tree/mount",
+          "params": {
+            "root": "root",
+            "nodes": [
+              {
+                "id": "root",
+                "type": "bry-stack",
+                "children": [
+                  "n465",
+                  "n461"
+                ]
+              },
+              {
+                "id": "n465",
+                "type": "#text",
+                "text": "words 98"
+              },
+              {
+                "id": "n461",
+                "type": "bry-stack",
+                "props": {
+                  "gap": "4"
+                },
+                "children": [
+                  "n464",
+                  "n466",
+                  "n463"
+                ]
+              },
+              {
+                "id": "n464",
+                "type": "bry-button",
+                "props": {
+                  "label": "Press"
+                },
+                "children": []
+              },
+              {
+                "id": "n466",
+                "type": "bry-button",
+                "props": {
+                  "label": "Press"
+                },
+                "children": []
+              },
+              {
+                "id": "n463",
+                "type": "bry-card",
+                "props": {
+                  "title": "Card 31"
+                },
+                "children": []
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n463",
+                "index": 0,
+                "node": {
+                  "id": "n468",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 95"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n468",
+                "index": 0,
+                "node": {
+                  "id": "n467",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "root",
+                "index": 1,
+                "node": {
+                  "id": "n469",
+                  "type": "#text",
+                  "text": "words 87"
+                }
+              },
+              {
+                "op": "move",
+                "id": "n469",
+                "parent": "n468",
+                "index": 0
+              },
+              {
+                "op": "insert",
+                "parent": "root",
+                "index": 2,
+                "node": {
+                  "id": "n470",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "1"
+                  }
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n467"
+              },
+              {
+                "op": "insert",
+                "parent": "n461",
+                "index": 1,
+                "node": {
+                  "id": "n471",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "3"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n470",
+                "index": 0,
+                "node": {
+                  "id": "n472",
+                  "type": "bry-button",
+                  "props": {
+                    "label": "Press"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n471",
+                "index": 0,
+                "node": {
+                  "id": "n473",
+                  "type": "#text",
+                  "text": "words 61"
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n473"
+              },
+              {
+                "op": "insert",
+                "parent": "n461",
+                "index": 2,
+                "node": {
+                  "id": "n474",
+                  "type": "#text",
+                  "text": "words 59"
+                }
+              },
+              {
+                "op": "props",
+                "id": "n463",
+                "props": {
+                  "title": "Renamed 18"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n469"
+              },
+              {
+                "op": "props",
+                "id": "n470",
+                "props": {
+                  "gap": null
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n468",
+                "index": 0,
+                "node": {
+                  "id": "n475",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 13"
+                  }
+                }
+              },
+              {
+                "op": "props",
+                "id": "n466",
+                "props": {
+                  "disabled": false
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n472"
+              },
+              {
+                "op": "insert",
+                "parent": "n463",
+                "index": 0,
+                "node": {
+                  "id": "n476",
+                  "type": "bry-button",
+                  "props": {
+                    "label": "Press"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n470",
+                "index": 0,
+                "node": {
+                  "id": "n477",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "3"
+                  }
+                }
+              },
+              {
+                "op": "props",
+                "id": "n463",
+                "props": {
+                  "title": null
+                }
+              },
+              {
+                "op": "text",
+                "id": "n465",
+                "text": "changed 34"
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n475"
+              },
+              {
+                "op": "insert",
+                "parent": "n463",
+                "index": 0,
+                "node": {
+                  "id": "n478",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 44"
+                  }
+                }
+              },
+              {
+                "op": "move",
+                "id": "n464",
+                "parent": "n477",
+                "index": 0
+              },
+              {
+                "op": "insert",
+                "parent": "n470",
+                "index": 0,
+                "node": {
+                  "id": "n479",
+                  "type": "bry-button",
+                  "props": {
+                    "label": "Press"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "move",
+                "id": "n466",
+                "parent": "n471",
+                "index": 0
+              },
+              {
+                "op": "insert",
+                "parent": "n471",
+                "index": 1,
+                "node": {
+                  "id": "n480",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 37"
+                  }
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n480"
+              },
+              {
+                "op": "props",
+                "id": "n470",
+                "props": {
+                  "gap": "4"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "props",
+                "id": "n461",
+                "props": {
+                  "gap": "5"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n461",
+                "index": 3,
+                "node": {
+                  "id": "n481",
+                  "type": "#text",
+                  "text": "changed 45"
+                }
+              },
+              {
+                "op": "props",
+                "id": "n478",
+                "props": {
+                  "tone": "danger"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "props",
+                "id": "n464",
+                "props": {
+                  "disabled": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "move",
+                "id": "n479",
+                "parent": "n470",
+                "index": 1
+              },
+              {
+                "op": "insert",
+                "parent": "n477",
+                "index": 1,
+                "node": {
+                  "id": "n482",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "2"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "root",
+                "index": 3,
+                "node": {
+                  "id": "n484",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 61"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n484",
+                "index": 0,
+                "node": {
+                  "id": "n483",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n471",
+                "index": 0,
+                "node": {
+                  "id": "n485",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "1"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n470",
+                "index": 0,
+                "node": {
+                  "id": "n486",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "2"
+                  }
+                }
+              },
+              {
+                "op": "move",
+                "id": "n479",
+                "parent": "n471",
+                "index": 2
+              },
+              {
+                "op": "props",
+                "id": "n477",
+                "props": {
+                  "gap": null
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n461",
+                "index": 1,
+                "node": {
+                  "id": "n487",
+                  "type": "#text",
+                  "text": "words 71"
+                }
+              },
+              {
+                "op": "move",
+                "id": "n477",
+                "parent": "n461",
+                "index": 1
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n484"
+              },
+              {
+                "op": "remove",
+                "id": "n471"
+              },
+              {
+                "op": "remove",
+                "id": "n470"
+              },
+              {
+                "op": "remove",
+                "id": "n478"
+              },
+              {
+                "op": "text",
+                "id": "n474",
+                "text": "changed 61"
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n463"
+              },
+              {
+                "op": "insert",
+                "parent": "root",
+                "index": 1,
+                "node": {
+                  "id": "n488",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "2"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "move",
+                "id": "n477",
+                "parent": "n488",
+                "index": 0
+              },
+              {
+                "op": "props",
+                "id": "n477",
+                "props": {
+                  "gap": "4"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "move",
+                "id": "n474",
+                "parent": "n482",
+                "index": 0
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "move",
+                "id": "n474",
+                "parent": "n488",
+                "index": 0
+              },
+              {
+                "op": "insert",
+                "parent": "n477",
+                "index": 1,
+                "node": {
+                  "id": "n489",
+                  "type": "bry-button",
+                  "props": {
+                    "label": "Press"
+                  }
+                }
+              },
+              {
+                "op": "text",
+                "id": "n474",
+                "text": "changed 73"
+              },
+              {
+                "op": "text",
+                "id": "n465",
+                "text": "changed 75"
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n474"
+              },
+              {
+                "op": "insert",
+                "parent": "n461",
+                "index": 2,
+                "node": {
+                  "id": "n490",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "5"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n488",
+                "index": 0,
+                "node": {
+                  "id": "n491",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "3"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n461",
+                "index": 3,
+                "node": {
+                  "id": "n492",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "3"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n491",
+                "index": 0,
+                "node": {
+                  "id": "n494",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 13"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n494",
+                "index": 0,
+                "node": {
+                  "id": "n493",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              },
+              {
+                "op": "move",
+                "id": "n465",
+                "parent": "n482",
+                "index": 0
+              },
+              {
+                "op": "text",
+                "id": "n487",
+                "text": "changed 78"
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n482",
+                "index": 1,
+                "node": {
+                  "id": "n496",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 48"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n496",
+                "index": 0,
+                "node": {
+                  "id": "n495",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "move",
+                "id": "n495",
+                "parent": "n490",
+                "index": 0
+              },
+              {
+                "op": "move",
+                "id": "n495",
+                "parent": "n477",
+                "index": 0
+              },
+              {
+                "op": "move",
+                "id": "n491",
+                "parent": "root",
+                "index": 2
+              },
+              {
+                "op": "remove",
+                "id": "n491"
+              },
+              {
+                "op": "insert",
+                "parent": "n496",
+                "index": 0,
+                "node": {
+                  "id": "n497",
+                  "type": "bry-button",
+                  "props": {
+                    "label": "Press"
+                  }
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n481"
+              },
+              {
+                "op": "move",
+                "id": "n495",
+                "parent": "n461",
+                "index": 1
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n477"
+              },
+              {
+                "op": "insert",
+                "parent": "n490",
+                "index": 0,
+                "node": {
+                  "id": "n498",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "2"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n492",
+                "index": 0,
+                "node": {
+                  "id": "n499",
+                  "type": "bry-button",
+                  "props": {
+                    "label": "Press"
+                  }
+                }
+              },
+              {
+                "op": "move",
+                "id": "n490",
+                "parent": "root",
+                "index": 2
+              },
+              {
+                "op": "insert",
+                "parent": "n492",
+                "index": 1,
+                "node": {
+                  "id": "n501",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 80"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n501",
+                "index": 0,
+                "node": {
+                  "id": "n500",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n499"
+              },
+              {
+                "op": "props",
+                "id": "n461",
+                "props": {
+                  "gap": "5"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n461"
+              },
+              {
+                "op": "insert",
+                "parent": "n488",
+                "index": 0,
+                "node": {
+                  "id": "n503",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 85"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n503",
+                "index": 0,
+                "node": {
+                  "id": "n502",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n490",
+                "index": 1,
+                "node": {
+                  "id": "n505",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 20"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n505",
+                "index": 0,
+                "node": {
+                  "id": "n504",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              },
+              {
+                "op": "props",
+                "id": "n502",
+                "props": {
+                  "tone": "danger"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "props",
+                "id": "n502",
+                "props": {
+                  "tone": "muted"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "root",
+                "index": 1,
+                "node": {
+                  "id": "n506",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 7"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n503",
+                "index": 1,
+                "node": {
+                  "id": "n507",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "2"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n507",
+                "index": 0,
+                "node": {
+                  "id": "n508",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "3"
+                  }
+                }
+              },
+              {
+                "op": "props",
+                "id": "n506",
+                "props": {
+                  "tone": "muted"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n505"
+              },
+              {
+                "op": "props",
+                "id": "n508",
+                "props": {
+                  "gap": "4"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n507",
+                "index": 1,
+                "node": {
+                  "id": "n509",
+                  "type": "#text",
+                  "text": "words 90"
+                }
+              },
+              {
+                "op": "move",
+                "id": "n509",
+                "parent": "root",
+                "index": 0
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n508",
+                "index": 0,
+                "node": {
+                  "id": "n511",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 6"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n511",
+                "index": 0,
+                "node": {
+                  "id": "n510",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n507",
+                "index": 0,
+                "node": {
+                  "id": "n513",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 0"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n513",
+                "index": 0,
+                "node": {
+                  "id": "n512",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "root",
+                "index": 3,
+                "node": {
+                  "id": "n514",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "2"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n490",
+                "index": 0,
+                "node": {
+                  "id": "n516",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 80"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n516",
+                "index": 0,
+                "node": {
+                  "id": "n515",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "move",
+                "id": "n513",
+                "parent": "n498",
+                "index": 0
+              },
+              {
+                "op": "insert",
+                "parent": "root",
+                "index": 5,
+                "node": {
+                  "id": "n517",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 6"
+                  }
+                }
+              },
+              {
+                "op": "props",
+                "id": "n515",
+                "props": {
+                  "tone": "muted"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "text",
+                "id": "n509",
+                "text": "changed 130"
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n488",
+                "index": 1,
+                "node": {
+                  "id": "n518",
+                  "type": "#text",
+                  "text": "words 30"
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n502"
+              },
+              {
+                "op": "move",
+                "id": "n517",
+                "parent": "n490",
+                "index": 2
+              },
+              {
+                "op": "props",
+                "id": "n511",
+                "props": {
+                  "title": null
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n488",
+                "index": 1,
+                "node": {
+                  "id": "n519",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 15"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n490",
+                "index": 2,
+                "node": {
+                  "id": "n520",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 59"
+                  }
+                }
+              },
+              {
+                "op": "text",
+                "id": "n509",
+                "text": "changed 138"
+              },
+              {
+                "op": "props",
+                "id": "n498",
+                "props": {
+                  "gap": "5"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n511",
+                "index": 1,
+                "node": {
+                  "id": "n521",
+                  "type": "bry-button",
+                  "props": {
+                    "label": "Press"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n490",
+                "index": 1,
+                "node": {
+                  "id": "n523",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 26"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n523",
+                "index": 0,
+                "node": {
+                  "id": "n522",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n516",
+                "index": 1,
+                "node": {
+                  "id": "n524",
+                  "type": "bry-button",
+                  "props": {
+                    "label": "Press"
+                  }
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n513"
+              },
+              {
+                "op": "insert",
+                "parent": "n511",
+                "index": 0,
+                "node": {
+                  "id": "n525",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "3"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n514",
+                "index": 0,
+                "node": {
+                  "id": "n526",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "3"
+                  }
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n517"
+              },
+              {
+                "op": "insert",
+                "parent": "n526",
+                "index": 0,
+                "node": {
+                  "id": "n527",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "1"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "props",
+                "id": "n525",
+                "props": {
+                  "gap": null
+                }
+              },
+              {
+                "op": "props",
+                "id": "n520",
+                "props": {
+                  "tone": "muted"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n525",
+                "index": 0,
+                "node": {
+                  "id": "n528",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 27"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n498",
+                "index": 0,
+                "node": {
+                  "id": "n529",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "3"
+                  }
+                }
+              },
+              {
+                "op": "props",
+                "id": "n498",
+                "props": {
+                  "gap": null
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n515"
+              },
+              {
+                "op": "insert",
+                "parent": "n490",
+                "index": 4,
+                "node": {
+                  "id": "n530",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 58"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n523",
+                "index": 1,
+                "node": {
+                  "id": "n531",
+                  "type": "#text",
+                  "text": "words 22"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n529",
+                "index": 0,
+                "node": {
+                  "id": "n532",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 83"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n518"
+              },
+              {
+                "op": "insert",
+                "parent": "n508",
+                "index": 1,
+                "node": {
+                  "id": "n534",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 20"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n534",
+                "index": 0,
+                "node": {
+                  "id": "n533",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n498"
+              },
+              {
+                "op": "insert",
+                "parent": "root",
+                "index": 5,
+                "node": {
+                  "id": "n536",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 3"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n536",
+                "index": 0,
+                "node": {
+                  "id": "n535",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n507"
+              },
+              {
+                "op": "insert",
+                "parent": "n514",
+                "index": 0,
+                "node": {
+                  "id": "n537",
+                  "type": "bry-button",
+                  "props": {
+                    "label": "Press"
+                  }
+                }
+              },
+              {
+                "op": "props",
+                "id": "n516",
+                "props": {
+                  "title": "Renamed 172"
+                }
+              },
+              {
+                "op": "props",
+                "id": "n535",
+                "props": {
+                  "tone": "muted"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n488",
+                "index": 0,
+                "node": {
+                  "id": "n539",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 53"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n539",
+                "index": 0,
+                "node": {
+                  "id": "n538",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n488",
+                "index": 3,
+                "node": {
+                  "id": "n541",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 19"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n541",
+                "index": 0,
+                "node": {
+                  "id": "n540",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              },
+              {
+                "op": "props",
+                "id": "n514",
+                "props": {
+                  "gap": null
+                }
+              },
+              {
+                "op": "props",
+                "id": "n523",
+                "props": {
+                  "title": null
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n503"
+              },
+              {
+                "op": "remove",
+                "id": "n527"
+              },
+              {
+                "op": "insert",
+                "parent": "n536",
+                "index": 0,
+                "node": {
+                  "id": "n542",
+                  "type": "#text",
+                  "text": "words 73"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "move",
+                "id": "n522",
+                "parent": "n526",
+                "index": 0
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n539",
+                "index": 0,
+                "node": {
+                  "id": "n544",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Renamed 189"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n544",
+                "index": 0,
+                "node": {
+                  "id": "n543",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n488",
+                "index": 2,
+                "node": {
+                  "id": "n545",
+                  "type": "#text",
+                  "text": "words 55"
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n541",
+                "index": 0,
+                "node": {
+                  "id": "n547",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 62"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n547",
+                "index": 0,
+                "node": {
+                  "id": "n546",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n526",
+                "index": 1,
+                "node": {
+                  "id": "n549",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 74"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n549",
+                "index": 0,
+                "node": {
+                  "id": "n548",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              },
+              {
+                "op": "props",
+                "id": "n506",
+                "props": {
+                  "tone": "danger"
+                }
+              },
+              {
+                "op": "props",
+                "id": "n519",
+                "props": {
+                  "tone": "danger"
+                }
+              },
+              {
+                "op": "props",
+                "id": "n524",
+                "props": {
+                  "disabled": false
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n488",
+                "index": 1,
+                "node": {
+                  "id": "n550",
+                  "type": "#text",
+                  "text": "words 52"
+                }
+              },
+              {
+                "op": "props",
+                "id": "n538",
+                "props": {
+                  "tone": "danger"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n490",
+                "index": 0,
+                "node": {
+                  "id": "n552",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 46"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n552",
+                "index": 0,
+                "node": {
+                  "id": "n551",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              },
+              {
+                "op": "props",
+                "id": "n539",
+                "props": {
+                  "title": "Renamed 199"
+                }
+              },
+              {
+                "op": "props",
+                "id": "n541",
+                "props": {
+                  "title": "Renamed 198"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "props",
+                "id": "n490",
+                "props": {
+                  "gap": "4"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n490"
+              },
+              {
+                "op": "remove",
+                "id": "n535"
+              },
+              {
+                "op": "move",
+                "id": "n544",
+                "parent": "root",
+                "index": 2
+              },
+              {
+                "op": "insert",
+                "parent": "n536",
+                "index": 0,
+                "node": {
+                  "id": "n553",
+                  "type": "#text",
+                  "text": "words 98"
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n488"
+              },
+              {
+                "op": "remove",
+                "id": "n544"
+              },
+              {
+                "op": "insert",
+                "parent": "root",
+                "index": 3,
+                "node": {
+                  "id": "n554",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "2"
+                  }
+                }
+              },
+              {
+                "op": "text",
+                "id": "n509",
+                "text": "changed 210"
+              },
+              {
+                "op": "text",
+                "id": "n542",
+                "text": "changed 211"
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n549",
+                "index": 1,
+                "node": {
+                  "id": "n556",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 52"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n556",
+                "index": 0,
+                "node": {
+                  "id": "n555",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "move",
+                "id": "n542",
+                "parent": "n526",
+                "index": 1
+              },
+              {
+                "op": "insert",
+                "parent": "n556",
+                "index": 1,
+                "node": {
+                  "id": "n557",
+                  "type": "#text",
+                  "text": "words 11"
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n506"
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n549",
+                "index": 0,
+                "node": {
+                  "id": "n559",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 19"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n559",
+                "index": 0,
+                "node": {
+                  "id": "n558",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "root",
+                "index": 3,
+                "node": {
+                  "id": "n560",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 83"
+                  }
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n542"
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n556",
+                "index": 1,
+                "node": {
+                  "id": "n561",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 6"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n559",
+                "index": 0,
+                "node": {
+                  "id": "n562",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "2"
+                  }
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n561"
+              },
+              {
+                "op": "props",
+                "id": "n522",
+                "props": {
+                  "tone": "muted"
+                }
+              },
+              {
+                "op": "props",
+                "id": "n560",
+                "props": {
+                  "tone": "danger"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "root",
+                "index": 0,
+                "node": {
+                  "id": "n563",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 41"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n526",
+                "index": 2,
+                "node": {
+                  "id": "n564",
+                  "type": "#text",
+                  "text": "words 17"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n556",
+                "index": 2,
+                "node": {
+                  "id": "n565",
+                  "type": "bry-button",
+                  "props": {
+                    "label": "Press"
+                  }
+                }
+              },
+              {
+                "op": "text",
+                "id": "n564",
+                "text": "changed 229"
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n536",
+                "index": 0,
+                "node": {
+                  "id": "n566",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "3"
+                  }
+                }
+              },
+              {
+                "op": "move",
+                "id": "n563",
+                "parent": "n514",
+                "index": 0
+              },
+              {
+                "op": "move",
+                "id": "n553",
+                "parent": "n562",
+                "index": 0
+              },
+              {
+                "op": "props",
+                "id": "n559",
+                "props": {
+                  "title": null
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n509"
+              },
+              {
+                "op": "insert",
+                "parent": "n559",
+                "index": 0,
+                "node": {
+                  "id": "n567",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 46"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n536",
+                "index": 0,
+                "node": {
+                  "id": "n568",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 87"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n526",
+                "index": 1,
+                "node": {
+                  "id": "n569",
+                  "type": "bry-button",
+                  "props": {
+                    "label": "Press"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n565"
+              },
+              {
+                "op": "move",
+                "id": "n560",
+                "parent": "n562",
+                "index": 0
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n549",
+                "index": 2,
+                "node": {
+                  "id": "n570",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 83"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "props",
+                "id": "n537",
+                "props": {
+                  "disabled": false
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n559",
+                "index": 3,
+                "node": {
+                  "id": "n571",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 24"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n549",
+                "index": 3,
+                "node": {
+                  "id": "n572",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "3"
+                  }
+                }
+              },
+              {
+                "op": "move",
+                "id": "n559",
+                "parent": "n514",
+                "index": 2
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n536",
+                "index": 1,
+                "node": {
+                  "id": "n574",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 97"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n574",
+                "index": 0,
+                "node": {
+                  "id": "n573",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n562",
+                "index": 1,
+                "node": {
+                  "id": "n576",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 13"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n576",
+                "index": 0,
+                "node": {
+                  "id": "n575",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n574",
+                "index": 0,
+                "node": {
+                  "id": "n577",
+                  "type": "#text",
+                  "text": "words 55"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "move",
+                "id": "n572",
+                "parent": "n514",
+                "index": 1
+              },
+              {
+                "op": "remove",
+                "id": "n526"
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n574",
+                "index": 2,
+                "node": {
+                  "id": "n578",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "1"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "root",
+                "index": 3,
+                "node": {
+                  "id": "n579",
+                  "type": "#text",
+                  "text": "words 59"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n571"
+              },
+              {
+                "op": "move",
+                "id": "n562",
+                "parent": "n574",
+                "index": 1
+              },
+              {
+                "op": "move",
+                "id": "n566",
+                "parent": "n572",
+                "index": 0
+              },
+              {
+                "op": "insert",
+                "parent": "n559",
+                "index": 0,
+                "node": {
+                  "id": "n581",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 90"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n581",
+                "index": 0,
+                "node": {
+                  "id": "n580",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside",
+                    "tone": "muted"
+                  }
+                }
+              },
+              {
+                "op": "props",
+                "id": "n559",
+                "props": {
+                  "title": "Renamed 257"
+                }
+              },
+              {
+                "op": "props",
+                "id": "n568",
+                "props": {
+                  "tone": "danger"
+                }
+              },
+              {
+                "op": "text",
+                "id": "n553",
+                "text": "changed 263"
+              },
+              {
+                "op": "text",
+                "id": "n579",
+                "text": "changed 264"
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n536",
+                "index": 1,
+                "node": {
+                  "id": "n582",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "2"
+                  }
+                }
+              },
+              {
+                "op": "move",
+                "id": "n578",
+                "parent": "n554",
+                "index": 0
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n574",
+                "index": 2,
+                "node": {
+                  "id": "n583",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 85"
+                  }
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n566"
+              },
+              {
+                "op": "insert",
+                "parent": "n572",
+                "index": 0,
+                "node": {
+                  "id": "n584",
+                  "type": "bry-button",
+                  "props": {
+                    "label": "Press"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "root",
+                "index": 2,
+                "node": {
+                  "id": "n585",
+                  "type": "#text",
+                  "text": "words 49"
+                }
+              },
+              {
+                "op": "props",
+                "id": "n562",
+                "props": {
+                  "gap": "4"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "remove",
+                "id": "n560"
+              },
+              {
+                "op": "move",
+                "id": "n563",
+                "parent": "n572",
+                "index": 1
+              },
+              {
+                "op": "move",
+                "id": "n584",
+                "parent": "n578",
+                "index": 0
+              },
+              {
+                "op": "insert",
+                "parent": "n578",
+                "index": 0,
+                "node": {
+                  "id": "n586",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "3"
+                  }
+                }
+              },
+              {
+                "op": "props",
+                "id": "n578",
+                "props": {
+                  "gap": "4"
+                }
+              },
+              {
+                "op": "props",
+                "id": "n536",
+                "props": {
+                  "title": "Renamed 275"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "move",
+                "id": "n573",
+                "parent": "n578",
+                "index": 0
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n578",
+                "index": 3,
+                "node": {
+                  "id": "n587",
+                  "type": "#text",
+                  "text": "words 67"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "move",
+                "id": "n583",
+                "parent": "n514",
+                "index": 2
+              },
+              {
+                "op": "insert",
+                "parent": "n574",
+                "index": 1,
+                "node": {
+                  "id": "n588",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 90"
+                  }
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n573"
+              },
+              {
+                "op": "insert",
+                "parent": "n582",
+                "index": 0,
+                "node": {
+                  "id": "n590",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 4"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n590",
+                "index": 0,
+                "node": {
+                  "id": "n589",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside",
+                    "tone": "muted"
+                  }
+                }
+              },
+              {
+                "op": "props",
+                "id": "n576",
+                "props": {
+                  "title": "Renamed 289"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n582",
+                "index": 1,
+                "node": {
+                  "id": "n591",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "1"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n591",
+                "index": 0,
+                "node": {
+                  "id": "n592",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "3"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n578",
+                "index": 3,
+                "node": {
+                  "id": "n593",
+                  "type": "bry-button",
+                  "props": {
+                    "label": "Press"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n574",
+                "index": 2,
+                "node": {
+                  "id": "n594",
+                  "type": "bry-stack",
+                  "props": {
+                    "gap": "3"
+                  }
+                }
+              },
+              {
+                "op": "remove",
+                "id": "n567"
+              },
+              {
+                "op": "text",
+                "id": "n585",
+                "text": "changed 295"
+              }
+            ]
+          }
+        },
+        {
+          "method": "tree/patch",
+          "params": {
+            "ops": [
+              {
+                "op": "insert",
+                "parent": "n576",
+                "index": 0,
+                "node": {
+                  "id": "n595",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "Text 85"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n581",
+                "index": 0,
+                "node": {
+                  "id": "n596",
+                  "type": "bry-button",
+                  "props": {
+                    "label": "Press"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n574",
+                "index": 4,
+                "node": {
+                  "id": "n598",
+                  "type": "bry-card",
+                  "props": {
+                    "title": "Card 7"
+                  }
+                }
+              },
+              {
+                "op": "insert",
+                "parent": "n598",
+                "index": 0,
+                "node": {
+                  "id": "n597",
+                  "type": "bry-text",
+                  "props": {
+                    "text": "inside"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "refused": [],
+      "shape": {
+        "id": "root",
+        "type": "bry-stack",
+        "props": {},
+        "text": "",
+        "children": [
+          {
+            "id": "n514",
+            "type": "bry-stack",
+            "props": {},
+            "text": "",
+            "children": [
+              {
+                "id": "n572",
+                "type": "bry-stack",
+                "props": {
+                  "gap": "3"
+                },
+                "text": "",
+                "children": [
+                  {
+                    "id": "n563",
+                    "type": "bry-text",
+                    "props": {
+                      "text": "Text 41"
+                    },
+                    "text": "",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "n537",
+                "type": "bry-button",
+                "props": {
+                  "label": "Press",
+                  "disabled": false
+                },
+                "text": "",
+                "children": []
+              },
+              {
+                "id": "n583",
+                "type": "bry-text",
+                "props": {
+                  "text": "Text 85"
+                },
+                "text": "",
+                "children": []
+              },
+              {
+                "id": "n559",
+                "type": "bry-card",
+                "props": {
+                  "title": "Renamed 257"
+                },
+                "text": "",
+                "children": [
+                  {
+                    "id": "n581",
+                    "type": "bry-card",
+                    "props": {
+                      "title": "Card 90"
+                    },
+                    "text": "",
+                    "children": [
+                      {
+                        "id": "n596",
+                        "type": "bry-button",
+                        "props": {
+                          "label": "Press"
+                        },
+                        "text": "",
+                        "children": []
+                      },
+                      {
+                        "id": "n580",
+                        "type": "bry-text",
+                        "props": {
+                          "text": "inside",
+                          "tone": "muted"
+                        },
+                        "text": "",
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "n558",
+                    "type": "bry-text",
+                    "props": {
+                      "text": "inside"
+                    },
+                    "text": "",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "n554",
+            "type": "bry-stack",
+            "props": {
+              "gap": "2"
+            },
+            "text": "",
+            "children": [
+              {
+                "id": "n578",
+                "type": "bry-stack",
+                "props": {
+                  "gap": "4"
+                },
+                "text": "",
+                "children": [
+                  {
+                    "id": "n586",
+                    "type": "bry-stack",
+                    "props": {
+                      "gap": "3"
+                    },
+                    "text": "",
+                    "children": []
+                  },
+                  {
+                    "id": "n584",
+                    "type": "bry-button",
+                    "props": {
+                      "label": "Press"
+                    },
+                    "text": "",
+                    "children": []
+                  },
+                  {
+                    "id": "n587",
+                    "type": "#text",
+                    "props": {},
+                    "text": "words 67",
+                    "children": []
+                  },
+                  {
+                    "id": "n593",
+                    "type": "bry-button",
+                    "props": {
+                      "label": "Press"
+                    },
+                    "text": "",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "n585",
+            "type": "#text",
+            "props": {},
+            "text": "changed 295",
+            "children": []
+          },
+          {
+            "id": "n536",
+            "type": "bry-card",
+            "props": {
+              "title": "Renamed 275"
+            },
+            "text": "",
+            "children": [
+              {
+                "id": "n568",
+                "type": "bry-text",
+                "props": {
+                  "text": "Text 87",
+                  "tone": "danger"
+                },
+                "text": "",
+                "children": []
+              },
+              {
+                "id": "n582",
+                "type": "bry-stack",
+                "props": {
+                  "gap": "2"
+                },
+                "text": "",
+                "children": [
+                  {
+                    "id": "n590",
+                    "type": "bry-card",
+                    "props": {
+                      "title": "Card 4"
+                    },
+                    "text": "",
+                    "children": [
+                      {
+                        "id": "n589",
+                        "type": "bry-text",
+                        "props": {
+                          "text": "inside",
+                          "tone": "muted"
+                        },
+                        "text": "",
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "n591",
+                    "type": "bry-stack",
+                    "props": {
+                      "gap": "1"
+                    },
+                    "text": "",
+                    "children": [
+                      {
+                        "id": "n592",
+                        "type": "bry-stack",
+                        "props": {
+                          "gap": "3"
+                        },
+                        "text": "",
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "n574",
+                "type": "bry-card",
+                "props": {
+                  "title": "Card 97"
+                },
+                "text": "",
+                "children": [
+                  {
+                    "id": "n577",
+                    "type": "#text",
+                    "props": {},
+                    "text": "words 55",
+                    "children": []
+                  },
+                  {
+                    "id": "n588",
+                    "type": "bry-text",
+                    "props": {
+                      "text": "Text 90"
+                    },
+                    "text": "",
+                    "children": []
+                  },
+                  {
+                    "id": "n594",
+                    "type": "bry-stack",
+                    "props": {
+                      "gap": "3"
+                    },
+                    "text": "",
+                    "children": []
+                  },
+                  {
+                    "id": "n562",
+                    "type": "bry-stack",
+                    "props": {
+                      "gap": "4"
+                    },
+                    "text": "",
+                    "children": [
+                      {
+                        "id": "n576",
+                        "type": "bry-card",
+                        "props": {
+                          "title": "Renamed 289"
+                        },
+                        "text": "",
+                        "children": [
+                          {
+                            "id": "n595",
+                            "type": "bry-text",
+                            "props": {
+                              "text": "Text 85"
+                            },
+                            "text": "",
+                            "children": []
+                          },
+                          {
+                            "id": "n575",
+                            "type": "bry-text",
+                            "props": {
+                              "text": "inside"
+                            },
+                            "text": "",
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "n553",
+                        "type": "#text",
+                        "props": {},
+                        "text": "changed 263",
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "n598",
+                    "type": "bry-card",
+                    "props": {
+                      "title": "Card 7"
+                    },
+                    "text": "",
+                    "children": [
+                      {
+                        "id": "n597",
+                        "type": "bry-text",
+                        "props": {
+                          "text": "inside"
+                        },
+                        "text": "",
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "n579",
+            "type": "#text",
+            "props": {},
+            "text": "changed 264",
+            "children": []
+          }
+        ]
+      }
+    },
+    "tree-store-source": "59a1f97141e066ad4fe5bc9c277b7610699151ba50440f09aa8b1ee01c23c789"
   }
 }

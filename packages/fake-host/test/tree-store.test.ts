@@ -1,13 +1,35 @@
 import { createRoot, Bridge, button, card, createText, stack, text, type Port, type RpcMessage, type RemoteElement, type RemoteNode } from '@brydio/app';
 import { describe, expect, test } from 'bun:test';
-import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
 import { TreeStore } from '../src/index.ts';
 
-const brydio = process.env.BRYDIO_DIR ?? join(import.meta.dir, '..', '..', '..', '..', 'brydio');
-const hostStore = join(brydio, 'packages/app/src/apps/tree/tree-store.ts');
-const hasHost = existsSync(hostStore);
+const HOST_STORE = 'packages/app/src/apps/tree/tree-store.ts';
+
+interface Store {
+  mount(root: unknown, nodes: unknown): { refused: unknown[] };
+  patch(ops: unknown): { refused: unknown[] };
+  root: string | null;
+  get(id: string): never;
+}
+
+/** What the runtime sends, one message after another. */
+type Log = { method: string; params: { root?: string; nodes?: unknown; ops?: unknown } }[];
+
+/** A store given every message in a log: what it refused, and the tree it ends with. */
+function replay(store: Store, log: Log) {
+  const refused: unknown[] = [];
+
+  for (const { method, params } of log) {
+    if (method === 'tree/mount') refused.push(...store.mount(params.root, params.nodes).refused);
+    if (method === 'tree/patch') refused.push(...store.patch(params.ops).refused);
+  }
+
+  return { refused, shape: shape(store) };
+}
 
 /** A tiny seeded random, so a failing run can be run again. */
 function random(seed: number) {
@@ -45,35 +67,43 @@ function runtimeShape(node: RemoteNode): unknown {
 }
 
 describe('the fake host’s receiver', () => {
-  test.skipIf(!hasHost)('is Brydio’s tree-store.ts, line for line apart from the catalogue import and the clock', () => {
-    const theirs = readFileSync(hostStore, 'utf8');
-    const ours = readFileSync(join(import.meta.dir, '..', 'src', 'tree-store.ts'), 'utf8');
+  test('is Brydio’s tree-store.ts, line for line apart from the catalogue import and the clock', async () => {
     const body = (source: string) => source.slice(source.indexOf('export class TreeStore'));
+    const digest = (text: string) => createHash('sha256').update(text).digest('hex');
+    const ours = readFileSync(join(import.meta.dir, '..', 'src', 'tree-store.ts'), 'utf8');
+    const theirs = await brydioAnswers('tree-store-source', [HOST_STORE], () => digest(body(readFileSync(inBrydio(HOST_STORE), 'utf8'))));
 
-    expect(body(ours).replace(/ = now\b/, ' = nextFrame').replace('(ELEMENTS[node.type] as { children: boolean }).children', 'ELEMENTS[node.type].children')).toBe(
-      body(theirs),
-    );
+    expect(digest(body(ours).replace(/ = now\b/, ' = nextFrame').replace('(ELEMENTS[node.type] as { children: boolean }).children', 'ELEMENTS[node.type].children'))).toBe(theirs);
   });
 
   test('applies what the runtime sends and ends with the runtime’s tree, over a thousand random changes', async () => {
-    const hosts: { name: string; store: { mount(root: unknown, nodes: unknown): { refused: unknown[] }; patch(ops: unknown): { refused: unknown[] }; root: string | null; get(id: string): never } }[] = [
-      { name: 'fake', store: new TreeStore() as never },
-    ];
+    const { log, runtime } = await randomChanges(1_000);
+    const fake = replay(new TreeStore() as never, log);
 
-    if (hasHost) {
-      const { TreeStore: HostTreeStore } = await import(hostStore);
+    expect(fake.refused).toEqual([]);
+    expect(fake.shape).toEqual(runtime);
+  });
 
-      hosts.push({ name: 'brydio', store: new HostTreeStore(() => {}) });
-    }
+  test('refuses and ends exactly as Brydio’s receiver does, for the same messages', async () => {
+    const brydios = await brydioAnswers('tree-store-replay', [HOST_STORE], async () => {
+      const { TreeStore: HostTreeStore } = await import(inBrydio(HOST_STORE));
+      const { log } = await randomChanges(300);
 
-    const refused: unknown[] = [];
+      return { log, ...replay(new HostTreeStore(() => {}), log) };
+    });
+    const fake = replay(new TreeStore() as never, brydios.log);
+
+    expect(JSON.parse(JSON.stringify(fake))).toEqual({ refused: brydios.refused, shape: brydios.shape });
+  });
+});
+
+/** A seeded run of random changes through the runtime: every tree message it sent, and its own tree at the end. */
+async function randomChanges(rounds: number): Promise<{ log: Log; runtime: unknown }> {
+    const log: Log = [];
     const port: Port = {
       post(message: RpcMessage) {
-        const params = message.params as { root: string; nodes: unknown; ops: unknown };
-
-        for (const { store } of hosts) {
-          if (message.method === 'tree/mount') refused.push(...store.mount(params.root, params.nodes).refused);
-          if (message.method === 'tree/patch') refused.push(...store.patch(params.ops).refused);
+        if (message.method === 'tree/mount' || message.method === 'tree/patch') {
+          log.push(JSON.parse(JSON.stringify({ method: message.method, params: message.params })));
         }
       },
       listen: () => () => {},
@@ -115,7 +145,7 @@ describe('the fake host’s receiver', () => {
 
     root.start();
 
-    for (let round = 0; round < 1_000; round++) {
+    for (let round = 0; round < rounds; round++) {
       const nodes = everyone();
       const action = next();
 
@@ -150,9 +180,5 @@ describe('the fake host’s receiver', () => {
 
     await settle();
 
-    expect(refused).toEqual([]);
-
-    for (const { store } of hosts) expect(shape(store)).toEqual(runtimeShape(root));
-    expect(hosts.length).toBe(hasHost ? 2 : 1);
-  });
-});
+    return { log, runtime: runtimeShape(root) };
+}
