@@ -117,7 +117,11 @@ describe('the editor plugin (A5-F03-S03)', () => {
   });
 
   test('ships built from the current source', async () => {
-    expect(readFileSync(join(cli, 'ts-plugin', 'plugin.cjs'), 'utf8')).toBe(await buildPlugin());
+    // The bundler names each source file in a comment, relative to wherever the build ran, so those lines differ
+    // between a laptop and CI without the code differing. Compare everything else.
+    const code = (text: string) => text.replace(/^\/\/ \S+\.tsx?$/gm, '');
+
+    expect(code(readFileSync(join(cli, 'ts-plugin', 'plugin.cjs'), 'utf8'))).toBe(code(await buildPlugin()));
     expect(JSON.parse(readFileSync(join(cli, 'package.json'), 'utf8')).exports['./ts-plugin']).toBe('./ts-plugin/index.cjs');
     // tsserver resolves a plugin the old Node way, without `exports`: a folder, its package.json's main, as CommonJS.
     expect(JSON.parse(readFileSync(join(cli, 'ts-plugin', 'package.json'), 'utf8'))).toEqual({ type: 'commonjs', main: 'index.cjs' });
