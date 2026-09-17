@@ -345,6 +345,37 @@ function sliceFirst(zip: Uint8Array): Uint8Array {
 }
 
 
+describe('the account is the publisher (A7-F05-S02)', () => {
+  test('sends nothing that names an account: the token is the only identity in the upload', async () => {
+    const root = tiny();
+    const built = await build(root);
+    const route = server(201, () => ({ created: true, appKey: 'tiny', version: '1.0.0', versionId: 'v', bundleHash: built.hash, publishedBy: 'user_1', publishedAt: 'now', files: [] }));
+
+    expect((await run(root, route)).code).toBe(0);
+    // The whole body, so a field naming an account cannot be added without this failing.
+    expect(Object.keys(route.sent[0]!.body)).toEqual(['archiveBase64']);
+    expect(route.sent[0]!.headers.get('authorization')).toBe('Bearer session-token');
+
+    for (const name of ['publishedBy', 'userId', 'accountId', 'publisherUserId', 'as']) {
+      expect(route.sent[0]!.body).not.toHaveProperty(name);
+    }
+  });
+
+  test('names which of your publishers a new app belongs to, and leaves who published it to the token', async () => {
+    const root = tiny();
+    const built = await build(root);
+    const route = server(201, () => ({ created: true, appKey: 'tiny', version: '1.0.0', versionId: 'v', bundleHash: built.hash, publishedBy: 'user_1', publisherId: 'pub_acme', publishedAt: 'now', files: [] }));
+    const lines: string[] = [];
+    const code = await publish(root, { apiUrl: 'http://brydio.test', token: 'session-token', screenshots: false, fetch: route.fetch, publisher: 'Acme Ltd', out: line => lines.push(line) });
+
+    expect(code).toBe(0);
+    expect(Object.keys(route.sent[0]!.body).sort()).toEqual(['archiveBase64', 'publisher']);
+    expect(route.sent[0]!.body.publisher).toBe('Acme Ltd');
+    // Who published it is what Brydio answered, not what was sent.
+    expect(lines.join('\n')).toContain('Publisher  user_1, now');
+  });
+});
+
 describe('signing a version at publish (A7-F05-S03)', () => {
   /** A fixed key, so what a test signs is the same every run. */
   const PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----

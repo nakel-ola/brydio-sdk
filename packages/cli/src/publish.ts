@@ -15,8 +15,11 @@ import { zipFiles } from './zip.ts';
  * The route is Hodler's `POST /api/v1/apps/publish` (`apps/api/src/apps/
  * publishing/app-publish.controller.ts`): the built folder as a zip, base64,
  * in `{ archiveBase64 }`, signed in as the person publishing. The server runs
- * every check again whatever this command did, and takes the publisher from
- * the sign-in, never from the upload. What it answers:
+ * every check again whatever this command did, and takes the publishing
+ * account from the sign-in, never from the upload: nothing this command
+ * sends names an account (A7-F05-S02). `--publisher` picks which of that
+ * account's publishers a new app belongs to, and Brydio refuses one the
+ * account is not in. What it answers:
  *
  * - 201, a new version: `{ created: true, appKey, version, versionId,
  *   bundleHash, publishedBy, publishedAt, files }`, `files` being paths on
@@ -74,6 +77,13 @@ export interface PublishOptions {
    * administrator turns `APPS_REQUIRE_SIGNED_PUBLISH` on.
    */
   key?: string;
+  /**
+   * Which of your publishers a brand new app belongs to (A9-F01-S01), when
+   * the account is in more than one. An app already published is published
+   * by its own publisher whatever this says, and a publisher the account is
+   * not in is refused by Brydio.
+   */
+  publisher?: string;
 }
 
 /** A screen's picture: the tree Brydio draws, at a width and in a theme. */
@@ -295,7 +305,12 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
     response = await request(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...headers },
-      body: JSON.stringify({ archiveBase64: Buffer.from(archive).toString('base64'), ...(screenshots.length ? { screenshots } : {}), ...(signature ? { signature } : {}) }),
+      body: JSON.stringify({
+        archiveBase64: Buffer.from(archive).toString('base64'),
+        ...(screenshots.length ? { screenshots } : {}),
+        ...(signature ? { signature } : {}),
+        ...(options.publisher ? { publisher: options.publisher } : {}),
+      }),
     });
   } catch (error) {
     out(`Could not reach ${apiUrl}: ${error instanceof Error ? error.message : String(error)}`);

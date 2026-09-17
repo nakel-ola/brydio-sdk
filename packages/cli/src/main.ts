@@ -24,6 +24,8 @@ const HELP = `brydio — build and check a Brydio app
                              --api <url>    the API's address, instead of BRYDIO_API_URL
                              --key <file>   sign this version with a key from brydio keys
                                             create, instead of BRYDIO_SIGNING_KEY
+                             --publisher <id|name>  which of your publishers a new app
+                                            belongs to, when you are in several
   brydio keys <what>         Your publisher's signing keys. The private half is made here,
                              kept in one file only you can read, and never sent anywhere
                              create         make a key and register its public half
@@ -118,6 +120,7 @@ export async function main(argv: string[], out: (line: string) => void = console
         out,
         ...(flags.has('api') ? { apiUrl: flags.get('api')! } : {}),
         ...(flags.has('key') ? { key: flags.get('key')! } : {}),
+        ...(flags.has('publisher') ? { publisher: flags.get('publisher')! } : {}),
       });
     case 'keys':
       // `keys create` and the rest take no folder: the words are the command.
