@@ -183,6 +183,81 @@ describe('the first drawings (A6-F06-S01)', () => {
   });
 });
 
+describe('the layout drawings (A6-F06-S01)', () => {
+  test('an avatar is named for a screen reader and shows initials', async () => {
+    await page(`<bry-avatar name="Ada Byron Lovelace" size="sm"></bry-avatar><bry-avatar id="one" name="Grace"></bry-avatar>`);
+
+    const avatar = shadowOf('bry-avatar').querySelector('[role="img"]')!;
+
+    expect(avatar.getAttribute('aria-label')).toBe('Ada Byron Lovelace');
+    expect(avatar.textContent).toBe('AL');
+    expect(avatar.className).toBe('avatar sm');
+    expect(shadowOf('#one').querySelector('[role="img"]')!.textContent).toBe('G');
+  });
+
+  test('a label names what it holds, and marks it required', async () => {
+    await page(`<bry-label text="Title" required><bry-text text="x"></bry-text></bry-label>`);
+
+    const label = shadowOf('bry-label').querySelector('[part="label"]')!;
+
+    expect(label.textContent).toBe('Title*');
+    expect(label.querySelector('.required')!.getAttribute('aria-hidden')).toBe('true');
+    expect(shadowOf('bry-label').querySelector('slot')).not.toBeNull();
+  });
+
+  test('a pressable row says press on itself, not through a button inside it, and says whether it is selected', async () => {
+    await page(`<bry-list-row title="Fix login" description="Assigned to Ada" meta="2d" pressable selected><bry-button label="Close"></bry-button></bry-list-row>`);
+
+    const presses: string[] = [];
+
+    document.body.addEventListener('press', event => presses.push((event.target as HTMLElement).localName));
+
+    const row = shadowOf('bry-list-row').querySelector('.row') as HTMLElement;
+
+    expect(row.getAttribute('aria-pressed')).toBe('true');
+    expect(Array.from(shadowOf('bry-list-row').querySelectorAll('p')).map(p => p.textContent)).toEqual(['Fix login', 'Assigned to Ada', '2d']);
+
+    row.click();
+    shadowOf('bry-button').querySelector('button')!.click();
+    expect(presses).toEqual(['bry-list-row', 'bry-button']);
+  });
+
+  test('an empty state says what to do and raises action from its one button', async () => {
+    await page(`<bry-empty-state title="No issues yet" text="Make one to start." action="New issue"></bry-empty-state>`);
+
+    const actions: string[] = [];
+
+    document.body.addEventListener('action', event => actions.push((event.target as HTMLElement).localName));
+
+    const root = shadowOf('bry-empty-state');
+
+    expect(Array.from(root.querySelectorAll('p')).map(p => p.textContent)).toEqual(['No issues yet', 'Make one to start.']);
+    root.querySelector('button')!.click();
+    expect(actions).toEqual(['bry-empty-state']);
+  });
+
+  test('a skeleton draws as many shapes as asked, and says it is loading', async () => {
+    await page(`<bry-skeleton shape="row" count="3"></bry-skeleton><bry-skeleton id="odd" shape="blob" count="99"></bry-skeleton>`);
+
+    const status = shadowOf('bry-skeleton').querySelector('[role="status"]')!;
+
+    expect(status.getAttribute('aria-label')).toBe('Loading');
+    expect(status.querySelectorAll('.row')).toHaveLength(3);
+    expect(shadowOf('#odd').querySelector('[data-shape]')!.getAttribute('data-shape')).toBe('line');
+    expect(shadowOf('#odd').querySelectorAll('.line')).toHaveLength(12);
+  });
+
+  test('a grid takes columns and a gap by name, and one it lacks is a single column', async () => {
+    await page(`<bry-grid columns="3" gap="4"></bry-grid><bry-grid id="odd" columns="12"></bry-grid>`);
+
+    const grid = shadowOf('bry-grid').querySelector('.grid')!;
+
+    expect(grid.getAttribute('data-columns')).toBe('3');
+    expect(grid.getAttribute('style')).toContain('gap: calc(0.25rem * 4)');
+    expect(shadowOf('#odd').querySelector('.grid')!.getAttribute('data-columns')).toBe('1');
+  });
+});
+
 describe('the token stylesheet (A6-F05-S01, A6-F06-S01)', () => {
   const brydio = join(import.meta.dir, '../../../../brydio/packages/ui/src/styles/tokens.css');
 
