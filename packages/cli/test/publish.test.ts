@@ -2,11 +2,12 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { createHash } from 'node:crypto';
 
+import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
 import { build, publish, sdkVersionFor, zipFiles, type PublishOptions } from '../src/index.ts';
 
-const brydio = process.env.BRYDIO_DIR ?? join(import.meta.dir, '..', '..', '..', '..', 'brydio');
-const serverPublish = join(brydio, 'apps/api/src/apps/publishing/app-publish.service.ts');
+const SERVER_PUBLISH = 'apps/api/src/apps/publishing/app-publish.service.ts';
 const made: string[] = [];
 
 afterEach(() => {
@@ -308,14 +309,27 @@ describe('the zip', () => {
     expect(zipFiles(a)).toEqual(zipFiles(b));
   });
 
-  test.skipIf(!existsSync(serverPublish))('unpacks on the server to exactly the files that were built', async () => {
-    const { unpack } = await import(serverPublish);
-    const built = await build(join(import.meta.dir, '..', '..', '..', 'templates', 'preact'));
-    const unpacked: Map<string, Uint8Array> = await unpack(Buffer.from(zipFiles(built.files)));
+  test('unpacks on the server to exactly the files that were zipped', async () => {
+    // Fixed files, so Brydio's answer can be recorded: nested paths, a large
+    // script that deflates, an empty one, and the manifest.
+    const files = new Map<string, Uint8Array>([
+      ['app.json', new TextEncoder().encode('{"name":"tiny","version":"1.0.0"}')],
+      ['screens/home.js', new TextEncoder().encode('export const home = "Ünïcode";\n'.repeat(4_000))],
+      ['screens/empty.js', new Uint8Array()],
+      ['lib/deep/a.mjs', new TextEncoder().encode('export default 1;\n')],
+    ]);
+    const digest = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
+    const zipped = zipFiles(files);
+    const server = await brydioAnswers('publish-unpack', [SERVER_PUBLISH], async () => {
+      const { unpack } = await import(inBrydio(SERVER_PUBLISH));
+      const unpacked: Map<string, Uint8Array> = await unpack(Buffer.from(zipped));
 
-    expect([...unpacked.keys()].sort()).toEqual([...built.files.keys()].sort());
+      return { zip: digest(zipped), files: Object.fromEntries([...unpacked].sort(([a], [b]) => a.localeCompare(b)).map(([path, bytes]) => [path, digest(new Uint8Array(bytes))])) };
+    });
 
-    for (const [path, bytes] of built.files) expect(new Uint8Array(unpacked.get(path)!)).toEqual(new Uint8Array(bytes));
+    // The zip Brydio unpacked is the one this SDK makes, and it came back file for file.
+    expect(digest(zipped)).toBe(server.zip);
+    expect(server.files).toEqual(Object.fromEntries([...files].sort(([a], [b]) => a.localeCompare(b)).map(([path, bytes]) => [path, digest(bytes)])));
   });
 });
 

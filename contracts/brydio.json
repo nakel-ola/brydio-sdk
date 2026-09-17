@@ -844,6 +844,15 @@
       "storage": true
     },
     "publish-grant-words": true,
+    "publish-unpack": {
+      "zip": "adc03f579fee3177c96111234bcef999424046337e7fef8d6503e8bb13d0ac81",
+      "files": {
+        "app.json": "ccd03ae8b26d6920c58270a4b106c755b39aca501ee77d17766da6ebde1d5111",
+        "lib/deep/a.mjs": "96909e1dce85ca534fd8881f6c8369a8a87e06df5a4bf81ef44a72db195b0704",
+        "screens/empty.js": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "screens/home.js": "3275a8d8f7bc23314e2a74fbaa7f751d81a21f4766c9ef9a5eb3c99069670293"
+      }
+    },
     "sdk-support": {
       "support": {
         "oldest": "0.1.0-alpha.0",
@@ -884,6 +893,12 @@
         "app.json.settings[0].token"
       ],
       "message": "That package contains a secret. Header values and client secrets are entered here, never shipped in a file — remove it and import again."
+    },
+    "signing": {
+      "message": "62727964696f2d76657273696f6e2d76310a6973737565730a312e322e300a616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161610a34616535643061366430393536333134376261336266316164366530636337323930623134336432646562313462616161306361333036663036376232663133",
+      "signature": "qrC9KgybKmVyhiwuYoj2sJYAeSSqDCAe2kmYsR6RU9YB4zrlTz7KL7Z12O7rq0NEm5CHT3CXMgvzWAPxMOB7BA==",
+      "checks": true,
+      "tamperedChecks": false
     },
     "tool-writes": [
       "create",

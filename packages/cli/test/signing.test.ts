@@ -1,9 +1,18 @@
 import { describe, expect, test } from 'bun:test';
-import { generateKeyPairSync } from 'node:crypto';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { createPrivateKey, createPublicKey } from 'node:crypto';
 
+import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
 import { canonicalJson, signVersion, signingMessage, type SignedVersion } from '../src/signing.ts';
+
+/**
+ * A fixed key for the test only, never used for anything else. Ed25519
+ * signatures are deterministic, so the same version signed with it gives
+ * the same signature, which lets Brydio's answer about it be recorded.
+ */
+const TEST_KEY = `-----BEGIN PRIVATE KEY-----
+MC4CAQAwBQYDK2VwBCIEINOef8Hj2RRyElC+iVcqyurRbx/VnN0tRLQT3OlrYv41
+-----END PRIVATE KEY-----
+`;
 
 const VERSION: SignedVersion = {
   appKey: 'issues',
@@ -13,8 +22,7 @@ const VERSION: SignedVersion = {
 };
 
 describe('what brydio publish signs (A7-F05-S03)', () => {
-  const brydio = process.env.BRYDIO_DIR ?? join(import.meta.dir, '..', '..', '..', '..', 'brydio');
-  const server = join(brydio, 'apps/api/src/apps/versions/signing.ts');
+  const SERVER_SIGNING = 'apps/api/src/apps/versions/signing.ts';
 
   test('signs the scheme, app, version, fingerprint and the manifest’s hash, a line each', () => {
     const lines = signingMessage(VERSION).toString('utf8').split('\n');
@@ -24,17 +32,27 @@ describe('what brydio publish signs (A7-F05-S03)', () => {
     expect(canonicalJson({ b: 1, a: [2, { d: null, c: 'x' }], e: undefined })).toBe('{"a":[2,{"c":"x","d":null}],"b":1}');
   });
 
-  test.if(existsSync(server))('builds the same bytes as Brydio, and Brydio checks the signature', async () => {
-    const brydioSigning = (await import(server)) as {
-      signingMessage: (version: SignedVersion) => Buffer;
-      signatureChecks: (version: SignedVersion, signature: string, publicKey: string) => boolean;
-    };
-    const { publicKey, privateKey } = generateKeyPairSync('ed25519');
-    const raw = publicKey.export({ format: 'der', type: 'spki' }).subarray(-32).toString('base64');
-    const signature = signVersion(VERSION, privateKey.export({ format: 'pem', type: 'pkcs8' }).toString());
+  test('builds the same bytes as Brydio, and Brydio checks the signature', async () => {
+    const raw = createPublicKey(createPrivateKey(TEST_KEY)).export({ format: 'der', type: 'spki' }).subarray(-32).toString('base64');
+    const signature = signVersion(VERSION, TEST_KEY);
+    const server = await brydioAnswers('signing', [SERVER_SIGNING], async () => {
+      const theirs = (await import(inBrydio(SERVER_SIGNING))) as {
+        signingMessage: (version: SignedVersion) => Buffer;
+        signatureChecks: (version: SignedVersion, signature: string, publicKey: string) => boolean;
+      };
 
-    expect(signingMessage(VERSION).equals(brydioSigning.signingMessage(VERSION))).toBe(true);
-    expect(brydioSigning.signatureChecks(VERSION, signature, raw)).toBe(true);
-    expect(brydioSigning.signatureChecks({ ...VERSION, bundleHash: 'b'.repeat(64) }, signature, raw)).toBe(false);
+      return {
+        message: theirs.signingMessage(VERSION).toString('hex'),
+        signature,
+        checks: theirs.signatureChecks(VERSION, signature, raw),
+        tamperedChecks: theirs.signatureChecks({ ...VERSION, bundleHash: 'b'.repeat(64) }, signature, raw),
+      };
+    });
+
+    expect(signingMessage(VERSION).toString('hex')).toBe(server.message);
+    // The signature Brydio was shown is the one this SDK makes, and Brydio accepted it.
+    expect(signature).toBe(server.signature);
+    expect(server.checks).toBe(true);
+    expect(server.tamperedChecks).toBe(false);
   });
 });
