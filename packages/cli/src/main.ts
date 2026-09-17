@@ -1,6 +1,7 @@
 import { build, describeBuild } from './build.ts';
 import { create, CreateRefused, TEMPLATES, type Template } from './create.ts';
 import { dev, DevRefused } from './dev.ts';
+import { keys } from './keys.ts';
 import { formatProblem, type Problem } from './project.ts';
 import { publish } from './publish.ts';
 import { test } from './test.ts';
@@ -20,6 +21,21 @@ const HELP = `brydio — build and check a Brydio app
                              with @brydio/fake-host
   brydio publish [folder]    Build, validate, and upload the bundle to Brydio as a new version
                              signed in with BRYDIO_TOKEN, to BRYDIO_API_URL
+                             --api <url>    the API's address, instead of BRYDIO_API_URL
+                             --key <file>   sign this version with a key from brydio keys
+                                            create, instead of BRYDIO_SIGNING_KEY
+  brydio keys <what>         Your publisher's signing keys. The private half is made here,
+                             kept in one file only you can read, and never sent anywhere
+                             create         make a key and register its public half
+                                            --label <text>  what to call it
+                                            --out <file>    where to keep it, instead of
+                                                            ~/.brydio/keys/<key>.json
+                                            --approve-with <file>  an existing key of the same
+                                                            publisher, which lets this one in
+                             list           the publisher's keys, and which are held here
+                             retire <key>   rotate it out; what it signed stays verified
+                             revoke <key> --yes   a lost key; never undone
+                             --publisher <id|name>  which publisher, when you are in several
                              --api <url>    the API's address, instead of BRYDIO_API_URL
   brydio dev [folder]        Build, serve dist/ on localhost, show it as a tab in a project, and build again on change
                              --project <id> the project (asked once, then kept in .brydio/dev.json)
@@ -42,7 +58,9 @@ export async function main(argv: string[], out: (line: string) => void = console
   for (let at = 0; at < rest.length; at++) {
     const word = rest[at]!;
 
-    if (word.startsWith('--')) flags.set(word.slice(2), rest[++at] ?? '');
+    // A flag takes the next word unless that is a flag itself, so a plain
+    // switch (`--yes`) does not swallow the one after it.
+    if (word.startsWith('--')) flags.set(word.slice(2), rest[at + 1]?.startsWith('--') ? '' : (rest[++at] ?? ''));
     else positional.push(word);
   }
 
@@ -96,7 +114,23 @@ export async function main(argv: string[], out: (line: string) => void = console
     case 'test':
       return test(dir, { args: passed, ...(out === console.log ? {} : { out }) });
     case 'publish':
-      return publish(dir, { out, ...(flags.has('api') ? { apiUrl: flags.get('api')! } : {}) });
+      return publish(dir, {
+        out,
+        ...(flags.has('api') ? { apiUrl: flags.get('api')! } : {}),
+        ...(flags.has('key') ? { key: flags.get('key')! } : {}),
+      });
+    case 'keys':
+      // `keys create` and the rest take no folder: the words are the command.
+      return keys(positional, {
+        out,
+        ...(flags.has('api') ? { apiUrl: flags.get('api')! } : {}),
+        ...(flags.has('publisher') ? { publisher: flags.get('publisher')! } : {}),
+        ...(flags.has('label') ? { label: flags.get('label')! } : {}),
+        ...(flags.has('out') ? { outFile: flags.get('out')! } : {}),
+        ...(flags.has('approve-with') ? { approveWith: flags.get('approve-with')! } : {}),
+        ...(flags.has('override') ? { override: true } : {}),
+        ...(flags.has('yes') ? { yes: true } : {}),
+      });
     case 'dev': {
       let session: Awaited<ReturnType<typeof dev>>;
 

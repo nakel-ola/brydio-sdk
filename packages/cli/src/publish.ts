@@ -1,7 +1,10 @@
 import { BUNDLE_MANIFEST, compareVersions, publishedMigrationProblems, sdkRefusal, sizeOf, type SdkSupport } from '@brydio/manifest';
 
+import { API_URL_ENV, TOKEN_ENV } from './api.ts';
 import { build } from './build.ts';
+import { KeysRefused, readKeyFile, signingKeyPath, type KeyFile } from './keys.ts';
 import { formatProblem, readProject } from './project.ts';
+import { signVersion } from './signing.ts';
 import { validate } from './validate.ts';
 import { zipFiles } from './zip.ts';
 
@@ -35,10 +38,17 @@ import { zipFiles } from './zip.ts';
  *
  * Sign-in is a token in `BRYDIO_TOKEN`, sent as a bearer token: the same
  * Clerk session token the web app sends. The address is `BRYDIO_API_URL`.
+ *
+ * With `--key` (or `BRYDIO_SIGNING_KEY`, a path to the same file), the
+ * version is signed here before it goes up (A7-F05-S03): the app, the
+ * number, the fingerprint and the manifest's hash, signed with a key made by
+ * `brydio keys create`, sent as `signature: { keyId, value }`. Brydio checks
+ * it against that publisher's own keys before it writes anything, and shows
+ * "Verified" on versions that check. The private key is read from the file
+ * and never leaves this process.
  */
 
-export const TOKEN_ENV = 'BRYDIO_TOKEN';
-export const API_URL_ENV = 'BRYDIO_API_URL';
+export { API_URL_ENV, TOKEN_ENV } from './api.ts';
 export const PUBLISH_PATH = '/api/v1/apps/publish';
 export const SDK_PATH = '/api/v1/apps/sdk';
 /** The highest published version of an app, for its publishers: `{ version, manifest, … }`, or 404 before the first. */
@@ -57,6 +67,13 @@ export interface PublishOptions {
    * found from the app's own folder, renders them; `false` publishes without.
    */
   screenshots?: false | Renderer;
+  /**
+   * A key file from `brydio keys create`, whose key signs this version
+   * (A7-F05-S03). `BRYDIO_SIGNING_KEY` unless given; without either, the
+   * version is published unsigned, which Brydio allows until an
+   * administrator turns `APPS_REQUIRE_SIGNED_PUBLISH` on.
+   */
+  key?: string;
 }
 
 /** A screen's picture: the tree Brydio draws, at a width and in a theme. */
@@ -113,6 +130,22 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
 
   if (!token) {
     out(`Set ${TOKEN_ENV} to a Brydio session token. The version is published as the account it belongs to.`);
+
+    return 2;
+  }
+
+  // The key is read before the build too: a path that is wrong, or a file
+  // anybody can read, is worth knowing about now rather than after a build.
+  let signingKey: KeyFile | null = null;
+
+  try {
+    const path = signingKeyPath(options.key);
+
+    signingKey = path ? readKeyFile(path) : null;
+  } catch (error) {
+    if (!(error instanceof KeysRefused)) throw error;
+
+    out(error.message);
 
     return 2;
   }
@@ -241,7 +274,20 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
 
   const archive = zipFiles(built.files);
   const url = `${apiUrl}${PUBLISH_PATH}`;
+  // Signed over what was built, not over what is about to be sent: the
+  // fingerprint and the manifest are what Brydio rebuilds and checks.
+  const signature = signingKey
+    ? {
+        keyId: signingKey.keyId,
+        value: signVersion(
+          { appKey: String(shipping.name), version: String(shipping.version), bundleHash: built.hash!, manifest: shipping },
+          signingKey.privateKey,
+        ),
+      }
+    : null;
   let response: Response;
+
+  if (signingKey) out(`Signing as ${signingKey.publisher} with "${signingKey.label}" (${signingKey.keyId}).`);
 
   out(`Publishing ${sizeOf(built.bytes)}, fingerprint ${built.hash}, to ${apiUrl}.`);
 
@@ -249,7 +295,7 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
     response = await request(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...headers },
-      body: JSON.stringify({ archiveBase64: Buffer.from(archive).toString('base64'), ...(screenshots.length ? { screenshots } : {}) }),
+      body: JSON.stringify({ archiveBase64: Buffer.from(archive).toString('base64'), ...(screenshots.length ? { screenshots } : {}), ...(signature ? { signature } : {}) }),
     });
   } catch (error) {
     out(`Could not reach ${apiUrl}: ${error instanceof Error ? error.message : String(error)}`);
@@ -274,6 +320,10 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
       out(`  Version    ${published.versionId}`);
       out(`  Fingerprint ${published.bundleHash}`);
       out(`  Publisher  ${published.publishedBy}, ${published.publishedAt}`);
+
+      // Brydio refuses a signature it cannot check, so a 201 with one means it checked.
+      if (signingKey && published.created) out(`  Signature  checked against "${signingKey.label}" (${signingKey.keyId}); this version reads Verified`);
+
       files.forEach(file => out(`  ${file}`));
 
       if (published.bundleHash !== built.hash) {

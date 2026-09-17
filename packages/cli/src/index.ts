@@ -8,6 +8,27 @@ export { FORBIDDEN_GLOBALS, checkSource, type SourceProblemCode } from './source
 export { checkSources, screenCalls, validate, type ValidateOptions, type ValidateResult } from './validate.ts';
 export { callsOf, type ScreenCall } from './calls.ts';
 export { grantProblems } from './grant-checks.ts';
+export {
+  KEYS_HOME_ENV,
+  KEYS_PATH,
+  KeysRefused,
+  PUBLISHERS_PATH,
+  SIGNING_KEY_ENV,
+  approveKey,
+  heldKeys,
+  inCheckout,
+  keyApprovalMessage,
+  keys,
+  keysHome,
+  newKeyPair,
+  readKeyFile,
+  signingKeyPath,
+  writeKeyFile,
+  type KeyFile,
+  type KeysOptions,
+  type RemoteKey,
+} from './keys.ts';
+export { SIGNING_VERSION, canonicalJson, signVersion, signingMessage, type SignedVersion } from './signing.ts';
 export { main } from './main.ts';
 export {
   API_URL_ENV,

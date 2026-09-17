@@ -1,7 +1,7 @@
 {
   "brydio": {
-    "commit": "77e0b8ad3f19db2e7477287c7a1aadd601da7091",
-    "dirty": false
+    "commit": "97644695601e7c5271e222f6908644c8fe32f2bb",
+    "dirty": true
   },
   "contracts": {
     "bundle-files": {
@@ -1651,6 +1651,12 @@
           "message"
         ]
       }
+    },
+    "key-approval": {
+      "message": "62727964696f2d6b65792d76310a7075625f61636d650a6a5a31444252557565706e51486b4c444169467931544e7043644573417678445079544f4d44786a7048303d",
+      "signature": "lOL6Wdcjw5OGM74NrlRIQfwSCYti9dDO2tV9UcnO0Amu6OLAhKC+bmK9GougCzIWD38q8RvK4VQwPPedthkgAw==",
+      "checks": true,
+      "otherKeyChecks": false
     },
     "limits": {
       "fields": {

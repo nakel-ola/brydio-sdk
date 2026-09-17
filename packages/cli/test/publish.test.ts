@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { createHash } from 'node:crypto';
+import { createHash, createPrivateKey, createPublicKey, verify } from 'node:crypto';
+
+import { BUNDLE_MANIFEST } from '@brydio/manifest';
 
 import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
-import { build, publish, sdkVersionFor, zipFiles, type PublishOptions } from '../src/index.ts';
+import { build, publish, sdkVersionFor, signingMessage, writeKeyFile, zipFiles, type PublishOptions } from '../src/index.ts';
 
 const SERVER_PUBLISH = 'apps/api/src/apps/publishing/app-publish.service.ts';
 const made: string[] = [];
@@ -342,3 +344,94 @@ function sliceFirst(zip: Uint8Array): Uint8Array {
   return view.subarray(start, start + size);
 }
 
+
+describe('signing a version at publish (A7-F05-S03)', () => {
+  /** A fixed key, so what a test signs is the same every run. */
+  const PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
+MC4CAQAwBQYDK2VwBCIEIPUnuBSae5o4IbpSyfELyEjLNOEjcUx1XUvVBvtPEYMc
+-----END PRIVATE KEY-----
+`;
+  const published = (hash: string) => ({ created: true, appKey: 'tiny', version: '1.0.0', versionId: 'v', bundleHash: hash, publishedBy: 'user_1', publishedAt: 'now', files: [] });
+
+  /** A key file as `brydio keys create` writes one. */
+  function keyFile(over: { mode?: number } = {}): string {
+    const home = mkdtempSync(join(tmpdir(), 'brydio-publish-key-'));
+
+    made.push(home);
+
+    const path = join(home, 'key_one.json');
+
+    writeKeyFile(path, {
+      keyId: 'key_one',
+      publisherId: 'pub_acme',
+      publisher: 'Acme Ltd',
+      publicKey: createPublicKey(createPrivateKey(PRIVATE_KEY)).export({ format: 'der', type: 'spki' }).subarray(-32).toString('base64'),
+      privateKey: PRIVATE_KEY,
+      label: 'Acme on this computer',
+      createdAt: 'then',
+    });
+
+    if (over.mode !== undefined) chmodSync(path, over.mode);
+
+    return path;
+  }
+
+  test('signs the fingerprint and the manifest with the key file’s key, and sends only the signature', async () => {
+    const root = tiny();
+    const built = await build(root);
+    const route = server(201, () => published(built.hash!));
+    const path = keyFile();
+    const lines: string[] = [];
+    const code = await publish(root, { apiUrl: 'http://brydio.test', token: 'session-token', screenshots: false, fetch: route.fetch, key: path, out: line => lines.push(line) });
+    const sent = route.sent[0]!.body.signature as { keyId: string; value: string };
+    const manifest = JSON.parse(new TextDecoder().decode(built.files.get(BUNDLE_MANIFEST)!)) as Record<string, unknown>;
+
+    expect(code).toBe(0);
+    expect(sent.keyId).toBe('key_one');
+    // Over exactly the bytes Brydio rebuilds: the app, the number, the fingerprint and the manifest.
+    expect(verify(null, signingMessage({ appKey: 'tiny', version: '1.0.0', bundleHash: built.hash!, manifest }), createPublicKey(createPrivateKey(PRIVATE_KEY)), Buffer.from(sent.value, 'base64'))).toBe(true);
+    // Signing a different build does not make this signature.
+    expect(verify(null, signingMessage({ appKey: 'tiny', version: '1.0.0', bundleHash: 'b'.repeat(64), manifest }), createPublicKey(createPrivateKey(PRIVATE_KEY)), Buffer.from(sent.value, 'base64'))).toBe(false);
+    expect(JSON.stringify(route.sent[0]!.body)).not.toContain('PRIVATE KEY');
+    expect(lines.join('\n')).toContain('Signing as Acme Ltd with "Acme on this computer" (key_one).');
+    expect(lines.join('\n')).toContain('this version reads Verified');
+  });
+
+  test('publishes unsigned with no key, exactly as before', async () => {
+    const root = tiny();
+    const built = await build(root);
+    const route = server(201, () => published(built.hash!));
+
+    expect((await run(root, route)).code).toBe(0);
+    expect(route.sent[0]!.body).not.toHaveProperty('signature');
+  });
+
+  test('stops before building on a key file other accounts can read, and on a key handed over instead of a path', async () => {
+    const root = tiny();
+    const route = server(201, () => ({}));
+    const loose = keyFile({ mode: 0o644 });
+    const say = async (key: string) => {
+      const lines: string[] = [];
+      const code = await publish(root, { apiUrl: 'http://brydio.test', token: 'session-token', screenshots: false, fetch: route.fetch, key, out: line => lines.push(line) });
+
+      return { code, text: lines.join('\n') };
+    };
+
+    expect(await say(loose)).toMatchObject({ code: 2, text: expect.stringContaining('can be read by other accounts on this computer') });
+    expect(await say(PRIVATE_KEY)).toMatchObject({ code: 2, text: expect.stringContaining('not the key itself') });
+    expect(await say(join(dirname(loose), 'nothing.json'))).toMatchObject({ code: 2, text: expect.stringContaining('brydio keys create') });
+    expect(existsSync(join(root, 'dist'))).toBe(false);
+    expect(route.sent).toEqual([]);
+  });
+
+  test('says what Brydio said about a signature it would not take', async () => {
+    const message = 'The key "Old laptop" was retired; sign with an active key.';
+    const route = server(422, () => ({ statusCode: 422, reason: 'key_retired', message }));
+    const root = tiny();
+    const lines: string[] = [];
+    const code = await publish(root, { apiUrl: 'http://brydio.test', token: 'session-token', screenshots: false, fetch: route.fetch, key: keyFile(), out: line => lines.push(line) });
+
+    expect(code).toBe(1);
+    expect(lines.join('\n')).toContain(`Brydio refused this version: ${message} [key_retired]`);
+  });
+});
