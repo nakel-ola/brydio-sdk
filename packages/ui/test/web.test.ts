@@ -622,6 +622,50 @@ Some **bold** and \`code\`.
   });
 });
 
+describe('split (A6-F06-S01)', () => {
+  test('keeps its handle between the bounds, and reads before and after rather than left and right', async () => {
+    await page(`<bry-split label="Board and details" ratio="30"><bry-text slot="first" text="a"></bry-text><bry-text slot="second" text="b"></bry-text></bry-split>`);
+
+    const host = document.querySelector('bry-split') as HTMLElement & { updateComplete: Promise<unknown> };
+    const handle = () => shadowOf('bry-split').querySelector('[role="separator"]')!;
+
+    expect([handle().getAttribute('aria-valuenow'), handle().getAttribute('aria-valuemin'), handle().getAttribute('aria-valuemax')]).toEqual([
+      '30',
+      '20',
+      '80',
+    ]);
+    expect(handle().getAttribute('aria-label')).toBe('Board and details');
+
+    handle().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, composed: true, cancelable: true }));
+    await host.updateComplete;
+    expect(handle().getAttribute('aria-valuenow')).toBe('25');
+
+    // It can't be driven shut.
+    for (let press = 0; press < 5; press++) {
+      handle().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, composed: true, cancelable: true }));
+      await host.updateComplete;
+    }
+    expect(handle().getAttribute('aria-valuenow')).toBe('20');
+
+    handle().dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, composed: true, cancelable: true }));
+    await host.updateComplete;
+    expect(handle().getAttribute('aria-valuenow')).toBe('80');
+    expect(host.style.getPropertyValue('--bry-ratio')).toBe('80%');
+  });
+
+  test('a ratio outside the bounds is brought inside, and one the app changes wins', async () => {
+    await page(`<bry-split ratio="5"></bry-split>`);
+
+    const host = document.querySelector('bry-split') as HTMLElement & { ratio: number; updateComplete: Promise<unknown> };
+
+    expect(shadowOf('bry-split').querySelector('[role="separator"]')!.getAttribute('aria-valuenow')).toBe('20');
+
+    host.ratio = 70;
+    await host.updateComplete;
+    expect(shadowOf('bry-split').querySelector('[role="separator"]')!.getAttribute('aria-valuenow')).toBe('70');
+  });
+});
+
 describe('the token stylesheet (A6-F05-S01, A6-F06-S01)', () => {
   test('is Brydio’s own tokens.css, byte for byte', async () => {
     const here = readFileSync(join(import.meta.dir, '../src/web/tokens.css'), 'utf8');
