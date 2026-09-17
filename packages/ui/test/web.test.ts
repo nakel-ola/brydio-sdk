@@ -851,7 +851,7 @@ describe('table (A6-F06-S01)', () => {
 
     host.addEventListener('select', event => chosen.push((event as CustomEvent).detail));
 
-    const rows = () => [...shadowOf('bry-table').querySelectorAll('tbody tr')];
+    const rows = () => Array.from(shadowOf('bry-table').querySelectorAll('tbody tr'));
     const body = shadowOf('bry-table').querySelector('tbody')!;
 
     expect(shadowOf('bry-table').querySelector('table')!.getAttribute('role')).toBe('grid');
@@ -881,7 +881,7 @@ describe('table (A6-F06-S01)', () => {
 
     host.addEventListener('select', event => chosen.push((event as CustomEvent).detail));
 
-    const rows = [...shadowOf('bry-table').querySelectorAll('tbody tr')];
+    const rows = Array.from(shadowOf('bry-table').querySelectorAll('tbody tr'));
 
     expect(shadowOf('bry-table').querySelector('table')!.hasAttribute('role')).toBe(false);
     expect(rows.map(row => row.getAttribute('tabindex'))).toEqual([null, null]);
@@ -910,7 +910,7 @@ describe('table (A6-F06-S01)', () => {
     await page(`<bry-table columns="${columns}" rows="${rows}"></bry-table>`);
 
     expect(shadowOf('bry-table').querySelectorAll('th')).toHaveLength(1);
-    expect([...shadowOf('bry-table').querySelectorAll('tbody tr')].map(row => row.getAttribute('data-row'))).toEqual(['a']);
+    expect(Array.from(shadowOf('bry-table').querySelectorAll('tbody tr')).map(row => row.getAttribute('data-row'))).toEqual(['a']);
     // Markup in a cell is what it says, not what it does.
     const cell = shadowOf('bry-table').querySelector('tbody td')!;
 
