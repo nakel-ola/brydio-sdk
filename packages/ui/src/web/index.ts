@@ -13,6 +13,7 @@ import './draw/overlays.ts';
 import './draw/text-and-date.ts';
 import './draw/split.ts';
 import './draw/board.ts';
+import './draw/virtual-list.ts';
 import './draw/table.ts';
 import { defineCatalogue } from './define.ts';
 

@@ -16,6 +16,7 @@ afterAll(() => GlobalRegistrator.unregister());
 
 const { attributeOf, defineCatalogue } = await import('../src/web/index.ts');
 const { positionAt, steered } = await import('../src/web/draw/board.ts');
+const { movedTo, windowOf } = await import('../src/web/draw/virtual-list.ts');
 
 const settle = async () => {
   await new Promise(resolve => setTimeout(resolve, 0));
@@ -769,6 +770,97 @@ describe('board and board column (A6-F06-S01)', () => {
     expect(positionAt(cards, 140)).toBe(1);
     expect(positionAt(cards, 290)).toBe(3);
     expect(positionAt([], 10)).toBe(0);
+  });
+});
+
+describe('virtual list (A6-F06-S01)', () => {
+  const heard: { name: string; detail: unknown }[] = [];
+  const names = new Set<string>();
+  const listen = (...events: string[]) => {
+    heard.length = 0;
+    for (const name of events) {
+      if (names.has(name)) continue;
+      names.add(name);
+      document.body.addEventListener(name, event => heard.push({ name, detail: (event as CustomEvent).detail }));
+    }
+  };
+
+  const LIST = `<bry-virtual-list label="Issues" count="1000" start="10" selectable selected="10" row-size="md">
+      <div id="r10">Row 10</div><div id="r11">Row 11</div><div id="r12">Row 12</div>
+    </bry-virtual-list>`;
+
+  test('draws only the rows it was given, at their place in a list as tall as the whole', async () => {
+    await page(LIST);
+
+    const root = shadowOf('bry-virtual-list');
+
+    expect(root.querySelector('[role="listbox"]')!.getAttribute('aria-label')).toBe('Issues');
+    // 1000 rows at 3rem, and the window sits 10 rows down.
+    expect(root.querySelector('.tall')!.getAttribute('style')).toContain('height: 3000rem');
+    expect(root.querySelector('.window')!.getAttribute('style')).toContain('translateY(30rem)');
+
+    // Each row says where it sits in the whole list, not in the window.
+    const row = document.querySelector('#r11')!;
+
+    expect([row.getAttribute('role'), row.getAttribute('aria-posinset'), row.getAttribute('aria-setsize')]).toEqual(['option', '12', '1000']);
+  });
+
+  test('the arrows, Home and End choose a row, and a press chooses the row pressed', async () => {
+    await page(LIST);
+    listen('select');
+
+    const host = document.querySelector('bry-virtual-list') as HTMLElement & { updateComplete: Promise<unknown> };
+    const box = shadowOf('bry-virtual-list').querySelector('[role="listbox"]')!;
+
+    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }));
+    await host.updateComplete;
+    expect(heard).toEqual([{ name: 'select', detail: { index: 11 } }]);
+    expect(document.querySelector('#r11')!.getAttribute('aria-selected')).toBe('true');
+
+    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, composed: true, cancelable: true }));
+    await host.updateComplete;
+    expect(heard.at(-1)).toEqual({ name: 'select', detail: { index: 999 } });
+
+    (document.querySelector('#r12') as HTMLElement).click();
+    await host.updateComplete;
+    expect(heard.at(-1)).toEqual({ name: 'select', detail: { index: 12 } });
+  });
+
+  test('a list that cannot be chosen from is a plain list, and says nothing on a press', async () => {
+    await page(`<bry-virtual-list count="3" start="0"><div id="p0">a</div></bry-virtual-list>`);
+    listen('select');
+
+    expect(shadowOf('bry-virtual-list').querySelector('[role="list"]')).not.toBeNull();
+    expect(document.querySelector('#p0')!.getAttribute('role')).toBe('listitem');
+    (document.querySelector('#p0') as HTMLElement).click();
+    expect(heard).toEqual([]);
+  });
+
+  test('loading shows the shell’s placeholder, and nothing at all shows the app’s words', async () => {
+    await page(`<bry-virtual-list loading count="10"></bry-virtual-list>`);
+    expect(shadowOf('bry-virtual-list').querySelector('[role="status"]')!.getAttribute('aria-label')).toBe('Loading');
+
+    await page(`<bry-virtual-list count="0" empty="No issues yet."></bry-virtual-list>`);
+    expect(shadowOf('bry-virtual-list').querySelector('[data-empty]')!.textContent).toContain('No issues yet.');
+  });
+
+  test('the window it asks for covers what is in view, with a few rows either side', () => {
+    // 48px rows, a 480px viewport, scrolled to row 20: ten in view, six over each edge.
+    expect(windowOf(960, 480, 48, 1_000)).toEqual({ start: 14, end: 36 });
+    expect(windowOf(0, 480, 48, 1_000)).toEqual({ start: 0, end: 16 });
+    // Never past the end, and nothing at all for an empty list.
+    expect(windowOf(47_000, 480, 48, 1_000)).toEqual({ start: 973, end: 996 });
+    expect(windowOf(0, 480, 48, 0)).toEqual({ start: 0, end: 0 });
+  });
+
+  test('where a key takes the choice, at either end of the list', () => {
+    expect(movedTo('ArrowDown', 0, 3)).toBe(1);
+    expect(movedTo('ArrowDown', 2, 3)).toBe(2);
+    expect(movedTo('ArrowUp', 0, 3)).toBe(0);
+    expect(movedTo('Home', 2, 3)).toBe(0);
+    expect(movedTo('End', 0, 3)).toBe(2);
+    expect(movedTo('Enter', 0, 3)).toBeNull();
+    expect(movedTo('ArrowDown', 0, 0)).toBeNull();
   });
 });
 
