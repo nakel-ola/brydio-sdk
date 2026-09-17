@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { ROOT_ID, type ElementAttributes, type RemoteElement, type TreeMountParams, type TreePatchParams } from '../src/index.ts';
-import { Button, render, useBoard, useHost, useList, useState } from '../src/preact/index.ts';
+import { Button, render, useBoard, useHost, useList, useRef, useState } from '../src/preact/index.ts';
 import { CONTEXT, harness, settle } from './harness.ts';
 
 describe('the Preact adapter', () => {
@@ -335,6 +335,55 @@ describe('the Preact adapter', () => {
 
     void refetch();
     expect(sent.filter(one => one.method === 'data/list')).toHaveLength(2);
+  });
+
+  test('a context that lands before any effect has run is still drawn, on a screen of its own and on a board', async () => {
+    const words = (root: { snapshot(): { type?: string; props?: Record<string, unknown> }[] }) =>
+      root.snapshot().filter(node => node.type === 'bry-text').map(node => node.props?.text);
+
+    /** A screen that is nothing but the host's selection: Issues' `issue` screen. */
+    function Standalone() {
+      const selection = useHost().selection as { id?: string } | undefined;
+
+      return <bry-text text={selection?.id ?? 'no item'} />;
+    }
+
+    /** A board that opens an item, and closes it when the host's selection goes: Issues' `board`. */
+    function Board() {
+      const selection = useHost().selection as { kind?: string; id?: string } | undefined;
+      const selected = selection?.kind === 'item' ? (selection.id ?? null) : null;
+      const [open, setOpen] = useState<string | null>(null);
+      const seen = useRef(selected);
+
+      if (seen.current !== selected) {
+        seen.current = selected;
+        setOpen(selected);
+      }
+
+      return <bry-text text={open ? `open ${open}` : 'the board'} />;
+    }
+
+    for (const [screen, closed, opened] of [
+      [<Standalone />, 'no item', 'issue_1'],
+      [<Board />, 'the board', 'open issue_1'],
+    ] as const) {
+      const { root, connect, hostSays } = harness();
+
+      await connect();
+      render(screen, root);
+      // No settling in between: the host's change arrives in the same turn as the first tree, before
+      // any effect has run. A worker has no frames, so this is the ordinary case, not a rare race.
+      hostSays('host/context', { ...CONTEXT, selection: { kind: 'item', id: 'issue_1' } });
+      await settle();
+      await settle();
+      expect(words(root)).toEqual([opened]);
+
+      // And the selection going again — Back, or the browser's own Back — draws the screen without it.
+      hostSays('host/context', { ...CONTEXT, selection: undefined });
+      await settle();
+      await settle();
+      expect(words(root)).toEqual([closed]);
+    }
   });
 
   test('useHost re-renders on a context the host sends straight after the first tree, before a frame has passed', async () => {

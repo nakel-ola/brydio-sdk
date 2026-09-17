@@ -67,9 +67,11 @@ export function useHost(): HostContext {
   const bridge = useBridge();
   const [context, setContext] = useState(bridge.context);
 
-  // A layout effect listens as soon as the tree is committed. A worker has no
-  // frames, so an effect runs late, and a change the host sent before then
-  // (Back closing an item, say) was never drawn.
+  // A layout effect listens as soon as the tree is committed, and an ordinary
+  // effect does not: a worker has no frames, so Preact runs one late. A context
+  // the host sent in between — Back closing an item, the person opening another
+  // — was heard by nobody, and the screen kept what it first drew, for good.
+  // `preact.test.tsx` holds this for a screen of its own and for a board.
   useLayoutEffect(() => bridge.subscribe(setContext), [bridge]);
 
   if (!context) throw new Error('useHost() ran before the host said where the screen is. Render with mount().');
