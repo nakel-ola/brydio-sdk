@@ -10,7 +10,8 @@
     "test": "bun test",
     "check-types": "tsc -p tsconfig.json && tsc -p templates/preact/tsconfig.json && tsc -p templates/plain/tsconfig.json",
     "contracts:record": "BRYDIO_RECORD=1 bun test",
-    "release:build": "bun scripts/release-build.ts"
+    "release:build": "bun scripts/release-build.ts",
+    "docs:elements": "bun run scripts/docs-elements.ts"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",

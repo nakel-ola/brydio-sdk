@@ -163,6 +163,10 @@ addresses [support.md](docs/support.md) needs.
 What the packages promise and what they do not, and how to report a problem,
 are [support.md](docs/support.md) and [security.md](docs/security.md).
 
+Every element a screen may draw, with its settings, is
+[elements.md](docs/elements.md) — generated from the catalogue by
+`bun run docs:elements`, so it cannot fall behind it.
+
 ## Writing a screen
 
 ```tsx
