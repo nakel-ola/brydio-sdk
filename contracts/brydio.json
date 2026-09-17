@@ -14,6 +14,1274 @@
         "message": "That bundle is 1.00 MB, over the 1.00 MB cap. The largest file is \"screens/board.js\" at 1.00 MB."
       }
     },
+    "catalogue-elements": {
+      "elements": {
+        "bry-stack": {
+          "props": {
+            "direction": {
+              "kind": "enum",
+              "values": [
+                "row",
+                "column"
+              ]
+            },
+            "gap": {
+              "kind": "enum",
+              "values": [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8"
+              ]
+            },
+            "align": {
+              "kind": "enum",
+              "values": [
+                "start",
+                "center",
+                "end",
+                "stretch"
+              ]
+            },
+            "justify": {
+              "kind": "enum",
+              "values": [
+                "start",
+                "center",
+                "end",
+                "between"
+              ]
+            },
+            "wrap": {
+              "kind": "boolean"
+            }
+          },
+          "events": [],
+          "children": true
+        },
+        "bry-heading": {
+          "props": {
+            "level": {
+              "kind": "int",
+              "min": 1,
+              "max": 4
+            },
+            "text": {
+              "kind": "text",
+              "max": 200
+            },
+            "variant": {
+              "kind": "enum",
+              "values": [
+                "title",
+                "heading",
+                "subheading",
+                "label"
+              ]
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "events": [],
+          "children": false
+        },
+        "bry-text": {
+          "props": {
+            "text": {
+              "kind": "text",
+              "max": 4000
+            },
+            "tone": {
+              "kind": "enum",
+              "values": [
+                "default",
+                "muted",
+                "neutral",
+                "brand",
+                "success",
+                "warn",
+                "danger"
+              ]
+            },
+            "variant": {
+              "kind": "enum",
+              "values": [
+                "body",
+                "ui",
+                "caption",
+                "label"
+              ]
+            },
+            "size": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md"
+              ]
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "events": [],
+          "children": false
+        },
+        "bry-button": {
+          "props": {
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "variant": {
+              "kind": "enum",
+              "values": [
+                "primary",
+                "secondary",
+                "ghost",
+                "danger"
+              ]
+            },
+            "size": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md"
+              ]
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "working": {
+              "kind": "boolean"
+            },
+            "icon": {
+              "kind": "enum",
+              "values": [
+                "add",
+                "archive",
+                "calendar",
+                "check",
+                "copy",
+                "dismiss",
+                "docs",
+                "info",
+                "mail",
+                "members",
+                "notes",
+                "pin",
+                "rename",
+                "retry",
+                "search",
+                "settings",
+                "tasks",
+                "trash",
+                "more",
+                "close",
+                "arrowRight",
+                "chevronRight",
+                "chevronDown",
+                "chevronUp"
+              ]
+            },
+            "hideLabel": {
+              "kind": "boolean"
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "events": [
+            "press"
+          ],
+          "children": false
+        },
+        "bry-card": {
+          "props": {
+            "title": {
+              "kind": "text",
+              "max": 200
+            },
+            "padding": {
+              "kind": "enum",
+              "values": [
+                "2",
+                "3",
+                "4",
+                "5",
+                "6"
+              ]
+            },
+            "pressable": {
+              "kind": "boolean"
+            },
+            "loading": {
+              "kind": "boolean"
+            }
+          },
+          "events": [
+            "press"
+          ],
+          "children": true
+        },
+        "bry-input": {
+          "props": {
+            "value": {
+              "kind": "text",
+              "max": 1000
+            },
+            "placeholder": {
+              "kind": "text",
+              "max": 200
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "kind": {
+              "kind": "enum",
+              "values": [
+                "text",
+                "email",
+                "url",
+                "search"
+              ]
+            },
+            "maxLength": {
+              "kind": "int",
+              "min": 1,
+              "max": 1000
+            },
+            "required": {
+              "kind": "boolean"
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "events": [
+            "change",
+            "submit"
+          ],
+          "children": false
+        },
+        "bry-textarea": {
+          "props": {
+            "value": {
+              "kind": "text",
+              "max": 4000
+            },
+            "placeholder": {
+              "kind": "text",
+              "max": 200
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "maxLength": {
+              "kind": "int",
+              "min": 1,
+              "max": 4000
+            },
+            "required": {
+              "kind": "boolean"
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "events": [
+            "change"
+          ],
+          "children": false
+        },
+        "bry-select": {
+          "props": {
+            "value": {
+              "kind": "text",
+              "max": 200
+            },
+            "options": {
+              "kind": "options",
+              "max": 100
+            },
+            "placeholder": {
+              "kind": "text",
+              "max": 200
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "size": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md"
+              ]
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "options"
+          ],
+          "events": [
+            "change"
+          ],
+          "children": false
+        },
+        "bry-label": {
+          "props": {
+            "text": {
+              "kind": "text",
+              "max": 200
+            },
+            "required": {
+              "kind": "boolean"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "events": [],
+          "children": true
+        },
+        "bry-grid": {
+          "props": {
+            "columns": {
+              "kind": "enum",
+              "values": [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6"
+              ]
+            },
+            "gap": {
+              "kind": "enum",
+              "values": [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8"
+              ]
+            },
+            "align": {
+              "kind": "enum",
+              "values": [
+                "start",
+                "center",
+                "end",
+                "stretch"
+              ]
+            }
+          },
+          "events": [],
+          "children": true
+        },
+        "bry-badge": {
+          "props": {
+            "text": {
+              "kind": "text",
+              "max": 200
+            },
+            "tone": {
+              "kind": "enum",
+              "values": [
+                "neutral",
+                "brand",
+                "success",
+                "warn",
+                "danger"
+              ]
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "events": [],
+          "children": false
+        },
+        "bry-avatar": {
+          "props": {
+            "name": {
+              "kind": "text",
+              "max": 200
+            },
+            "size": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "events": [],
+          "children": false
+        },
+        "bry-list-row": {
+          "props": {
+            "title": {
+              "kind": "text",
+              "max": 200
+            },
+            "description": {
+              "kind": "text",
+              "max": 200
+            },
+            "meta": {
+              "kind": "text",
+              "max": 200
+            },
+            "pressable": {
+              "kind": "boolean"
+            },
+            "selected": {
+              "kind": "boolean"
+            },
+            "loading": {
+              "kind": "boolean"
+            }
+          },
+          "events": [
+            "press"
+          ],
+          "children": true
+        },
+        "bry-empty-state": {
+          "props": {
+            "title": {
+              "kind": "text",
+              "max": 200
+            },
+            "text": {
+              "kind": "text",
+              "max": 4000
+            },
+            "action": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "title"
+          ],
+          "events": [
+            "action"
+          ],
+          "children": false
+        },
+        "bry-skeleton": {
+          "props": {
+            "shape": {
+              "kind": "enum",
+              "values": [
+                "line",
+                "block",
+                "row"
+              ]
+            },
+            "count": {
+              "kind": "int",
+              "min": 1,
+              "max": 12
+            }
+          },
+          "events": [],
+          "children": false
+        },
+        "bry-table": {
+          "props": {
+            "columns": {
+              "kind": "list",
+              "max": 12,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "key": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "heading": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "align": {
+                    "kind": "enum",
+                    "values": [
+                      "start",
+                      "end"
+                    ]
+                  },
+                  "sortable": {
+                    "kind": "boolean"
+                  }
+                },
+                "required": [
+                  "key",
+                  "heading"
+                ]
+              }
+            },
+            "rows": {
+              "kind": "list",
+              "max": 500,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "cells": {
+                    "kind": "list",
+                    "max": 12,
+                    "of": {
+                      "kind": "text",
+                      "max": 200
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "cells"
+                ]
+              }
+            },
+            "sort": {
+              "kind": "shape",
+              "fields": {
+                "key": {
+                  "kind": "text",
+                  "max": 128
+                },
+                "direction": {
+                  "kind": "enum",
+                  "values": [
+                    "asc",
+                    "desc"
+                  ]
+                }
+              },
+              "required": [
+                "key",
+                "direction"
+              ]
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "selectable": {
+              "kind": "boolean"
+            },
+            "selected": {
+              "kind": "text",
+              "max": 128
+            },
+            "loading": {
+              "kind": "boolean"
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "columns"
+          ],
+          "events": [
+            "sort",
+            "select"
+          ],
+          "children": false
+        },
+        "bry-virtual-list": {
+          "props": {
+            "count": {
+              "kind": "int",
+              "min": 0,
+              "max": 1000000
+            },
+            "start": {
+              "kind": "int",
+              "min": 0,
+              "max": 1000000
+            },
+            "rowSize": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "selectable": {
+              "kind": "boolean"
+            },
+            "selected": {
+              "kind": "int",
+              "min": 0,
+              "max": 1000000
+            },
+            "loading": {
+              "kind": "boolean"
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "count"
+          ],
+          "events": [
+            "range",
+            "select"
+          ],
+          "children": true
+        },
+        "bry-dialog": {
+          "props": {
+            "open": {
+              "kind": "boolean"
+            },
+            "title": {
+              "kind": "text",
+              "max": 200
+            },
+            "description": {
+              "kind": "text",
+              "max": 4000
+            },
+            "actions": {
+              "kind": "list",
+              "max": 3,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "tone": {
+                    "kind": "enum",
+                    "values": [
+                      "default",
+                      "primary",
+                      "danger"
+                    ]
+                  },
+                  "disabled": {
+                    "kind": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            },
+            "cancel": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "title"
+          ],
+          "events": [
+            "action",
+            "close"
+          ],
+          "children": true
+        },
+        "bry-menu": {
+          "props": {
+            "items": {
+              "kind": "list",
+              "max": 20,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "icon": {
+                    "kind": "enum",
+                    "values": [
+                      "add",
+                      "archive",
+                      "calendar",
+                      "check",
+                      "copy",
+                      "dismiss",
+                      "docs",
+                      "info",
+                      "mail",
+                      "members",
+                      "notes",
+                      "pin",
+                      "rename",
+                      "retry",
+                      "search",
+                      "settings",
+                      "tasks",
+                      "trash"
+                    ]
+                  },
+                  "tone": {
+                    "kind": "enum",
+                    "values": [
+                      "default",
+                      "danger"
+                    ]
+                  },
+                  "separator": {
+                    "kind": "boolean"
+                  },
+                  "disabled": {
+                    "kind": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            }
+          },
+          "required": [
+            "items"
+          ],
+          "events": [
+            "select"
+          ],
+          "children": true
+        },
+        "bry-date": {
+          "props": {
+            "value": {
+              "kind": "text",
+              "max": 10
+            },
+            "min": {
+              "kind": "text",
+              "max": 10
+            },
+            "max": {
+              "kind": "text",
+              "max": 10
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "placeholder": {
+              "kind": "text",
+              "max": 200
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "events": [
+            "change"
+          ],
+          "children": false
+        },
+        "bry-split": {
+          "props": {
+            "ratio": {
+              "kind": "int",
+              "min": 20,
+              "max": 80
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "events": [],
+          "children": true
+        },
+        "bry-checkbox": {
+          "props": {
+            "checked": {
+              "kind": "boolean"
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "events": [
+            "change"
+          ],
+          "children": false
+        },
+        "bry-switch": {
+          "props": {
+            "checked": {
+              "kind": "boolean"
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "events": [
+            "change"
+          ],
+          "children": false
+        },
+        "bry-board": {
+          "props": {
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "cardSize": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            "settled": {
+              "kind": "text",
+              "max": 128
+            },
+            "loading": {
+              "kind": "boolean"
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "events": [
+            "move"
+          ],
+          "children": true
+        },
+        "bry-board-column": {
+          "props": {
+            "title": {
+              "kind": "text",
+              "max": 200
+            },
+            "count": {
+              "kind": "int",
+              "min": 0,
+              "max": 100000
+            },
+            "limit": {
+              "kind": "int",
+              "min": 1,
+              "max": 100000
+            },
+            "start": {
+              "kind": "int",
+              "min": 0,
+              "max": 100000
+            },
+            "loading": {
+              "kind": "boolean"
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "title"
+          ],
+          "events": [
+            "range"
+          ],
+          "children": true
+        },
+        "bry-markdown": {
+          "props": {
+            "text": {
+              "kind": "text",
+              "max": 50000
+            },
+            "expanded": {
+              "kind": "boolean"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "events": [],
+          "children": false
+        },
+        "bry-diff": {
+          "props": {
+            "files": {
+              "kind": "list",
+              "max": 300,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "path": {
+                    "kind": "text",
+                    "max": 1000
+                  },
+                  "previous": {
+                    "kind": "text",
+                    "max": 1000
+                  },
+                  "status": {
+                    "kind": "enum",
+                    "values": [
+                      "added",
+                      "modified",
+                      "removed",
+                      "renamed"
+                    ]
+                  },
+                  "patch": {
+                    "kind": "text",
+                    "max": 200000
+                  }
+                },
+                "required": [
+                  "path"
+                ]
+              }
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "loading": {
+              "kind": "boolean"
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "files"
+          ],
+          "events": [
+            "expand",
+            "select"
+          ],
+          "children": false
+        },
+        "bry-file-grid": {
+          "props": {
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "count": {
+              "kind": "int",
+              "min": 0,
+              "max": 100000
+            },
+            "start": {
+              "kind": "int",
+              "min": 0,
+              "max": 100000
+            },
+            "files": {
+              "kind": "list",
+              "max": 200,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "name": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "kind": {
+                    "kind": "enum",
+                    "values": [
+                      "document",
+                      "spreadsheet",
+                      "presentation",
+                      "pdf",
+                      "image",
+                      "video",
+                      "audio",
+                      "code",
+                      "archive",
+                      "folder",
+                      "other"
+                    ]
+                  },
+                  "preview": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "size": {
+                    "kind": "int",
+                    "min": 0,
+                    "max": 2000000000
+                  },
+                  "modified": {
+                    "kind": "text",
+                    "max": 40
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "kind"
+                ]
+              }
+            },
+            "tileSize": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            "selectable": {
+              "kind": "boolean"
+            },
+            "selected": {
+              "kind": "list",
+              "max": 200,
+              "of": {
+                "kind": "text",
+                "max": 128
+              }
+            },
+            "menu": {
+              "kind": "list",
+              "max": 12,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "icon": {
+                    "kind": "enum",
+                    "values": [
+                      "add",
+                      "archive",
+                      "calendar",
+                      "check",
+                      "copy",
+                      "dismiss",
+                      "docs",
+                      "info",
+                      "mail",
+                      "members",
+                      "notes",
+                      "pin",
+                      "rename",
+                      "retry",
+                      "search",
+                      "settings",
+                      "tasks",
+                      "trash"
+                    ]
+                  },
+                  "tone": {
+                    "kind": "enum",
+                    "values": [
+                      "default",
+                      "danger"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            },
+            "loading": {
+              "kind": "boolean"
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "count"
+          ],
+          "events": [
+            "open",
+            "select",
+            "menu",
+            "range"
+          ],
+          "children": false
+        }
+      },
+      "textNode": "#text"
+    },
+    "catalogue-refusals": {
+      "values": [
+        "bry-stack gap must be one of 1, 2, 3, 4, 5, 6, 7, 8.",
+        "bry-stack has no setting called \"style\".",
+        null,
+        "bry-heading level must be a whole number from 1 to 4.",
+        "bry-text text must be text of at most 4000 characters.",
+        "bry-button disabled must be true or false.",
+        "bry-card padding must be one of 2, 3, 4, 5, 6.",
+        "bry-input kind must be one of text, email, url, search.",
+        "bry-input maxLength must be a whole number from 1 to 1000.",
+        "bry-input value must be text of at most 1000 characters.",
+        null,
+        "bry-textarea has no setting called \"kind\".",
+        "bry-select options must be a list of at most 100 choices, each with a value and a label of at most 200 characters (and optionally a member id as avatar), and no value twice.",
+        "bry-select options must be a list of at most 100 choices, each with a value and a label of at most 200 characters (and optionally a member id as avatar), and no value twice.",
+        "bry-select options must be a list of at most 100 choices, each with a value and a label of at most 200 characters (and optionally a member id as avatar), and no value twice.",
+        "bry-grid columns must be one of 1, 2, 3, 4, 5, 6.",
+        "bry-badge tone must be one of neutral, brand, success, warn, danger.",
+        "bry-avatar has no setting called \"src\".",
+        "bry-skeleton count must be a whole number from 1 to 12.",
+        "bry-empty-state action must be text of at most 200 characters.",
+        "bry-table columns[0].align must be one of start, end.",
+        "bry-table columns[1] needs a heading.",
+        "bry-table columns[0] has no field called \"width\".",
+        "bry-table columns must be a list of at most 12.",
+        "bry-table columns must be a list of at most 12.",
+        "bry-table columns[0] must be a record with key, heading, align, sortable.",
+        "bry-table rows[0].cells[1] must be text of at most 200 characters.",
+        "bry-table rows[0].id must be text of at most 128 characters.",
+        "bry-table sort.direction must be one of asc, desc.",
+        "bry-table sort needs a direction.",
+        "bry-table selected must be text of at most 128 characters.",
+        "bry-virtual-list count must be a whole number from 0 to 1000000.",
+        "bry-virtual-list rowSize must be one of sm, md, lg.",
+        "bry-dialog actions must be a list of at most 3.",
+        "bry-dialog actions[0].tone must be one of default, primary, danger.",
+        "bry-dialog description must be text of at most 4000 characters.",
+        "bry-menu items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash.",
+        "bry-menu items[0].separator must be true or false.",
+        "bry-date value must be text of at most 10 characters.",
+        "bry-split ratio must be a whole number from 20 to 80.",
+        "bry-checkbox checked must be true or false.",
+        "bry-switch has no setting called \"onChange\".",
+        "bry-board cardSize must be one of sm, md, lg.",
+        "bry-board has no setting called \"indicator\".",
+        "bry-board settled must be text of at most 128 characters.",
+        "bry-board-column limit must be a whole number from 1 to 100000.",
+        "bry-board-column count must be a whole number from 0 to 100000.",
+        "bry-button icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, more, close, arrowRight, chevronRight, chevronDown, chevronUp.",
+        "bry-button hideLabel must be true or false.",
+        "bry-heading level must be a whole number from 1 to 4.",
+        "bry-heading variant must be one of title, heading, subheading, label.",
+        "bry-avatar size must be one of sm, md, lg.",
+        "bry-text tone must be one of default, muted, neutral, brand, success, warn, danger.",
+        "bry-text variant must be one of body, ui, caption, label.",
+        "bry-markdown text must be text of at most 50000 characters.",
+        "bry-markdown expanded must be true or false.",
+        "bry-diff files[0].status must be one of added, modified, removed, renamed.",
+        "bry-diff files[0] needs a path.",
+        "bry-diff files[0].patch must be text of at most 200000 characters.",
+        "bry-diff files must be a list of at most 300."
+      ],
+      "empties": [
+        "bry-button needs a label.",
+        "bry-select needs a options.",
+        "bry-label needs a text.",
+        "bry-badge needs a text.",
+        "bry-avatar needs a name.",
+        "bry-empty-state needs a title.",
+        "bry-table needs a columns.",
+        "bry-virtual-list needs a count.",
+        "bry-dialog needs a title.",
+        "bry-menu needs a items.",
+        "bry-checkbox needs a label.",
+        "bry-switch needs a label.",
+        null,
+        "bry-board-column needs a title.",
+        "bry-markdown needs a text.",
+        "bry-diff needs a files."
+      ]
+    },
     "compare-versions": [
       [
         0,

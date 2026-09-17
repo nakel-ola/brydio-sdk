@@ -3,6 +3,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
+import { BRYDIO, brydioAnswers } from '../../../test-support/contracts.ts';
+
 import {
   CATALOGUE,
   ELEMENT_NAMES,
@@ -20,12 +22,12 @@ import {
   type PropSpec,
 } from '../src/index.ts';
 
-/** Brydio's own declaration, when a checkout sits beside this repository. */
-const brydio = process.env.BRYDIO_DIR ?? join(import.meta.dir, '..', '..', '..', '..', 'brydio');
+/** Brydio's own declaration: live from a checkout beside this repository, recorded in `contracts/brydio.json` otherwise. */
+const brydio = BRYDIO;
 const catalogueDir = 'packages/app/src/apps/catalogue';
 /** The kit's generated token names, which the host's `spec.ts` imports as `@repo/ui/token-names`. */
 const tokenNames = 'packages/ui/src/lib/token-names.ts';
-const hasHost = existsSync(join(brydio, catalogueDir, 'elements.ts'));
+const HOST_LIST = `${catalogueDir}/elements.ts`;
 
 /**
  * The host's catalogue as committed at HEAD, not as it sits on disk: other
@@ -123,17 +125,18 @@ describe('the catalogue as a whole', () => {
 });
 
 describe('the same as Brydio’s receiver', () => {
-  test.skipIf(!hasHost)('declares exactly what packages/app/src/apps/catalogue/elements.ts declares at HEAD', async () => {
-    const { host, unlanded } = await hostAtHead();
+  test('declares exactly what packages/app/src/apps/catalogue/elements.ts declares at HEAD', async () => {
+    const host = await brydioAnswers('catalogue-elements', [HOST_LIST, tokenNames], async () => {
+      const { host: list, unlanded } = await hostAtHead();
 
-    const landed = Object.fromEntries(Object.entries(host.ELEMENTS).filter(([name]) => !unlanded.includes(name)));
+      return { elements: Object.fromEntries(Object.entries(list.ELEMENTS).filter(([name]) => !unlanded.includes(name))), textNode: list.TEXT_NODE };
+    });
 
-    expect(JSON.parse(JSON.stringify(CATALOGUE))).toEqual(JSON.parse(JSON.stringify(landed)));
-    expect(host.TEXT_NODE).toBe('#text');
+    expect(JSON.parse(JSON.stringify(CATALOGUE))).toEqual(host.elements);
+    expect(host.textNode).toBe('#text');
   });
 
-  test.skipIf(!hasHost)('refuses with the host’s own sentences', async () => {
-    const { host, unlanded } = await hostAtHead();
+  test('refuses with the host’s own sentences', async () => {
     const cases: [string, string, unknown][] = [
       ['bry-stack', 'gap', '9'],
       ['bry-stack', 'style', 'x'],
@@ -143,12 +146,6 @@ describe('the same as Brydio’s receiver', () => {
       ['bry-button', 'disabled', 'yes'],
       ['bry-card', 'padding', '8'],
     ];
-
-    for (const [type, name, value] of cases) {
-      expect(refusalFor(type as never, name, value)).toBe(host.refusalFor(type, name, value));
-    }
-
-    expect(refusalForProps('bry-button', {})).toBe(host.refusalForProps('bry-button', {}));
 
     const fields: [string, string, unknown][] = [
       ['bry-input', 'kind', 'password'],
@@ -165,12 +162,6 @@ describe('the same as Brydio’s receiver', () => {
       ['bry-skeleton', 'count', 13],
       ['bry-empty-state', 'action', 'x'.repeat(201)],
     ];
-
-    for (const [type, name, value] of fields) expect(refusalFor(type as never, name, value)).toBe(host.refusalFor(type, name, value));
-
-    for (const type of ['bry-select', 'bry-label', 'bry-badge', 'bry-avatar', 'bry-empty-state']) {
-      expect(refusalForProps(type as never, {})).toBe(host.refusalForProps(type, {}));
-    }
 
     // Wren's eight, whose lists and records name the path to the field they refuse.
     const column = { key: 'title', heading: 'Title' };
@@ -218,14 +209,21 @@ describe('the same as Brydio’s receiver', () => {
       ['bry-diff', 'files', Array.from({ length: 301 }, (_, at) => ({ path: `f${at}` }))],
     ];
 
-    for (const [type, name, value] of later) {
-      expect(refusalFor(type as never, name, value)).not.toBeNull();
-      expect(refusalFor(type as never, name, value)).toBe(host.refusalFor(type, name, value));
-    }
+    const values = [...cases, ...fields, ...later];
+    const empties = ['bry-button', 'bry-select', 'bry-label', 'bry-badge', 'bry-avatar', 'bry-empty-state', 'bry-table', 'bry-virtual-list', 'bry-dialog', 'bry-menu', 'bry-checkbox', 'bry-switch', 'bry-board', 'bry-board-column', 'bry-markdown', 'bry-diff'];
+    const host = await brydioAnswers('catalogue-refusals', [HOST_LIST, tokenNames], async () => {
+      const { host: list } = await hostAtHead();
 
-    for (const type of ['bry-table', 'bry-virtual-list', 'bry-dialog', 'bry-menu', 'bry-checkbox', 'bry-switch', 'bry-board', 'bry-board-column', 'bry-markdown', 'bry-diff']) {
-      expect(refusalForProps(type as never, {})).toBe(host.refusalForProps(type, {}));
-    }
+      return {
+        values: values.map(([type, name, value]) => list.refusalFor(type, name, value)),
+        empties: empties.map(type => list.refusalForProps(type, {})),
+      };
+    });
+
+    for (const [type, name, value] of later) expect(refusalFor(type as never, name, value)).not.toBeNull();
+
+    expect(values.map(([type, name, value]) => refusalFor(type as never, name, value))).toEqual(host.values);
+    expect(empties.map(type => refusalForProps(type as never, {}))).toEqual(host.empties);
   });
 
   test('refuses inside a table’s columns and a menu’s items with the path to the field', () => {
