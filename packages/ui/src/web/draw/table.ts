@@ -241,7 +241,7 @@ drawAs(
         border-bottom: 1px solid var(--line);
       }
       td {
-        border-bottom: 1px solid var(--line-soft, var(--line));
+        border-bottom: 1px solid var(--line-faint);
         color: var(--fg-soft);
       }
       .align-end {
@@ -267,7 +267,7 @@ drawAs(
          press doesn't shift the heading beside it. */
       .arrow {
         opacity: 0;
-        transition: transform var(--dur-fast, 120ms);
+        transition: transform var(--dur-fast);
       }
       .arrow.asc {
         opacity: 1;
@@ -281,10 +281,10 @@ drawAs(
         outline: none;
       }
       tr.pickable:hover td {
-        background: var(--bg-sunken, transparent);
+        background: var(--layer-hover);
       }
       tr[data-state='selected'] td {
-        background: var(--brand-soft, var(--bg-sunken, transparent));
+        background: var(--layer-selected);
         color: var(--fg-strong);
       }
       tr.pickable:focus-visible {
@@ -301,7 +301,7 @@ drawAs(
         height: 0.75rem;
         width: 60%;
         border-radius: 0.25rem;
-        background: var(--bg-sunken, var(--line));
+        background: var(--bg-sunken);
       }
     `,
   ],

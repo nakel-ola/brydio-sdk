@@ -403,8 +403,8 @@ drawAs(
         gap: 0.25rem;
         padding: 0.5rem;
         border: 1px solid var(--line);
-        border-radius: var(--radius-lg, 0.75rem);
-        background: var(--bg);
+        border-radius: var(--radius-lg);
+        background: var(--bg-surface);
         outline: none;
         cursor: pointer;
       }
@@ -421,8 +421,8 @@ drawAs(
         flex: 1;
         display: grid;
         place-items: center;
-        border-radius: var(--radius-md, 0.5rem);
-        background: var(--bg-sunken, var(--line));
+        border-radius: var(--radius-md);
+        background: var(--bg-sunken);
         font-size: 0.75rem;
         letter-spacing: 0.04em;
         text-transform: uppercase;
@@ -444,8 +444,8 @@ drawAs(
       }
       .more {
         border: 1px solid var(--line);
-        border-radius: var(--radius-md, 0.5rem);
-        background: var(--bg);
+        border-radius: var(--radius-md);
+        background: var(--bg-surface);
         color: var(--fg);
         cursor: pointer;
         line-height: 1;
@@ -461,9 +461,9 @@ drawAs(
         flex-direction: column;
         padding: 0.25rem;
         border: 1px solid var(--line);
-        border-radius: var(--radius-md, 0.5rem);
-        background: var(--bg-raised, var(--bg));
-        box-shadow: var(--shadow-md, 0 8px 24px rgb(0 0 0 / 0.12));
+        border-radius: var(--radius-md);
+        background: var(--bg-elevated);
+        box-shadow: var(--shadow-md);
       }
       .menu button {
         text-align: start;
@@ -476,14 +476,14 @@ drawAs(
         cursor: pointer;
       }
       .menu button:hover {
-        background: var(--layer-hover, var(--bg-sunken));
+        background: var(--layer-hover);
       }
       .menu button.danger {
-        color: var(--danger, crimson);
+        color: var(--danger-fg);
       }
       .bone {
-        border-radius: var(--radius-lg, 0.75rem);
-        background: var(--bg-sunken, var(--line));
+        border-radius: var(--radius-lg);
+        background: var(--bg-sunken);
       }
       .empty {
         padding: calc(0.25rem * 6);
