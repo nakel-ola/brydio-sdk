@@ -3,7 +3,15 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, 
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 
-import { commitOf, commitRefusal, RELEASED, ROOT, releaseBuild, supportRefusal } from '../../../scripts/release-build.ts';
+import {
+  changelogRefusal,
+  commitOf,
+  commitRefusal,
+  RELEASED,
+  ROOT,
+  releaseBuild,
+  supportRefusal,
+} from '../../../scripts/release-build.ts';
 
 /**
  * The packages as a registry would get them (A9-F03, Phase 4 groundwork).
@@ -246,6 +254,32 @@ describe('the release build', () => {
 
     // Every test builds --dry, which is why the suite still runs today.
     expect(supportRefusal({}, true)).toBeNull();
+  });
+
+  /**
+   * A9-F03-S03. A release with no entry leaves the people who depend on the
+   * SDK to diff two tarballs to find out what moved — and at 0.x, where a
+   * minor may break them, that is the difference between an upgrade and an
+   * afternoon. The entry has to exist before the version goes out; afterwards
+   * never comes.
+   */
+  test('will not publish a version the changelog does not mention', () => {
+    const log = readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf8');
+    const version = JSON.parse(readFileSync(join(ROOT, 'packages', RELEASED[0], 'package.json'), 'utf8')).version;
+
+    // The version being built today has its section, so a release is not blocked.
+    expect(changelogRefusal(version, log, false)).toBeNull();
+
+    const missing = changelogRefusal('9.9.9', log, false);
+
+    expect(missing, 'a version with no changelog entry was allowed out').not.toBeNull();
+    expect(missing).toContain('## 9.9.9');
+
+    // A mention in prose is not an entry: the heading is what is asked for.
+    expect(changelogRefusal('2.0.0', 'Coming soon: 2.0.0, which changes everything.', false)).not.toBeNull();
+    expect(changelogRefusal('2.0.0', '## 2.0.0\n\nWhat changed.', false)).toBeNull();
+
+    expect(changelogRefusal('9.9.9', log, true)).toBeNull();
   });
 
   test('will not build publishable packages from a tree that has changes in it', () => {

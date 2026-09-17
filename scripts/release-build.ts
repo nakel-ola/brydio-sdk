@@ -80,6 +80,27 @@ export function commitOf(root: string): { commit: string; uncommitted: string[] 
 }
 
 /**
+ * Why this version may not be published without saying what changed, or null.
+ *
+ * A release whose changelog has no section for it leaves the people who
+ * depend on the SDK to diff two tarballs to find out what moved — and while
+ * the SDK is 0.x, where a minor may break them, that is the difference
+ * between an upgrade and an afternoon. The entry has to exist before the
+ * version goes out, not afterwards, because afterwards never comes.
+ */
+export function changelogRefusal(version: string, changelog: string, dry: boolean): string | null {
+  if (dry) return null;
+
+  // A heading of its own: `## 0.1.0-alpha.0`, anywhere in the file.
+  const heading = new RegExp(`^##\\s+${version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'm');
+
+  return heading.test(changelog)
+    ? null
+    : `CHANGELOG.md has no "## ${version}" section, so this release would go out without saying what changed. ` +
+        'Write the entry, with what to change where something has to change. Build with --dry to test without one.';
+}
+
+/**
  * Why the packages may not yet tell people where to report a problem, or null.
  *
  * `docs/support.md` and `docs/security.md` exist, and everything in them that
@@ -167,9 +188,12 @@ export async function releaseBuild(options: ReleaseOptions = {}): Promise<Record
   }
 
   const { commit, uncommitted } = commitOf(ROOT);
+  const version = (JSON.parse(readFileSync(join(ROOT, 'packages', RELEASED[0], 'package.json'), 'utf8')) as PackageJson).version;
+  const changelog = existsSync(join(ROOT, 'CHANGELOG.md')) ? readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf8') : '';
   const refusal =
     commitRefusal({ commit, uncommitted }, options.dry === true) ??
-    supportRefusal(settings, options.dry === true);
+    supportRefusal(settings, options.dry === true) ??
+    changelogRefusal(version, changelog, options.dry === true);
 
   if (refusal) throw new ReleaseRefused(refusal);
   const built: Record<string, string> = {};
