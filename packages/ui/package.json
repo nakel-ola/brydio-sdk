@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./validate": "./src/validate.ts",
     "./web": "./src/web/index.ts",
     "./web/tokens.css": "./src/web/tokens.css"
   },

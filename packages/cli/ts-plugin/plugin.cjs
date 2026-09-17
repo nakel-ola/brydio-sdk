@@ -61,7 +61,7 @@ var __export = (target, all) => {
     });
 };
 
-// src/ts-plugin.ts
+// packages/cli/src/ts-plugin.ts
 var exports_ts_plugin = {};
 __export(exports_ts_plugin, {
   default: () => ts_plugin_default,
@@ -73,9 +73,26 @@ module.exports = __toCommonJS(exports_ts_plugin);
 var import_node_fs = require("node:fs");
 var import_node_path2 = require("node:path");
 
-// ../ui/src/catalogue.ts
-var LABEL_MAX = 200;
+// packages/ui/src/basics.ts
 var PARAGRAPH_MAX = 4000;
+var TEXT_NODE = "#text";
+var FORBIDDEN_PROPS = {
+  style: "Brydio draws every element in its own style; there is no style setting.",
+  className: "There are no classes in a Brydio app; choose a setting the element offers.",
+  class: "There are no classes in a Brydio app; choose a setting the element offers.",
+  color: "Colours come from Brydio’s tokens through a setting like tone, never a value.",
+  colour: "Colours come from Brydio’s tokens through a setting like tone, never a value.",
+  dangerouslySetInnerHTML: "A Brydio app has no HTML to set.",
+  innerHTML: "A Brydio app has no HTML to set."
+};
+var handlerName = (event) => `on${event.charAt(0).toUpperCase()}${event.slice(1)}`;
+function eventOfHandler(name) {
+  if (!/^on[A-Z]/.test(name))
+    return null;
+  return name.slice(2).toLowerCase();
+}
+// packages/ui/src/catalogue.ts
+var LABEL_MAX = 200;
 var GAPS = ["1", "2", "3", "4", "5", "6", "7", "8"];
 var PADDINGS = ["2", "3", "4", "5", "6"];
 var TONES = ["neutral", "brand", "success", "warn", "danger"];
@@ -535,17 +552,7 @@ var CATALOGUE = {
   }
 };
 var ELEMENT_NAMES = Object.keys(CATALOGUE);
-var TEXT_NODE = "#text";
-var FORBIDDEN_PROPS = {
-  style: "Brydio draws every element in its own style; there is no style setting.",
-  className: "There are no classes in a Brydio app; choose a setting the element offers.",
-  class: "There are no classes in a Brydio app; choose a setting the element offers.",
-  color: "Colours come from Brydio’s tokens through a setting like tone, never a value.",
-  colour: "Colours come from Brydio’s tokens through a setting like tone, never a value.",
-  dangerouslySetInnerHTML: "A Brydio app has no HTML to set.",
-  innerHTML: "A Brydio app has no HTML to set."
-};
-// ../ui/src/checks.ts
+// packages/ui/src/checks.ts
 function isElementName(value) {
   return typeof value === "string" && Object.prototype.hasOwnProperty.call(CATALOGUE, value);
 }
@@ -645,19 +652,13 @@ function checkProp(element, name, value) {
   const why = FORBIDDEN_PROPS[name];
   return why ? `${refused} ${why}` : refused;
 }
-var handlerName = (event) => `on${event.charAt(0).toUpperCase()}${event.slice(1)}`;
-function eventOfHandler(name) {
-  if (!/^on[A-Z]/.test(name))
-    return null;
-  return name.slice(2).toLowerCase();
-}
 function checkEvent(element, event) {
   const events = CATALOGUE[element].events;
   if (events.includes(event))
     return null;
   return events.length ? `${element} raises ${events.join(", ")}, not "${event}".` : `${element} raises no events, so it takes no ${handlerName(event)}.`;
 }
-// src/source-checks.ts
+// packages/cli/src/source-checks.ts
 var import_node_path = require("node:path");
 var import_typescript = __toESM(require("typescript"));
 var PAGE = { code: "dom_global", why: "A screen has no page: it runs in a worker and draws only with the catalogue." };
@@ -1033,14 +1034,14 @@ function dedupe(problems) {
   });
 }
 
-// src/screen-sources.ts
+// packages/cli/src/screen-sources.ts
 var SOURCE_EXTENSIONS = [".tsx", ".ts", ".jsx", ".js"];
 function isScreenSource(path) {
   const normal = path.replace(/\\/g, "/");
   return /^src\//.test(normal) && SOURCE_EXTENSIONS.some((extension) => normal.endsWith(extension)) && !normal.endsWith(".d.ts") && !/(^|\/)(test|tests|__tests__)\/|\.(test|spec)\.[jt]sx?$/.test(normal);
 }
 
-// src/ts-plugin.ts
+// packages/cli/src/ts-plugin.ts
 var PLUGIN_SOURCE = "brydio";
 var PLUGIN_CODE = 91000;
 function appRootOf(file) {

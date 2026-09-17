@@ -1,4 +1,7 @@
-import { CATALOGUE, FORBIDDEN_PROPS, LABEL_MAX, MAX_TEXT, TEXT_NODE, type ElementName, type ElementSpec, type PropSpec } from './catalogue.ts';
+import { FORBIDDEN_PROPS, TEXT_NODE, handlerName } from './basics.ts';
+import { CATALOGUE, LABEL_MAX, type ElementName, type ElementSpec, type PropSpec } from './catalogue.ts';
+
+export { checkText, eventOfHandler, handlerName } from './basics.ts';
 
 /**
  * The checks every reader of the catalogue shares.
@@ -173,29 +176,9 @@ export function checkProp(element: ElementName, name: string, value: unknown): s
   return why ? `${refused} ${why}` : refused;
 }
 
-/** Why a text is refused, or `null`. The host's words. */
-export function checkText(text: unknown): string | null {
-  return typeof text === 'string' && text.length <= MAX_TEXT ? null : `Text must be at most ${MAX_TEXT} characters.`;
-}
-
 /** Why a parent can't hold children, or `null` when it can. The host's words. */
 export function checkChild(parent: ElementName): string | null {
   return CATALOGUE[parent].children ? null : `${parent} can’t hold other nodes.`;
-}
-
-/** `press` → `onPress`. */
-export const handlerName = (event: string): string => `on${event.charAt(0).toUpperCase()}${event.slice(1)}`;
-
-/**
- * The event a handler setting names, or `null` when the name is not a handler.
- *
- * `onPress` → `press`. Preact registers some listeners with the case it was
- * given (`Press`) and some lower-cased, so the answer is always lower-case.
- */
-export function eventOfHandler(name: string): string | null {
-  if (!/^on[A-Z]/.test(name)) return null;
-
-  return name.slice(2).toLowerCase();
 }
 
 /** Why an element does not raise this event, or `null` when it does. */

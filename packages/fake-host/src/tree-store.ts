@@ -1,4 +1,5 @@
-import { CATALOGUE, MAX_TEXT, TEXT_NODE, isElementName as isElement, refusalForProps, type ElementName } from '@brydio/ui';
+import { MAX_TEXT, TEXT_NODE, type ElementName } from '@brydio/ui';
+import { CATALOGUE, isElementName as isElement, refusalForProps } from '@brydio/ui/validate';
 
 // A copy of Brydio's `packages/app/src/apps/tree/tree-store.ts`, the host's
 // receiver, with two changes only: the catalogue comes from `@brydio/ui`

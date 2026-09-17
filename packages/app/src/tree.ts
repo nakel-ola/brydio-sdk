@@ -1,18 +1,4 @@
-import {
-  CATALOGUE,
-  FORBIDDEN_PROPS,
-  TEXT_NODE,
-  checkChild,
-  checkElement,
-  checkEvent,
-  checkProp,
-  checkText,
-  eventOfHandler,
-  refusalForProps,
-  type BryEvent,
-  type ElementAttributes,
-  type ElementName,
-} from '@brydio/ui';
+import { FORBIDDEN_PROPS, TEXT_NODE, checkText, eventOfHandler, type BryEvent, type ElementAttributes, type ElementName } from '@brydio/ui';
 
 import { defaultBridge, type Bridge } from './bridge.ts';
 import { MAX_ID_CHARS, MAX_NODES, ROOT_ID, type Node, type NodeId, type Op, type PropValue, type TreeEventParams } from './protocol.ts';
@@ -54,6 +40,9 @@ export class TreeError extends Error {
   }
 }
 
+/** Every element Brydio draws is named `bry-something`. */
+const ELEMENT_NAME = /^bry-[a-z][a-z-]*$/;
+
 const XHTML = 'http://www.w3.org/1999/xhtml';
 
 // Internal state lives under symbols, which no prop name can reach.
@@ -65,7 +54,6 @@ const $adopt = Symbol('adopt');
 const $forget = Symbol('forget');
 const $structure = Symbol('structure');
 const $dirty = Symbol('dirty');
-const $check = Symbol('check');
 
 /**
  * Settings that are an answer rather than a state, so saying the same again
@@ -201,7 +189,16 @@ export class RemoteElement<E extends ElementName = ElementName> extends RemoteNo
   [$children]: RemoteNode[] = [];
 
   constructor(type: E, id: NodeId = nextId()) {
-    const refused = type === (TEXT_NODE as string) ? 'Text goes in a text node, not an element.' : checkElement(type);
+    // The name only: what each element takes is the catalogue's business, and
+    // the catalogue is not carried here (A5-F03-S01). `brydio validate` and the
+    // editor read it as the app is written, and the host refuses every node it
+    // is sent, so a screen carries neither the table nor a second opinion.
+    const refused =
+      type === (TEXT_NODE as string)
+        ? 'Text goes in a text node, not an element.'
+        : ELEMENT_NAME.test(type)
+          ? null
+          : `${String(type)} is not one of Brydio’s elements, which are all named bry-something.`;
 
     if (refused) throw new TreeError('element', refused);
 
@@ -281,9 +278,11 @@ export class RemoteElement<E extends ElementName = ElementName> extends RemoteNo
       return;
     }
 
-    const refused = checkProp(this.#type, name, value);
+    // A setting no element will ever take is worth saying at once; the rest is
+    // the host's to refuse, in its own words.
+    const forbidden = FORBIDDEN_PROPS[name];
 
-    if (refused) throw new TreeError('prop', refused);
+    if (forbidden) throw new TreeError('prop', `${this.#type} has no ${name}. ${forbidden}`);
 
     if (this.#props[name] === value && !ANSWERS[this.#type]?.includes(name)) return;
 
@@ -299,12 +298,6 @@ export class RemoteElement<E extends ElementName = ElementName> extends RemoteNo
   removeAttribute(name: string): void {
     if (!Object.prototype.hasOwnProperty.call(this.#props, name)) return;
 
-    const required: readonly string[] = (CATALOGUE[this.#type] as { required?: readonly string[] }).required ?? [];
-
-    if (this.isConnected && required.includes(name)) {
-      throw new TreeError('prop', `${this.#type} needs a ${name}.`);
-    }
-
     delete this.#props[name];
     this[$root]?.[$dirty](this, name);
   }
@@ -317,10 +310,6 @@ export class RemoteElement<E extends ElementName = ElementName> extends RemoteNo
     const event = eventOfHandler(name);
 
     if (event !== null && (typeof value === 'function' || value === undefined || value === null)) {
-      const refused = checkEvent(this.#type, event);
-
-      if (refused) throw new TreeError('event', refused);
-
       if (typeof value === 'function') this.#handlers.set(event, value as (event: BryEvent<unknown>) => void);
       else this.#handlers.delete(event);
 
@@ -337,10 +326,6 @@ export class RemoteElement<E extends ElementName = ElementName> extends RemoteNo
   /** How Preact attaches `onPress`: as a listener for `Press` (or `press`). */
   addEventListener(type: string, listener: Listener | null): void {
     if (!listener) return;
-
-    const refused = checkEvent(this.#type, type.toLowerCase());
-
-    if (refused) throw new TreeError('event', refused);
 
     let set = this.#listeners.get(type);
 
@@ -418,11 +403,6 @@ export class RemoteElement<E extends ElementName = ElementName> extends RemoteNo
     if (withChildren) node.children = this[$children].map(child => child.id);
 
     return node;
-  }
-
-  /** Why the host could not draw this element as it stands, or null. */
-  [$check](): string | null {
-    return refusalForProps(this.#type, this.#props);
   }
 
   /** Hands an event from the host to this element's handlers. True when anyone was listening. */
@@ -691,10 +671,6 @@ function place(parent: RemoteElement, child: RemoteNode, before: RemoteNode | nu
     if (at === child) throw new TreeError('structure', 'A node can’t be moved inside itself.');
   }
 
-  const refused = checkChild(parent.localName);
-
-  if (refused) throw new TreeError('child', refused);
-
   const root = parent[$root];
   const oldParent = child[$parent];
   const oldRoot = child[$root];
@@ -745,10 +721,6 @@ function sizeOf(node: RemoteNode): number {
 
 function firstIncomplete(node: RemoteNode): string | null {
   if (!(node instanceof RemoteElement)) return null;
-
-  const refused = node[$check]();
-
-  if (refused) return refused;
 
   for (const child of node[$children]) {
     const inner = firstIncomplete(child);

@@ -18,9 +18,9 @@ import {
   refusalFor,
   refusalForProps,
   refusalForValue,
-  type ElementAttributes,
   type PropSpec,
-} from '../src/index.ts';
+} from '../src/validate.ts';
+import type { ElementAttributes } from '../src/index.ts';
 
 /** Brydio's own declaration: live from a checkout beside this repository, recorded in `contracts/brydio.json` otherwise. */
 const brydio = BRYDIO;

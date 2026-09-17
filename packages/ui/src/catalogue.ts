@@ -43,8 +43,10 @@ export interface ElementSpec {
 
 /** Short text on a control or a heading. Long enough for a sentence, no more. */
 export const LABEL_MAX = 200;
-/** A paragraph. Long text belongs in more than one node. */
-export const PARAGRAPH_MAX = 4_000;
+import { PARAGRAPH_MAX } from './basics.ts';
+
+export { FORBIDDEN_PROPS, MAX_TEXT, PARAGRAPH_MAX, TEXT_NODE } from './basics.ts';
+
 
 /** Steps on the spacing scale an app may name. `gap="3"` is Brydio's `gap-3`. */
 export const GAPS = ['1', '2', '3', '4', '5', '6', '7', '8'] as const;
@@ -633,23 +635,3 @@ export type ElementName = keyof Catalogue;
 /** The element names, in the catalogue's order. */
 export const ELEMENT_NAMES = Object.keys(CATALOGUE) as ElementName[];
 
-/** A run of text between elements. Drawn as text, never as markup. */
-export const TEXT_NODE = '#text';
-
-/** The longest a text node may be. */
-export const MAX_TEXT = PARAGRAPH_MAX;
-
-/**
- * Settings no element will ever take, named so a local refusal can say why
- * rather than just "unknown". Only the SDK adds these words; the host's
- * sentence comes first, unchanged.
- */
-export const FORBIDDEN_PROPS: Readonly<Record<string, string>> = {
-  style: 'Brydio draws every element in its own style; there is no style setting.',
-  className: 'There are no classes in a Brydio app; choose a setting the element offers.',
-  class: 'There are no classes in a Brydio app; choose a setting the element offers.',
-  color: 'Colours come from Brydio’s tokens through a setting like tone, never a value.',
-  colour: 'Colours come from Brydio’s tokens through a setting like tone, never a value.',
-  dangerouslySetInnerHTML: 'A Brydio app has no HTML to set.',
-  innerHTML: 'A Brydio app has no HTML to set.',
-};

@@ -286,15 +286,17 @@ describe('the Preact adapter', () => {
     ]);
   });
 
-  test('refuses what the host would refuse, where it was written', () => {
+  test('refuses a name that is not an element, and a setting no element takes, where it was written', () => {
     const { root } = harness();
 
     // @ts-expect-error there is no div
-    expect(() => render(<div />, root)).toThrow('Brydio has no element called "div".');
-    // @ts-expect-error a text takes its words as a setting
-    expect(() => render(<bry-text text="a">b</bry-text>, harness().root)).toThrow('bry-text can’t hold other nodes.');
+    expect(() => render(<div />, root)).toThrow('div is not one of Brydio’s elements, which are all named bry-something.');
     // @ts-expect-error there is no style
     expect(() => render(<bry-stack style="color: red" />, harness().root)).toThrow('there is no style setting');
+    // What the catalogue would refuse goes to the host, which refuses it in its own words: a
+    // screen carries no catalogue (A5-F03-S01), and the editor catches this as it is written.
+    // @ts-expect-error a text takes its words as a setting
+    expect(() => render(<bry-text text="a">b</bry-text>, harness().root)).not.toThrow();
   });
 
   test('useList reads through data/list and reads again on refetch', async () => {

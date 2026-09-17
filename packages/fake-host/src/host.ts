@@ -1,5 +1,6 @@
 import { TOOL_WRITES, collectionsOf, toolNames, type ManifestExtensions } from '@brydio/manifest';
-import { TEXT_NODE, checkEvent, isElementName, type DetailOf, type ElementEvent, type ElementName } from '@brydio/ui';
+import { TEXT_NODE, type DetailOf, type ElementEvent, type ElementName } from '@brydio/ui';
+import { checkEvent, isElementName } from '@brydio/ui/validate';
 import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';

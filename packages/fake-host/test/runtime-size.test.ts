@@ -101,7 +101,7 @@ function trimmedEntry(used: Set<string>): string {
  * In its own process from the template's folder, as `build` runs it, so the
  * template's own `node_modules` decide what `@brydio/app` is.
  */
-async function bundled(entryFor?: string): Promise<{ bytes: number; runtime: number }> {
+async function bundled(entryFor?: string): Promise<{ bytes: number; runtime: number; code: string }> {
   const folder = mkdtempSync(join(tmpdir(), 'brydio-size-'));
 
   made.push(folder);
@@ -121,7 +121,7 @@ const result = await Bun.build({
   plugins: entryFor ? [{ name: 'trimmed', setup: build => { build.onResolve({ filter: /^@brydio\\/app$/ }, () => ({ path: entryFor })); } }] : [],
 });
 if (!result.success) { console.error(result.logs.map(String).join('\\n')); process.exit(1); }
-console.log(JSON.stringify({ bytes: (await result.outputs[0].text()).length, metafile: result.metafile }));
+console.log(JSON.stringify({ code: await result.outputs[0].text(), metafile: result.metafile }));
 `,
   );
 
@@ -130,9 +130,9 @@ console.log(JSON.stringify({ bytes: (await result.outputs[0].text()).length, met
 
   if (code !== 0) throw new Error(err);
 
-  const { bytes, metafile } = JSON.parse(out) as { bytes: number; metafile: never };
+  const built = JSON.parse(out) as { code: string; metafile: never };
 
-  return { bytes, runtime: runtimeBytesOf(metafile, template) };
+  return { bytes: built.code.length, code: built.code, runtime: runtimeBytesOf(built.metafile, template) };
 }
 
 describe('the runtime a screen carries', () => {
@@ -150,6 +150,19 @@ describe('the runtime a screen carries', () => {
     expect(Math.abs(whole.bytes - trimmed.bytes)).toBeLessThanOrEqual(64);
   }, 30_000);
 
+  test('carries no catalogue: what each element takes is the host’s to check, and validate’s', async () => {
+    const { code } = await bundled();
+
+    // The table itself (A5-F03-S01, gap from Hodler's `runtime_too_large`): element names the
+    // screen never draws, the shapes of their settings, and the sentences that refuse a value.
+    for (const shape of ['bry-board-column', 'bry-file-grid', 'bry-virtual-list', 'must be one of', 'whole number from', 'raises no events']) {
+      expect(code).not.toContain(shape);
+    }
+
+    // What it does carry: the few words it uses on every node, which need no table.
+    expect(code).toContain('#text');
+  }, 30_000);
+
   test('build refuses a screen carrying more than 30 KB of the runtime, naming it', async () => {
     const root = mkdtempSync(join(import.meta.dir, 'fixtures', 'heavy-'));
 
@@ -157,8 +170,11 @@ describe('the runtime a screen carries', () => {
     mkdirSync(join(root, '.brydio'), { recursive: true });
     mkdirSync(join(root, 'src', 'screens'), { recursive: true });
     writeFileSync(join(root, '.brydio', 'app.json'), JSON.stringify({ name: 'heavy', version: '1.0.0', screens: { home: { entry: 'screens/home.js' }, light: { entry: 'screens/light.js' } } }));
-    // Validating a manifest in a screen drags the schema library in: runtime a screen should never carry.
-    writeFileSync(join(root, 'src', 'screens', 'home.ts'), "import { mount, text } from '@brydio/app';\nimport { validateManifest } from '@brydio/manifest';\nvoid mount(root => root.append(text({ text: String(validateManifest({}).ok) })));\n");
+    // Reading the catalogue in a screen drags the whole table in: runtime a screen should never carry.
+    writeFileSync(
+      join(root, 'src', 'screens', 'home.ts'),
+      "import { mount, text } from '@brydio/app';\nimport { validateManifest } from '@brydio/manifest';\nimport { ELEMENT_NAMES, refusalFor } from '@brydio/ui/validate';\nvoid mount(root => root.append(text({ text: `${ELEMENT_NAMES.length} ${String(refusalFor('bry-text', 'tone', 'pink'))} ${String(validateManifest({}).ok)}` })));\n",
+    );
     writeFileSync(join(root, 'src', 'screens', 'light.ts'), "import { mount, text } from '@brydio/app';\nvoid mount(root => root.append(text({ text: 'Hi' })));\n");
 
     const result = await build(root, { checkSource: false });

@@ -275,20 +275,24 @@ describe('the cap (5,000 nodes, the root included)', () => {
   });
 });
 
-describe('refusals, in the host’s words, at the line that made the mistake', () => {
-  test('an element outside the catalogue', () => {
-    expect(() => createElement('div' as never)).toThrow('Brydio has no element called "div".');
-    expect(() => createElement('bry-kanban' as never)).toThrow(TreeError);
+describe('what the runtime refuses itself, and what it leaves to the host', () => {
+  /**
+   * A screen carries no catalogue (A5-F03-S01): what each element takes is
+   * checked by `brydio validate` and the editor as the app is written, by the
+   * fake host as its tests run, and by Brydio itself before it draws anything.
+   * What the runtime still refuses is what needs no table: a name that is not
+   * an element's, a setting no element will ever take, and text too long.
+   */
+  test('a name that is not one of Brydio’s elements', () => {
+    expect(() => createElement('div' as never)).toThrow('div is not one of Brydio’s elements, which are all named bry-something.');
+    expect(() => createElement('div' as never)).toThrow(TreeError);
   });
 
-  test('a setting the element does not take, or a value it does not allow', () => {
+  test('a setting no element will ever take: style, classes, HTML', () => {
     const node = stack();
 
-    expect(() => node.setAttribute('style', 'color: red')).toThrow('bry-stack has no setting called "style". Brydio draws every element in its own style');
+    expect(() => node.setAttribute('style', 'color: red')).toThrow('Brydio draws every element in its own style');
     expect(() => node.setAttribute('className', 'box')).toThrow('no classes');
-    expect(() => node.setAttribute('gap', '9')).toThrow('bry-stack gap must be one of 1, 2, 3, 4, 5, 6, 7, 8.');
-    expect(() => heading({ text: 'x', level: '2' as never })).toThrow('bry-heading level must be a whole number from 1 to 4.');
-    expect(() => button({ label: 'x'.repeat(201) })).toThrow('bry-button label must be text of at most 200 characters.');
     expect(() => node.style).toThrow('has no style');
     expect(() => {
       node.innerHTML = '<b>hi</b>';
@@ -296,29 +300,19 @@ describe('refusals, in the host’s words, at the line that made the mistake', (
     expect(node.props).toEqual({});
   });
 
-  test('an element without the setting it cannot be drawn without, on the way in or taken away after', async () => {
-    const { root, connect } = harness();
-
-    expect(() => root.appendChild(createElement('bry-button'))).toThrow('bry-button needs a label.');
-    expect(() => root.appendChild(stack(null, createElement('bry-text')))).toThrow('bry-text needs a text.');
-
-    const save = button({ label: 'Save' });
-
-    root.appendChild(save);
-    await connect();
-    expect(() => save.removeAttribute('label')).toThrow('bry-button needs a label.');
+  test('a value the catalogue would refuse goes out, for the host to refuse in its own words', () => {
+    // Nothing here throws: the check that would need the catalogue is the host's.
+    expect(() => stack({ gap: '9' as never })).not.toThrow();
+    expect(() => heading({ text: 'x', level: '2' as never })).not.toThrow();
+    expect(() => button({ label: 'x'.repeat(201) })).not.toThrow();
+    expect(() => stack({ onPress: () => {} } as never)).not.toThrow();
+    expect(() => text({ text: 'x' }).appendChild(card())).not.toThrow();
+    expect(button({ label: 'x'.repeat(201) }).props.label).toHaveLength(201);
   });
 
-  test('a handler for an event the element does not raise', () => {
-    expect(() => stack({ onPress: () => {} } as never)).toThrow('raises no events');
-    expect(() => button({ label: 'x' }).addEventListener('change', () => {})).toThrow('not "change"');
-  });
-
-  test('a child the parent does not hold: only stacks and cards hold anything', () => {
+  test('a child the parent does not hold is the host’s to refuse; bare words are held as text', () => {
     expect(() => stack(null, 'bare words')).not.toThrow();
     expect(() => card(null, 'bare words')).not.toThrow();
-    expect(() => text({ text: 'x' }).appendChild(card())).toThrow('bry-text can’t hold other nodes.');
-    expect(() => createElement('bry-button', { label: 'Save' }, 'Save')).toThrow('bry-button can’t hold other nodes.');
   });
 
   test('text over a paragraph', () => {
@@ -363,7 +357,6 @@ describe('events (tree/event)', () => {
 
     expect(seen).toEqual(['todo', 'action']);
     expect(JSON.stringify(sent)).toContain('"type":"bry-list-row"');
-    expect(() => badge({ text: 'x', onPress: () => {} } as never)).toThrow('bry-badge raises no events, so it takes no onPress.');
   });
 
   test('reach the plain factories of Wren’s eight, with what each one carries', async () => {
@@ -394,10 +387,6 @@ describe('events (tree/event)', () => {
 
     expect(seen).toEqual(['desc', 'a', 30, 'delete', undefined, true]);
     expect(JSON.stringify(sent)).toContain('"type":"bry-virtual-list"');
-    expect(() => table({ columns: [{ key: 'title', heading: 'Title', align: 'middle' }] } as never)).toThrow(
-      'bry-table columns[0].align must be one of start, end.',
-    );
-    expect(() => switchElement({ label: 'x' }).append(text({ text: 'on' }))).toThrow('bry-switch can’t hold other nodes.');
   });
 
   test('reach a board, its columns and a diff, and a move is confirmed by moving the card and refused by settling it', async () => {
@@ -442,8 +431,6 @@ describe('events (tree/event)', () => {
       { op: 'props', id: issues.id, props: { settled: crash.id } },
       { op: 'props', id: issues.id, props: { settled: crash.id } },
     ]);
-    expect(() => boardColumn({ title: 'x', limit: 0 })).toThrow('bry-board-column limit must be a whole number from 1 to 100000.');
-    expect(() => diff({ files: [{ path: 'a', status: 'moved' }] } as never)).toThrow('bry-diff files[0].status must be one of added, modified, removed, renamed.');
     // Only a board's answer is sent again unchanged; a setting that is state is not.
     doing.setAttribute('title', 'Doing');
     await settle();

@@ -1,4 +1,5 @@
-import { CATALOGUE, FORBIDDEN_PROPS, checkElement, checkEvent, checkProp, eventOfHandler, isElementName, refusalFor, type ElementName, type ElementSpec } from '@brydio/ui';
+import { FORBIDDEN_PROPS, eventOfHandler, type ElementName } from '@brydio/ui';
+import { CATALOGUE, checkElement, checkEvent, checkProp, isElementName, refusalFor, type ElementSpec } from '@brydio/ui/validate';
 import { posix } from 'node:path';
 import ts from 'typescript';
 
