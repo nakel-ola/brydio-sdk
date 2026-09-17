@@ -19,6 +19,22 @@ interface Store {
 /** What the runtime sends, one message after another. */
 type Log = { method: string; params: { root?: string; nodes?: unknown; ops?: unknown } }[];
 
+/**
+ * A log with its node ids renumbered in the order they first appear. The
+ * runtime's ids come from one counter for the whole process, so the same
+ * run gives other ids after other tests have made nodes. Renumbered, it
+ * gives the same log wherever it runs, which is what can be recorded.
+ */
+function numbered(log: Log): Log {
+  const ids = new Map<string, string>();
+
+  return JSON.parse(JSON.stringify(log).replace(/"n(\d+)"/g, (_, id: string) => {
+    if (!ids.has(id)) ids.set(id, `n${ids.size + 1}`);
+
+    return `"${ids.get(id)}"`;
+  })) as Log;
+}
+
 /** A store given every message in a log: what it refused, and the tree it ends with. */
 function replay(store: Store, log: Log) {
   const refused: unknown[] = [];
@@ -87,7 +103,7 @@ describe('the fake host’s receiver', () => {
   test('refuses and ends exactly as Brydio’s receiver does, for the same messages', async () => {
     const brydios = await brydioAnswers('tree-store-replay', [HOST_STORE], async () => {
       const { TreeStore: HostTreeStore } = await import(inBrydio(HOST_STORE));
-      const { log } = await randomChanges(300);
+      const log = numbered((await randomChanges(300)).log);
 
       return { log, ...replay(new HostTreeStore(() => {}), log) };
     });

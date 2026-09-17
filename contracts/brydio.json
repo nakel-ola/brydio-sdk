@@ -1,7 +1,7 @@
 {
   "brydio": {
-    "commit": "b846c15182772347907e0a7048274c86953a7d99",
-    "dirty": true
+    "commit": "01e258ad1f46ed450042e263036b848514b8d72c",
+    "dirty": false
   },
   "contracts": {
     "bundle-files": {
@@ -2184,29 +2184,29 @@
                 "id": "root",
                 "type": "bry-stack",
                 "children": [
-                  "n465",
-                  "n461"
+                  "n1",
+                  "n2"
                 ]
               },
               {
-                "id": "n465",
+                "id": "n1",
                 "type": "#text",
                 "text": "words 98"
               },
               {
-                "id": "n461",
+                "id": "n2",
                 "type": "bry-stack",
                 "props": {
                   "gap": "4"
                 },
                 "children": [
-                  "n464",
-                  "n466",
-                  "n463"
+                  "n3",
+                  "n4",
+                  "n5"
                 ]
               },
               {
-                "id": "n464",
+                "id": "n3",
                 "type": "bry-button",
                 "props": {
                   "label": "Press"
@@ -2214,7 +2214,7 @@
                 "children": []
               },
               {
-                "id": "n466",
+                "id": "n4",
                 "type": "bry-button",
                 "props": {
                   "label": "Press"
@@ -2222,7 +2222,7 @@
                 "children": []
               },
               {
-                "id": "n463",
+                "id": "n5",
                 "type": "bry-card",
                 "props": {
                   "title": "Card 31"
@@ -2238,10 +2238,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n463",
+                "parent": "n5",
                 "index": 0,
                 "node": {
-                  "id": "n468",
+                  "id": "n6",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 95"
@@ -2250,10 +2250,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n468",
+                "parent": "n6",
                 "index": 0,
                 "node": {
-                  "id": "n467",
+                  "id": "n7",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -2272,15 +2272,15 @@
                 "parent": "root",
                 "index": 1,
                 "node": {
-                  "id": "n469",
+                  "id": "n8",
                   "type": "#text",
                   "text": "words 87"
                 }
               },
               {
                 "op": "move",
-                "id": "n469",
-                "parent": "n468",
+                "id": "n8",
+                "parent": "n6",
                 "index": 0
               },
               {
@@ -2288,7 +2288,7 @@
                 "parent": "root",
                 "index": 2,
                 "node": {
-                  "id": "n470",
+                  "id": "n9",
                   "type": "bry-stack",
                   "props": {
                     "gap": "1"
@@ -2297,14 +2297,14 @@
               },
               {
                 "op": "remove",
-                "id": "n467"
+                "id": "n7"
               },
               {
                 "op": "insert",
-                "parent": "n461",
+                "parent": "n2",
                 "index": 1,
                 "node": {
-                  "id": "n471",
+                  "id": "n10",
                   "type": "bry-stack",
                   "props": {
                     "gap": "3"
@@ -2313,10 +2313,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n470",
+                "parent": "n9",
                 "index": 0,
                 "node": {
-                  "id": "n472",
+                  "id": "n11",
                   "type": "bry-button",
                   "props": {
                     "label": "Press"
@@ -2325,31 +2325,31 @@
               },
               {
                 "op": "insert",
-                "parent": "n471",
+                "parent": "n10",
                 "index": 0,
                 "node": {
-                  "id": "n473",
+                  "id": "n12",
                   "type": "#text",
                   "text": "words 61"
                 }
               },
               {
                 "op": "remove",
-                "id": "n473"
+                "id": "n12"
               },
               {
                 "op": "insert",
-                "parent": "n461",
+                "parent": "n2",
                 "index": 2,
                 "node": {
-                  "id": "n474",
+                  "id": "n13",
                   "type": "#text",
                   "text": "words 59"
                 }
               },
               {
                 "op": "props",
-                "id": "n463",
+                "id": "n5",
                 "props": {
                   "title": "Renamed 18"
                 }
@@ -2363,11 +2363,11 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n469"
+                "id": "n8"
               },
               {
                 "op": "props",
-                "id": "n470",
+                "id": "n9",
                 "props": {
                   "gap": null
                 }
@@ -2381,10 +2381,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n468",
+                "parent": "n6",
                 "index": 0,
                 "node": {
-                  "id": "n475",
+                  "id": "n14",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 13"
@@ -2393,7 +2393,7 @@
               },
               {
                 "op": "props",
-                "id": "n466",
+                "id": "n4",
                 "props": {
                   "disabled": false
                 }
@@ -2407,14 +2407,14 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n472"
+                "id": "n11"
               },
               {
                 "op": "insert",
-                "parent": "n463",
+                "parent": "n5",
                 "index": 0,
                 "node": {
-                  "id": "n476",
+                  "id": "n15",
                   "type": "bry-button",
                   "props": {
                     "label": "Press"
@@ -2423,10 +2423,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n470",
+                "parent": "n9",
                 "index": 0,
                 "node": {
-                  "id": "n477",
+                  "id": "n16",
                   "type": "bry-stack",
                   "props": {
                     "gap": "3"
@@ -2435,14 +2435,14 @@
               },
               {
                 "op": "props",
-                "id": "n463",
+                "id": "n5",
                 "props": {
                   "title": null
                 }
               },
               {
                 "op": "text",
-                "id": "n465",
+                "id": "n1",
                 "text": "changed 34"
               }
             ]
@@ -2454,14 +2454,14 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n475"
+                "id": "n14"
               },
               {
                 "op": "insert",
-                "parent": "n463",
+                "parent": "n5",
                 "index": 0,
                 "node": {
-                  "id": "n478",
+                  "id": "n17",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 44"
@@ -2470,16 +2470,16 @@
               },
               {
                 "op": "move",
-                "id": "n464",
-                "parent": "n477",
+                "id": "n3",
+                "parent": "n16",
                 "index": 0
               },
               {
                 "op": "insert",
-                "parent": "n470",
+                "parent": "n9",
                 "index": 0,
                 "node": {
-                  "id": "n479",
+                  "id": "n18",
                   "type": "bry-button",
                   "props": {
                     "label": "Press"
@@ -2495,16 +2495,16 @@
             "ops": [
               {
                 "op": "move",
-                "id": "n466",
-                "parent": "n471",
+                "id": "n4",
+                "parent": "n10",
                 "index": 0
               },
               {
                 "op": "insert",
-                "parent": "n471",
+                "parent": "n10",
                 "index": 1,
                 "node": {
-                  "id": "n480",
+                  "id": "n19",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 37"
@@ -2513,11 +2513,11 @@
               },
               {
                 "op": "remove",
-                "id": "n480"
+                "id": "n19"
               },
               {
                 "op": "props",
-                "id": "n470",
+                "id": "n9",
                 "props": {
                   "gap": "4"
                 }
@@ -2531,7 +2531,7 @@
             "ops": [
               {
                 "op": "props",
-                "id": "n461",
+                "id": "n2",
                 "props": {
                   "gap": "5"
                 }
@@ -2545,17 +2545,17 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n461",
+                "parent": "n2",
                 "index": 3,
                 "node": {
-                  "id": "n481",
+                  "id": "n20",
                   "type": "#text",
                   "text": "changed 45"
                 }
               },
               {
                 "op": "props",
-                "id": "n478",
+                "id": "n17",
                 "props": {
                   "tone": "danger"
                 }
@@ -2569,7 +2569,7 @@
             "ops": [
               {
                 "op": "props",
-                "id": "n464",
+                "id": "n3",
                 "props": {
                   "disabled": true
                 }
@@ -2583,16 +2583,16 @@
             "ops": [
               {
                 "op": "move",
-                "id": "n479",
-                "parent": "n470",
+                "id": "n18",
+                "parent": "n9",
                 "index": 1
               },
               {
                 "op": "insert",
-                "parent": "n477",
+                "parent": "n16",
                 "index": 1,
                 "node": {
-                  "id": "n482",
+                  "id": "n21",
                   "type": "bry-stack",
                   "props": {
                     "gap": "2"
@@ -2604,7 +2604,7 @@
                 "parent": "root",
                 "index": 3,
                 "node": {
-                  "id": "n484",
+                  "id": "n22",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 61"
@@ -2613,10 +2613,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n484",
+                "parent": "n22",
                 "index": 0,
                 "node": {
-                  "id": "n483",
+                  "id": "n23",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -2625,10 +2625,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n471",
+                "parent": "n10",
                 "index": 0,
                 "node": {
-                  "id": "n485",
+                  "id": "n24",
                   "type": "bry-stack",
                   "props": {
                     "gap": "1"
@@ -2637,10 +2637,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n470",
+                "parent": "n9",
                 "index": 0,
                 "node": {
-                  "id": "n486",
+                  "id": "n25",
                   "type": "bry-stack",
                   "props": {
                     "gap": "2"
@@ -2649,13 +2649,13 @@
               },
               {
                 "op": "move",
-                "id": "n479",
-                "parent": "n471",
+                "id": "n18",
+                "parent": "n10",
                 "index": 2
               },
               {
                 "op": "props",
-                "id": "n477",
+                "id": "n16",
                 "props": {
                   "gap": null
                 }
@@ -2669,18 +2669,18 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n461",
+                "parent": "n2",
                 "index": 1,
                 "node": {
-                  "id": "n487",
+                  "id": "n26",
                   "type": "#text",
                   "text": "words 71"
                 }
               },
               {
                 "op": "move",
-                "id": "n477",
-                "parent": "n461",
+                "id": "n16",
+                "parent": "n2",
                 "index": 1
               }
             ]
@@ -2692,23 +2692,23 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n484"
+                "id": "n22"
               },
               {
                 "op": "remove",
-                "id": "n471"
+                "id": "n10"
               },
               {
                 "op": "remove",
-                "id": "n470"
+                "id": "n9"
               },
               {
                 "op": "remove",
-                "id": "n478"
+                "id": "n17"
               },
               {
                 "op": "text",
-                "id": "n474",
+                "id": "n13",
                 "text": "changed 61"
               }
             ]
@@ -2720,14 +2720,14 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n463"
+                "id": "n5"
               },
               {
                 "op": "insert",
                 "parent": "root",
                 "index": 1,
                 "node": {
-                  "id": "n488",
+                  "id": "n27",
                   "type": "bry-stack",
                   "props": {
                     "gap": "2"
@@ -2743,13 +2743,13 @@
             "ops": [
               {
                 "op": "move",
-                "id": "n477",
-                "parent": "n488",
+                "id": "n16",
+                "parent": "n27",
                 "index": 0
               },
               {
                 "op": "props",
-                "id": "n477",
+                "id": "n16",
                 "props": {
                   "gap": "4"
                 }
@@ -2763,8 +2763,8 @@
             "ops": [
               {
                 "op": "move",
-                "id": "n474",
-                "parent": "n482",
+                "id": "n13",
+                "parent": "n21",
                 "index": 0
               }
             ]
@@ -2776,16 +2776,16 @@
             "ops": [
               {
                 "op": "move",
-                "id": "n474",
-                "parent": "n488",
+                "id": "n13",
+                "parent": "n27",
                 "index": 0
               },
               {
                 "op": "insert",
-                "parent": "n477",
+                "parent": "n16",
                 "index": 1,
                 "node": {
-                  "id": "n489",
+                  "id": "n28",
                   "type": "bry-button",
                   "props": {
                     "label": "Press"
@@ -2794,12 +2794,12 @@
               },
               {
                 "op": "text",
-                "id": "n474",
+                "id": "n13",
                 "text": "changed 73"
               },
               {
                 "op": "text",
-                "id": "n465",
+                "id": "n1",
                 "text": "changed 75"
               }
             ]
@@ -2811,14 +2811,14 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n474"
+                "id": "n13"
               },
               {
                 "op": "insert",
-                "parent": "n461",
+                "parent": "n2",
                 "index": 2,
                 "node": {
-                  "id": "n490",
+                  "id": "n29",
                   "type": "bry-stack",
                   "props": {
                     "gap": "5"
@@ -2827,10 +2827,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n488",
+                "parent": "n27",
                 "index": 0,
                 "node": {
-                  "id": "n491",
+                  "id": "n30",
                   "type": "bry-stack",
                   "props": {
                     "gap": "3"
@@ -2839,10 +2839,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n461",
+                "parent": "n2",
                 "index": 3,
                 "node": {
-                  "id": "n492",
+                  "id": "n31",
                   "type": "bry-stack",
                   "props": {
                     "gap": "3"
@@ -2851,10 +2851,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n491",
+                "parent": "n30",
                 "index": 0,
                 "node": {
-                  "id": "n494",
+                  "id": "n32",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 13"
@@ -2863,10 +2863,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n494",
+                "parent": "n32",
                 "index": 0,
                 "node": {
-                  "id": "n493",
+                  "id": "n33",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -2875,13 +2875,13 @@
               },
               {
                 "op": "move",
-                "id": "n465",
-                "parent": "n482",
+                "id": "n1",
+                "parent": "n21",
                 "index": 0
               },
               {
                 "op": "text",
-                "id": "n487",
+                "id": "n26",
                 "text": "changed 78"
               }
             ]
@@ -2893,10 +2893,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n482",
+                "parent": "n21",
                 "index": 1,
                 "node": {
-                  "id": "n496",
+                  "id": "n34",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 48"
@@ -2905,10 +2905,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n496",
+                "parent": "n34",
                 "index": 0,
                 "node": {
-                  "id": "n495",
+                  "id": "n35",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -2924,32 +2924,32 @@
             "ops": [
               {
                 "op": "move",
-                "id": "n495",
-                "parent": "n490",
+                "id": "n35",
+                "parent": "n29",
                 "index": 0
               },
               {
                 "op": "move",
-                "id": "n495",
-                "parent": "n477",
+                "id": "n35",
+                "parent": "n16",
                 "index": 0
               },
               {
                 "op": "move",
-                "id": "n491",
+                "id": "n30",
                 "parent": "root",
                 "index": 2
               },
               {
                 "op": "remove",
-                "id": "n491"
+                "id": "n30"
               },
               {
                 "op": "insert",
-                "parent": "n496",
+                "parent": "n34",
                 "index": 0,
                 "node": {
-                  "id": "n497",
+                  "id": "n36",
                   "type": "bry-button",
                   "props": {
                     "label": "Press"
@@ -2958,12 +2958,12 @@
               },
               {
                 "op": "remove",
-                "id": "n481"
+                "id": "n20"
               },
               {
                 "op": "move",
-                "id": "n495",
-                "parent": "n461",
+                "id": "n35",
+                "parent": "n2",
                 "index": 1
               }
             ]
@@ -2975,14 +2975,14 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n477"
+                "id": "n16"
               },
               {
                 "op": "insert",
-                "parent": "n490",
+                "parent": "n29",
                 "index": 0,
                 "node": {
-                  "id": "n498",
+                  "id": "n37",
                   "type": "bry-stack",
                   "props": {
                     "gap": "2"
@@ -2998,10 +2998,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n492",
+                "parent": "n31",
                 "index": 0,
                 "node": {
-                  "id": "n499",
+                  "id": "n38",
                   "type": "bry-button",
                   "props": {
                     "label": "Press"
@@ -3010,16 +3010,16 @@
               },
               {
                 "op": "move",
-                "id": "n490",
+                "id": "n29",
                 "parent": "root",
                 "index": 2
               },
               {
                 "op": "insert",
-                "parent": "n492",
+                "parent": "n31",
                 "index": 1,
                 "node": {
-                  "id": "n501",
+                  "id": "n39",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 80"
@@ -3028,10 +3028,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n501",
+                "parent": "n39",
                 "index": 0,
                 "node": {
-                  "id": "n500",
+                  "id": "n40",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -3040,11 +3040,11 @@
               },
               {
                 "op": "remove",
-                "id": "n499"
+                "id": "n38"
               },
               {
                 "op": "props",
-                "id": "n461",
+                "id": "n2",
                 "props": {
                   "gap": "5"
                 }
@@ -3058,14 +3058,14 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n461"
+                "id": "n2"
               },
               {
                 "op": "insert",
-                "parent": "n488",
+                "parent": "n27",
                 "index": 0,
                 "node": {
-                  "id": "n503",
+                  "id": "n41",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 85"
@@ -3074,10 +3074,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n503",
+                "parent": "n41",
                 "index": 0,
                 "node": {
-                  "id": "n502",
+                  "id": "n42",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -3093,10 +3093,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n490",
+                "parent": "n29",
                 "index": 1,
                 "node": {
-                  "id": "n505",
+                  "id": "n43",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 20"
@@ -3105,10 +3105,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n505",
+                "parent": "n43",
                 "index": 0,
                 "node": {
-                  "id": "n504",
+                  "id": "n44",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -3117,7 +3117,7 @@
               },
               {
                 "op": "props",
-                "id": "n502",
+                "id": "n42",
                 "props": {
                   "tone": "danger"
                 }
@@ -3131,7 +3131,7 @@
             "ops": [
               {
                 "op": "props",
-                "id": "n502",
+                "id": "n42",
                 "props": {
                   "tone": "muted"
                 }
@@ -3148,7 +3148,7 @@
                 "parent": "root",
                 "index": 1,
                 "node": {
-                  "id": "n506",
+                  "id": "n45",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 7"
@@ -3164,10 +3164,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n503",
+                "parent": "n41",
                 "index": 1,
                 "node": {
-                  "id": "n507",
+                  "id": "n46",
                   "type": "bry-stack",
                   "props": {
                     "gap": "2"
@@ -3176,10 +3176,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n507",
+                "parent": "n46",
                 "index": 0,
                 "node": {
-                  "id": "n508",
+                  "id": "n47",
                   "type": "bry-stack",
                   "props": {
                     "gap": "3"
@@ -3188,7 +3188,7 @@
               },
               {
                 "op": "props",
-                "id": "n506",
+                "id": "n45",
                 "props": {
                   "tone": "muted"
                 }
@@ -3202,11 +3202,11 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n505"
+                "id": "n43"
               },
               {
                 "op": "props",
-                "id": "n508",
+                "id": "n47",
                 "props": {
                   "gap": "4"
                 }
@@ -3220,17 +3220,17 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n507",
+                "parent": "n46",
                 "index": 1,
                 "node": {
-                  "id": "n509",
+                  "id": "n48",
                   "type": "#text",
                   "text": "words 90"
                 }
               },
               {
                 "op": "move",
-                "id": "n509",
+                "id": "n48",
                 "parent": "root",
                 "index": 0
               }
@@ -3243,10 +3243,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n508",
+                "parent": "n47",
                 "index": 0,
                 "node": {
-                  "id": "n511",
+                  "id": "n49",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 6"
@@ -3255,10 +3255,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n511",
+                "parent": "n49",
                 "index": 0,
                 "node": {
-                  "id": "n510",
+                  "id": "n50",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -3274,10 +3274,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n507",
+                "parent": "n46",
                 "index": 0,
                 "node": {
-                  "id": "n513",
+                  "id": "n51",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 0"
@@ -3286,10 +3286,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n513",
+                "parent": "n51",
                 "index": 0,
                 "node": {
-                  "id": "n512",
+                  "id": "n52",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -3301,7 +3301,7 @@
                 "parent": "root",
                 "index": 3,
                 "node": {
-                  "id": "n514",
+                  "id": "n53",
                   "type": "bry-stack",
                   "props": {
                     "gap": "2"
@@ -3310,10 +3310,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n490",
+                "parent": "n29",
                 "index": 0,
                 "node": {
-                  "id": "n516",
+                  "id": "n54",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 80"
@@ -3322,10 +3322,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n516",
+                "parent": "n54",
                 "index": 0,
                 "node": {
-                  "id": "n515",
+                  "id": "n55",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -3341,8 +3341,8 @@
             "ops": [
               {
                 "op": "move",
-                "id": "n513",
-                "parent": "n498",
+                "id": "n51",
+                "parent": "n37",
                 "index": 0
               },
               {
@@ -3350,7 +3350,7 @@
                 "parent": "root",
                 "index": 5,
                 "node": {
-                  "id": "n517",
+                  "id": "n56",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 6"
@@ -3359,7 +3359,7 @@
               },
               {
                 "op": "props",
-                "id": "n515",
+                "id": "n55",
                 "props": {
                   "tone": "muted"
                 }
@@ -3373,7 +3373,7 @@
             "ops": [
               {
                 "op": "text",
-                "id": "n509",
+                "id": "n48",
                 "text": "changed 130"
               }
             ]
@@ -3385,27 +3385,27 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n488",
+                "parent": "n27",
                 "index": 1,
                 "node": {
-                  "id": "n518",
+                  "id": "n57",
                   "type": "#text",
                   "text": "words 30"
                 }
               },
               {
                 "op": "remove",
-                "id": "n502"
+                "id": "n42"
               },
               {
                 "op": "move",
-                "id": "n517",
-                "parent": "n490",
+                "id": "n56",
+                "parent": "n29",
                 "index": 2
               },
               {
                 "op": "props",
-                "id": "n511",
+                "id": "n49",
                 "props": {
                   "title": null
                 }
@@ -3419,10 +3419,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n488",
+                "parent": "n27",
                 "index": 1,
                 "node": {
-                  "id": "n519",
+                  "id": "n58",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 15"
@@ -3438,10 +3438,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n490",
+                "parent": "n29",
                 "index": 2,
                 "node": {
-                  "id": "n520",
+                  "id": "n59",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 59"
@@ -3450,12 +3450,12 @@
               },
               {
                 "op": "text",
-                "id": "n509",
+                "id": "n48",
                 "text": "changed 138"
               },
               {
                 "op": "props",
-                "id": "n498",
+                "id": "n37",
                 "props": {
                   "gap": "5"
                 }
@@ -3469,10 +3469,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n511",
+                "parent": "n49",
                 "index": 1,
                 "node": {
-                  "id": "n521",
+                  "id": "n60",
                   "type": "bry-button",
                   "props": {
                     "label": "Press"
@@ -3488,10 +3488,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n490",
+                "parent": "n29",
                 "index": 1,
                 "node": {
-                  "id": "n523",
+                  "id": "n61",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 26"
@@ -3500,10 +3500,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n523",
+                "parent": "n61",
                 "index": 0,
                 "node": {
-                  "id": "n522",
+                  "id": "n62",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -3512,10 +3512,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n516",
+                "parent": "n54",
                 "index": 1,
                 "node": {
-                  "id": "n524",
+                  "id": "n63",
                   "type": "bry-button",
                   "props": {
                     "label": "Press"
@@ -3524,14 +3524,14 @@
               },
               {
                 "op": "remove",
-                "id": "n513"
+                "id": "n51"
               },
               {
                 "op": "insert",
-                "parent": "n511",
+                "parent": "n49",
                 "index": 0,
                 "node": {
-                  "id": "n525",
+                  "id": "n64",
                   "type": "bry-stack",
                   "props": {
                     "gap": "3"
@@ -3540,10 +3540,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n514",
+                "parent": "n53",
                 "index": 0,
                 "node": {
-                  "id": "n526",
+                  "id": "n65",
                   "type": "bry-stack",
                   "props": {
                     "gap": "3"
@@ -3552,14 +3552,14 @@
               },
               {
                 "op": "remove",
-                "id": "n517"
+                "id": "n56"
               },
               {
                 "op": "insert",
-                "parent": "n526",
+                "parent": "n65",
                 "index": 0,
                 "node": {
-                  "id": "n527",
+                  "id": "n66",
                   "type": "bry-stack",
                   "props": {
                     "gap": "1"
@@ -3575,14 +3575,14 @@
             "ops": [
               {
                 "op": "props",
-                "id": "n525",
+                "id": "n64",
                 "props": {
                   "gap": null
                 }
               },
               {
                 "op": "props",
-                "id": "n520",
+                "id": "n59",
                 "props": {
                   "tone": "muted"
                 }
@@ -3596,10 +3596,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n525",
+                "parent": "n64",
                 "index": 0,
                 "node": {
-                  "id": "n528",
+                  "id": "n67",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 27"
@@ -3608,10 +3608,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n498",
+                "parent": "n37",
                 "index": 0,
                 "node": {
-                  "id": "n529",
+                  "id": "n68",
                   "type": "bry-stack",
                   "props": {
                     "gap": "3"
@@ -3620,7 +3620,7 @@
               },
               {
                 "op": "props",
-                "id": "n498",
+                "id": "n37",
                 "props": {
                   "gap": null
                 }
@@ -3634,14 +3634,14 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n515"
+                "id": "n55"
               },
               {
                 "op": "insert",
-                "parent": "n490",
+                "parent": "n29",
                 "index": 4,
                 "node": {
-                  "id": "n530",
+                  "id": "n69",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 58"
@@ -3657,10 +3657,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n523",
+                "parent": "n61",
                 "index": 1,
                 "node": {
-                  "id": "n531",
+                  "id": "n70",
                   "type": "#text",
                   "text": "words 22"
                 }
@@ -3674,10 +3674,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n529",
+                "parent": "n68",
                 "index": 0,
                 "node": {
-                  "id": "n532",
+                  "id": "n71",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 83"
@@ -3693,14 +3693,14 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n518"
+                "id": "n57"
               },
               {
                 "op": "insert",
-                "parent": "n508",
+                "parent": "n47",
                 "index": 1,
                 "node": {
-                  "id": "n534",
+                  "id": "n72",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 20"
@@ -3709,10 +3709,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n534",
+                "parent": "n72",
                 "index": 0,
                 "node": {
-                  "id": "n533",
+                  "id": "n73",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -3721,14 +3721,14 @@
               },
               {
                 "op": "remove",
-                "id": "n498"
+                "id": "n37"
               },
               {
                 "op": "insert",
                 "parent": "root",
                 "index": 5,
                 "node": {
-                  "id": "n536",
+                  "id": "n74",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 3"
@@ -3737,10 +3737,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n536",
+                "parent": "n74",
                 "index": 0,
                 "node": {
-                  "id": "n535",
+                  "id": "n75",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -3756,14 +3756,14 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n507"
+                "id": "n46"
               },
               {
                 "op": "insert",
-                "parent": "n514",
+                "parent": "n53",
                 "index": 0,
                 "node": {
-                  "id": "n537",
+                  "id": "n76",
                   "type": "bry-button",
                   "props": {
                     "label": "Press"
@@ -3772,14 +3772,14 @@
               },
               {
                 "op": "props",
-                "id": "n516",
+                "id": "n54",
                 "props": {
                   "title": "Renamed 172"
                 }
               },
               {
                 "op": "props",
-                "id": "n535",
+                "id": "n75",
                 "props": {
                   "tone": "muted"
                 }
@@ -3793,10 +3793,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n488",
+                "parent": "n27",
                 "index": 0,
                 "node": {
-                  "id": "n539",
+                  "id": "n77",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 53"
@@ -3805,10 +3805,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n539",
+                "parent": "n77",
                 "index": 0,
                 "node": {
-                  "id": "n538",
+                  "id": "n78",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -3817,10 +3817,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n488",
+                "parent": "n27",
                 "index": 3,
                 "node": {
-                  "id": "n541",
+                  "id": "n79",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 19"
@@ -3829,10 +3829,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n541",
+                "parent": "n79",
                 "index": 0,
                 "node": {
-                  "id": "n540",
+                  "id": "n80",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -3841,14 +3841,14 @@
               },
               {
                 "op": "props",
-                "id": "n514",
+                "id": "n53",
                 "props": {
                   "gap": null
                 }
               },
               {
                 "op": "props",
-                "id": "n523",
+                "id": "n61",
                 "props": {
                   "title": null
                 }
@@ -3862,18 +3862,18 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n503"
+                "id": "n41"
               },
               {
                 "op": "remove",
-                "id": "n527"
+                "id": "n66"
               },
               {
                 "op": "insert",
-                "parent": "n536",
+                "parent": "n74",
                 "index": 0,
                 "node": {
-                  "id": "n542",
+                  "id": "n81",
                   "type": "#text",
                   "text": "words 73"
                 }
@@ -3887,8 +3887,8 @@
             "ops": [
               {
                 "op": "move",
-                "id": "n522",
-                "parent": "n526",
+                "id": "n62",
+                "parent": "n65",
                 "index": 0
               }
             ]
@@ -3900,10 +3900,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n539",
+                "parent": "n77",
                 "index": 0,
                 "node": {
-                  "id": "n544",
+                  "id": "n82",
                   "type": "bry-card",
                   "props": {
                     "title": "Renamed 189"
@@ -3912,10 +3912,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n544",
+                "parent": "n82",
                 "index": 0,
                 "node": {
-                  "id": "n543",
+                  "id": "n83",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -3924,20 +3924,20 @@
               },
               {
                 "op": "insert",
-                "parent": "n488",
+                "parent": "n27",
                 "index": 2,
                 "node": {
-                  "id": "n545",
+                  "id": "n84",
                   "type": "#text",
                   "text": "words 55"
                 }
               },
               {
                 "op": "insert",
-                "parent": "n541",
+                "parent": "n79",
                 "index": 0,
                 "node": {
-                  "id": "n547",
+                  "id": "n85",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 62"
@@ -3946,10 +3946,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n547",
+                "parent": "n85",
                 "index": 0,
                 "node": {
-                  "id": "n546",
+                  "id": "n86",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -3958,10 +3958,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n526",
+                "parent": "n65",
                 "index": 1,
                 "node": {
-                  "id": "n549",
+                  "id": "n87",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 74"
@@ -3970,10 +3970,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n549",
+                "parent": "n87",
                 "index": 0,
                 "node": {
-                  "id": "n548",
+                  "id": "n88",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -3982,21 +3982,21 @@
               },
               {
                 "op": "props",
-                "id": "n506",
+                "id": "n45",
                 "props": {
                   "tone": "danger"
                 }
               },
               {
                 "op": "props",
-                "id": "n519",
+                "id": "n58",
                 "props": {
                   "tone": "danger"
                 }
               },
               {
                 "op": "props",
-                "id": "n524",
+                "id": "n63",
                 "props": {
                   "disabled": false
                 }
@@ -4010,17 +4010,17 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n488",
+                "parent": "n27",
                 "index": 1,
                 "node": {
-                  "id": "n550",
+                  "id": "n89",
                   "type": "#text",
                   "text": "words 52"
                 }
               },
               {
                 "op": "props",
-                "id": "n538",
+                "id": "n78",
                 "props": {
                   "tone": "danger"
                 }
@@ -4034,10 +4034,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n490",
+                "parent": "n29",
                 "index": 0,
                 "node": {
-                  "id": "n552",
+                  "id": "n90",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 46"
@@ -4046,10 +4046,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n552",
+                "parent": "n90",
                 "index": 0,
                 "node": {
-                  "id": "n551",
+                  "id": "n91",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -4058,14 +4058,14 @@
               },
               {
                 "op": "props",
-                "id": "n539",
+                "id": "n77",
                 "props": {
                   "title": "Renamed 199"
                 }
               },
               {
                 "op": "props",
-                "id": "n541",
+                "id": "n79",
                 "props": {
                   "title": "Renamed 198"
                 }
@@ -4079,7 +4079,7 @@
             "ops": [
               {
                 "op": "props",
-                "id": "n490",
+                "id": "n29",
                 "props": {
                   "gap": "4"
                 }
@@ -4093,42 +4093,42 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n490"
+                "id": "n29"
               },
               {
                 "op": "remove",
-                "id": "n535"
+                "id": "n75"
               },
               {
                 "op": "move",
-                "id": "n544",
+                "id": "n82",
                 "parent": "root",
                 "index": 2
               },
               {
                 "op": "insert",
-                "parent": "n536",
+                "parent": "n74",
                 "index": 0,
                 "node": {
-                  "id": "n553",
+                  "id": "n92",
                   "type": "#text",
                   "text": "words 98"
                 }
               },
               {
                 "op": "remove",
-                "id": "n488"
+                "id": "n27"
               },
               {
                 "op": "remove",
-                "id": "n544"
+                "id": "n82"
               },
               {
                 "op": "insert",
                 "parent": "root",
                 "index": 3,
                 "node": {
-                  "id": "n554",
+                  "id": "n93",
                   "type": "bry-stack",
                   "props": {
                     "gap": "2"
@@ -4137,12 +4137,12 @@
               },
               {
                 "op": "text",
-                "id": "n509",
+                "id": "n48",
                 "text": "changed 210"
               },
               {
                 "op": "text",
-                "id": "n542",
+                "id": "n81",
                 "text": "changed 211"
               }
             ]
@@ -4154,10 +4154,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n549",
+                "parent": "n87",
                 "index": 1,
                 "node": {
-                  "id": "n556",
+                  "id": "n94",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 52"
@@ -4166,10 +4166,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n556",
+                "parent": "n94",
                 "index": 0,
                 "node": {
-                  "id": "n555",
+                  "id": "n95",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -4185,23 +4185,23 @@
             "ops": [
               {
                 "op": "move",
-                "id": "n542",
-                "parent": "n526",
+                "id": "n81",
+                "parent": "n65",
                 "index": 1
               },
               {
                 "op": "insert",
-                "parent": "n556",
+                "parent": "n94",
                 "index": 1,
                 "node": {
-                  "id": "n557",
+                  "id": "n96",
                   "type": "#text",
                   "text": "words 11"
                 }
               },
               {
                 "op": "remove",
-                "id": "n506"
+                "id": "n45"
               }
             ]
           }
@@ -4212,10 +4212,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n549",
+                "parent": "n87",
                 "index": 0,
                 "node": {
-                  "id": "n559",
+                  "id": "n97",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 19"
@@ -4224,10 +4224,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n559",
+                "parent": "n97",
                 "index": 0,
                 "node": {
-                  "id": "n558",
+                  "id": "n98",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -4246,7 +4246,7 @@
                 "parent": "root",
                 "index": 3,
                 "node": {
-                  "id": "n560",
+                  "id": "n99",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 83"
@@ -4255,7 +4255,7 @@
               },
               {
                 "op": "remove",
-                "id": "n542"
+                "id": "n81"
               }
             ]
           }
@@ -4266,10 +4266,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n556",
+                "parent": "n94",
                 "index": 1,
                 "node": {
-                  "id": "n561",
+                  "id": "n100",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 6"
@@ -4278,10 +4278,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n559",
+                "parent": "n97",
                 "index": 0,
                 "node": {
-                  "id": "n562",
+                  "id": "n101",
                   "type": "bry-stack",
                   "props": {
                     "gap": "2"
@@ -4290,18 +4290,18 @@
               },
               {
                 "op": "remove",
-                "id": "n561"
+                "id": "n100"
               },
               {
                 "op": "props",
-                "id": "n522",
+                "id": "n62",
                 "props": {
                   "tone": "muted"
                 }
               },
               {
                 "op": "props",
-                "id": "n560",
+                "id": "n99",
                 "props": {
                   "tone": "danger"
                 }
@@ -4318,7 +4318,7 @@
                 "parent": "root",
                 "index": 0,
                 "node": {
-                  "id": "n563",
+                  "id": "n102",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 41"
@@ -4327,10 +4327,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n526",
+                "parent": "n65",
                 "index": 2,
                 "node": {
-                  "id": "n564",
+                  "id": "n103",
                   "type": "#text",
                   "text": "words 17"
                 }
@@ -4344,10 +4344,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n556",
+                "parent": "n94",
                 "index": 2,
                 "node": {
-                  "id": "n565",
+                  "id": "n104",
                   "type": "bry-button",
                   "props": {
                     "label": "Press"
@@ -4356,7 +4356,7 @@
               },
               {
                 "op": "text",
-                "id": "n564",
+                "id": "n103",
                 "text": "changed 229"
               }
             ]
@@ -4368,10 +4368,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n536",
+                "parent": "n74",
                 "index": 0,
                 "node": {
-                  "id": "n566",
+                  "id": "n105",
                   "type": "bry-stack",
                   "props": {
                     "gap": "3"
@@ -4380,19 +4380,19 @@
               },
               {
                 "op": "move",
-                "id": "n563",
-                "parent": "n514",
+                "id": "n102",
+                "parent": "n53",
                 "index": 0
               },
               {
                 "op": "move",
-                "id": "n553",
-                "parent": "n562",
+                "id": "n92",
+                "parent": "n101",
                 "index": 0
               },
               {
                 "op": "props",
-                "id": "n559",
+                "id": "n97",
                 "props": {
                   "title": null
                 }
@@ -4406,14 +4406,14 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n509"
+                "id": "n48"
               },
               {
                 "op": "insert",
-                "parent": "n559",
+                "parent": "n97",
                 "index": 0,
                 "node": {
-                  "id": "n567",
+                  "id": "n106",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 46"
@@ -4422,10 +4422,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n536",
+                "parent": "n74",
                 "index": 0,
                 "node": {
-                  "id": "n568",
+                  "id": "n107",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 87"
@@ -4441,10 +4441,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n526",
+                "parent": "n65",
                 "index": 1,
                 "node": {
-                  "id": "n569",
+                  "id": "n108",
                   "type": "bry-button",
                   "props": {
                     "label": "Press"
@@ -4460,12 +4460,12 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n565"
+                "id": "n104"
               },
               {
                 "op": "move",
-                "id": "n560",
-                "parent": "n562",
+                "id": "n99",
+                "parent": "n101",
                 "index": 0
               }
             ]
@@ -4477,10 +4477,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n549",
+                "parent": "n87",
                 "index": 2,
                 "node": {
-                  "id": "n570",
+                  "id": "n109",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 83"
@@ -4496,7 +4496,7 @@
             "ops": [
               {
                 "op": "props",
-                "id": "n537",
+                "id": "n76",
                 "props": {
                   "disabled": false
                 }
@@ -4510,10 +4510,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n559",
+                "parent": "n97",
                 "index": 3,
                 "node": {
-                  "id": "n571",
+                  "id": "n110",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 24"
@@ -4522,10 +4522,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n549",
+                "parent": "n87",
                 "index": 3,
                 "node": {
-                  "id": "n572",
+                  "id": "n111",
                   "type": "bry-stack",
                   "props": {
                     "gap": "3"
@@ -4534,8 +4534,8 @@
               },
               {
                 "op": "move",
-                "id": "n559",
-                "parent": "n514",
+                "id": "n97",
+                "parent": "n53",
                 "index": 2
               }
             ]
@@ -4547,10 +4547,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n536",
+                "parent": "n74",
                 "index": 1,
                 "node": {
-                  "id": "n574",
+                  "id": "n112",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 97"
@@ -4559,10 +4559,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n574",
+                "parent": "n112",
                 "index": 0,
                 "node": {
-                  "id": "n573",
+                  "id": "n113",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -4571,10 +4571,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n562",
+                "parent": "n101",
                 "index": 1,
                 "node": {
-                  "id": "n576",
+                  "id": "n114",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 13"
@@ -4583,10 +4583,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n576",
+                "parent": "n114",
                 "index": 0,
                 "node": {
-                  "id": "n575",
+                  "id": "n115",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -4602,10 +4602,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n574",
+                "parent": "n112",
                 "index": 0,
                 "node": {
-                  "id": "n577",
+                  "id": "n116",
                   "type": "#text",
                   "text": "words 55"
                 }
@@ -4619,13 +4619,13 @@
             "ops": [
               {
                 "op": "move",
-                "id": "n572",
-                "parent": "n514",
+                "id": "n111",
+                "parent": "n53",
                 "index": 1
               },
               {
                 "op": "remove",
-                "id": "n526"
+                "id": "n65"
               }
             ]
           }
@@ -4636,10 +4636,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n574",
+                "parent": "n112",
                 "index": 2,
                 "node": {
-                  "id": "n578",
+                  "id": "n117",
                   "type": "bry-stack",
                   "props": {
                     "gap": "1"
@@ -4651,7 +4651,7 @@
                 "parent": "root",
                 "index": 3,
                 "node": {
-                  "id": "n579",
+                  "id": "n118",
                   "type": "#text",
                   "text": "words 59"
                 }
@@ -4665,26 +4665,26 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n571"
+                "id": "n110"
               },
               {
                 "op": "move",
-                "id": "n562",
-                "parent": "n574",
+                "id": "n101",
+                "parent": "n112",
                 "index": 1
               },
               {
                 "op": "move",
-                "id": "n566",
-                "parent": "n572",
+                "id": "n105",
+                "parent": "n111",
                 "index": 0
               },
               {
                 "op": "insert",
-                "parent": "n559",
+                "parent": "n97",
                 "index": 0,
                 "node": {
-                  "id": "n581",
+                  "id": "n119",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 90"
@@ -4693,10 +4693,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n581",
+                "parent": "n119",
                 "index": 0,
                 "node": {
-                  "id": "n580",
+                  "id": "n120",
                   "type": "bry-text",
                   "props": {
                     "text": "inside",
@@ -4706,26 +4706,26 @@
               },
               {
                 "op": "props",
-                "id": "n559",
+                "id": "n97",
                 "props": {
                   "title": "Renamed 257"
                 }
               },
               {
                 "op": "props",
-                "id": "n568",
+                "id": "n107",
                 "props": {
                   "tone": "danger"
                 }
               },
               {
                 "op": "text",
-                "id": "n553",
+                "id": "n92",
                 "text": "changed 263"
               },
               {
                 "op": "text",
-                "id": "n579",
+                "id": "n118",
                 "text": "changed 264"
               }
             ]
@@ -4737,10 +4737,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n536",
+                "parent": "n74",
                 "index": 1,
                 "node": {
-                  "id": "n582",
+                  "id": "n121",
                   "type": "bry-stack",
                   "props": {
                     "gap": "2"
@@ -4749,8 +4749,8 @@
               },
               {
                 "op": "move",
-                "id": "n578",
-                "parent": "n554",
+                "id": "n117",
+                "parent": "n93",
                 "index": 0
               }
             ]
@@ -4762,10 +4762,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n574",
+                "parent": "n112",
                 "index": 2,
                 "node": {
-                  "id": "n583",
+                  "id": "n122",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 85"
@@ -4774,14 +4774,14 @@
               },
               {
                 "op": "remove",
-                "id": "n566"
+                "id": "n105"
               },
               {
                 "op": "insert",
-                "parent": "n572",
+                "parent": "n111",
                 "index": 0,
                 "node": {
-                  "id": "n584",
+                  "id": "n123",
                   "type": "bry-button",
                   "props": {
                     "label": "Press"
@@ -4793,14 +4793,14 @@
                 "parent": "root",
                 "index": 2,
                 "node": {
-                  "id": "n585",
+                  "id": "n124",
                   "type": "#text",
                   "text": "words 49"
                 }
               },
               {
                 "op": "props",
-                "id": "n562",
+                "id": "n101",
                 "props": {
                   "gap": "4"
                 }
@@ -4814,26 +4814,26 @@
             "ops": [
               {
                 "op": "remove",
-                "id": "n560"
+                "id": "n99"
               },
               {
                 "op": "move",
-                "id": "n563",
-                "parent": "n572",
+                "id": "n102",
+                "parent": "n111",
                 "index": 1
               },
               {
                 "op": "move",
-                "id": "n584",
-                "parent": "n578",
+                "id": "n123",
+                "parent": "n117",
                 "index": 0
               },
               {
                 "op": "insert",
-                "parent": "n578",
+                "parent": "n117",
                 "index": 0,
                 "node": {
-                  "id": "n586",
+                  "id": "n125",
                   "type": "bry-stack",
                   "props": {
                     "gap": "3"
@@ -4842,14 +4842,14 @@
               },
               {
                 "op": "props",
-                "id": "n578",
+                "id": "n117",
                 "props": {
                   "gap": "4"
                 }
               },
               {
                 "op": "props",
-                "id": "n536",
+                "id": "n74",
                 "props": {
                   "title": "Renamed 275"
                 }
@@ -4863,8 +4863,8 @@
             "ops": [
               {
                 "op": "move",
-                "id": "n573",
-                "parent": "n578",
+                "id": "n113",
+                "parent": "n117",
                 "index": 0
               }
             ]
@@ -4876,10 +4876,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n578",
+                "parent": "n117",
                 "index": 3,
                 "node": {
-                  "id": "n587",
+                  "id": "n126",
                   "type": "#text",
                   "text": "words 67"
                 }
@@ -4893,16 +4893,16 @@
             "ops": [
               {
                 "op": "move",
-                "id": "n583",
-                "parent": "n514",
+                "id": "n122",
+                "parent": "n53",
                 "index": 2
               },
               {
                 "op": "insert",
-                "parent": "n574",
+                "parent": "n112",
                 "index": 1,
                 "node": {
-                  "id": "n588",
+                  "id": "n127",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 90"
@@ -4911,14 +4911,14 @@
               },
               {
                 "op": "remove",
-                "id": "n573"
+                "id": "n113"
               },
               {
                 "op": "insert",
-                "parent": "n582",
+                "parent": "n121",
                 "index": 0,
                 "node": {
-                  "id": "n590",
+                  "id": "n128",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 4"
@@ -4927,10 +4927,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n590",
+                "parent": "n128",
                 "index": 0,
                 "node": {
-                  "id": "n589",
+                  "id": "n129",
                   "type": "bry-text",
                   "props": {
                     "text": "inside",
@@ -4940,7 +4940,7 @@
               },
               {
                 "op": "props",
-                "id": "n576",
+                "id": "n114",
                 "props": {
                   "title": "Renamed 289"
                 }
@@ -4954,10 +4954,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n582",
+                "parent": "n121",
                 "index": 1,
                 "node": {
-                  "id": "n591",
+                  "id": "n130",
                   "type": "bry-stack",
                   "props": {
                     "gap": "1"
@@ -4966,10 +4966,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n591",
+                "parent": "n130",
                 "index": 0,
                 "node": {
-                  "id": "n592",
+                  "id": "n131",
                   "type": "bry-stack",
                   "props": {
                     "gap": "3"
@@ -4985,10 +4985,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n578",
+                "parent": "n117",
                 "index": 3,
                 "node": {
-                  "id": "n593",
+                  "id": "n132",
                   "type": "bry-button",
                   "props": {
                     "label": "Press"
@@ -5004,10 +5004,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n574",
+                "parent": "n112",
                 "index": 2,
                 "node": {
-                  "id": "n594",
+                  "id": "n133",
                   "type": "bry-stack",
                   "props": {
                     "gap": "3"
@@ -5016,11 +5016,11 @@
               },
               {
                 "op": "remove",
-                "id": "n567"
+                "id": "n106"
               },
               {
                 "op": "text",
-                "id": "n585",
+                "id": "n124",
                 "text": "changed 295"
               }
             ]
@@ -5032,10 +5032,10 @@
             "ops": [
               {
                 "op": "insert",
-                "parent": "n576",
+                "parent": "n114",
                 "index": 0,
                 "node": {
-                  "id": "n595",
+                  "id": "n134",
                   "type": "bry-text",
                   "props": {
                     "text": "Text 85"
@@ -5044,10 +5044,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n581",
+                "parent": "n119",
                 "index": 0,
                 "node": {
-                  "id": "n596",
+                  "id": "n135",
                   "type": "bry-button",
                   "props": {
                     "label": "Press"
@@ -5056,10 +5056,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n574",
+                "parent": "n112",
                 "index": 4,
                 "node": {
-                  "id": "n598",
+                  "id": "n136",
                   "type": "bry-card",
                   "props": {
                     "title": "Card 7"
@@ -5068,10 +5068,10 @@
               },
               {
                 "op": "insert",
-                "parent": "n598",
+                "parent": "n136",
                 "index": 0,
                 "node": {
-                  "id": "n597",
+                  "id": "n137",
                   "type": "bry-text",
                   "props": {
                     "text": "inside"
@@ -5090,13 +5090,13 @@
         "text": "",
         "children": [
           {
-            "id": "n514",
+            "id": "n53",
             "type": "bry-stack",
             "props": {},
             "text": "",
             "children": [
               {
-                "id": "n572",
+                "id": "n111",
                 "type": "bry-stack",
                 "props": {
                   "gap": "3"
@@ -5104,7 +5104,7 @@
                 "text": "",
                 "children": [
                   {
-                    "id": "n563",
+                    "id": "n102",
                     "type": "bry-text",
                     "props": {
                       "text": "Text 41"
@@ -5115,7 +5115,7 @@
                 ]
               },
               {
-                "id": "n537",
+                "id": "n76",
                 "type": "bry-button",
                 "props": {
                   "label": "Press",
@@ -5125,7 +5125,7 @@
                 "children": []
               },
               {
-                "id": "n583",
+                "id": "n122",
                 "type": "bry-text",
                 "props": {
                   "text": "Text 85"
@@ -5134,7 +5134,7 @@
                 "children": []
               },
               {
-                "id": "n559",
+                "id": "n97",
                 "type": "bry-card",
                 "props": {
                   "title": "Renamed 257"
@@ -5142,7 +5142,7 @@
                 "text": "",
                 "children": [
                   {
-                    "id": "n581",
+                    "id": "n119",
                     "type": "bry-card",
                     "props": {
                       "title": "Card 90"
@@ -5150,7 +5150,7 @@
                     "text": "",
                     "children": [
                       {
-                        "id": "n596",
+                        "id": "n135",
                         "type": "bry-button",
                         "props": {
                           "label": "Press"
@@ -5159,7 +5159,7 @@
                         "children": []
                       },
                       {
-                        "id": "n580",
+                        "id": "n120",
                         "type": "bry-text",
                         "props": {
                           "text": "inside",
@@ -5171,7 +5171,7 @@
                     ]
                   },
                   {
-                    "id": "n558",
+                    "id": "n98",
                     "type": "bry-text",
                     "props": {
                       "text": "inside"
@@ -5184,7 +5184,7 @@
             ]
           },
           {
-            "id": "n554",
+            "id": "n93",
             "type": "bry-stack",
             "props": {
               "gap": "2"
@@ -5192,7 +5192,7 @@
             "text": "",
             "children": [
               {
-                "id": "n578",
+                "id": "n117",
                 "type": "bry-stack",
                 "props": {
                   "gap": "4"
@@ -5200,7 +5200,7 @@
                 "text": "",
                 "children": [
                   {
-                    "id": "n586",
+                    "id": "n125",
                     "type": "bry-stack",
                     "props": {
                       "gap": "3"
@@ -5209,7 +5209,7 @@
                     "children": []
                   },
                   {
-                    "id": "n584",
+                    "id": "n123",
                     "type": "bry-button",
                     "props": {
                       "label": "Press"
@@ -5218,14 +5218,14 @@
                     "children": []
                   },
                   {
-                    "id": "n587",
+                    "id": "n126",
                     "type": "#text",
                     "props": {},
                     "text": "words 67",
                     "children": []
                   },
                   {
-                    "id": "n593",
+                    "id": "n132",
                     "type": "bry-button",
                     "props": {
                       "label": "Press"
@@ -5238,14 +5238,14 @@
             ]
           },
           {
-            "id": "n585",
+            "id": "n124",
             "type": "#text",
             "props": {},
             "text": "changed 295",
             "children": []
           },
           {
-            "id": "n536",
+            "id": "n74",
             "type": "bry-card",
             "props": {
               "title": "Renamed 275"
@@ -5253,7 +5253,7 @@
             "text": "",
             "children": [
               {
-                "id": "n568",
+                "id": "n107",
                 "type": "bry-text",
                 "props": {
                   "text": "Text 87",
@@ -5263,7 +5263,7 @@
                 "children": []
               },
               {
-                "id": "n582",
+                "id": "n121",
                 "type": "bry-stack",
                 "props": {
                   "gap": "2"
@@ -5271,7 +5271,7 @@
                 "text": "",
                 "children": [
                   {
-                    "id": "n590",
+                    "id": "n128",
                     "type": "bry-card",
                     "props": {
                       "title": "Card 4"
@@ -5279,7 +5279,7 @@
                     "text": "",
                     "children": [
                       {
-                        "id": "n589",
+                        "id": "n129",
                         "type": "bry-text",
                         "props": {
                           "text": "inside",
@@ -5291,7 +5291,7 @@
                     ]
                   },
                   {
-                    "id": "n591",
+                    "id": "n130",
                     "type": "bry-stack",
                     "props": {
                       "gap": "1"
@@ -5299,7 +5299,7 @@
                     "text": "",
                     "children": [
                       {
-                        "id": "n592",
+                        "id": "n131",
                         "type": "bry-stack",
                         "props": {
                           "gap": "3"
@@ -5312,7 +5312,7 @@
                 ]
               },
               {
-                "id": "n574",
+                "id": "n112",
                 "type": "bry-card",
                 "props": {
                   "title": "Card 97"
@@ -5320,14 +5320,14 @@
                 "text": "",
                 "children": [
                   {
-                    "id": "n577",
+                    "id": "n116",
                     "type": "#text",
                     "props": {},
                     "text": "words 55",
                     "children": []
                   },
                   {
-                    "id": "n588",
+                    "id": "n127",
                     "type": "bry-text",
                     "props": {
                       "text": "Text 90"
@@ -5336,7 +5336,7 @@
                     "children": []
                   },
                   {
-                    "id": "n594",
+                    "id": "n133",
                     "type": "bry-stack",
                     "props": {
                       "gap": "3"
@@ -5345,7 +5345,7 @@
                     "children": []
                   },
                   {
-                    "id": "n562",
+                    "id": "n101",
                     "type": "bry-stack",
                     "props": {
                       "gap": "4"
@@ -5353,7 +5353,7 @@
                     "text": "",
                     "children": [
                       {
-                        "id": "n576",
+                        "id": "n114",
                         "type": "bry-card",
                         "props": {
                           "title": "Renamed 289"
@@ -5361,7 +5361,7 @@
                         "text": "",
                         "children": [
                           {
-                            "id": "n595",
+                            "id": "n134",
                             "type": "bry-text",
                             "props": {
                               "text": "Text 85"
@@ -5370,7 +5370,7 @@
                             "children": []
                           },
                           {
-                            "id": "n575",
+                            "id": "n115",
                             "type": "bry-text",
                             "props": {
                               "text": "inside"
@@ -5381,7 +5381,7 @@
                         ]
                       },
                       {
-                        "id": "n553",
+                        "id": "n92",
                         "type": "#text",
                         "props": {},
                         "text": "changed 263",
@@ -5390,7 +5390,7 @@
                     ]
                   },
                   {
-                    "id": "n598",
+                    "id": "n136",
                     "type": "bry-card",
                     "props": {
                       "title": "Card 7"
@@ -5398,7 +5398,7 @@
                     "text": "",
                     "children": [
                       {
-                        "id": "n597",
+                        "id": "n137",
                         "type": "bry-text",
                         "props": {
                           "text": "inside"
@@ -5413,7 +5413,7 @@
             ]
           },
           {
-            "id": "n579",
+            "id": "n118",
             "type": "#text",
             "props": {},
             "text": "changed 264",
