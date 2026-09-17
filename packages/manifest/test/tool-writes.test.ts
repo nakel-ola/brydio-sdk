@@ -1,27 +1,28 @@
 import { describe, expect, test } from 'bun:test';
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 
+import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
 import { TOOL_WRITES, generatedToolsOf, type ToolVerb } from '../src/index.ts';
 import { ISSUES_MANIFEST } from './issues-manifest.fixture.ts';
 
 /**
  * A generated tool's write flag (A5-F01-S03): the tools that change a record
  * ask the person first from a screen. The SDK's `TOOL_WRITES` is a copy of
- * the server's `WRITES` in `apps/tools/generated-tools.ts`, read here from
- * Brydio's checkout so the two can't drift apart.
+ * the server's `WRITES` in `apps/tools/generated-tools.ts`: read from
+ * Brydio's checkout when it's there, from `contracts/brydio.json` when not.
  */
 
-const brydio = process.env.BRYDIO_DIR ?? join(import.meta.dir, '..', '..', '..', '..', 'brydio');
-const generated = join(brydio, 'apps/api/src/apps/tools/generated-tools.ts');
+const GENERATED = 'apps/api/src/apps/tools/generated-tools.ts';
 
-describe.skipIf(!existsSync(generated))('which generated tools write', () => {
-  test("are the server's", () => {
-    const found = /const WRITES: ReadonlySet<Verb> = new Set<Verb>\(\[([^\]]*)\]\)/.exec(readFileSync(generated, 'utf8'));
+describe('which generated tools write', () => {
+  test("are the server's", async () => {
+    const server = await brydioAnswers('tool-writes', [GENERATED], () => {
+      const found = /const WRITES: ReadonlySet<Verb> = new Set<Verb>\(\[([^\]]*)\]\)/.exec(readFileSync(inBrydio(GENERATED), 'utf8'));
 
-    expect(found, 'WRITES in generated-tools.ts').not.toBeNull();
+      if (!found) throw new Error(`WRITES not found in ${GENERATED}`);
 
-    const server = [...found![1]!.matchAll(/'([a-z]+)'/g)].map(match => match[1]!).sort();
+      return [...found[1]!.matchAll(/'([a-z]+)'/g)].map(match => match[1]!).sort();
+    });
     const sdk: string[] = (Object.keys(TOOL_WRITES) as ToolVerb[]).filter(verb => TOOL_WRITES[verb]).sort();
 
     expect(sdk).toEqual(server);

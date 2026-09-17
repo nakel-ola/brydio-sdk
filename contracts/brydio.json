@@ -1,0 +1,52 @@
+{
+  "brydio": {
+    "commit": "59dc79f2815da901a5157e921329eb4bc2479460",
+    "dirty": true
+  },
+  "contracts": {
+    "limits": {
+      "fields": {
+        "collections": 20,
+        "fields": 40,
+        "enumValues": 50,
+        "enumValueChars": 64,
+        "stringChars": 1000,
+        "textChars": 100000,
+        "listEntries": 100,
+        "nameChars": 40
+      },
+      "documents": {
+        "pageDefault": 50,
+        "pageMax": 200,
+        "bodyBytes": 262144,
+        "pageBytes": 2097152,
+        "recordsPerCollection": 100000,
+        "batchChanges": 50
+      }
+    },
+    "prelude": {
+      "calls": [
+        "BroadcastChannel",
+        "EventSource",
+        "SharedWorker",
+        "WebSocket",
+        "WebSocketStream",
+        "WebTransport",
+        "Worker",
+        "XMLHttpRequest",
+        "fetch",
+        "importScripts"
+      ],
+      "reads": [
+        "caches",
+        "indexedDB"
+      ],
+      "storage": true
+    },
+    "tool-writes": [
+      "create",
+      "delete",
+      "update"
+    ]
+  }
+}

@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
 import { DOCUMENT_LIMITS, FIELD_LIMITS, parseFieldType, validateManifest, valueProblem } from '../src/index.ts';
 
 /**
@@ -11,10 +12,9 @@ import { DOCUMENT_LIMITS, FIELD_LIMITS, parseFieldType, validateManifest, valueP
  */
 
 const repository = join(import.meta.dir, '..', '..', '..');
-const brydio = process.env.BRYDIO_DIR ?? join(repository, '..', 'brydio');
 const page = readFileSync(join(repository, 'docs', 'manifest.md'), 'utf8');
-const serverFields = join(brydio, 'apps/api/src/apps/manifest/field-types.ts');
-const serverDocuments = join(brydio, 'apps/api/src/apps/data/document-query.ts');
+const SERVER_FIELDS = 'apps/api/src/apps/manifest/field-types.ts';
+const SERVER_DOCUMENTS = 'apps/api/src/apps/data/document-query.ts';
 
 /** `{ key: 20, bodyBytes: 256 * 1024 }` read from a `const NAME = { … } as const` in TypeScript source. */
 function constantIn(source: string, name: string): Record<string, number> {
@@ -48,9 +48,14 @@ describe('the limits on the manifest page', () => {
     expect(documented).toEqual(constants);
   });
 
-  test.skipIf(!existsSync(serverFields) || !existsSync(serverDocuments))("are Brydio's own", () => {
-    expect(constantIn(readFileSync(serverFields, 'utf8'), 'FIELD_LIMITS')).toEqual({ ...FIELD_LIMITS });
-    expect(constantIn(readFileSync(serverDocuments, 'utf8'), 'DOCUMENT_LIMITS')).toEqual({ ...DOCUMENT_LIMITS });
+  test("are Brydio's own", async () => {
+    const server = await brydioAnswers('limits', [SERVER_FIELDS, SERVER_DOCUMENTS], () => ({
+      fields: constantIn(readFileSync(inBrydio(SERVER_FIELDS), 'utf8'), 'FIELD_LIMITS'),
+      documents: constantIn(readFileSync(inBrydio(SERVER_DOCUMENTS), 'utf8'), 'DOCUMENT_LIMITS'),
+    }));
+
+    expect(server.fields).toEqual({ ...FIELD_LIMITS });
+    expect(server.documents).toEqual({ ...DOCUMENT_LIMITS });
   });
 });
 

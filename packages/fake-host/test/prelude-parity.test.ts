@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
 
 /**
  * The fake host's prelude is a copy of Brydio's (contracts §11), so an app
@@ -9,8 +11,7 @@ import { join } from 'node:path';
  * takes away as a call or as a read, and `navigator.storage`.
  */
 
-const brydio = process.env.BRYDIO_DIR ?? join(import.meta.dir, '..', '..', '..', '..', 'brydio');
-const framePage = join(brydio, 'apps/api/src/apps/frame/frame-page.ts');
+const FRAME_PAGE = 'apps/api/src/apps/frame/frame-page.ts';
 
 /** What a prelude's source takes away: its `calls` and `reads` lists, and whether it takes `navigator.storage`. */
 function walls(source: string) {
@@ -25,10 +26,10 @@ function walls(source: string) {
   return { calls: list('calls'), reads: list('reads'), storage: /replace\(scope\.navigator, 'storage', true\)/.test(source) };
 }
 
-describe.skipIf(!existsSync(framePage))("the fake host's prelude", () => {
-  test("takes away exactly what Brydio's does", () => {
+describe("the fake host's prelude", () => {
+  test("takes away exactly what Brydio's does", async () => {
     const ours = walls(readFileSync(join(import.meta.dir, '..', 'src', 'prelude.ts'), 'utf8'));
-    const brydios = walls(readFileSync(framePage, 'utf8'));
+    const brydios = await brydioAnswers('prelude', [FRAME_PAGE], () => walls(readFileSync(inBrydio(FRAME_PAGE), 'utf8')));
 
     expect(ours).toEqual(brydios);
     expect(ours.calls).toContain('fetch');
