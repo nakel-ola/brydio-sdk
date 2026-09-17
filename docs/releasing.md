@@ -54,13 +54,12 @@ So, once, in this order:
 
 After that, every release is a tag, and nothing else.
 
-## What still needs the owner
+## The licence
 
-- **The repository's address**, which goes in `release.json` as
-  `repository`, so each published package points back at its source.
-- **The copyright line** for a `LICENSE` file: MIT needs a year and the
-  holder's legal name. The packages say `"license": "MIT"` already, but the
-  file itself isn't written yet.
+MIT, `Copyright (c) 2026 Brydio Inc.` (the owner, 17 Sep). `LICENSE` is at
+the root, every package says `"license": "MIT"` with `author` and
+`repository`, and `release:build` copies the licence into each published
+package. The tarball test fails if one goes out without it.
 
 ## Versions
 
