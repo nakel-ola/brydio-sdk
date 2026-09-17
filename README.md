@@ -134,9 +134,16 @@ bun test               # every package, the template, and the end-to-end runs in
 bun run check-types
 ```
 
-Some tests compare these copies with Brydio's own code. They run when a Brydio
-checkout sits beside this folder (`../brydio`, or set `BRYDIO_DIR`), and are
-skipped otherwise.
+Some tests compare these copies with Brydio's own code: the catalogue, the
+manifest schema, grants, limits, the prelude, the tree store, signing and the
+publish route's words. When a Brydio checkout sits beside this folder
+(`../brydio`, or set `BRYDIO_DIR`), they ask Brydio's code directly. Without
+one, as in this repository's own CI, they compare against Brydio's answers
+recorded in `contracts/brydio.json`, so they still check something.
+
+When Brydio's answers change, those tests fail with Brydio beside them. Then
+run `bun run contracts:record`, which writes the new answers and the Brydio
+commit they came from, and review the diff before committing it.
 
 Nothing here is published anywhere yet. An app uses the packages straight from
 this folder (see `../brydio-issues/package.json`).
