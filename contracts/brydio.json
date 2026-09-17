@@ -1,7 +1,7 @@
 {
   "brydio": {
     "commit": "b846c15182772347907e0a7048274c86953a7d99",
-    "dirty": false
+    "dirty": true
   },
   "contracts": {
     "bundle-files": {
@@ -302,6 +302,26 @@
         "code": "data_label_invalid"
       }
     ],
+    "host-grants": {
+      "capabilities": [
+        "navigate",
+        "message",
+        "members",
+        "projects"
+      ],
+      "reads": [
+        true,
+        true,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    },
     "issues-manifest-fixture": {
       "name": "issues",
       "version": "0.1.0",
@@ -722,6 +742,88 @@
         ]
       }
     ],
+    "migrations": {
+      "published": [
+        [
+          {
+            "code": "migration_unexplained",
+            "collection": "issues",
+            "field": "due",
+            "message": "issues.due is new; add it with a step."
+          }
+        ],
+        [],
+        [
+          {
+            "code": "migration_default_missing",
+            "collection": "issues",
+            "field": "points",
+            "message": "add issues.points: a required field needs a default for the records already kept."
+          }
+        ],
+        [
+          {
+            "code": "migration_unexplained",
+            "collection": "issues",
+            "field": "assignee",
+            "message": "issues.assignee is new; add it with a step."
+          },
+          {
+            "code": "migration_unexplained",
+            "collection": "issues",
+            "field": "owner",
+            "message": "issues.owner is gone; drop it or rename it with a step."
+          }
+        ],
+        [],
+        [
+          {
+            "code": "migration_value_removed",
+            "collection": "issues",
+            "field": "status",
+            "message": "issues.status no longer allows \"done\"; say which value replaces each."
+          }
+        ],
+        [
+          {
+            "code": "migration_type_changed",
+            "collection": "issues",
+            "field": "title",
+            "message": "issues.title changed type; drop `title` and add it again under a new name."
+          }
+        ],
+        [
+          {
+            "code": "migration_type_changed",
+            "collection": "issues",
+            "field": "owner",
+            "message": "issues.owner became required, and records without it would not be readable; add a new field with a default instead."
+          }
+        ],
+        [
+          {
+            "code": "migration_unexplained",
+            "collection": "issues",
+            "field": "owner",
+            "message": "issues.owner is gone; drop it or rename it with a step."
+          }
+        ]
+      ],
+      "replaced": [
+        {
+          "code": "migration_step_invalid",
+          "collection": "issues",
+          "field": "status",
+          "message": "replace in issues.status: \"nope\" is not one of the new version's values."
+        },
+        {
+          "code": "migration_value_removed",
+          "collection": "issues",
+          "field": "status",
+          "message": "issues.status no longer allows \"done\"; say which value replaces each."
+        }
+      ]
+    },
     "prelude": {
       "calls": [
         "BroadcastChannel",
@@ -741,6 +843,7 @@
       ],
       "storage": true
     },
+    "publish-grant-words": true,
     "sdk-support": {
       "support": {
         "oldest": "0.1.0-alpha.0",
@@ -764,6 +867,23 @@
         "app.json does not say which SDK built it. Build it with brydio build. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0.",
         "app.json does not say which SDK built it. Build it with brydio build. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0."
       ]
+    },
+    "secret-scan": {
+      "files": [
+        [],
+        [
+          "servers.json.github.headers[0].value"
+        ],
+        [],
+        [
+          "integrations/jira.json.auth.clientSecret"
+        ],
+        []
+      ],
+      "manifest": [
+        "app.json.settings[0].token"
+      ],
+      "message": "That package contains a secret. Header values and client secrets are entered here, never shipped in a file — remove it and import again."
     },
     "tool-writes": [
       "create",

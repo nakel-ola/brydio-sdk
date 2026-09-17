@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 
+import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
 import {
   HOST_CAPABILITIES,
   isHostCapability,
@@ -19,16 +18,15 @@ import { ISSUES_MANIFEST } from './issues-manifest.fixture.ts';
  * The publish route's own checks, copied into `@brydio/manifest` for
  * `brydio validate` (A8-F04-S03): the migration a schema change must declare,
  * the host grants Brydio knows, and the secret scan. Each is compared with
- * the server's whenever a Brydio checkout sits beside this repository.
+ * the server's: live when a Brydio checkout sits beside this repository, and
+ * from `contracts/brydio.json` when it doesn't.
  */
 
-const brydio = process.env.BRYDIO_DIR ?? join(import.meta.dir, '..', '..', '..', '..', 'brydio');
-const api = join(brydio, 'apps/api/src');
-const serverMigrations = join(api, 'apps/manifest/migrations.ts');
-const serverSecrets = join(api, 'extensions/apps/secret-scan.ts');
-const serverCodes = join(api, 'extensions/apps/manifest-codes.ts');
-const serverGrants = join(api, 'apps/manifest/grants.ts');
-const serverPublish = join(api, 'apps/publishing/app-publish.service.ts');
+const SERVER_MIGRATIONS = 'apps/api/src/apps/manifest/migrations.ts';
+const SERVER_SECRETS = 'apps/api/src/extensions/apps/secret-scan.ts';
+const SERVER_CODES = 'apps/api/src/extensions/apps/manifest-codes.ts';
+const SERVER_GRANTS = 'apps/api/src/apps/manifest/grants.ts';
+const SERVER_PUBLISH = 'apps/api/src/apps/publishing/app-publish.service.ts';
 const bytes = (text: string) => new TextEncoder().encode(text);
 
 const v = (version: string, schema: Record<string, unknown>, migrations?: unknown) => ({
@@ -78,16 +76,19 @@ describe('a schema change declares its migration', () => {
     expect(validateManifest({ ...(NEXT[1] as object), migrations: [{ version: '0.3.0', steps: [{ op: 'merge', collection: 'issues' }] }] }).ok).toBe(false);
   });
 
-  test.skipIf(!existsSync(serverMigrations))('says what Brydio’s migrations.ts says, for every pair', async () => {
-    const server = await import(serverMigrations);
-
-    for (const next of NEXT) {
-      expect(publishedMigrationProblems(BEFORE, next)).toEqual(server.publishedMigrationProblems(BEFORE, next));
-    }
-
+  test('says what Brydio’s migrations.ts says, for every pair', async () => {
     const steps = [{ op: 'replace', collection: 'issues', field: 'status', from: 'done', to: 'nope' }] as const;
+    const server = await brydioAnswers('migrations', [SERVER_MIGRATIONS], async () => {
+      const theirs = await import(inBrydio(SERVER_MIGRATIONS));
 
-    expect(migrationProblems(BEFORE, NEXT[5], steps)).toEqual(server.migrationProblems(BEFORE, NEXT[5], steps));
+      return {
+        published: NEXT.map(next => theirs.publishedMigrationProblems(BEFORE, next)),
+        replaced: theirs.migrationProblems(BEFORE, NEXT[5], steps),
+      };
+    });
+
+    expect(JSON.parse(JSON.stringify(NEXT.map(next => publishedMigrationProblems(BEFORE, next))))).toEqual(server.published);
+    expect(JSON.parse(JSON.stringify(migrationProblems(BEFORE, NEXT[5], steps)))).toEqual(server.replaced);
   });
 });
 
@@ -118,18 +119,24 @@ describe('host grants', () => {
     expect(unknownHostGrant({ grants: { host: ['connection:GitHub'] } })?.code).toBe('grant_unknown');
   });
 
-  test.skipIf(!existsSync(serverGrants))('knows the grants Brydio’s grants.ts knows, and reads each the same way', async () => {
-    const server = await import(serverGrants);
+  test('knows the grants Brydio’s grants.ts knows, and reads each the same way', async () => {
     const names = ['navigate', 'message', 'camera', 'connection:github', 'connection:my-crm_2', 'connection:', 'connection:GitHub', `connection:${'a'.repeat(61)}`, '*', ''];
+    const server = await brydioAnswers('host-grants', [SERVER_GRANTS], async () => {
+      const theirs = await import(inBrydio(SERVER_GRANTS));
 
-    expect([...HOST_CAPABILITIES]).toEqual([...server.HOST_CAPABILITIES]);
-    expect(names.map(isHostCapability)).toEqual(names.map(name => server.isHostCapability(name)));
+      return { capabilities: [...theirs.HOST_CAPABILITIES], reads: names.map(name => theirs.isHostCapability(name)) };
+    });
+
+    expect([...HOST_CAPABILITIES]).toEqual(server.capabilities);
+    expect(names.map(isHostCapability)).toEqual(server.reads);
   });
 
-  test.skipIf(!existsSync(serverPublish))('refuses in the words of Brydio’s publish route', async () => {
-    const source = await Bun.file(serverPublish).text();
+  test('refuses in the words of Brydio’s publish route', async () => {
+    const server = await brydioAnswers('publish-grant-words', [SERVER_PUBLISH], async () =>
+      (await Bun.file(inBrydio(SERVER_PUBLISH)).text()).includes('`An app may ask for ${HOST_CAPABILITIES.join(\', \')} or connection:<name>.`'),
+    );
 
-    expect(source).toContain('`An app may ask for ${HOST_CAPABILITIES.join(\', \')} or connection:<name>.`');
+    expect(server).toBe(true);
   });
 });
 
@@ -148,21 +155,23 @@ describe('the secret scan', () => {
     expect(JSON.stringify(findSecrets(CASES[1]!))).not.toContain('abc123');
   });
 
-  test.skipIf(!existsSync(serverSecrets))('finds what Brydio’s secret-scan.ts finds, in its words', async () => {
-    const server = await import(serverSecrets);
-    const codes = await import(serverCodes);
-    const buffers = (one: Map<string, Uint8Array>) => new Map([...one].map(([path, raw]) => [path, Buffer.from(raw)]));
-
-    for (const one of CASES) {
-      expect(findSecrets(one).map(found => found.path)).toEqual(server.findSecrets(buffers(one)).map((found: { path: string }) => found.path));
-    }
-
+  test('finds what Brydio’s secret-scan.ts finds, in its words', async () => {
     const manifest = { name: 'x', grants: { host: ['navigate'] }, settings: [{ token: 'live-abc' }, { password: '<yours>' }] };
+    const server = await brydioAnswers('secret-scan', [SERVER_SECRETS, SERVER_CODES], async () => {
+      const theirs = await import(inBrydio(SERVER_SECRETS));
+      const codes = await import(inBrydio(SERVER_CODES));
+      const buffers = (one: Map<string, Uint8Array>) => new Map([...one].map(([path, raw]) => [path, Buffer.from(raw)]));
 
-    expect(secretsInJson(manifest, 'app.json').map(found => found.path)).toEqual(
-      server.secretsInJson(manifest, 'app.json').map((found: { path: string }) => found.path),
-    );
+      return {
+        files: CASES.map(one => theirs.findSecrets(buffers(one)).map((found: { path: string }) => found.path)),
+        manifest: theirs.secretsInJson(manifest, 'app.json').map((found: { path: string }) => found.path),
+        message: codes.problem('brydio_secret_in_package', 'x').message,
+      };
+    });
+
+    expect(CASES.map(one => findSecrets(one).map(found => found.path))).toEqual(server.files);
+    expect(secretsInJson(manifest, 'app.json').map(found => found.path)).toEqual(server.manifest);
     expect(secretsInJson(manifest, 'app.json').map(found => found.path)).toEqual(['app.json.settings[0].token']);
-    expect(SECRET_MESSAGE).toBe(codes.problem('brydio_secret_in_package', 'x').message);
+    expect(SECRET_MESSAGE).toBe(server.message);
   });
 });
