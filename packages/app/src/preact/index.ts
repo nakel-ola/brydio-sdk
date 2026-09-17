@@ -67,7 +67,10 @@ export function useHost(): HostContext {
   const bridge = useBridge();
   const [context, setContext] = useState(bridge.context);
 
-  useEffect(() => bridge.subscribe(setContext), [bridge]);
+  // A layout effect listens as soon as the tree is committed. A worker has no
+  // frames, so an effect runs late, and a change the host sent before then
+  // (Back closing an item, say) was never drawn.
+  useLayoutEffect(() => bridge.subscribe(setContext), [bridge]);
 
   if (!context) throw new Error('useHost() ran before the host said where the screen is. Render with mount().');
 
