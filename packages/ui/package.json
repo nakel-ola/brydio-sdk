@@ -4,9 +4,16 @@
   "description": "The catalogue of elements a Brydio app draws with: their names, settings and events.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./web": "./src/web/index.ts"
   },
   "files": [
     "src"
-  ]
+  ],
+  "dependencies": {
+    "lit": "3.3.3"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "20.14.0"
+  }
 }
