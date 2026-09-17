@@ -17,6 +17,7 @@ afterAll(() => GlobalRegistrator.unregister());
 const { attributeOf, defineCatalogue } = await import('../src/web/index.ts');
 const { positionAt, steered } = await import('../src/web/draw/board.ts');
 const { movedTo, windowOf } = await import('../src/web/draw/virtual-list.ts');
+const { DIFF_OPEN_UNDER, opensAll, parseUnifiedDiff, splitRows } = await import('../src/web/draw/diff.ts');
 
 const settle = async () => {
   await new Promise(resolve => setTimeout(resolve, 0));
@@ -861,6 +862,130 @@ describe('virtual list (A6-F06-S01)', () => {
     expect(movedTo('End', 0, 3)).toBe(2);
     expect(movedTo('Enter', 0, 3)).toBeNull();
     expect(movedTo('ArrowDown', 0, 0)).toBeNull();
+  });
+});
+
+describe('diff (A6-F06-S01)', () => {
+  const heard: { name: string; detail: unknown }[] = [];
+  const names = new Set<string>();
+  const listen = (...events: string[]) => {
+    heard.length = 0;
+    for (const name of events) {
+      if (names.has(name)) continue;
+      names.add(name);
+      document.body.addEventListener(name, event => heard.push({ name, detail: (event as CustomEvent).detail }));
+    }
+  };
+
+  const PATCH = `@@ -1,3 +1,3 @@ header
+ kept
+-was this
++is this
+ also kept`;
+
+  test('reads hunks from unified diff text, numbering both sides', () => {
+    const hunks = parseUnifiedDiff(`diff --git a/x b/x\nindex 1..2\n--- a/x\n+++ b/x\n${PATCH}\n\\ No newline at end of file`);
+
+    expect(hunks).toHaveLength(1);
+    expect(hunks[0]!.lines).toEqual([
+      { kind: 'context', old: 1, new: 1, text: 'kept' },
+      { kind: 'remove', old: 2, text: 'was this' },
+      { kind: 'add', new: 2, text: 'is this' },
+      { kind: 'context', old: 3, new: 3, text: 'also kept' },
+    ]);
+    // Anything before the first hunk header belongs to no hunk.
+    expect(parseUnifiedDiff('diff --git a/x b/x')).toEqual([]);
+  });
+
+  test('pairs a run of removals beside the additions after it', () => {
+    const rows = splitRows([
+      { kind: 'context', old: 1, new: 1, text: 'a' },
+      { kind: 'remove', old: 2, text: 'b' },
+      { kind: 'remove', old: 3, text: 'c' },
+      { kind: 'add', new: 2, text: 'B' },
+    ]);
+
+    expect(rows).toEqual([
+      { left: { kind: 'context', old: 1, new: 1, text: 'a' }, right: { kind: 'context', old: 1, new: 1, text: 'a' } },
+      { left: { kind: 'remove', old: 2, text: 'b' }, right: { kind: 'add', new: 2, text: 'B' } },
+      { left: { kind: 'remove', old: 3, text: 'c' }, right: undefined },
+    ]);
+  });
+
+  test('every file opens at once only when they are all here and there is not much of them', () => {
+    expect(opensAll([{ path: 'a', patch: 'x' }, { path: 'b', patch: 'y' }])).toBe(true);
+    expect(opensAll([{ path: 'a', patch: 'x' }, { path: 'b' }])).toBe(false);
+    expect(opensAll([{ path: 'a', patch: 'x'.repeat(DIFF_OPEN_UNDER + 1) }])).toBe(false);
+  });
+
+  test('draws each file’s changes, and a press on a line number chooses it', async () => {
+    await page(`<bry-diff label="Changes"></bry-diff>`);
+
+    const host = document.querySelector('bry-diff') as HTMLElement & { files: unknown; updateComplete: Promise<unknown> };
+
+    listen('select', 'expand');
+    host.files = [{ path: 'src/app.ts', status: 'modified', patch: PATCH }];
+    await host.updateComplete;
+
+    const root = shadowOf('bry-diff');
+
+    expect(root.querySelector('.path')!.textContent).toBe('src/app.ts');
+    expect(root.querySelector('[data-status="modified"]')!.textContent).toBe('Changed');
+    expect(root.querySelector('.head')!.getAttribute('aria-expanded')).toBe('true');
+    expect(Array.from(root.querySelectorAll('.text')).map(one => one.textContent)).toContain('was this');
+
+    const numbers = Array.from(root.querySelectorAll('.number')).filter(one => one.textContent!.trim() !== '');
+
+    (numbers[0] as HTMLButtonElement).click();
+    await host.updateComplete;
+    expect(heard).toEqual([{ name: 'select', detail: { file: 'src/app.ts', side: 'old', start: 1, end: 1 } }]);
+  });
+
+  test('Shift takes the run between, on one side of one file', async () => {
+    await page(`<bry-diff></bry-diff>`);
+
+    const host = document.querySelector('bry-diff') as HTMLElement & { files: unknown; updateComplete: Promise<unknown> };
+
+    listen('select');
+    host.files = [{ path: 'src/app.ts', patch: PATCH }];
+    await host.updateComplete;
+
+    const oldSide = Array.from(shadowOf('bry-diff').querySelectorAll('.number')).filter(
+      one => one.getAttribute('aria-label')?.startsWith('Before'),
+    ) as HTMLButtonElement[];
+
+    oldSide[0]!.click();
+    oldSide[2]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, shiftKey: true }));
+    await host.updateComplete;
+
+    expect(heard.at(-1)).toEqual({ name: 'select', detail: { file: 'src/app.ts', side: 'old', start: 1, end: 3 } });
+    expect(shadowOf('bry-diff').querySelectorAll('.number.chosen')).toHaveLength(3);
+  });
+
+  test('a file the app has not sent asks for it when it is opened, once', async () => {
+    await page(`<bry-diff></bry-diff>`);
+
+    const host = document.querySelector('bry-diff') as HTMLElement & { files: unknown; updateComplete: Promise<unknown> };
+
+    listen('expand');
+    host.files = [{ path: 'big.ts' }];
+    await host.updateComplete;
+
+    // Closed, because its text isn't here.
+    expect(shadowOf('bry-diff').querySelector('.head')!.getAttribute('aria-expanded')).toBe('false');
+
+    (shadowOf('bry-diff').querySelector('.head') as HTMLButtonElement).click();
+    await host.updateComplete;
+    expect(heard).toEqual([{ name: 'expand', detail: { file: 'big.ts' } }]);
+    expect(shadowOf('bry-diff').querySelector('.waiting')!.textContent).toContain('Loading');
+  });
+
+  test('nothing changed says so, and loading shows the shell’s placeholder', async () => {
+    await page(`<bry-diff empty="No changes in this pull request."></bry-diff>`);
+    expect(shadowOf('bry-diff').querySelector('.empty')!.textContent).toContain('No changes in this pull request.');
+
+    await page(`<bry-diff loading></bry-diff>`);
+    expect(shadowOf('bry-diff').querySelector('[role="status"]')!.getAttribute('aria-label')).toBe('Loading');
   });
 });
 
