@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "01e258ad1f46ed450042e263036b848514b8d72c",
+    "commit": "77e0b8ad3f19db2e7477287c7a1aadd601da7091",
     "dirty": false
   },
   "contracts": {
@@ -2180,6 +2180,10 @@
       "signature": "qrC9KgybKmVyhiwuYoj2sJYAeSSqDCAe2kmYsR6RU9YB4zrlTz7KL7Z12O7rq0NEm5CHT3CXMgvzWAPxMOB7BA==",
       "checks": true,
       "tamperedChecks": false
+    },
+    "tokens-css": {
+      "sha256": "d693091953ec3eddafb8e694716e976b24f4096e9dbb419bdbb5ee143b64613d",
+      "bytes": 23149
     },
     "tool-writes": [
       "create",

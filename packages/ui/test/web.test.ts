@@ -1,9 +1,13 @@
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
 import { afterAll, describe, expect, test } from 'bun:test';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
 import { CATALOGUE, ELEMENT_NAMES, type ElementSpec } from '../src/catalogue.ts';
+
+/** Brydio's token stylesheet, which `src/web/tokens.css` is a copy of. */
+const TOKENS = 'packages/ui/src/styles/tokens.css';
 
 // A page for this file only, so no other test in the repository gets a DOM. One file,
 // because Lit's classes and style sheets belong to the first page they meet.
@@ -347,10 +351,15 @@ describe('the controls (A6-F06-S01)', () => {
 });
 
 describe('the token stylesheet (A6-F05-S01, A6-F06-S01)', () => {
-  const brydio = join(import.meta.dir, '../../../../brydio/packages/ui/src/styles/tokens.css');
+  test('is Brydio’s own tokens.css, byte for byte', async () => {
+    const here = readFileSync(join(import.meta.dir, '../src/web/tokens.css'), 'utf8');
+    const brydio = await brydioAnswers('tokens-css', [TOKENS], () => {
+      const theirs = readFileSync(inBrydio(TOKENS), 'utf8');
 
-  test.skipIf(!existsSync(brydio))('is Brydio’s own tokens.css, byte for byte', () => {
-    expect(readFileSync(join(import.meta.dir, '../src/web/tokens.css'), 'utf8')).toBe(readFileSync(brydio, 'utf8'));
+      return { sha256: new Bun.CryptoHasher('sha256').update(theirs).digest('hex'), bytes: theirs.length };
+    });
+
+    expect({ sha256: new Bun.CryptoHasher('sha256').update(here).digest('hex'), bytes: here.length }).toEqual(brydio);
   });
 
   test('switches every colour with a .dark class on the document', async () => {
