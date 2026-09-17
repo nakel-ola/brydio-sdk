@@ -1,0 +1,510 @@
+/* The design tokens, and nothing else: no imports, no utilities, no class
+   rules. A page without Tailwind can link this file and use Brydio's colours,
+   radii and motion by name (`tasks/apps` A6-F05). `globals.css` imports it
+   and adds what is Tailwind's.
+
+   `.light` restates the light theme, so a region can be light inside a dark
+   page (the app catalogue's side-by-side examples). Nothing else sets it. */
+
+/* ==========================================================================
+   Brydio Desktop — design tokens
+   --------------------------------------------------------------------------
+   Tier 1  palette    raw OKLCH ramps. Theme-independent. Never used directly.
+   Tier 2  semantic   role tokens that flip between light and dark.
+   Tier 3  geometry   type, space, radius, motion. Theme-independent.
+   Tier 4  component  per-component knobs that need to differ from the role.
+   Tier 5  shadcn     aliases so shadcn/ui primitives inherit our palette.
+
+   Two rules hold the system together:
+
+   1. Components read tier 2 and up. Never tier 1. `bg-brand`, not `bg-blue-600`.
+   2. Every tier-2 token is declared in BOTH `:root` and `.dark`.
+      `bun run check:tokens` fails the build if one is missing.
+
+   Colour is authored in OKLCH so lightness steps are perceptually even and
+   `color-mix` behaves. The hex in each comment is the sRGB result — it is
+   documentation, not the source of truth.
+   ========================================================================== */
+
+:root,
+.light {
+  /* ======================================================================
+     Tier 1: palette
+     ====================================================================== */
+
+  /* Neutral — near-neutral by construction. Chroma never exceeds 0.0072, so
+     no step reads as blue-grey the way the old ramp did (it peaked at 0.028).
+     Hue 264 keeps a faint kinship with the brand without tinting the UI.
+     One ramp serves both themes: 0-300 are light surfaces and dark ink,
+     800-975 are dark surfaces and light ink. */
+  --n-0: oklch(1 0 264); /* #ffffff */
+  --n-25: oklch(0.988 0.0015 264); /* #fafbfc */
+  --n-50: oklch(0.979 0.002 264); /* #f7f8f9 */
+  --n-75: oklch(0.968 0.0026 264); /* #f3f4f6 */
+  --n-100: oklch(0.956 0.0032 264); /* #eff0f3 */
+  --n-150: oklch(0.937 0.0038 264); /* #e9eaed */
+  --n-200: oklch(0.916 0.0044 264); /* #e2e3e6 */
+  --n-250: oklch(0.893 0.0048 264); /* #dadcdf */
+  --n-300: oklch(0.862 0.0054 264); /* #d0d2d5 */
+  --n-400: oklch(0.768 0.0064 264); /* #b1b4b8 */
+  --n-450: oklch(0.635 0.0068 264); /* #888b8f — 3.2:1 on the tinted ground */
+  --n-500: oklch(0.59 0.0072 264); /* #7b7d82 */
+  --n-550: oklch(0.545 0.0072 264); /* #6e7074 — 4.7:1 on the tinted ground */
+  --n-600: oklch(0.495 0.0072 264); /* #606266 — 5.8:1 on the tinted ground */
+  --n-700: oklch(0.44 0.0068 264); /* #515356 */
+  --n-750: oklch(0.372 0.0064 264); /* #3e4044 */
+  --n-800: oklch(0.304 0.006 264); /* #2d2f32 */
+  --n-850: oklch(0.256 0.0056 264); /* #222326 */
+  --n-900: oklch(0.217 0.0052 264); /* #191a1c */
+  --n-925: oklch(0.193 0.0048 264); /* #131417 */
+  --n-950: oklch(0.166 0.0044 264); /* #0e0f10 */
+  --n-975: oklch(0.133 0.0038 264); /* #070809 */
+
+  /* Brand. 600 IS the brand teal #009689 — it round-trips exactly through
+     OKLCH and must not drift. Every other step shares its hue (184.17), with
+     lightness re-anchored on 600 so the ramp keeps the pacing it had, and
+     chroma fitted to the sRGB gamut — a teal cannot hold as much of it down
+     at 700 and below, so those steps sit at the gamut edge rather than at a
+     nominal value that would clip on render. */
+  --brand-50: oklch(0.9800 0.0053 184.17); /* #f5faf9 */
+  --brand-100: oklch(0.9602 0.0118 184.17); /* #eaf5f3 */
+  --brand-200: oklch(0.9247 0.0242 184.17); /* #d5ece8 */
+  --brand-300: oklch(0.8662 0.0449 184.17); /* #b3ddd6 */
+  --brand-400: oklch(0.7639 0.0757 184.17); /* #79c2b8 */
+  --brand-500: oklch(0.6814 0.0981 184.17); /* #43aca0 */
+  --brand-600: oklch(0.6049 0.1070 184.17); /* #009689 — the anchor */
+  --brand-700: oklch(0.5027 0.0890 184.17); /* #00746a */
+  --brand-800: oklch(0.4098 0.0726 184.17); /* #00574f */
+  --brand-900: oklch(0.3257 0.0578 184.17); /* #003e38 */
+  --brand-950: oklch(0.2340 0.0418 184.17); /* #002420 */
+
+  /* Status hues sit far apart so they never read as neighbours. */
+  --green-50: oklch(0.976 0.015 157); /* #effaf3 */
+  --green-100: oklch(0.95 0.035 157); /* #dcf6e5 */
+  --green-200: oklch(0.902 0.062 157); /* #beecce */
+  --green-300: oklch(0.84 0.095 157); /* #96deb2 */
+  --green-400: oklch(0.748 0.13 157); /* #5dc68c */
+  --green-500: oklch(0.652 0.142 157); /* #29a96c */
+  --green-600: oklch(0.545 0.125 157); /* #158a55 — 4.7:1 on white */
+  --green-700: oklch(0.45 0.102 157); /* #106f44 */
+  --green-900: oklch(0.29 0.064 157); /* #0a4227 */
+
+  --amber-50: oklch(0.98 0.022 72); /* #fff6e6 */
+  --amber-100: oklch(0.96 0.045 72); /* #ffedcc */
+  --amber-200: oklch(0.92 0.062 72); /* #ffdfb8 */
+  --amber-300: oklch(0.86 0.113 72); /* #ffc57b */
+  --amber-400: oklch(0.79 0.14 72); /* #f1aa47 */
+  --amber-500: oklch(0.715 0.15 72); /* #dc9110 */
+  --amber-600: oklch(0.59 0.127 72); /* #ab6f00 */
+  --amber-700: oklch(0.49 0.105 72); /* #845500 — 6.4:1 on white */
+  --amber-900: oklch(0.31 0.066 72); /* #442a00 */
+
+  --red-50: oklch(0.976 0.011 25); /* #fff4f3 */
+  --red-100: oklch(0.948 0.026 25); /* #ffe8e5 */
+  --red-200: oklch(0.898 0.052 25); /* #fed1cc */
+  --red-300: oklch(0.82 0.09 25); /* #f9aea7 */
+  --red-400: oklch(0.702 0.15 25); /* #ee756e */
+  --red-500: oklch(0.618 0.19 25); /* #e14847 */
+  --red-600: oklch(0.53 0.195 25); /* #c3222a — 5.9:1 on white */
+  --red-700: oklch(0.45 0.165 25); /* #9c1a20 */
+  --red-900: oklch(0.3 0.105 25); /* #570e10 */
+
+  /* Extra hues, charts only. */
+  --violet-400: oklch(0.71 0.145 298); /* #ad8cf0 */
+  --violet-500: oklch(0.62 0.185 298); /* #9667e5 */
+  --violet-600: oklch(0.535 0.195 298); /* #7e49cd */
+  --teal-400: oklch(0.75 0.105 192); /* #4dc3bf */
+  --teal-500: oklch(0.655 0.112 192); /* #04a6a2 */
+  --teal-600: oklch(0.56 0.096 192); /* #018683 */
+
+  /* ======================================================================
+     Tier 2: semantic — light
+     Every token below MUST also exist in `.dark`. See check:tokens.
+     ====================================================================== */
+  color-scheme: light;
+
+  /* ---- Surfaces: the tonal ladder --------------------------------------
+     Depth is read from TONE, not from shadows. Four rungs, and which rung a
+     thing sits on says what kind of thing it is:
+
+       chrome    --bg-app       faint tint   titlebar + sidebar
+       panel     --bg-canvas    white        the content pane
+       inset     --bg-sunken    tint         composer tray, wells, code
+       lifted    --bg-surface   white        the field inside the tray, cards
+
+     So the composer reads as white-on-tint-on-white — a field lifted out of a
+     tray inset into a panel — with no shadow doing any of the work.
+
+     Chrome and panel share the titlebar's edge, which is why the titlebar is
+     `--bg-app`: it is chrome, continuous with the sidebar, and the content
+     pane meets it as a deliberate rounded edge rather than an accidental seam.
+
+     In dark every rung shifts up instead of down, because a dark ground needs
+     lift to read at all. */
+  --bg-app: var(--n-50);
+  --bg-canvas: var(--n-0);
+  --bg-sidebar: var(--n-50);
+  --bg-sidebar-vibrant: color-mix(in srgb, var(--n-50) 70%, transparent);
+  --bg-titlebar: var(--n-50);
+  --bg-surface: var(--n-0);
+  --bg-surface-soft: var(--n-25);
+  /* A document's own ground, and the band it alternates with. Distinct from
+     `app`, which is the chrome behind panes, and from `surface`, which is a
+     card sitting on it. Only the marketing pages use these. */
+  --bg-page: var(--n-0);
+  --bg-page-band: var(--n-50);
+  --bg-surface-hover: var(--n-50);
+  --bg-sunken: var(--n-100);
+  --bg-elevated: var(--n-0);
+  --bg-fill: var(--n-100);
+  --bg-fill-hover: var(--n-150);
+  --bg-selected: color-mix(in oklab, var(--fg) 6%, transparent);
+  --bg-overlay: color-mix(in oklab, var(--n-950) 32%, transparent);
+
+  /* ---- State layers ----------------------------------------------------
+     A translucent tint of the ink, not an opaque grey. This is the modern
+     move and it matters here: `hover:bg-layer-hover` composites correctly on
+     the sidebar, on a white surface, on an elevated menu and on a selected
+     row, where a fixed `bg-fill` would flatten or fight three of the four. */
+  --layer-hover: color-mix(in oklab, var(--fg) 5%, transparent);
+  --layer-press: color-mix(in oklab, var(--fg) 9%, transparent);
+  --layer-selected: color-mix(in oklab, var(--fg) 6%, transparent);
+
+  /* ---- Ink -------------------------------------------------------------
+     Measured on --bg-app, strong -> faint: 18.9 / 17.3 / 5.8 / 4.7 / 3.2.
+     Everything that carries meaning clears AA; only `faint` is decorative.
+     `bun run check:contrast` enforces these, so the numbers cannot rot. */
+  --fg: var(--n-925);
+  --fg-strong: var(--n-975);
+  --fg-soft: var(--n-600);
+  --fg-muted: var(--n-550);
+  --fg-faint: var(--n-450);
+  --fg-placeholder: var(--n-450);
+  --fg-on-solid: var(--n-0);
+
+  /* ---- Lines ----------------------------------------------------------- */
+  --line: var(--n-200);
+  --line-strong: var(--n-300);
+  --line-faint: var(--n-150);
+  --line-input: var(--n-300);
+
+  /* ---- Brand -----------------------------------------------------------
+     Brand is spent on primary actions, focus and links. It is NOT spent on
+     navigation furniture — a blue nav row is the loudest thing on screen and
+     leaves the real primary action with nothing to say. `--bg-selected` is
+     neutral for exactly that reason.
+
+     Nor is it spent on the user's own chat bubble any more. A solid brand
+     bubble on every turn made the accent the most frequent colour in a long
+     thread, which is the opposite of an accent — and it competed with the send
+     button, the one control that genuinely wants the eye.
+
+     `brand` is the fill and holds at 700 in both themes — white on 700 clears
+     5.67:1 either way, where white on the 600 anchor manages only 3.67:1 and
+     fails AA. That gap is the teal's, not an oversight: #009689 is a lighter,
+     less chromatic colour than the blue it replaced, so the identity sits at
+     600 and the roles that must carry text sit one step down. `brand-fg` is
+     brand-as-text and lifts to 400 on dark so it reads against a dark
+     surface. Using `text-brand` on a dark ground is the mistake this split
+     exists to prevent. */
+  --brand: var(--brand-700);
+  --brand-hover: var(--brand-800);
+  --brand-active: var(--brand-900);
+  --brand-fg: var(--brand-700);
+  --brand-on: var(--n-0);
+  --brand-soft: var(--brand-100);
+  --brand-soft-hover: var(--brand-200);
+  --brand-line: var(--brand-300);
+  --brand-ring: color-mix(in oklab, var(--brand-600) 24%, transparent);
+
+  /* ---- Status ---------------------------------------------------------- */
+  --success: var(--green-600);
+  --success-fg: var(--green-700);
+  --success-soft: var(--green-100);
+  --success-line: var(--green-200);
+  --online: var(--green-500);
+
+  --warn: var(--amber-600);
+  --warn-fg: var(--amber-700);
+  --warn-soft: var(--amber-100);
+  --warn-line: var(--amber-200);
+
+  --danger: var(--red-600);
+  --danger-fg: var(--red-600);
+  --danger-soft: var(--red-100);
+  --danger-line: var(--red-200);
+
+  /* ---- Focus ----------------------------------------------------------
+     One ring, 2px, offset 2px. `focus-inner` is the ring for controls that
+     sit ON a brand or status fill, where a blue ring would vanish. */
+  --focus-ring: color-mix(in oklab, var(--brand-600) 62%, transparent);
+  --focus-inner: color-mix(in oklab, var(--n-0) 85%, transparent);
+
+  /* ---- Chat -----------------------------------------------------------
+     Its own roles so the thread can be retuned without touching the app.
+     `composer-tray` is the fused row under the composer — an inset, not a
+     page field. */
+  /* Neutral, and one rung DOWN from the canvas rather than up: a question is
+     something already said, so it sits into the page. The answer beside it has
+     no fill at all, which is what keeps the two turns legible as two. */
+  --bubble-user: var(--n-100);
+  --bubble-user-fg: var(--fg);
+  --bubble-brydio: var(--n-0);
+  --bubble-brydio-fg: var(--fg);
+  --bubble-brydio-line: var(--line);
+  --composer-bg: var(--n-0);
+  --composer-line: var(--n-250);
+  --composer-tray: var(--n-100);
+
+  /* ---- Charts ---------------------------------------------------------
+     Six categorical hues at near-constant lightness, so no series reads as
+     more important than another. Hues are spread ≥45° apart. */
+  --chart-1: var(--brand-600);
+  --chart-2: var(--teal-500);
+  --chart-3: var(--violet-500);
+  --chart-4: var(--amber-500);
+  --chart-5: var(--green-500);
+  --chart-6: var(--red-500);
+  --chart-grid: var(--line-faint);
+  --chart-axis: var(--fg-faint);
+
+  /* ---- Elevation -------------------------------------------------------
+     Theme-dependent, so it lives inside the parity-checked range. Shadows
+     are tinted with the neutral hue rather than pure black — untinted black
+     over a near-neutral ground reads muddy.
+
+     Cards do not get shadows. Elevation is for things that genuinely float:
+     menus, dialogs, toasts, the composer, the primary button. */
+  --shadow-xs: 0 1px 2px oklch(0.2 0.02 264 / 0.06);
+  --shadow-sm: 0 1px 2px oklch(0.2 0.02 264 / 0.07), 0 1px 3px oklch(0.2 0.02 264 / 0.05);
+  --shadow-md: 0 2px 4px oklch(0.2 0.02 264 / 0.05), 0 8px 20px oklch(0.2 0.02 264 / 0.08);
+  --shadow-lg: 0 2px 4px oklch(0.2 0.02 264 / 0.05), 0 14px 32px oklch(0.2 0.02 264 / 0.1);
+  --shadow-pop: 0 1px 2px oklch(0.2 0.02 264 / 0.08), 0 12px 32px oklch(0.2 0.02 264 / 0.14);
+  --shadow-modal: 0 2px 6px oklch(0.2 0.02 264 / 0.08), 0 24px 64px oklch(0.2 0.02 264 / 0.24);
+  --shadow-brand:
+    0 1px 2px oklch(0.3 0.055 184.17 / 0.2), 0 4px 12px oklch(0.6049 0.107 184.17 / 0.22);
+
+  /* ======================================================================
+     Tier 3: geometry and motion — theme-independent
+     ====================================================================== */
+
+  /* Radius. The scale is deliberately soft — every step is one notch rounder
+     than a typical desktop system, because roundness is a house preference
+     here, not a default.
+
+     Nesting rule: a child's radius is the parent's minus its inset. A 20px
+     composer with 12px of padding takes a 10px inner control (`rounded-md`),
+     not another 20 — nesting equal radii makes the curves fight. */
+  --radius: 0.625rem; /* 10px — the default */
+  --radius-xs: 0.375rem; /* 6 */
+  --radius-sm: 0.5rem; /* 8 */
+  --radius-md: 0.625rem; /* 10 */
+  --radius-lg: 0.75rem; /* 12 */
+  --radius-xl: 1rem; /* 16 */
+  --radius-2xl: 1.25rem; /* 20 — composer, hero cards */
+  --radius-3xl: 1.75rem; /* 28 */
+
+  /* Density — chrome and controls run one step tighter than the web app. */
+  --control-h-sm: 1.75rem; /* 28 */
+  --control-h: 2rem; /* 32 */
+  --control-h-lg: 2.25rem; /* 36 */
+  --field-h: 2rem; /* 32 */
+
+  /* Layout */
+  --titlebar-h: 2.75rem; /* 44 — clears macOS traffic lights, and holds a tab */
+  /* Whatever the titlebar has left over this is the tab's shoulder in the
+     bar — the gap that reads as a tab sitting in the titlebar rather than
+     one wedged into it. Tune the gap here; it is the only place. The label
+     and the shape behind it are drawn in different files, and neither gets
+     to hold its own opinion about how tall a tab is. */
+  --tab-h: 2.35rem;
+  --sidebar-w: 16.25rem; /* 260 */
+  --sidebar-w-collapsed: 3.5rem; /* 56 */
+  --thread-max-w: 46rem;
+  --composer-max-w: 46rem;
+  --prose-max-w: 38rem;
+
+  /* Air. Chrome is dense; the canvas is not. These two tokens are what let
+     an empty state breathe without loosening the toolbars. */
+  --pane-px: 1.5rem;
+  --pane-py: 1.25rem;
+  --canvas-py: 4rem;
+  --hero-gap: 1.75rem;
+
+  /* Motion */
+  --dur-instant: 80ms;
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 380ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* Not the light theme's order. Making chrome the darkest rung works on
+     white, where the sidebar is a tint against paper; at this end of the ramp
+     it bottoms out and the column reads as a hole cut in the window. So the
+     chrome lifts above the canvas instead, and the canvas is the recessed
+     thing — which is also what a panel of content should be.
+
+     `app`, `sidebar` and `titlebar` are one continuous surface, exactly as in
+     light: `app` is what shows through the canvas's rounded corner, so any
+     daylight between the three prints that curve as a notch. */
+  --bg-app: var(--n-925);
+  --bg-canvas: var(--n-950);
+  --bg-sidebar: var(--n-925);
+  --bg-sidebar-vibrant: color-mix(in srgb, var(--n-925) 62%, transparent);
+  --bg-titlebar: var(--n-925);
+  --bg-surface: var(--n-900);
+  --bg-surface-soft: var(--n-925);
+  --bg-page: var(--n-925);
+  --bg-page-band: var(--n-900);
+  --bg-surface-hover: var(--n-850);
+  --bg-sunken: var(--n-925);
+  --bg-elevated: var(--n-850);
+  --bg-fill: var(--n-850);
+  --bg-fill-hover: var(--n-800);
+  --bg-selected: color-mix(in oklab, var(--fg) 10%, transparent);
+  --bg-overlay: color-mix(in oklab, #000 62%, transparent);
+
+  /* Tint over a dark ground reads weaker than over a light one, so the
+     alphas step up rather than staying put. */
+  --layer-hover: color-mix(in oklab, var(--fg) 7%, transparent);
+  --layer-press: color-mix(in oklab, var(--fg) 12%, transparent);
+  --layer-selected: color-mix(in oklab, var(--fg) 10%, transparent);
+
+  /* Measured on --bg-app, strong -> faint: 17.3 / 15.3 / 8.8 / 5.4 / 4.5. */
+  --fg: var(--n-150);
+  --fg-strong: var(--n-50);
+  --fg-soft: var(--n-400);
+  --fg-muted: var(--n-450);
+  --fg-faint: var(--n-500);
+  --fg-placeholder: var(--n-500);
+  --fg-on-solid: var(--n-0);
+
+  --line: var(--n-850);
+  --line-strong: var(--n-800);
+  --line-faint: var(--n-900);
+  --line-input: var(--n-800);
+
+  --brand: var(--brand-700);
+  --brand-hover: var(--brand-600);
+  --brand-active: var(--brand-500);
+  --brand-fg: var(--brand-400);
+  --brand-on: var(--n-0);
+  --brand-soft: color-mix(in oklab, var(--brand-600) 22%, var(--n-900));
+  --brand-soft-hover: color-mix(in oklab, var(--brand-600) 32%, var(--n-900));
+  --brand-line: color-mix(in oklab, var(--brand-500) 34%, var(--n-900));
+  --brand-ring: color-mix(in oklab, var(--brand-400) 30%, transparent);
+
+  --success: var(--green-600);
+  --success-fg: var(--green-400);
+  --success-soft: color-mix(in oklab, var(--green-500) 20%, var(--n-900));
+  --success-line: color-mix(in oklab, var(--green-400) 30%, var(--n-900));
+  --online: var(--green-400);
+
+  --warn: var(--amber-600);
+  --warn-fg: var(--amber-400);
+  --warn-soft: color-mix(in oklab, var(--amber-400) 18%, var(--n-900));
+  --warn-line: color-mix(in oklab, var(--amber-400) 28%, var(--n-900));
+
+  /* Holds at 600 like `--brand` does: white on 500 is only 4.02:1, so the
+     brighter red is safe as text but not as a fill. Fills hold, text lifts. */
+  --danger: var(--red-600);
+  --danger-fg: var(--red-400);
+  --danger-soft: color-mix(in oklab, var(--red-500) 18%, var(--n-900));
+  --danger-line: color-mix(in oklab, var(--red-400) 30%, var(--n-900));
+
+  --focus-ring: color-mix(in oklab, var(--brand-400) 70%, transparent);
+  --focus-inner: color-mix(in oklab, var(--n-950) 85%, transparent);
+
+  /* Dark inverts the direction: on a near-black canvas the only way to make a
+     fill visible is to lift it, so the bubble goes up the ramp instead of down.
+     The intent is the same — a quiet tonal step, no accent. */
+  --bubble-user: var(--n-850);
+  --bubble-user-fg: var(--fg);
+  --bubble-brydio: var(--n-900);
+  --bubble-brydio-fg: var(--fg);
+  --bubble-brydio-line: var(--line);
+  --composer-bg: var(--n-850);
+  --composer-line: var(--n-800);
+  --composer-tray: var(--n-925);
+
+  --chart-1: var(--brand-500);
+  --chart-2: var(--teal-400);
+  --chart-3: var(--violet-400);
+  --chart-4: var(--amber-400);
+  --chart-5: var(--green-400);
+  --chart-6: var(--red-400);
+  --chart-grid: var(--line);
+  --chart-axis: var(--fg-faint);
+
+  /* On dark, depth reads from a hairline top highlight more than from blur —
+     a wide soft blur over a dark ground just turns to mud. */
+  --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.4);
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.5), inset 0 1px 0 oklch(1 0 0 / 0.04);
+  --shadow-md: 0 4px 12px oklch(0 0 0 / 0.5), inset 0 1px 0 oklch(1 0 0 / 0.04);
+  --shadow-lg: 0 12px 28px oklch(0 0 0 / 0.55), inset 0 1px 0 oklch(1 0 0 / 0.05);
+  --shadow-pop: 0 14px 36px oklch(0 0 0 / 0.6), inset 0 1px 0 oklch(1 0 0 / 0.05);
+  --shadow-modal: 0 28px 72px oklch(0 0 0 / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.06);
+  --shadow-brand: 0 1px 2px oklch(0 0 0 / 0.4), 0 6px 18px oklch(0.6049 0.107 184.17 / 0.4);
+}
+
+/* ==========================================================================
+   Tier 4: component tokens
+   Only for knobs that genuinely differ from the role token. Anything a
+   component can express with a tier-2 token does not belong here.
+   ========================================================================== */
+:root,
+.light,
+.dark {
+  --composer-radius: var(--radius-2xl); /* 20 */
+  --composer-pad: 0.75rem;
+  --field-radius: var(--radius-md); /* 10 */
+  --field-px: 0.625rem;
+  --menu-radius: var(--radius-lg); /* 12 */
+  --menu-pad: 0.3125rem;
+  --menu-item-radius: var(--radius-sm); /* 8 — 12 minus the 5px menu pad, near enough */
+  --bubble-radius: var(--radius-2xl); /* 20 */
+  --rail-item-radius: var(--radius-md); /* 10 */
+}
+
+/* ==========================================================================
+   Tier 5: shadcn/ui aliases
+   Only `components/ui/*` should read these. App code reads tier 2.
+   ========================================================================== */
+:root,
+.light,
+.dark {
+  --background: var(--bg-app);
+  --foreground: var(--fg);
+  --card: var(--bg-surface);
+  --card-foreground: var(--fg);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--fg);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-on);
+  --secondary: var(--bg-fill);
+  --secondary-foreground: var(--fg-strong);
+  --muted: var(--bg-fill);
+  --muted-foreground: var(--fg-muted);
+  --accent: var(--bg-fill-hover);
+  --accent-foreground: var(--fg-strong);
+  --destructive: var(--danger);
+  --destructive-foreground: var(--fg-on-solid);
+  --border: var(--line);
+  --input: var(--line-input);
+  --ring: var(--brand-fg); /* solid: shadcn applies its own /50 alpha */
+
+  --sidebar: var(--bg-sidebar);
+  --sidebar-foreground: var(--fg-soft);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-on);
+  --sidebar-accent: var(--bg-selected);
+  --sidebar-accent-foreground: var(--fg-strong);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--focus-ring);
+}

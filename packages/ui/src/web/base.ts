@@ -1,5 +1,5 @@
 /// <reference lib="dom" />
-import { LitElement, css, html, nothing, type PropertyDeclaration, type TemplateResult } from 'lit';
+import { LitElement, css, html, nothing, unsafeCSS, type CSSResult, type PropertyDeclaration, type TemplateResult } from 'lit';
 
 /**
  * The one file that imports Lit (A6-F06-S02).
@@ -10,8 +10,8 @@ import { LitElement, css, html, nothing, type PropertyDeclaration, type Template
  * imports it.
  */
 
-export { css, html, nothing };
-export type { PropertyDeclaration, TemplateResult };
+export { css, html, nothing, unsafeCSS };
+export type { CSSResult, PropertyDeclaration, TemplateResult };
 
 export abstract class BryElement extends LitElement {
   /**
@@ -19,7 +19,7 @@ export abstract class BryElement extends LitElement {
    * event has (`press`, `change`, …). It bubbles and leaves the shadow root, so
    * a listener on the element or on any ancestor hears it.
    */
-  protected emit(name: string, detail?: unknown): boolean {
+  emit(name: string, detail?: unknown): boolean {
     return this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
   }
 

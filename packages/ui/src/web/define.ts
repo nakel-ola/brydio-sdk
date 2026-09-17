@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 import { CATALOGUE, ELEMENT_NAMES, type ElementName, type ElementSpec, type PropSpec } from '../catalogue.ts';
-import { BryElement, html, nothing, type PropertyDeclaration, type TemplateResult } from './base.ts';
+import { BryElement, css, html, nothing, type CSSResult, type PropertyDeclaration, type TemplateResult } from './base.ts';
 
 /**
  * The catalogue as custom elements (A6-F06-S01), made from `CATALOGUE` rather
@@ -64,11 +64,32 @@ export interface CatalogueElementClass {
  */
 export type Draw = (element: BryElement & Record<string, unknown>) => TemplateResult | typeof nothing;
 
-const DRAW: Partial<Record<ElementName, Draw>> = {};
+const DRAW: Partial<Record<ElementName, { draw: Draw; styles: CSSResult[] }>> = {};
 
-/** Gives an element its drawing. Drawings are added a few elements at a time. */
-export function drawAs(name: ElementName, draw: Draw): void {
-  DRAW[name] = draw;
+/** What every element starts from: the page's own font, and nothing that leaks out. */
+const HOST = css`
+  :host {
+    font: inherit;
+    color: var(--fg);
+    box-sizing: border-box;
+  }
+  :host([hidden]) {
+    display: none;
+  }
+  *,
+  *::before,
+  *::after {
+    box-sizing: inherit;
+  }
+`;
+
+/**
+ * Gives an element its drawing and its styles. Called before the catalogue is
+ * registered (`index.ts` imports the drawings first), since an element's
+ * styles are fixed when its class is made.
+ */
+export function drawAs(name: ElementName, draw: Draw, styles: CSSResult[] = []): void {
+  DRAW[name] = { draw, styles };
 }
 
 function classFor(name: ElementName): CatalogueElementClass {
@@ -78,11 +99,12 @@ function classFor(name: ElementName): CatalogueElementClass {
     static readonly element = name;
     static readonly spec = spec;
     static readonly events = spec.events;
+    static override styles = [HOST, ...(DRAW[name]?.styles ?? [])];
 
     override render() {
-      const draw = DRAW[name];
+      const drawing = DRAW[name];
 
-      if (draw) return draw(this as unknown as BryElement & Record<string, unknown>);
+      if (drawing) return drawing.draw(this as unknown as BryElement & Record<string, unknown>);
 
       return spec.children ? html`<slot></slot>` : nothing;
     }

@@ -5,6 +5,8 @@
  * is needed. App screens don't use this: Brydio draws them with its own kit.
  */
 
+// The drawings go first: an element's styles are fixed when its class is made.
+import './draw/basics.ts';
 import { defineCatalogue } from './define.ts';
 
 export { BryElement } from './base.ts';
