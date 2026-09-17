@@ -2,6 +2,13 @@
   "name": "@brydio/fake-host",
   "version": "0.1.0-alpha.0",
   "description": "A pretend Brydio for testing an app's screens: builds the app, runs a built screen in a worker, draws nothing, and answers its tools from fixtures.",
+  "license": "MIT",
+  "author": "Brydio Inc.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nakel-ola/brydio-sdk",
+    "directory": "packages/fake-host"
+  },
   "type": "module",
   "exports": {
     ".": "./src/index.ts"

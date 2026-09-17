@@ -78,12 +78,21 @@ describe('the release build', () => {
 
       expect(installed.code, installed.output).toBe(0);
 
+      // The licence travels with every package, as MIT asks.
+      for (const [name, folder] of Object.entries(built)) {
+        const licence = readFileSync(join(folder, 'LICENSE'), 'utf8');
+
+        expect(licence, name).toContain('Copyright (c) 2026 Brydio Inc.');
+        expect(JSON.parse(readFileSync(join(folder, 'package.json'), 'utf8')).license, name).toBe('MIT');
+      }
+
       // The installed runtime is the compiled package, not a link to this checkout.
       const runtime = join(app, 'node_modules', '@brydio', 'app');
 
       expect(existsSync(join(runtime, 'src', 'index.js'))).toBe(true);
       expect(existsSync(join(runtime, 'src', 'index.d.ts'))).toBe(true);
       expect(readdirSync(join(runtime, 'src')).filter(file => file.endsWith('.ts') && !file.endsWith('.d.ts'))).toEqual([]);
+      expect(readFileSync(join(runtime, 'LICENSE'), 'utf8')).toContain('Copyright (c) 2026 Brydio Inc.');
 
       const brydio = join(app, 'node_modules', '.bin', 'brydio');
 

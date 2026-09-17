@@ -2,6 +2,13 @@
   "name": "@brydio/ui",
   "version": "0.1.0-alpha.0",
   "description": "The catalogue of elements a Brydio app draws with: their names, settings and events.",
+  "license": "MIT",
+  "author": "Brydio Inc.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nakel-ola/brydio-sdk",
+    "directory": "packages/ui"
+  },
   "type": "module",
   "exports": {
     ".": "./src/index.ts",

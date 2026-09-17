@@ -1,3 +1,6 @@
 {
-  "license": "MIT"
+  "license": "MIT",
+  "copyright": "Copyright (c) 2026 Brydio Inc.",
+  "author": "Brydio Inc.",
+  "repository": "https://github.com/nakel-ola/brydio-sdk"
 }

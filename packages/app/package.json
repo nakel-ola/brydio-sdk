@@ -2,6 +2,13 @@
   "name": "@brydio/app",
   "version": "0.1.0-alpha.0",
   "description": "The runtime a Brydio app's screen runs on, inside its worker: the tree, the bridge to the host, and the Preact adapter.",
+  "license": "MIT",
+  "author": "Brydio Inc.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nakel-ola/brydio-sdk",
+    "directory": "packages/app"
+  },
   "type": "module",
   "exports": {
     ".": "./src/index.ts",

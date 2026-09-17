@@ -70,7 +70,7 @@ export interface ReleaseOptions {
 export async function releaseBuild(options: ReleaseOptions = {}): Promise<Record<string, string>> {
   const out = options.out ?? console.log;
   const settings = existsSync(join(ROOT, 'release.json'))
-    ? (JSON.parse(readFileSync(join(ROOT, 'release.json'), 'utf8')) as { license?: string; repository?: string })
+    ? (JSON.parse(readFileSync(join(ROOT, 'release.json'), 'utf8')) as { license?: string; repository?: string; author?: string })
     : {};
 
   if (!settings.license && !options.dry) {
@@ -137,16 +137,23 @@ export async function releaseBuild(options: ReleaseOptions = {}): Promise<Record
       ...(pkg.description ? { description: pkg.description } : {}),
       type: pkg.type ?? 'module',
       ...(settings.license ? { license: settings.license } : {}),
+      ...(settings.author ? { author: settings.author } : {}),
       ...(settings.repository ? { repository: { type: 'git', url: settings.repository, directory: `packages/${name}` } } : {}),
       gitHead: commit,
       exports: Object.fromEntries(Object.entries(pkg.exports ?? {}).map(([key, path]) => [key, exportEntry(path)])) as never,
       ...(pkg.bin ? { bin: Object.fromEntries(Object.entries(pkg.bin).map(([key, path]) => [key, compiled(path)])) } : {}),
-      files: [...includes, ...(COPIED[name] ?? []).map(path => path.split('/')[0]!)].filter((one, index, all) => all.indexOf(one) === index),
+      files: [...includes, 'LICENSE', ...(COPIED[name] ?? []).map(path => path.split('/')[0]!)].filter((one, index, all) => all.indexOf(one) === index),
       ...(pkg.dependencies ? { dependencies: pkg.dependencies } : {}),
     };
 
     writeFileSync(join(target, 'package.json'), `${JSON.stringify(published, null, 2)}\n`);
     if (existsSync(join(source, 'README.md'))) cpSync(join(source, 'README.md'), join(target, 'README.md'));
+
+    // Every published package carries the licence, as MIT asks: the notice
+    // goes with the copies.
+    if (!existsSync(join(ROOT, 'LICENSE'))) throw new ReleaseRefused('There is no LICENSE at the root, and a package may not be published without one.');
+
+    cpSync(join(ROOT, 'LICENSE'), join(target, 'LICENSE'));
 
     built[pkg.name] = target;
     out(`Built ${pkg.name}@${pkg.version} into ${relative(ROOT, target)}/`);
