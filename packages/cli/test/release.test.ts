@@ -3,7 +3,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, 
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 
-import { RELEASED, ROOT, releaseBuild } from '../../../scripts/release-build.ts';
+import { commitOf, commitRefusal, RELEASED, ROOT, releaseBuild } from '../../../scripts/release-build.ts';
 
 /**
  * The packages as a registry would get them (A9-F03, Phase 4 groundwork).
@@ -78,12 +78,20 @@ describe('the release build', () => {
 
       expect(installed.code, installed.output).toBe(0);
 
-      // The licence travels with every package, as MIT asks.
+      // The licence travels with every package, as MIT asks, and so does the
+      // commit it was built from: months later that is how anyone works out
+      // what actually shipped.
+      const head = commitOf(ROOT).commit;
+
       for (const [name, folder] of Object.entries(built)) {
         const licence = readFileSync(join(folder, 'LICENSE'), 'utf8');
+        const pkg = JSON.parse(readFileSync(join(folder, 'package.json'), 'utf8'));
+        const source = JSON.parse(readFileSync(join(ROOT, 'packages', basename(folder), 'package.json'), 'utf8'));
 
         expect(licence, name).toContain('Copyright (c) 2026 Brydio Inc.');
-        expect(JSON.parse(readFileSync(join(folder, 'package.json'), 'utf8')).license, name).toBe('MIT');
+        expect(pkg.license, name).toBe('MIT');
+        expect(pkg.gitHead, name).toBe(head);
+        expect(pkg.version, name).toBe(source.version);
       }
 
       // The installed runtime is the compiled package, not a link to this checkout.
@@ -134,4 +142,63 @@ describe('the release build', () => {
     },
     300_000,
   );
+
+  /**
+   * What `gitHead` is worth depends entirely on this. A build from a tree
+   * with uncommitted changes would write a commit that does not contain the
+   * files in the tarball, and nothing about the package would look wrong.
+   *
+   * Asked of a repository made here rather than of this checkout, so the test
+   * says the same thing whether or not somebody is part-way through a change.
+   */
+  test('reads the commit of a checkout, and sees what is not in it', () => {
+    const repository = mkdtempSync(join(tmpdir(), 'brydio-commit-'));
+
+    made.push(repository);
+
+    const git = (...args: string[]) => run(['git', ...args], repository);
+
+    git('init', '-q');
+    git('config', 'user.email', 'test@brydio.test');
+    git('config', 'user.name', 'Test');
+    writeFileSync(join(repository, 'a.txt'), 'one');
+    git('add', 'a.txt');
+    git('commit', '-q', '-m', 'first');
+
+    const clean = commitOf(repository);
+
+    expect(clean.commit).toMatch(/^[0-9a-f]{40}$/);
+    expect(clean.uncommitted).toEqual([]);
+
+    writeFileSync(join(repository, 'a.txt'), 'one, edited');
+    writeFileSync(join(repository, 'b.txt'), 'two');
+
+    const dirty = commitOf(repository);
+
+    expect(dirty.commit).toBe(clean.commit);
+    expect(dirty.uncommitted.sort()).toEqual(['a.txt', 'b.txt']);
+
+    // Somewhere that is not a checkout at all names no commit.
+    expect(commitOf(mkdtempSync(join(tmpdir(), 'brydio-nogit-'))).commit).toBe('');
+  });
+
+  test('will not build publishable packages from a tree that has changes in it', () => {
+    const commit = 'a'.repeat(40);
+
+    expect(commitRefusal({ commit, uncommitted: [] }, false)).toBeNull();
+
+    const changed = commitRefusal({ commit, uncommitted: ['packages/app/src/index.ts'] }, false);
+
+    expect(changed, 'a tree with changes in it was allowed to build publishable packages').not.toBeNull();
+
+    // The refusal says which files, and what to do instead.
+    expect(changed).toContain('packages/app/src/index.ts');
+    expect(changed).toContain(commit.slice(0, 7));
+    expect(changed).toContain('--dry');
+
+    expect(commitRefusal({ commit: '', uncommitted: [] }, false)).toContain('not a git checkout');
+
+    // A dry build is for testing and says so, so it is allowed either way.
+    expect(commitRefusal({ commit: '', uncommitted: ['packages/app/src/index.ts'] }, true)).toBeNull();
+  });
 });

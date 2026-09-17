@@ -53,6 +53,61 @@ interface PackageJson {
 
 export class ReleaseRefused extends Error {}
 
+/**
+ * The commit a build is made from, and what is not in it.
+ *
+ * Every published package carries `gitHead`, which is how anyone later works
+ * out what actually shipped — during an incident, usually. A commit written
+ * beside files that were edited after it is worse than none at all: it names
+ * a tree that does not contain what is in the tarball, and it does so with
+ * every appearance of being exact.
+ */
+export function commitOf(root: string): { commit: string; uncommitted: string[] } {
+  const asked = Bun.spawnSync(['git', '-C', root, 'rev-parse', 'HEAD']);
+  const changes = Bun.spawnSync(['git', '-C', root, 'status', '--porcelain']);
+
+  return {
+    commit: asked.exitCode === 0 ? asked.stdout.toString().trim() : '',
+    uncommitted:
+      changes.exitCode === 0
+        ? changes.stdout
+            .toString()
+            .split('\n')
+            .map(line => line.slice(3).trim())
+            .filter(Boolean)
+        : [],
+  };
+}
+
+/**
+ * Why this checkout may not be built into publishable packages, or null.
+ *
+ * A dry build says of itself that it is for testing, so it may be made from a
+ * tree somebody is working in. A publishable one may not: the commit it
+ * writes has to be the tree it ships.
+ */
+export function commitRefusal(
+  checkout: { commit: string; uncommitted: string[] },
+  dry: boolean
+): string | null {
+  if (dry) return null;
+
+  if (!checkout.commit) {
+    return 'This is not a git checkout, so there is no commit to name in the packages. Build with --dry to test without one.';
+  }
+
+  if (checkout.uncommitted.length) {
+    const named = checkout.uncommitted.slice(0, 5).join(', ');
+
+    return (
+      `${checkout.uncommitted.length} file(s) are not committed, so ${checkout.commit.slice(0, 7)} would not be what is ` +
+      `in the packages: ${named}${checkout.uncommitted.length > 5 ? ', …' : ''}. Commit them, or build with --dry.`
+    );
+  }
+
+  return null;
+}
+
 /** A source path's compiled form: `./src/index.ts` → `./src/index.js`. Anything else is kept. */
 const compiled = (path: string) => path.replace(/\.tsx?$/, '.js');
 
@@ -77,7 +132,10 @@ export async function releaseBuild(options: ReleaseOptions = {}): Promise<Record
     throw new ReleaseRefused('No licence in release.json. The owner chooses it; build with --dry to test without one.');
   }
 
-  const commit = Bun.spawnSync(['git', '-C', ROOT, 'rev-parse', 'HEAD']).stdout.toString().trim();
+  const { commit, uncommitted } = commitOf(ROOT);
+  const refusal = commitRefusal({ commit, uncommitted }, options.dry === true);
+
+  if (refusal) throw new ReleaseRefused(refusal);
   const built: Record<string, string> = {};
 
   rmSync(RELEASE, { recursive: true, force: true });
