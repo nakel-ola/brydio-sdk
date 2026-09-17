@@ -141,6 +141,51 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
     for (const [name, bytes] of built.chunks) files.set(join(dirname(entry), name), bytes);
   }
 
+  // A custom tool's handler (`tasks/apps` A3-F08): the app's own code, which
+  // Brydio runs on its side in a box with no page and no network — so it is
+  // built like a screen, from `src/`, and never carries the screen runtime.
+  for (const tool of manifest.tools?.custom ?? []) {
+    const source = sourceOf(project.root, tool.handler);
+
+    if (!source) {
+      problems.push({
+        code: 'handler_source_missing',
+        severity: 'error',
+        path: `tools.custom.${tool.name}.handler`,
+        message: `The "${tool.name}" tool is built from src/${tool.handler.replace(/\.m?js$/, '')}.ts (or .js), and there is no such file.`,
+      });
+      continue;
+    }
+
+    const built = await bundle(project.root, source, baked, options.minify ?? true);
+
+    if (typeof built === 'string') {
+      problems.push({
+        code: 'handler_build_failed',
+        severity: 'error',
+        file: relative(project.root, source),
+        message: `The "${tool.name}" tool did not build: ${built}`,
+      });
+      continue;
+    }
+
+    if (built.others.length) {
+      problems.push({
+        code: 'bundle_file_not_code',
+        severity: 'error',
+        file: relative(project.root, source),
+        message:
+          `The "${tool.name}" tool brings in ${built.others.map(name => `"${name}"`).join(', ')}, which a bundle cannot hold. ` +
+          'A handler is code and nothing else.',
+      });
+      continue;
+    }
+
+    files.set(tool.handler, built.code);
+
+    for (const [name, bytes] of built.chunks) files.set(join(dirname(tool.handler), name), bytes);
+  }
+
   if (problems.some(problem => problem.severity === 'error')) return failed();
 
   // Which SDK built it, for Brydio to check at publish (A5-F04-S03). Written
