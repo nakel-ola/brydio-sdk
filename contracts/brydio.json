@@ -2112,6 +2112,19 @@
       "storage": true
     },
     "publish-grant-words": true,
+    "publish-route-templates": {
+      "apps/api/src/apps/publishing/app-publish.service.ts": [
+        "typeof named === 'string' ? named : 'manifest_invalid'",
+        "`${BUNDLE_MANIFEST}: \"${at}\": ${issue!.message}`",
+        "`${BUNDLE_MANIFEST}: ${issue?.message}`",
+        "`${BUNDLE_MANIFEST} is not valid JSON.`",
+        "secretsInJson(manifest, BUNDLE_MANIFEST)",
+        "(${version} against ${below!.version}, the version before it.)"
+      ],
+      "apps/api/src/apps/versions/app-version.service.ts": [
+        "'which is not a script in this bundle. Run brydio build.'"
+      ]
+    },
     "publish-unpack": {
       "zip": "adc03f579fee3177c96111234bcef999424046337e7fef8d6503e8bb13d0ac81",
       "files": {

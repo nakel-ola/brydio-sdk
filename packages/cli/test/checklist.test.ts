@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
+import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
 import { callsOf, main, validate, type Problem } from '../src/index.ts';
 
 /**
@@ -215,8 +216,6 @@ describe('what the publish route refuses, found first', () => {
 });
 
 describe('a manifest refused in the publish route’s words (A8-F04-S03)', () => {
-  const api = join(import.meta.dir, '..', '..', '..', '..', 'brydio', 'apps/api/src');
-  const route = join(api, 'apps/publishing/app-publish.service.ts');
 
   test('names the check and the field, behind app.json', () => {
     const kept = built(issues('0.2.0', { title: 'string' }, { grants: { tools: ['*'], collections: ['labels'] } }));
@@ -249,17 +248,26 @@ describe('a manifest refused in the publish route’s words (A8-F04-S03)', () =>
     expect(JSON.stringify(secrets)).not.toContain('abc123');
   });
 
-  test.skipIf(!existsSync(route))('matches the route’s own templates, read from its source', () => {
-    const source = readFileSync(route, 'utf8');
+  test('matches the route’s own templates, read from its source', async () => {
+    const PUBLISH = 'apps/api/src/apps/publishing/app-publish.service.ts';
+    const VERSIONS = 'apps/api/src/apps/versions/app-version.service.ts';
+    const templates = {
+      // A manifest refusal: the check's own code, then `app.json: "<path>": <sentence>`.
+      [PUBLISH]: [
+        "typeof named === 'string' ? named : 'manifest_invalid'",
+        '`${BUNDLE_MANIFEST}: "${at}": ${issue!.message}`',
+        '`${BUNDLE_MANIFEST}: ${issue?.message}`',
+        "`${BUNDLE_MANIFEST} is not valid JSON.`",
+        'secretsInJson(manifest, BUNDLE_MANIFEST)',
+        '(${version} against ${below!.version}, the version before it.)',
+      ],
+      [VERSIONS]: ["'which is not a script in this bundle. Run brydio build.'"],
+    };
+    const found = await brydioAnswers('publish-route-templates', [PUBLISH, VERSIONS], () =>
+      Object.fromEntries(Object.entries(templates).map(([file, wanted]) => [file, wanted.filter(text => readFileSync(inBrydio(file), 'utf8').includes(text))])),
+    );
 
-    // A manifest refusal: the check's own code, then `app.json: "<path>": <sentence>`.
-    expect(source).toContain("typeof named === 'string' ? named : 'manifest_invalid'");
-    expect(source).toContain('`${BUNDLE_MANIFEST}: "${at}": ${issue!.message}`');
-    expect(source).toContain('`${BUNDLE_MANIFEST}: ${issue?.message}`');
-    expect(source).toContain("`${BUNDLE_MANIFEST} is not valid JSON.`");
-    expect(source).toContain('secretsInJson(manifest, BUNDLE_MANIFEST)');
-    expect(source).toContain('(${version} against ${below!.version}, the version before it.)');
-    expect(readFileSync(join(api, 'apps/versions/app-version.service.ts'), 'utf8')).toContain("'which is not a script in this bundle. Run brydio build.'");
+    expect(found).toEqual(templates);
   });
 });
 
