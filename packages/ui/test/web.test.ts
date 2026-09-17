@@ -350,6 +350,182 @@ describe('the controls (A6-F06-S01)', () => {
   });
 });
 
+describe('dialog, menu and select (A6-F06-S01)', () => {
+  const heard: { name: string; detail: unknown }[] = [];
+  const names = new Set<string>();
+  const listen = (...events: string[]) => {
+    heard.length = 0;
+    for (const name of events) {
+      if (names.has(name)) continue;
+      names.add(name);
+      document.body.addEventListener(name, event => heard.push({ name, detail: (event as CustomEvent).detail }));
+    }
+  };
+  const press = (element: Element, key: string) =>
+    element.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, composed: true, cancelable: true }));
+
+  test('a dialog names itself, puts whatever destroys last, and cancel takes the focus', async () => {
+    await page(`<bry-dialog open title="Delete board?" description="This cannot be undone." actions='[{"id":"remove","label":"Delete","tone":"danger"},{"id":"keep","label":"Keep","tone":"primary"}]'></bry-dialog>`);
+    listen('action', 'close');
+
+    const root = shadowOf('bry-dialog');
+    const box = root.querySelector('dialog')!;
+
+    expect(root.getElementById(box.getAttribute('aria-labelledby')!)!.textContent).toBe('Delete board?');
+    expect(root.getElementById(box.getAttribute('aria-describedby')!)!.textContent).toBe('This cannot be undone.');
+    expect(Array.from(root.querySelectorAll('[data-action]')).map(one => one.getAttribute('data-action'))).toEqual(['cancel', 'keep', 'remove']);
+
+    (root.querySelector('[data-action="remove"]') as HTMLButtonElement).click();
+    expect(heard).toEqual([{ name: 'action', detail: { id: 'remove' } }]);
+  });
+
+  test('a dialog the person closes stays closed while the app still says open, and opens again when the app asks again', async () => {
+    await page(`<bry-dialog open title="Rename"></bry-dialog>`);
+    listen('close');
+
+    const host = document.querySelector('bry-dialog') as HTMLElement & { open: boolean; updateComplete: Promise<unknown>; requestUpdate(): void };
+
+    (shadowOf('bry-dialog').querySelector('[data-action="cancel"]') as HTMLButtonElement).click();
+    await host.updateComplete;
+    expect(heard).toEqual([{ name: 'close', detail: null }]);
+    expect(shadowOf('bry-dialog').querySelector('dialog')).toBeNull();
+
+    // Still open as far as the app knows: it stays shut.
+    host.requestUpdate();
+    await host.updateComplete;
+    expect(shadowOf('bry-dialog').querySelector('dialog')).toBeNull();
+
+    host.open = false;
+    await host.updateComplete;
+    host.open = true;
+    await host.updateComplete;
+    expect(shadowOf('bry-dialog').querySelector('dialog')).not.toBeNull();
+  });
+
+  test('a second dialog is refused in the shell’s words, and does not draw', async () => {
+    // Listening first: the refusal goes out as the second dialog first draws.
+    listen('close');
+    await page(`<bry-dialog id="first" open title="One"></bry-dialog><bry-dialog id="second" open title="Two"></bry-dialog>`);
+    await settle();
+
+    expect(shadowOf('#first').querySelector('dialog')).not.toBeNull();
+    expect(shadowOf('#second').querySelector('dialog')).toBeNull();
+    expect(heard).toEqual([
+      { name: 'close', detail: { refused: 'Another dialog from this app is already open. Close it first.' } },
+    ]);
+  });
+
+  test('a menu opens from the keyboard, walks with the arrows and Home and End, and chooses with Enter', async () => {
+    await page(`<bry-menu items='[{"id":"open","label":"Open"},{"id":"rename","label":"Rename"},{"id":"delete","label":"Delete","tone":"danger","separator":true}]'><bry-button label="More"></bry-button></bry-menu>`);
+    listen('select');
+
+    const host = document.querySelector('bry-menu') as HTMLElement & { updateComplete: Promise<unknown> };
+    const anchor = shadowOf('bry-menu').querySelector('.anchor')!;
+
+    expect(shadowOf('bry-menu').querySelector('[role="menu"]')).toBeNull();
+
+    press(anchor, 'ArrowDown');
+    await host.updateComplete;
+
+    const items = () => Array.from(shadowOf('bry-menu').querySelectorAll('[role="menuitem"]'));
+
+    expect(items().map(one => one.getAttribute('data-item'))).toEqual(['open', 'rename', 'delete']);
+    expect(shadowOf('bry-menu').querySelector('[data-active]')!.getAttribute('data-item')).toBe('open');
+    expect(shadowOf('bry-menu').querySelector('[role="separator"]')).not.toBeNull();
+    expect(items()[2]!.getAttribute('data-tone')).toBe('danger');
+
+    press(shadowOf('bry-menu').querySelector('[data-active]')!, 'End');
+    await host.updateComplete;
+    expect(shadowOf('bry-menu').querySelector('[data-active]')!.getAttribute('data-item')).toBe('delete');
+
+    press(shadowOf('bry-menu').querySelector('[data-active]')!, 'ArrowDown');
+    await host.updateComplete;
+    expect(shadowOf('bry-menu').querySelector('[data-active]')!.getAttribute('data-item')).toBe('open');
+
+    press(shadowOf('bry-menu').querySelector('[data-active]')!, 'Enter');
+    await host.updateComplete;
+    expect(heard).toEqual([{ name: 'select', detail: { id: 'open' } }]);
+    expect(shadowOf('bry-menu').querySelector('[role="menu"]')).toBeNull();
+  });
+
+  test('a menu closes on Escape without choosing, and skips an item that cannot be chosen', async () => {
+    await page(`<bry-menu items='[{"id":"a","label":"Archive","disabled":true},{"id":"b","label":"Bump"}]'><bry-button label="More"></bry-button></bry-menu>`);
+    listen('select');
+
+    const host = document.querySelector('bry-menu') as HTMLElement & { updateComplete: Promise<unknown> };
+
+    press(shadowOf('bry-menu').querySelector('.anchor')!, 'ArrowDown');
+    await host.updateComplete;
+    expect(shadowOf('bry-menu').querySelector('[data-active]')!.getAttribute('data-item')).toBe('b');
+    expect(shadowOf('bry-menu').querySelector('[data-item="a"]')!.getAttribute('aria-disabled')).toBe('true');
+
+    press(shadowOf('bry-menu').querySelector('[data-active]')!, 'Escape');
+    await host.updateComplete;
+    expect(shadowOf('bry-menu').querySelector('[role="menu"]')).toBeNull();
+    expect(heard).toEqual([]);
+  });
+
+  test('a select shows the placeholder for a value its options lack, opens a listbox and says change once', async () => {
+    await page(`<bry-select label="Status" placeholder="Choose" value="gone" options='[{"value":"todo","label":"To do"},{"value":"doing","label":"Doing"}]'></bry-select>`);
+    listen('change');
+
+    const host = document.querySelector('bry-select') as HTMLElement & { updateComplete: Promise<unknown> };
+    const trigger = () => shadowOf('bry-select').querySelector('[role="combobox"]') as HTMLButtonElement;
+
+    expect(trigger().textContent!.trim()).toBe('Choose');
+    expect(trigger().getAttribute('aria-expanded')).toBe('false');
+    expect(trigger().getAttribute('aria-label')).toBe('Status');
+
+    trigger().click();
+    await host.updateComplete;
+
+    const options = Array.from(shadowOf('bry-select').querySelectorAll('[role="option"]'));
+
+    expect(options.map(one => one.getAttribute('data-value'))).toEqual(['todo', 'doing']);
+    expect(trigger().getAttribute('aria-expanded')).toBe('true');
+
+    press(shadowOf('bry-select').querySelector('[role="listbox"]')!, 'ArrowDown');
+    await host.updateComplete;
+    press(shadowOf('bry-select').querySelector('[role="listbox"]')!, 'Enter');
+    await host.updateComplete;
+
+    expect(heard).toEqual([{ name: 'change', detail: { value: 'doing' } }]);
+    expect(shadowOf('bry-select').querySelector('[role="listbox"]')).toBeNull();
+  });
+
+  test('a select says nothing when the same choice is chosen again, and a disabled one does not open', async () => {
+    await page(`<bry-select id="same" value="todo" options='[{"value":"todo","label":"To do"}]'></bry-select><bry-select id="off" disabled options='[{"value":"todo","label":"To do"}]'></bry-select>`);
+    listen('change');
+
+    const same = document.querySelector('#same') as HTMLElement & { updateComplete: Promise<unknown> };
+
+    (shadowOf('#same').querySelector('[role="combobox"]') as HTMLButtonElement).click();
+    await same.updateComplete;
+    (shadowOf('#same').querySelector('[data-value="todo"]') as HTMLButtonElement).click();
+    await same.updateComplete;
+    expect(heard).toEqual([]);
+
+    const off = document.querySelector('#off') as HTMLElement & { updateComplete: Promise<unknown> };
+
+    (shadowOf('#off').querySelector('[role="combobox"]') as HTMLButtonElement).click();
+    await off.updateComplete;
+    expect(shadowOf('#off').querySelector('[role="listbox"]')).toBeNull();
+  });
+
+  test('a choice can carry a member’s initials (G16)', async () => {
+    await page(`<bry-select options='[{"value":"u1","label":"Ada Lovelace","avatar":"mem_1"}]'></bry-select>`);
+
+    const host = document.querySelector('bry-select') as HTMLElement & { updateComplete: Promise<unknown> };
+
+    (shadowOf('bry-select').querySelector('[role="combobox"]') as HTMLButtonElement).click();
+    await host.updateComplete;
+
+    const avatar = shadowOf('bry-select').querySelector('.avatar')!;
+
+    expect([avatar.getAttribute('data-avatar'), avatar.textContent]).toEqual(['mem_1', 'AL']);
+  });
+});
+
 describe('the token stylesheet (A6-F05-S01, A6-F06-S01)', () => {
   test('is Brydio’s own tokens.css, byte for byte', async () => {
     const here = readFileSync(join(import.meta.dir, '../src/web/tokens.css'), 'utf8');

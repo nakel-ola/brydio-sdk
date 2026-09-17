@@ -9,6 +9,7 @@
 import './draw/basics.ts';
 import './draw/layout.ts';
 import './draw/controls.ts';
+import './draw/overlays.ts';
 import { defineCatalogue } from './define.ts';
 
 export { BryElement } from './base.ts';
