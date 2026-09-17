@@ -125,6 +125,13 @@ const DIFF_PATH = 1_000;
 /** One file's unified diff text. A larger one is sent when the person opens it, or not at all. */
 export const DIFF_PATCH = 200_000;
 
+/** The most files a folder may say it has, and the most sent in one window. */
+export const FILE_GRID_COUNT = 100_000;
+export const FILE_GRID_WINDOW = 200;
+
+/** What a file is, as far as its icon and preview go. */
+export const FILE_KINDS = ['document', 'spreadsheet', 'presentation', 'pdf', 'image', 'video', 'audio', 'code', 'archive', 'folder', 'other'] as const;
+
 /** An ISO date is ten characters: `2026-09-16`. */
 const ISO_DATE = 10;
 
@@ -566,6 +573,55 @@ export const CATALOGUE = {
     },
     required: ['files'],
     events: ['expand', 'select'],
+    children: false,
+  },
+  'bry-file-grid': {
+    // A folder's files as tiles, windowed like bry-virtual-list: `count` is
+    // the whole folder and `files` the ones from `start`; `range` asks for the
+    // tiles in view. `preview` is a Brydio source id, never an address. One
+    // `menu` serves every tile.
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      count: { kind: 'int', min: 0, max: FILE_GRID_COUNT },
+      start: { kind: 'int', min: 0, max: FILE_GRID_COUNT },
+      files: {
+        kind: 'list',
+        max: FILE_GRID_WINDOW,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            name: { kind: 'text', max: LABEL_MAX },
+            kind: { kind: 'enum', values: FILE_KINDS },
+            preview: { kind: 'text', max: KEY_MAX },
+            size: { kind: 'int', min: 0, max: 2_000_000_000 },
+            modified: { kind: 'text', max: 40 },
+          },
+          required: ['id', 'name', 'kind'],
+        },
+      },
+      tileSize: { kind: 'enum', values: ['sm', 'md', 'lg'] },
+      selectable: { kind: 'boolean' },
+      selected: { kind: 'list', max: FILE_GRID_WINDOW, of: { kind: 'text', max: KEY_MAX } },
+      menu: {
+        kind: 'list',
+        max: 12,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            label: { kind: 'text', max: LABEL_MAX },
+            icon: { kind: 'enum', values: MENU_ICONS },
+            tone: { kind: 'enum', values: ['default', 'danger'] },
+          },
+          required: ['id', 'label'],
+        },
+      },
+      loading: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['count'],
+    events: ['open', 'select', 'menu', 'range'],
     children: false,
   },
 } as const satisfies Readonly<Record<`bry-${string}`, ElementSpec>>;

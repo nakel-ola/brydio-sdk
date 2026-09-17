@@ -114,6 +114,9 @@ var MARKDOWN_MAX = 50000;
 var DIFF_FILES = 300;
 var DIFF_PATH = 1000;
 var DIFF_PATCH = 200000;
+var FILE_GRID_COUNT = 1e5;
+var FILE_GRID_WINDOW = 200;
+var FILE_KINDS = ["document", "spreadsheet", "presentation", "pdf", "image", "video", "audio", "code", "archive", "folder", "other"];
 var ISO_DATE = 10;
 var CATALOGUE = {
   "bry-stack": {
@@ -483,6 +486,51 @@ var CATALOGUE = {
     },
     required: ["files"],
     events: ["expand", "select"],
+    children: false
+  },
+  "bry-file-grid": {
+    props: {
+      label: { kind: "text", max: LABEL_MAX },
+      count: { kind: "int", min: 0, max: FILE_GRID_COUNT },
+      start: { kind: "int", min: 0, max: FILE_GRID_COUNT },
+      files: {
+        kind: "list",
+        max: FILE_GRID_WINDOW,
+        of: {
+          kind: "shape",
+          fields: {
+            id: { kind: "text", max: KEY_MAX },
+            name: { kind: "text", max: LABEL_MAX },
+            kind: { kind: "enum", values: FILE_KINDS },
+            preview: { kind: "text", max: KEY_MAX },
+            size: { kind: "int", min: 0, max: 2000000000 },
+            modified: { kind: "text", max: 40 }
+          },
+          required: ["id", "name", "kind"]
+        }
+      },
+      tileSize: { kind: "enum", values: ["sm", "md", "lg"] },
+      selectable: { kind: "boolean" },
+      selected: { kind: "list", max: FILE_GRID_WINDOW, of: { kind: "text", max: KEY_MAX } },
+      menu: {
+        kind: "list",
+        max: 12,
+        of: {
+          kind: "shape",
+          fields: {
+            id: { kind: "text", max: KEY_MAX },
+            label: { kind: "text", max: LABEL_MAX },
+            icon: { kind: "enum", values: MENU_ICONS },
+            tone: { kind: "enum", values: ["default", "danger"] }
+          },
+          required: ["id", "label"]
+        }
+      },
+      loading: { kind: "boolean" },
+      empty: { kind: "text", max: LABEL_MAX }
+    },
+    required: ["count"],
+    events: ["open", "select", "menu", "range"],
     children: false
   }
 };

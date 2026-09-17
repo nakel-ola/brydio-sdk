@@ -72,7 +72,7 @@ const hostAtHead = () =>
   })());
 
 describe('the catalogue as a whole', () => {
-  test('has the first twenty-seven, all named bry-', () => {
+  test('has the twenty-eight Brydio draws, all named bry-', () => {
     expect(ELEMENT_NAMES).toEqual([
       'bry-stack',
       'bry-heading',
@@ -101,6 +101,7 @@ describe('the catalogue as a whole', () => {
       'bry-board-column',
       'bry-markdown',
       'bry-diff',
+      'bry-file-grid',
     ]);
   });
 
