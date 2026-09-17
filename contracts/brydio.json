@@ -1,9 +1,100 @@
 {
   "brydio": {
-    "commit": "59dc79f2815da901a5157e921329eb4bc2479460",
+    "commit": "805763560ff2cab6d11820a1cfd62aed5c2070c9",
     "dirty": true
   },
   "contracts": {
+    "field-types": [
+      {
+        "type": {
+          "kind": "boolean",
+          "optional": false
+        }
+      },
+      {
+        "type": {
+          "kind": "enum",
+          "optional": false,
+          "values": [
+            "todo",
+            "done"
+          ]
+        }
+      },
+      {
+        "type": {
+          "kind": "enum",
+          "optional": true,
+          "values": [
+            "todo",
+            "doing",
+            "done"
+          ],
+          "default": "todo"
+        }
+      },
+      {
+        "type": {
+          "kind": "boolean",
+          "optional": true,
+          "default": false
+        }
+      },
+      {
+        "type": {
+          "kind": "date",
+          "optional": true
+        }
+      },
+      {
+        "code": "data_default_not_allowed"
+      },
+      {
+        "code": "data_default_on_required"
+      },
+      {
+        "code": "data_default_invalid"
+      },
+      {
+        "code": "data_default_invalid"
+      },
+      {
+        "code": "data_field_key_unknown"
+      },
+      {
+        "code": "data_field_type_unknown"
+      },
+      {
+        "type": {
+          "kind": "enum",
+          "optional": false,
+          "values": [
+            "todo",
+            "doing",
+            "done"
+          ],
+          "labels": {
+            "todo": "To do",
+            "done": "Done"
+          }
+        }
+      },
+      {
+        "code": "data_labels_not_allowed"
+      },
+      {
+        "code": "data_label_unknown_value"
+      },
+      {
+        "code": "data_label_invalid"
+      },
+      {
+        "code": "data_label_invalid"
+      },
+      {
+        "code": "data_label_invalid"
+      }
+    ],
     "limits": {
       "fields": {
         "collections": 20,

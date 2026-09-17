@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 
+import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
 import { FIELD_LIMITS, isStructured, parseFieldType, valueProblem } from '../src/field-types.ts';
 
 describe('the limits a record is held to, as Brydio holds them', () => {
@@ -15,8 +14,7 @@ describe('the limits a record is held to, as Brydio holds them', () => {
 });
 
 describe('field defaults and choice labels, as Brydio reads them (A3-F01-S01, A8-F01-S04)', () => {
-  const brydio = process.env.BRYDIO_DIR ?? join(import.meta.dir, '..', '..', '..', '..', 'brydio');
-  const serverTypes = join(brydio, 'apps/api/src/apps/manifest/field-types.ts');
+  const SERVER_TYPES = 'apps/api/src/apps/manifest/field-types.ts';
 
   const cases: unknown[] = [
     'boolean',
@@ -68,10 +66,14 @@ describe('field defaults and choice labels, as Brydio reads them (A3-F01-S01, A8
     ]);
   });
 
-  test.if(existsSync(serverTypes))("answers every case exactly as brydio's field-types.ts does", async () => {
-    const server = (await import(serverTypes)) as { parseFieldType: (raw: unknown) => unknown };
+  test("answers every case exactly as brydio's field-types.ts does", async () => {
+    const server = await brydioAnswers('field-types', [SERVER_TYPES], async () => {
+      const { parseFieldType: parse } = (await import(inBrydio(SERVER_TYPES))) as { parseFieldType: (raw: unknown) => unknown };
 
-    expect(cases.map(raw => outcome(parseFieldType, raw))).toEqual(cases.map(raw => outcome(server.parseFieldType, raw)));
+      return cases.map(raw => outcome(parse, raw));
+    });
+
+    expect(JSON.parse(JSON.stringify(cases.map(raw => outcome(parseFieldType, raw))))).toEqual(server);
   });
 });
 
