@@ -30,7 +30,12 @@ describe('the release build', () => {
   test(
     'installs from its tarballs into a new app, which builds, validates, tests and type-checks',
     async () => {
+      // Read around the build, not after it: this checkout is shared, and a
+      // commit landing mid-test would otherwise fail on a moving HEAD. In CI
+      // the two readings are always the same.
+      const before = commitOf(ROOT).commit;
       const built = await releaseBuild({ dry: true, out: () => {} });
+      const after = commitOf(ROOT).commit;
       const tarballs = mkdtempSync(join(tmpdir(), 'brydio-tarballs-'));
 
       made.push(tarballs);
@@ -81,8 +86,6 @@ describe('the release build', () => {
       // The licence travels with every package, as MIT asks, and so does the
       // commit it was built from: months later that is how anyone works out
       // what actually shipped.
-      const head = commitOf(ROOT).commit;
-
       for (const [name, folder] of Object.entries(built)) {
         const licence = readFileSync(join(folder, 'LICENSE'), 'utf8');
         const pkg = JSON.parse(readFileSync(join(folder, 'package.json'), 'utf8'));
@@ -90,7 +93,7 @@ describe('the release build', () => {
 
         expect(licence, name).toContain('Copyright (c) 2026 Brydio Inc.');
         expect(pkg.license, name).toBe('MIT');
-        expect(pkg.gitHead, name).toBe(head);
+        expect([before, after], name).toContain(pkg.gitHead);
         expect(pkg.version, name).toBe(source.version);
       }
 
@@ -139,6 +142,43 @@ describe('the release build', () => {
 
       mkdirSync(join(app, 'dist'), { recursive: true });
       expect(existsSync(join(app, 'dist', 'screens', 'home.js'))).toBe(true);
+    },
+    300_000,
+  );
+
+  /**
+   * "Published from a build anyone can reproduce" (A9-F03-S04), asked rather
+   * than asserted: the same checkout built twice has to give the same bytes.
+   *
+   * A build that quietly varies — a timestamp written into a file, a folder
+   * read in whatever order the filesystem gave it — cannot be checked against
+   * what was published, so `gitHead` would name a commit nobody could build
+   * their way back to. This is what makes the commit worth carrying.
+   */
+  test(
+    'gives the same bytes when the same checkout is built twice',
+    async () => {
+      const bytesOf = (built: Record<string, string>) => {
+        const files = new Map<string, string>();
+
+        for (const [name, folder] of Object.entries(built)) {
+          for (const file of new Bun.Glob('**/*').scanSync({ cwd: folder, onlyFiles: true })) {
+            files.set(`${name}/${file}`, Bun.hash(readFileSync(join(folder, file))).toString(16));
+          }
+        }
+
+        return files;
+      };
+
+      const first = bytesOf(await releaseBuild({ dry: true, out: () => {} }));
+      const second = bytesOf(await releaseBuild({ dry: true, out: () => {} }));
+
+      expect(first.size).toBeGreaterThan(20);
+      expect([...second.keys()].sort()).toEqual([...first.keys()].sort());
+
+      const differed = [...first].filter(([file, hash]) => second.get(file) !== hash).map(([file]) => file);
+
+      expect(differed).toEqual([]);
     },
     300_000,
   );
