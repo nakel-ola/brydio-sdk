@@ -89,6 +89,8 @@ publish route can't check compiled code for this.
 | `source_syntax` | This does not parse: `<TypeScript's words>` | yes | no | Fix the syntax. |
 | `screen_source_missing` (from `brydio build`) | The "`<screen>`" screen is built from src/`<entry>`.tsx (or .ts, .jsx, .js), and there is no such file. | build | no | Add the source file, or fix the entry. |
 | `screen_build_failed` (from `brydio build`) | The "`<screen>`" screen did not build: `<the bundler's words>` | build | no | Fix what the bundler names. |
+| `handler_source_missing` (from `brydio build`) | The "`<tool>`" tool is built from src/`<handler>`.ts (or .js), and there is no such file. | build | no | Add the source file, or fix the handler's path. |
+| `handler_build_failed` (from `brydio build`) | The "`<tool>`" tool did not build: `<the bundler's words>` | build | no | Fix what the bundler names. |
 
 ## 3. No element carries a style, a class or raw HTML
 
