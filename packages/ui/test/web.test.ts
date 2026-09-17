@@ -15,6 +15,7 @@ GlobalRegistrator.register();
 afterAll(() => GlobalRegistrator.unregister());
 
 const { attributeOf, defineCatalogue } = await import('../src/web/index.ts');
+const { positionAt, steered } = await import('../src/web/draw/board.ts');
 
 const settle = async () => {
   await new Promise(resolve => setTimeout(resolve, 0));
@@ -666,6 +667,111 @@ describe('split (A6-F06-S01)', () => {
   });
 });
 
+describe('board and board column (A6-F06-S01)', () => {
+  const moves: unknown[] = [];
+  let listening = false;
+  const listen = () => {
+    moves.length = 0;
+    if (listening) return;
+    listening = true;
+    document.body.addEventListener('move', event => moves.push((event as CustomEvent).detail));
+  };
+  const press = (element: Element, key: string) =>
+    element.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, composed: true, cancelable: true }));
+
+  const BOARD = `<bry-board label="Issues" card-size="md">
+      <bry-board-column id="todo" title="To do" count="2"><bry-card id="c1" title="One"></bry-card><bry-card id="c2" title="Two"></bry-card></bry-board-column>
+      <bry-board-column id="doing" title="Doing" count="0"></bry-board-column>
+    </bry-board>`;
+
+  test('a column names itself, counts its cards and says when it is empty', async () => {
+    await page(BOARD);
+
+    const todo = shadowOf('#todo');
+    const doing = shadowOf('#doing');
+
+    expect(todo.querySelector('section')!.getAttribute('aria-label')).toBe('To do');
+    expect(todo.querySelector('[data-slot="board-column-count"]')!.textContent).toBe('2');
+    expect(doing.querySelector('.empty')!.textContent).toBe('Nothing here yet.');
+  });
+
+  test('a card is picked up, steered and dropped on the keyboard, and the board says move once', async () => {
+    await page(BOARD);
+    listen();
+
+    const board = document.querySelector('bry-board') as HTMLElement & { updateComplete: Promise<unknown> };
+    const card = document.querySelector('#c1') as HTMLElement;
+
+    // The column gives its cards the focus and says what they are.
+    expect(card.tabIndex).toBe(0);
+    expect(card.getAttribute('aria-roledescription')).toBe('card');
+
+    press(card, ' ');
+    await board.updateComplete;
+    expect(shadowOf('bry-board').querySelector('[aria-live="assertive"]')!.textContent).toContain('c1 lifted');
+
+    press(card, 'ArrowRight');
+    await board.updateComplete;
+    expect(shadowOf('bry-board').querySelector('[aria-live="assertive"]')!.textContent).toContain('Doing');
+
+    press(card, ' ');
+    await board.updateComplete;
+    expect(moves).toEqual([{ card: 'c1', from: 'todo', to: 'doing', position: 0 }]);
+  });
+
+  test('Escape puts a card back, and dropping it where it started says nothing', async () => {
+    await page(BOARD);
+    listen();
+
+    const board = document.querySelector('bry-board') as HTMLElement & { updateComplete: Promise<unknown> };
+    const card = document.querySelector('#c2') as HTMLElement;
+
+    press(card, ' ');
+    press(card, 'ArrowRight');
+    press(card, 'Escape');
+    await board.updateComplete;
+    expect(moves).toEqual([]);
+    expect(shadowOf('bry-board').querySelector('[aria-live="assertive"]')!.textContent).toContain('Put back');
+
+    press(card, ' ');
+    press(card, ' ');
+    await board.updateComplete;
+    expect(moves).toEqual([]);
+  });
+
+  test('it tells the person how to move a card, once, for a screen reader', async () => {
+    await page(BOARD);
+
+    const how = shadowOf('bry-board').querySelector('#how')!;
+
+    expect(how.textContent).toContain('Press Space to pick up a card');
+    expect(shadowOf('bry-board').querySelector('[role="group"]')!.getAttribute('aria-describedby')).toBe('how');
+  });
+
+  test('left and right mean before and after: a key steers by the column order it is given', () => {
+    const columns = ['todo', 'doing', 'done'];
+
+    expect(steered('ArrowRight', false, { to: 'todo', position: 0 }, columns)).toEqual({ to: 'doing', position: 0 });
+    expect(steered('ArrowRight', true, { to: 'doing', position: 1 }, columns)).toEqual({ to: 'todo', position: 1 });
+    expect(steered('ArrowLeft', false, { to: 'todo', position: 0 }, columns)).toBeNull();
+    expect(steered('ArrowDown', false, { to: 'todo', position: 0 }, columns)).toEqual({ to: 'todo', position: 1 });
+    expect(steered('ArrowUp', false, { to: 'todo', position: 0 }, columns)).toEqual({ to: 'todo', position: 0 });
+  });
+
+  test('a pointer drop lands before the card it was let go above', () => {
+    const cards = [
+      { top: 0, height: 100 },
+      { top: 100, height: 100 },
+      { top: 200, height: 100 },
+    ];
+
+    expect(positionAt(cards, 10)).toBe(0);
+    expect(positionAt(cards, 140)).toBe(1);
+    expect(positionAt(cards, 290)).toBe(3);
+    expect(positionAt([], 10)).toBe(0);
+  });
+});
+
 describe('the token stylesheet (A6-F05-S01, A6-F06-S01)', () => {
   test('is Brydio’s own tokens.css, byte for byte', async () => {
     const here = readFileSync(join(import.meta.dir, '../src/web/tokens.css'), 'utf8');
@@ -696,5 +802,119 @@ describe('the token stylesheet (A6-F05-S01, A6-F06-S01)', () => {
 
     expect(light.every(Boolean)).toBe(true);
     light.forEach((value, index) => expect(dark[index]).not.toBe(value));
+  });
+});
+
+describe('table (A6-F06-S01)', () => {
+  const COLUMNS = JSON.stringify([
+    { key: 'title', heading: 'Title', sortable: true },
+    { key: 'points', heading: 'Points', align: 'end' },
+  ]).replace(/"/g, '&quot;');
+  const ROWS = JSON.stringify([
+    { id: 'a', cells: ['Fix the login', '3'] },
+    { id: 'b', cells: ['Add dark mode', '5'] },
+  ]).replace(/"/g, '&quot;');
+
+  test('a sortable heading asks for a direction, and the heading shows what the app sent back', async () => {
+    await page(`<bry-table columns="${COLUMNS}" rows="${ROWS}"></bry-table>`);
+
+    const host = document.querySelector('bry-table') as HTMLElement & { sort: unknown; updateComplete: Promise<unknown> };
+    const asked: unknown[] = [];
+
+    host.addEventListener('sort', event => asked.push((event as CustomEvent).detail));
+
+    const head = () => shadowOf('bry-table').querySelectorAll('th');
+
+    // Only the column that says it can be sorted is a button.
+    expect(shadowOf('bry-table').querySelectorAll('button.sort')).toHaveLength(1);
+    expect(head()[0]!.hasAttribute('aria-sort')).toBe(false);
+
+    shadowOf('bry-table').querySelector<HTMLElement>('[data-sort="title"]')!.click();
+    expect(asked).toEqual([{ key: 'title', direction: 'asc' }]);
+
+    // Nothing moves until the app sends the sort back: the rows are its own.
+    expect(head()[0]!.hasAttribute('aria-sort')).toBe(false);
+
+    host.sort = { key: 'title', direction: 'asc' };
+    await host.updateComplete;
+    expect(head()[0]!.getAttribute('aria-sort')).toBe('ascending');
+
+    shadowOf('bry-table').querySelector<HTMLElement>('[data-sort="title"]')!.click();
+    expect(asked[1]).toEqual({ key: 'title', direction: 'desc' });
+  });
+
+  test('a selectable table is one tab stop, moves on the arrows, and chooses on Enter', async () => {
+    await page(`<bry-table selectable columns="${COLUMNS}" rows="${ROWS}" selected="a"></bry-table>`);
+
+    const host = document.querySelector('bry-table') as HTMLElement & { updateComplete: Promise<unknown> };
+    const chosen: unknown[] = [];
+
+    host.addEventListener('select', event => chosen.push((event as CustomEvent).detail));
+
+    const rows = () => [...shadowOf('bry-table').querySelectorAll('tbody tr')];
+    const body = shadowOf('bry-table').querySelector('tbody')!;
+
+    expect(shadowOf('bry-table').querySelector('table')!.getAttribute('role')).toBe('grid');
+    // A hundred rows are not a hundred tab stops: the chosen one holds it.
+    expect(rows().map(row => row.getAttribute('tabindex'))).toEqual(['0', '-1']);
+    expect(rows().map(row => row.getAttribute('aria-selected'))).toEqual(['true', 'false']);
+
+    body.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }));
+    await host.updateComplete;
+    expect(rows().map(row => row.getAttribute('tabindex'))).toEqual(['-1', '0']);
+    // Moving is not choosing: the app still says which row is chosen.
+    expect(chosen).toEqual([]);
+    expect(rows().map(row => row.getAttribute('aria-selected'))).toEqual(['true', 'false']);
+
+    body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true, cancelable: true }));
+    expect(chosen).toEqual([{ row: 'b' }]);
+
+    rows()[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    expect(chosen[1]).toEqual({ row: 'a' });
+  });
+
+  test('a table nobody may pick has no grid, no tab stop and no select', async () => {
+    await page(`<bry-table columns="${COLUMNS}" rows="${ROWS}"></bry-table>`);
+
+    const host = document.querySelector('bry-table') as HTMLElement;
+    const chosen: unknown[] = [];
+
+    host.addEventListener('select', event => chosen.push((event as CustomEvent).detail));
+
+    const rows = [...shadowOf('bry-table').querySelectorAll('tbody tr')];
+
+    expect(shadowOf('bry-table').querySelector('table')!.hasAttribute('role')).toBe(false);
+    expect(rows.map(row => row.getAttribute('tabindex'))).toEqual([null, null]);
+    rows[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    expect(chosen).toEqual([]);
+  });
+
+  test('loading draws placeholder rows and says so; no rows draws the app’s words', async () => {
+    await page(`<bry-table loading columns="${COLUMNS}"></bry-table>`);
+
+    expect(shadowOf('bry-table').querySelector('table')!.getAttribute('aria-busy')).toBe('true');
+    expect(shadowOf('bry-table').querySelectorAll('tr[data-loading]')).toHaveLength(3);
+
+    await page(`<bry-table columns="${COLUMNS}" empty="No pull requests yet."></bry-table>`);
+
+    const empty = shadowOf('bry-table').querySelector('tr[data-empty] td')!;
+
+    expect(empty.textContent!.trim()).toBe('No pull requests yet.');
+    expect(empty.getAttribute('colspan')).toBe('2');
+  });
+
+  test('a column or a row missing what it needs is left out, and a cell is text', async () => {
+    const columns = JSON.stringify([{ key: 'title', heading: 'Title' }, { key: 'nope' }, 'rubbish']).replace(/"/g, '&quot;');
+    const rows = JSON.stringify([{ cells: ['no id'] }, { id: 'a', cells: ['<b>not bold</b>'] }]).replace(/"/g, '&quot;');
+
+    await page(`<bry-table columns="${columns}" rows="${rows}"></bry-table>`);
+
+    expect(shadowOf('bry-table').querySelectorAll('th')).toHaveLength(1);
+    expect([...shadowOf('bry-table').querySelectorAll('tbody tr')].map(row => row.getAttribute('data-row'))).toEqual(['a']);
+    // Markup in a cell is what it says, not what it does.
+    const cell = shadowOf('bry-table').querySelector('tbody td')!;
+
+    expect(cell.textContent).toBe('<b>not bold</b>');
+    expect(cell.querySelector('b')).toBeNull();
   });
 });

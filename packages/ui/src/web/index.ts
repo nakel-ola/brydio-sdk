@@ -12,6 +12,8 @@ import './draw/controls.ts';
 import './draw/overlays.ts';
 import './draw/text-and-date.ts';
 import './draw/split.ts';
+import './draw/board.ts';
+import './draw/table.ts';
 import { defineCatalogue } from './define.ts';
 
 export { BryElement } from './base.ts';
