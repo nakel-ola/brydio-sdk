@@ -15,9 +15,14 @@
  * the tarball a registry would get, which `packages/cli/test/release.test.ts`
  * installs into a fresh app to prove it works without workspace links.
  *
- * The licence is the owner's to choose. Without one in `release.json`, a
- * build stops before writing publishable package files, unless `--dry` says
- * the result is only for testing.
+ * The licence is MIT and the scope is `@brydio`, both the owner's decision
+ * (E1, 17 Sep, OQ-A05). It is read from `release.json`, and a build without
+ * one stops before writing publishable package files, unless `--dry` says the
+ * result is only for testing.
+ *
+ * Still the owner's, and so not written here: the repository's address (it
+ * goes in `release.json` as `repository`), and the copyright line a `LICENSE`
+ * file needs, which wants the owner's legal name.
  */
 
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
