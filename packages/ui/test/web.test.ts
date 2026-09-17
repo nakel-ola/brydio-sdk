@@ -1010,3 +1010,149 @@ describe('table (A6-F06-S01)', () => {
     expect(cell.querySelector('b')).toBeNull();
   });
 });
+
+describe('file grid (A6-F06-S01)', () => {
+  const FILES = JSON.stringify([
+    { id: 'f1', name: 'Plan.pdf', kind: 'pdf', size: 20_480, modified: '2026-09-01T10:00:00.000Z' },
+    { id: 'f2', name: 'Shot.png', kind: 'image', preview: 'src_1' },
+    { id: 'f3', name: 'Notes', kind: 'folder' },
+  ]).replace(/"/g, '&quot;');
+  const MENU = JSON.stringify([
+    { id: 'rename', label: 'Rename' },
+    { id: 'delete', label: 'Delete', tone: 'danger' },
+  ]).replace(/"/g, '&quot;');
+
+  const tiles = () => Array.from(shadowOf('bry-file-grid').querySelectorAll('.tile[data-file]'));
+
+  test('says what each file is and what it weighs, and never fetches a preview', async () => {
+    await page(`<bry-file-grid count="3" files="${FILES}"></bry-file-grid>`);
+
+    expect(tiles().map(tile => tile.getAttribute('data-file'))).toEqual(['f1', 'f2', 'f3']);
+    expect(tiles()[0]!.querySelector('.name')!.textContent!.trim()).toBe('Plan.pdf');
+    expect(tiles()[0]!.querySelector('.mark')!.textContent!.trim()).toBe('PDF');
+    expect(tiles()[0]!.querySelector('.meta')!.textContent).toContain('20 KB');
+    expect(tiles()[0]!.querySelector('.meta')!.textContent).toContain('2026-09-01');
+    // A preview is a Brydio source id, and this build has no session to read
+    // it with: no image is drawn and nothing is asked for.
+    expect(shadowOf('bry-file-grid').querySelector('img')).toBeNull();
+    // Each tile says where it sits in the whole folder, not in the window.
+    expect(tiles()[2]!.getAttribute('aria-posinset')).toBe('3');
+    expect(tiles()[2]!.getAttribute('aria-setsize')).toBe('3');
+  });
+
+  test('a press opens when nothing is selectable, and chooses when it is', async () => {
+    await page(`<bry-file-grid count="3" files="${FILES}"></bry-file-grid>`);
+
+    const host = document.querySelector('bry-file-grid') as HTMLElement & { selectable: boolean; selected: string[]; updateComplete: Promise<unknown> };
+    const opened: unknown[] = [];
+    const chosen: unknown[] = [];
+
+    host.addEventListener('open', event => opened.push((event as CustomEvent).detail));
+    host.addEventListener('select', event => chosen.push((event as CustomEvent).detail));
+
+    tiles()[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    expect(opened).toEqual([{ id: 'f2' }]);
+    expect(chosen).toEqual([]);
+
+    host.selectable = true;
+    await host.updateComplete;
+
+    tiles()[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    expect(chosen).toEqual([{ ids: ['f2'] }]);
+    // Now a press chooses, and opening is the second press.
+    expect(opened).toHaveLength(1);
+
+    tiles()[1]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }));
+    expect(opened).toEqual([{ id: 'f2' }, { id: 'f2' }]);
+  });
+
+  test('⌘ adds one and takes it away again, and Shift takes everything between', async () => {
+    await page(`<bry-file-grid selectable count="3" files="${FILES}" selected="[&quot;f1&quot;]"></bry-file-grid>`);
+
+    const host = document.querySelector('bry-file-grid') as HTMLElement & { selected: string[]; updateComplete: Promise<unknown> };
+    const chosen: { ids: string[] }[] = [];
+
+    host.addEventListener('select', event => chosen.push((event as CustomEvent).detail as { ids: string[] }));
+
+    tiles()[2]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, metaKey: true }));
+    expect(chosen[0]).toEqual({ ids: ['f1', 'f3'] });
+
+    host.selected = ['f1', 'f3'];
+    await host.updateComplete;
+    tiles()[2]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, metaKey: true }));
+    expect(chosen[1]).toEqual({ ids: ['f1'] });
+
+    // An anchor, then everything between it and here.
+    tiles()[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    tiles()[2]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, shiftKey: true }));
+    expect(chosen.at(-1)).toEqual({ ids: ['f1', 'f2', 'f3'] });
+  });
+
+  test('Enter opens the tile in hand, Space chooses it, and the arrows move between them', async () => {
+    await page(`<bry-file-grid selectable count="3" files="${FILES}"></bry-file-grid>`);
+
+    const host = document.querySelector('bry-file-grid') as HTMLElement & { updateComplete: Promise<unknown> };
+    const opened: unknown[] = [];
+    const chosen: unknown[] = [];
+
+    host.addEventListener('open', event => opened.push((event as CustomEvent).detail));
+    host.addEventListener('select', event => chosen.push((event as CustomEvent).detail));
+
+    const press = (tile: Element, key: string) =>
+      tile.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, composed: true, cancelable: true }));
+
+    // One tile in the tab order, as a grid of a hundred files must be.
+    expect(tiles().map(tile => tile.getAttribute('tabindex'))).toEqual(['0', '-1', '-1']);
+
+    press(tiles()[0]!, 'Enter');
+    expect(opened).toEqual([{ id: 'f1' }]);
+
+    press(tiles()[0]!, ' ');
+    expect(chosen).toEqual([{ ids: ['f1'] }]);
+
+    press(tiles()[0]!, 'ArrowRight');
+    await host.updateComplete;
+    expect(tiles().map(tile => tile.getAttribute('tabindex'))).toEqual(['-1', '0', '-1']);
+  });
+
+  test('one menu serves every tile, and choosing says which file and which item', async () => {
+    await page(`<bry-file-grid count="3" files="${FILES}" menu="${MENU}"></bry-file-grid>`);
+
+    const host = document.querySelector('bry-file-grid') as HTMLElement & { updateComplete: Promise<unknown> };
+    const asked: unknown[] = [];
+    const opened: unknown[] = [];
+
+    host.addEventListener('menu', event => asked.push((event as CustomEvent).detail));
+    host.addEventListener('open', event => opened.push((event as CustomEvent).detail));
+
+    const more = shadowOf('bry-file-grid').querySelector<HTMLElement>('[data-menu-for="f2"]')!;
+
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+    more.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    await host.updateComplete;
+
+    const items = Array.from(shadowOf('bry-file-grid').querySelectorAll('[role="menuitem"]'));
+
+    expect(items.map(item => item.textContent!.trim())).toEqual(['Rename', 'Delete']);
+    expect(items[1]!.classList.contains('danger')).toBe(true);
+
+    items[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    expect(asked).toEqual([{ file: 'f2', item: 'rename' }]);
+    // Reaching for the menu is not opening the file.
+    expect(opened).toEqual([]);
+  });
+
+  test('loading says so, an empty folder says the app’s words, and a file needs a name', async () => {
+    await page(`<bry-file-grid loading count="9"></bry-file-grid>`);
+
+    expect(shadowOf('bry-file-grid').querySelector('[role="status"]')!.getAttribute('aria-label')).toBe('Loading');
+
+    await page(`<bry-file-grid count="0" empty="This folder is empty."></bry-file-grid>`);
+    expect(shadowOf('bry-file-grid').querySelector('[data-empty]')!.textContent).toContain('This folder is empty.');
+
+    const half = JSON.stringify([{ id: 'f1' }, { name: 'No id' }, { id: 'f2', name: 'Kept', kind: 'code' }]).replace(/"/g, '&quot;');
+
+    await page(`<bry-file-grid count="3" files="${half}"></bry-file-grid>`);
+    expect(tiles().map(tile => tile.getAttribute('data-file'))).toEqual(['f2']);
+  });
+});

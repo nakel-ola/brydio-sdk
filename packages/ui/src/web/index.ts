@@ -15,6 +15,7 @@ import './draw/split.ts';
 import './draw/board.ts';
 import './draw/virtual-list.ts';
 import './draw/table.ts';
+import './draw/file-grid.ts';
 import { defineCatalogue } from './define.ts';
 
 export { BryElement } from './base.ts';
