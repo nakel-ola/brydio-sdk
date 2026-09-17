@@ -80,6 +80,33 @@ export function commitOf(root: string): { commit: string; uncommitted: string[] 
 }
 
 /**
+ * Why the packages may not yet tell people where to report a problem, or null.
+ *
+ * `docs/support.md` and `docs/security.md` exist, and everything in them that
+ * is ours to decide is decided — but the address a stranger writes to is the
+ * owner's, and an invented one is worse than none: somebody would write to it
+ * and hear nothing, and a person sitting on a hole in an app's sandbox would
+ * sit on it for longer. A publishable build stops here until both are set in
+ * `release.json`; `--dry` carries every test in the meantime.
+ */
+export function supportRefusal(
+  settings: { support?: string; security?: string },
+  dry: boolean
+): string | null {
+  if (dry) return null;
+
+  const missing = [settings.support ? null : 'support', settings.security ? null : 'security'].filter(Boolean);
+
+  if (!missing.length) return null;
+
+  return (
+    `release.json names no ${missing.join(' or ')} address, so the packages would tell people to report problems ` +
+    'nowhere. The owner chooses both, and a security report needs a private destination, separate from anything ' +
+    'public (docs/security.md). Build with --dry to test without them.'
+  );
+}
+
+/**
  * Why this checkout may not be built into publishable packages, or null.
  *
  * A dry build says of itself that it is for testing, so it may be made from a
@@ -125,7 +152,14 @@ export interface ReleaseOptions {
 export async function releaseBuild(options: ReleaseOptions = {}): Promise<Record<string, string>> {
   const out = options.out ?? console.log;
   const settings = existsSync(join(ROOT, 'release.json'))
-    ? (JSON.parse(readFileSync(join(ROOT, 'release.json'), 'utf8')) as { license?: string; repository?: string; author?: string })
+    ? (JSON.parse(readFileSync(join(ROOT, 'release.json'), 'utf8')) as {
+        license?: string;
+        repository?: string;
+        author?: string;
+        /** Where a person reports a problem, and where a security report goes (A9-F03-S04). */
+        support?: string;
+        security?: string;
+      })
     : {};
 
   if (!settings.license && !options.dry) {
@@ -133,7 +167,9 @@ export async function releaseBuild(options: ReleaseOptions = {}): Promise<Record
   }
 
   const { commit, uncommitted } = commitOf(ROOT);
-  const refusal = commitRefusal({ commit, uncommitted }, options.dry === true);
+  const refusal =
+    commitRefusal({ commit, uncommitted }, options.dry === true) ??
+    supportRefusal(settings, options.dry === true);
 
   if (refusal) throw new ReleaseRefused(refusal);
   const built: Record<string, string> = {};

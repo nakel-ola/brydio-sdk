@@ -3,7 +3,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, 
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 
-import { commitOf, commitRefusal, RELEASED, ROOT, releaseBuild } from '../../../scripts/release-build.ts';
+import { commitOf, commitRefusal, RELEASED, ROOT, releaseBuild, supportRefusal } from '../../../scripts/release-build.ts';
 
 /**
  * The packages as a registry would get them (A9-F03, Phase 4 groundwork).
@@ -220,6 +220,32 @@ describe('the release build', () => {
 
     // Somewhere that is not a checkout at all names no commit.
     expect(commitOf(mkdtempSync(join(tmpdir(), 'brydio-nogit-'))).commit).toBe('');
+  });
+
+  /**
+   * A9-F03-S04. The pages exist and everything ours is decided; the address
+   * itself is the owner's, and an invented one would be worse than none —
+   * somebody would write to it and hear nothing. So the build stops rather
+   * than shipping packages that tell people to report problems nowhere.
+   */
+  test('will not publish packages that say nowhere to report a problem', () => {
+    const settled = { support: 'apps@brydio.test', security: 'security@brydio.test' };
+
+    expect(supportRefusal(settled, false)).toBeNull();
+
+    const neither = supportRefusal({}, false);
+
+    expect(neither, 'packages with no support address were allowed to be published').not.toBeNull();
+    expect(neither).toContain('support');
+    expect(neither).toContain('security');
+    expect(neither).toContain('--dry');
+
+    // One without the other is still a refusal, and it names the one missing.
+    expect(supportRefusal({ support: settled.support }, false)).toContain('no security address');
+    expect(supportRefusal({ security: settled.security }, false)).toContain('no support address');
+
+    // Every test builds --dry, which is why the suite still runs today.
+    expect(supportRefusal({}, true)).toBeNull();
   });
 
   test('will not build publishable packages from a tree that has changes in it', () => {

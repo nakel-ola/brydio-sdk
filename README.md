@@ -39,6 +39,14 @@ it is Issues, in `../brydio-issues`.
 | `templates/preact` | A starter app (a checklist) to copy. |
 | `CONTRACT-NOTES.md` | Every place the plan and Brydio's actual code differed, and which way this went. |
 
+### For HTML views
+
+`@brydio/ui/web` is the same building blocks again, as standard web components,
+for the one place HTML still exists: an MCP App view served from somebody
+else's server. Link the script and the stylesheet and write `<bry-button>`.
+It is not for app screens — Brydio draws those itself with its own kit, and
+nothing built on this SDK needs the web components. See `packages/ui/README.md`.
+
 ## The `brydio` command
 
 Run these in an app's folder (they need [Bun](https://bun.sh) 1.3):
@@ -145,8 +153,15 @@ When Brydio's answers change, those tests fail with Brydio beside them. Then
 run `bun run contracts:record`, which writes the new answers and the Brydio
 commit they came from, and review the diff before committing it.
 
-Nothing here is published anywhere yet. An app uses the packages straight from
-this folder (see `../brydio-issues/package.json`).
+Nothing here is published to npm yet. An app uses the packages straight from
+this folder (see `../brydio-issues/package.json`). What a release will do, and
+the one-off the owner has to do first, is [releasing.md](docs/releasing.md);
+`bun run release:build` makes the packages a registry would get, and refuses
+to make publishable ones from a tree with uncommitted changes or without the
+addresses [support.md](docs/support.md) needs.
+
+What the packages promise and what they do not, and how to report a problem,
+are [support.md](docs/support.md) and [security.md](docs/security.md).
 
 ## Writing a screen
 
