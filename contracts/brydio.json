@@ -1,7 +1,7 @@
 {
   "brydio": {
-    "commit": "97644695601e7c5271e222f6908644c8fe32f2bb",
-    "dirty": true
+    "commit": "d8bbf22225b84a4d3dcda97a9b53754b4d7789e0",
+    "dirty": false
   },
   "contracts": {
     "bundle-files": {
@@ -1478,6 +1478,26 @@
         1,
         0
       ]
+    ],
+    "contrast-gates": [
+      "--fg on --bg-app",
+      "--fg-strong on --bg-app",
+      "--fg-soft on --bg-app",
+      "--fg-muted on --bg-app",
+      "--fg-faint on --bg-app",
+      "--fg-placeholder on --bg-surface",
+      "--fg on --bg-surface",
+      "--fg on --bg-elevated",
+      "--fg-muted on --bg-elevated",
+      "--fg-soft on --bg-sunken",
+      "--brand-on on --brand",
+      "--brand-fg on --bg-app",
+      "--brand-fg on --bg-surface",
+      "--success-fg on --bg-app",
+      "--warn-fg on --bg-app",
+      "--danger-fg on --bg-app",
+      "--fg-on-solid on --danger",
+      "--bubble-user-fg on --bubble-user"
     ],
     "field-types": [
       {
