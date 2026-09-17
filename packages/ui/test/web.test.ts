@@ -526,6 +526,102 @@ describe('dialog, menu and select (A6-F06-S01)', () => {
   });
 });
 
+describe('date and markdown (A6-F06-S01)', () => {
+  test('a date is a date field with its bounds, and says change as an ISO date', async () => {
+    await page(`<bry-date label="Due" value="2026-03-04" min="2026-01-01" max="2026-12-31"></bry-date>`);
+
+    const changes: unknown[] = [];
+
+    document.body.addEventListener('change', event => changes.push((event as CustomEvent).detail));
+
+    const input = shadowOf('bry-date').querySelector('input')!;
+
+    expect([input.type, input.value, input.min, input.max, input.getAttribute('aria-label')]).toEqual([
+      'date',
+      '2026-03-04',
+      '2026-01-01',
+      '2026-12-31',
+      'Due',
+    ]);
+
+    input.value = '2026-04-01';
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(changes).toEqual([{ value: '2026-04-01' }]);
+  });
+
+  test('markdown draws the blocks it allows, and anything that looks like markup stays text', async () => {
+    await page(`<bry-markdown text="# Title
+Some **bold** and \`code\`.
+
+- one
+- two
+
+> quoted
+
+<script>alert(1)</script> &amp; <b>not bold</b>"></bry-markdown>`);
+
+    const root = shadowOf('bry-markdown');
+
+    expect(root.querySelector('h3')!.textContent).toBe('Title');
+    expect(root.querySelector('strong')!.textContent).toBe('bold');
+    expect(root.querySelector('code')!.textContent).toBe('code');
+    expect(Array.from(root.querySelectorAll('li')).map(one => one.textContent)).toEqual(['one', 'two']);
+    expect(root.querySelector('blockquote')!.textContent).toBe('quoted');
+
+    // Nothing an app writes becomes markup: no script, no bold, and the
+    // characters are still there to read.
+    expect(root.querySelector('script')).toBeNull();
+    expect(root.querySelector('b')).toBeNull();
+    expect(root.textContent).toContain('<script>alert(1)</script>');
+    expect(root.textContent).toContain('<b>not bold</b>');
+  });
+
+  test('a link asks before it opens, and one that is not https is not a link at all', async () => {
+    await page(`<bry-markdown text="[Brydio](https://brydio.example/app) and [bad](javascript:alert(1))"></bry-markdown>`);
+
+    const host = document.querySelector('bry-markdown') as HTMLElement & { updateComplete: Promise<unknown> };
+    const links = Array.from(shadowOf('bry-markdown').querySelectorAll('a'));
+
+    expect(links.map(one => one.getAttribute('href'))).toEqual(['https://brydio.example/app']);
+    expect(shadowOf('bry-markdown').textContent).toContain('bad');
+
+    links[0]!.click();
+    await host.updateComplete;
+
+    const strip = shadowOf('bry-markdown').querySelector('[role="alert"]')!;
+
+    expect(strip.textContent).toContain('Open brydio.example?');
+    expect(strip.textContent).toContain('https://brydio.example/app');
+  });
+
+  test('a picture is never fetched: its description is shown instead', async () => {
+    await page(`<bry-markdown text="![a chart](https://example.test/chart.png)"></bry-markdown>`);
+
+    expect(shadowOf('bry-markdown').querySelector('img')).toBeNull();
+    expect(shadowOf('bry-markdown').textContent).toContain('a chart');
+  });
+
+  test('a long text is cut with Show more, and the whole of it is shown once asked', async () => {
+    const long = `${'a'.repeat(3_000)}\n\n${'b'.repeat(3_000)}`;
+
+    await page(`<bry-markdown></bry-markdown>`);
+
+    const host = document.querySelector('bry-markdown') as HTMLElement & { text: string; updateComplete: Promise<unknown> };
+
+    host.text = long;
+    await host.updateComplete;
+
+    expect(shadowOf('bry-markdown').textContent).not.toContain('b'.repeat(3_000));
+
+    const more = shadowOf('bry-markdown').querySelector('.more') as HTMLButtonElement;
+
+    expect(more.textContent!.trim()).toBe('Show more');
+    more.click();
+    await host.updateComplete;
+    expect(shadowOf('bry-markdown').textContent).toContain('b'.repeat(3_000));
+  });
+});
+
 describe('the token stylesheet (A6-F05-S01, A6-F06-S01)', () => {
   test('is Brydio’s own tokens.css, byte for byte', async () => {
     const here = readFileSync(join(import.meta.dir, '../src/web/tokens.css'), 'utf8');
