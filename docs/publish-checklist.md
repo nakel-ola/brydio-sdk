@@ -163,6 +163,7 @@ Screens may call only tools that exist:
 |---|---|---|---|---|
 | `bundle_not_built` | There is no dist/ yet. Run brydio build first. | yes | no | Run `brydio build`. |
 | `screen_not_built` | The "`<screen>`" screen names "`<entry>`", which is not a script in this bundle. Run brydio build. | yes | publish | Run `brydio build`, or fix the entry. |
+| `handler_not_built` | The "`<tool>`" tool runs "`<handler>`", which is not a script in this bundle. Run brydio build. | yes | publish (`handler_missing`) | Run `brydio build`, or fix the handler's path. |
 | `bundle_stale` (warning) | The built manifest is not the manifest as it is now. Run brydio build again. | yes | no | Run `brydio build`. |
 | `bundle_too_large` | That bundle is `<size>`, over the 1.00 MB cap. The largest file is "`<file>`" at `<size>`. | yes | publish | Make the screens smaller; start with the largest file. |
 | `bundle_file_not_code` | "`<file>`" is not a script. A bundle holds only .js files and app.json. (From `brydio build`: The "`<screen>`" screen brings in "`<file>`", which a bundle cannot hold. A Brydio app has no CSS, HTML or images: Brydio draws every element itself.) | yes | publish | Remove the import of CSS, HTML or images. |

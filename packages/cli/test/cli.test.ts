@@ -167,6 +167,30 @@ describe('brydio validate', () => {
     expect(codes(validate(root).problems)).toEqual(['screen_not_built', 'bundle_stale']);
   });
 
+  test('catches a custom tool whose handler was never built, and passes once it is', () => {
+    const tools = {
+      generated: false,
+      custom: [{ name: 'close_issue', description: 'Closes one.', handler: 'handlers/close_issue.js', write: true }],
+    };
+    const built = { '.brydio/app.json': manifest({ tools, grants: { tools: ['close_issue'], collections: [] } }) };
+    const missing = app({ ...built, 'dist/app.json': manifest({ tools, grants: { tools: ['close_issue'], collections: [] } }), 'dist/screens/home.js': 'export {};' });
+
+    expect(codes(validate(missing).problems)).toEqual(['handler_not_built']);
+    expect(validate(missing).problems[0]).toMatchObject({
+      path: 'tools.custom.0.handler',
+      message: 'The "close_issue" tool runs "handlers/close_issue.js", which is not a script in this bundle. Run brydio build.',
+    });
+
+    const shipped = app({
+      ...built,
+      'dist/app.json': manifest({ tools, grants: { tools: ['close_issue'], collections: [] } }),
+      'dist/screens/home.js': 'export {};',
+      'dist/handlers/close_issue.js': 'export default async () => ({ ok: true });',
+    });
+
+    expect(validate(shipped)).toEqual({ ok: true, problems: [] });
+  });
+
   test('passes with warnings, and fails only on errors', async () => {
     const root = app({ '.brydio/app.json': manifest(), 'src/screens/home.ts': 'export const home = 1;\n' });
 

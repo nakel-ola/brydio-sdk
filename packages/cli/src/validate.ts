@@ -84,6 +84,20 @@ export function validate(dir: string, options: ValidateOptions = {}): ValidateRe
         }
       }
 
+      // What `POST /apps/publish` refuses as `handler_missing`: a custom
+      // tool whose handler was never built (A3-F08-S01).
+      for (const [at, tool] of (project.manifest.tools?.custom ?? []).entries()) {
+        if (!isScriptPath(tool.handler) || !built.has(tool.handler)) {
+          problems.push({
+            code: 'handler_not_built',
+            severity: 'error',
+            path: `tools.custom.${at}.handler`,
+            file: `${dist}/`,
+            message: `The "${tool.name}" tool runs "${tool.handler}", which is not a script in this bundle. Run brydio build.`,
+          });
+        }
+      }
+
       const refused = bundleProblem(built);
 
       if (refused) {
