@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
 
 import {
   appManifestSchema,
@@ -18,10 +20,15 @@ import {
 import { ISSUES_MANIFEST } from './issues-manifest.fixture.ts';
 
 const examples = join(import.meta.dir, '..', 'examples');
-const brydio = process.env.BRYDIO_DIR ?? join(import.meta.dir, '..', '..', '..', '..', 'brydio');
-const serverSchema = join(brydio, 'apps/api/src/apps/manifest/manifest-ext.schema.ts');
-const serverFixture = join(brydio, 'apps/api/src/apps/manifest/issues-manifest.fixture.ts');
-const serverBundle = join(brydio, 'apps/api/src/apps/bundles/bundle-files.ts');
+const SERVER_SCHEMA = 'apps/api/src/apps/manifest/manifest-ext.schema.ts';
+const SERVER_FIXTURE = 'apps/api/src/apps/manifest/issues-manifest.fixture.ts';
+const SERVER_BUNDLE = 'apps/api/src/apps/bundles/bundle-files.ts';
+const SERVER_SUPPORT = 'apps/api/src/apps/publishing/sdk-support.ts';
+const SERVER_COMPARE = 'apps/api/src/apps/versions/compare-versions.ts';
+
+/** A schema's answer, as plain data: accepted with what it read, or refused with its sentences. */
+const reading = (result: { success: boolean; data?: unknown; error?: { issues: { message: string }[] } }) =>
+  result.success ? { ok: true, data: result.data } : { ok: false, messages: result.error!.issues.map(issue => issue.message) };
 
 const codesOf = (manifest: unknown) => validateManifest(manifest).problems.map(problem => problem.code);
 const withData = (data: Record<string, unknown>) => ({ ...ISSUES_MANIFEST, data });
@@ -103,10 +110,10 @@ describe('the Issues manifest', () => {
     expect(generatedToolsOf({ ...ISSUES_MANIFEST, tools: { generated: false } })).toEqual([]);
   });
 
-  test.skipIf(!existsSync(serverFixture))('is the server’s fixture, field for field', async () => {
-    const server = await import(serverFixture);
+  test('is the server’s fixture, field for field', async () => {
+    const server = await brydioAnswers('issues-manifest-fixture', [SERVER_FIXTURE], async () => (await import(inBrydio(SERVER_FIXTURE))).ISSUES_MANIFEST);
 
-    expect(ISSUES_MANIFEST).toEqual(server.ISSUES_MANIFEST);
+    expect(ISSUES_MANIFEST).toEqual(server);
   });
 });
 
@@ -146,33 +153,16 @@ describe('validateManifest', () => {
     expect(validateManifestText('{').problems[0]?.code).toBe('manifest_not_json');
   });
 
-  test.skipIf(!existsSync(serverSchema))('accepts and refuses exactly what the server’s schema does', async () => {
-    const server = await import(serverSchema);
+  test('accepts and refuses exactly what the server’s schema does', async () => {
+    const server = await brydioAnswers('manifest-schema', [SERVER_SCHEMA], async () => {
+      const { appManifestSchema: theirs } = await import(inBrydio(SERVER_SCHEMA));
 
-    // Until the server's entry regex takes `.mjs` as agreed (CONTRACT-NOTES 21),
-    // an `.mjs` entry is the one place the two are allowed to differ.
-    const serverTakesMjs = server.appManifestSchema.safeParse(CORPUS[7]).success;
-    const serverKnowsSdk = server.appManifestSchema.safeParse({ ...ISSUES_MANIFEST, sdk: '0.1.0' }).data?.sdk === '0.1.0';
+      return CORPUS.map(manifest => reading(theirs.safeParse(manifest)));
+    });
 
-    for (const manifest of CORPUS) {
-      if (!serverTakesMjs && JSON.stringify(manifest).includes('.mjs"')) continue;
-      // Until the server's schema has `sdk` (CONTRACT-NOTES 30), it strips the field the SDK reads.
-      if (!serverKnowsSdk && typeof manifest === 'object' && manifest !== null && 'sdk' in manifest) continue;
-
-      const theirs = server.appManifestSchema.safeParse(manifest);
-      const ours = appManifestSchema.safeParse(manifest);
-
-      expect({ manifest, ok: ours.success }).toEqual({ manifest, ok: theirs.success });
-
-      if (!ours.success && !theirs.success) {
-        // The entry sentence changed with the regex; before it, only the refusal itself is compared.
-        const words = (message: string) => (serverTakesMjs || !message.startsWith('An entry is') ? message : 'An entry is …');
-
-        expect(ours.error.issues.map(issue => words(issue.message))).toEqual(theirs.error.issues.map((issue: { message: string }) => words(issue.message)));
-      } else if (ours.success && theirs.success) {
-        expect(ours.data).toEqual(theirs.data);
-      }
-    }
+    CORPUS.forEach((manifest, index) => {
+      expect({ manifest, reading: JSON.parse(JSON.stringify(reading(appManifestSchema.safeParse(manifest)))) }).toEqual({ manifest, reading: server[index] });
+    });
   });
 });
 
@@ -222,27 +212,30 @@ describe('the bundle fingerprint (contracts §11)', () => {
     expect(bundleHash(other)).toBe(bundleHash(twoFiles()));
   });
 
-  test.skipIf(!existsSync(serverBundle))('equals what the server’s bundle-files.ts computes for the same bytes', async () => {
-    const server = await import(serverBundle);
-    const asBuffers = (files: Map<string, Uint8Array>) => new Map([...files].map(([path, data]) => [path, Buffer.from(data)]));
-    const three = twoFiles();
+  test('equals what the server’s bundle-files.ts computes for the same bytes', async () => {
+    const three = () => new Map([...twoFiles(), ['lib/a.mjs', bytes('a')]]);
+    const big = () => new Map([['app.json', bytes('{}')], ['screens/board.js', new Uint8Array(1024 * 1024)]]);
+    const server = await brydioAnswers('bundle-files', [SERVER_BUNDLE], async () => {
+      const { bundleHash: hash, checkBundle } = await import(inBrydio(SERVER_BUNDLE));
+      const asBuffers = (files: Map<string, Uint8Array>) => new Map([...files].map(([path, data]) => [path, Buffer.from(data)]));
+      const refused = (() => {
+        try {
+          checkBundle(asBuffers(big()));
+        } catch (error) {
+          const { code, message } = error as { code: string; message: string };
 
-    three.set('lib/a.mjs', bytes('a'));
+          return { code, message };
+        }
 
-    for (const files of [twoFiles(), three]) {
-      expect(bundleHash(files)).toBe(server.bundleHash(asBuffers(files)));
-    }
+        return null;
+      })();
 
-    const big = new Map([['app.json', bytes('{}')], ['screens/board.js', new Uint8Array(1024 * 1024)]]);
-    const refused = (() => {
-      try {
-        server.checkBundle(asBuffers(big));
-      } catch (error) {
-        return error as { code: string; message: string };
-      }
-    })();
+      return { hashes: [hash(asBuffers(twoFiles())), hash(asBuffers(three()))], refused };
+    });
 
-    expect(bundleProblem(big)).toMatchObject({ code: refused!.code, message: refused!.message });
+    expect([bundleHash(twoFiles()), bundleHash(three())]).toEqual(server.hashes);
+    expect(server.refused).not.toBeNull();
+    expect(bundleProblem(big())).toMatchObject(server.refused!);
   });
 
   test('refuses what the store refuses', () => {
@@ -256,8 +249,6 @@ describe('the bundle fingerprint (contracts §11)', () => {
 
 describe('which SDK a Brydio runs (A5-F04-S03)', () => {
   const support = { oldest: '0.1.0-alpha.0', before: '0.2.0' };
-  const serverSupport = join(brydio, 'apps/api/src/apps/publishing/sdk-support.ts');
-  const serverCompare = join(brydio, 'apps/api/src/apps/versions/compare-versions.ts');
   const versions = ['0.0.9', '0.1.0-0', '0.1.0-alpha.0', '0.1.0-alpha.3', '0.1.0', '0.1.9', '0.2.0-beta.1', '0.2.0', '1.0.0', '1.0.0-beta', '1.0.0-beta.1', '1.0.0-1', '1.0.0+abc'];
 
   test('runs from the oldest up to, not including, before and its prereleases', () => {
@@ -270,16 +261,25 @@ describe('which SDK a Brydio runs (A5-F04-S03)', () => {
     );
   });
 
-  test.skipIf(!existsSync(serverSupport))('refuses with the server’s sentence for the server’s own range', async () => {
-    const server = await import(serverSupport);
+  test('refuses with the server’s sentence for the server’s own range', async () => {
+    const asked = [...versions, undefined, '', 42];
+    const server = await brydioAnswers('sdk-support', [SERVER_SUPPORT], async () => {
+      const { SDK_SUPPORT, sdkRefusal: refusal } = await import(inBrydio(SERVER_SUPPORT));
 
-    for (const sdk of [...versions, undefined, '', 42]) expect(sdkRefusal(sdk, server.SDK_SUPPORT)).toBe(server.sdkRefusal(sdk));
+      return { support: SDK_SUPPORT, refusals: asked.map(sdk => refusal(sdk)) };
+    });
+
+    expect(asked.map(sdk => sdkRefusal(sdk, server.support))).toEqual(server.refusals);
   });
 
-  test.skipIf(!existsSync(serverCompare))('orders versions as the server does', async () => {
-    const server = await import(serverCompare);
+  test('orders versions as the server does', async () => {
+    const server = await brydioAnswers('compare-versions', [SERVER_COMPARE], async () => {
+      const { compareVersions: compare } = await import(inBrydio(SERVER_COMPARE));
 
-    for (const a of versions) for (const b of versions) expect([a, b, compareVersions(a, b)]).toEqual([a, b, server.compareVersions(a, b)]);
+      return versions.map(a => versions.map(b => compare(a, b)));
+    });
+
+    expect(versions.map(a => versions.map(b => compareVersions(a, b)))).toEqual(server);
   });
 });
 

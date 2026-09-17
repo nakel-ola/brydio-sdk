@@ -1,9 +1,216 @@
 {
   "brydio": {
-    "commit": "805763560ff2cab6d11820a1cfd62aed5c2070c9",
-    "dirty": true
+    "commit": "b846c15182772347907e0a7048274c86953a7d99",
+    "dirty": false
   },
   "contracts": {
+    "bundle-files": {
+      "hashes": [
+        "c768e89b620eebcd47e353e1d79567883428fcb562017f7ca2b51484523659c7",
+        "f7cc7e1bcaae64f19086bd31c0a3b933f0807c0cd01ba43f7e22b3ced46e84c0"
+      ],
+      "refused": {
+        "code": "bundle_too_large",
+        "message": "That bundle is 1.00 MB, over the 1.00 MB cap. The largest file is \"screens/board.js\" at 1.00 MB."
+      }
+    },
+    "compare-versions": [
+      [
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      [
+        1,
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      [
+        1,
+        1,
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      [
+        1,
+        1,
+        1,
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        1,
+        0
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        -1,
+        0,
+        -1,
+        1,
+        -1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        -1,
+        1,
+        0,
+        1,
+        -1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        -1,
+        -1,
+        -1,
+        0,
+        -1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        1,
+        0
+      ]
+    ],
     "field-types": [
       {
         "type": {
@@ -95,6 +302,68 @@
         "code": "data_label_invalid"
       }
     ],
+    "issues-manifest-fixture": {
+      "name": "issues",
+      "version": "0.1.0",
+      "displayName": "Issues",
+      "placements": [
+        {
+          "kind": "project-tab",
+          "screen": "board",
+          "label": "Issues",
+          "icon": "kanban"
+        }
+      ],
+      "data": {
+        "issues": {
+          "schema": {
+            "title": "string",
+            "status": [
+              "todo",
+              "doing",
+              "done"
+            ],
+            "assignee": "member?",
+            "labels": "string[]",
+            "body": "text?",
+            "project": "project?"
+          },
+          "search": [
+            "title",
+            "body"
+          ],
+          "label": "issue"
+        },
+        "labels": {
+          "schema": {
+            "name": "string",
+            "colour": "token"
+          },
+          "label": "label"
+        }
+      },
+      "tools": {
+        "generated": true,
+        "custom": []
+      },
+      "screens": {
+        "board": {
+          "entry": "screens/board.js"
+        }
+      },
+      "grants": {
+        "tools": [
+          "*"
+        ],
+        "collections": [
+          "*"
+        ],
+        "host": [
+          "navigate",
+          "message"
+        ]
+      }
+    },
     "limits": {
       "fields": {
         "collections": 20,
@@ -115,6 +384,344 @@
         "batchChanges": 50
       }
     },
+    "manifest-schema": [
+      {
+        "ok": true,
+        "data": {
+          "name": "issues",
+          "version": "0.1.0",
+          "displayName": "Issues",
+          "placements": [
+            {
+              "kind": "project-tab",
+              "screen": "board",
+              "label": "Issues",
+              "icon": "kanban"
+            }
+          ],
+          "data": {
+            "issues": {
+              "schema": {
+                "title": "string",
+                "status": [
+                  "todo",
+                  "doing",
+                  "done"
+                ],
+                "assignee": "member?",
+                "labels": "string[]",
+                "body": "text?",
+                "project": "project?"
+              },
+              "search": [
+                "title",
+                "body"
+              ],
+              "label": "issue"
+            },
+            "labels": {
+              "schema": {
+                "name": "string",
+                "colour": "token"
+              },
+              "label": "label"
+            }
+          },
+          "tools": {
+            "generated": true,
+            "custom": []
+          },
+          "screens": {
+            "board": {
+              "entry": "screens/board.js"
+            }
+          },
+          "grants": {
+            "tools": [
+              "*"
+            ],
+            "collections": [
+              "*"
+            ],
+            "host": [
+              "navigate",
+              "message"
+            ]
+          }
+        }
+      },
+      {
+        "ok": true,
+        "data": {
+          "name": "acme-projects",
+          "version": "1.2.0"
+        }
+      },
+      {
+        "ok": false,
+        "messages": [
+          "Invalid string: must match pattern /^[a-z0-9]+(-[a-z0-9]+)*$/"
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "Invalid string: must match pattern /^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$/"
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "A project-tab placement opens \"nowhere\", which is not one of the app's screens."
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "Invalid option: expected one of \"project-tab\"|\"project-sidebar\"|\"workspace-sidebar\""
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "An entry is a .js or .mjs path inside the bundle."
+        ]
+      },
+      {
+        "ok": true,
+        "data": {
+          "name": "issues",
+          "version": "0.1.0",
+          "displayName": "Issues",
+          "placements": [
+            {
+              "kind": "project-tab",
+              "screen": "board",
+              "label": "Issues",
+              "icon": "kanban"
+            }
+          ],
+          "data": {
+            "issues": {
+              "schema": {
+                "title": "string",
+                "status": [
+                  "todo",
+                  "doing",
+                  "done"
+                ],
+                "assignee": "member?",
+                "labels": "string[]",
+                "body": "text?",
+                "project": "project?"
+              },
+              "search": [
+                "title",
+                "body"
+              ],
+              "label": "issue"
+            },
+            "labels": {
+              "schema": {
+                "name": "string",
+                "colour": "token"
+              },
+              "label": "label"
+            }
+          },
+          "tools": {
+            "generated": true,
+            "custom": []
+          },
+          "screens": {
+            "board": {
+              "entry": "screens/board.mjs"
+            }
+          },
+          "grants": {
+            "tools": [
+              "*"
+            ],
+            "collections": [
+              "*"
+            ],
+            "host": [
+              "navigate",
+              "message"
+            ]
+          }
+        }
+      },
+      {
+        "ok": false,
+        "messages": [
+          "Invalid input: expected string, received undefined",
+          "Invalid input: expected string, received undefined"
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "issues.id: Brydio keeps id on every record itself."
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "issues.title: \"colour\" is not a field type."
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "issues.status: A choice needs at least one allowed value."
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "issues links to a project twice (a and b); keep one."
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "issues.due cannot be searched: only text fields can.",
+          "issues searches nope, which is not one of its fields."
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "things and issues would both make tools called thing."
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "Issues is not a collection name: lower-case letters, digits and _, starting with a letter, at most 40 characters.",
+          "Issues's label must be one lower-case word the tools can be named with, at most 40 characters."
+        ]
+      },
+      {
+        "ok": true,
+        "data": {
+          "name": "issues",
+          "version": "0.1.0",
+          "displayName": "Issues",
+          "placements": [
+            {
+              "kind": "project-tab",
+              "screen": "board",
+              "label": "Issues",
+              "icon": "kanban"
+            }
+          ],
+          "data": {
+            "issues": {
+              "schema": {
+                "a": "boolean?",
+                "b": "token?",
+                "c": "string[]?"
+              }
+            }
+          },
+          "tools": {
+            "generated": true,
+            "custom": []
+          },
+          "screens": {
+            "board": {
+              "entry": "screens/board.js"
+            }
+          },
+          "grants": {
+            "tools": [
+              "*"
+            ],
+            "collections": [
+              "*"
+            ],
+            "host": [
+              "navigate",
+              "message"
+            ]
+          }
+        }
+      },
+      {
+        "ok": true,
+        "data": {
+          "name": "issues",
+          "version": "0.1.0",
+          "displayName": "Issues",
+          "placements": [
+            {
+              "kind": "project-tab",
+              "screen": "board",
+              "label": "Issues",
+              "icon": "kanban"
+            }
+          ],
+          "data": {
+            "issues": {
+              "schema": {
+                "title": "string",
+                "status": [
+                  "todo",
+                  "doing",
+                  "done"
+                ],
+                "assignee": "member?",
+                "labels": "string[]",
+                "body": "text?",
+                "project": "project?"
+              },
+              "search": [
+                "title",
+                "body"
+              ],
+              "label": "issue"
+            },
+            "labels": {
+              "schema": {
+                "name": "string",
+                "colour": "token"
+              },
+              "label": "label"
+            }
+          },
+          "tools": {
+            "generated": true,
+            "custom": []
+          },
+          "screens": {
+            "board": {
+              "entry": "screens/board.js"
+            }
+          },
+          "grants": {
+            "tools": [
+              "*"
+            ],
+            "collections": [
+              "*"
+            ],
+            "host": [
+              "navigate",
+              "message"
+            ]
+          },
+          "sdk": "0.1.0-alpha.0"
+        }
+      },
+      {
+        "ok": false,
+        "messages": [
+          "Invalid string: must match pattern /^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$/"
+        ]
+      }
+    ],
     "prelude": {
       "calls": [
         "BroadcastChannel",
@@ -133,6 +740,30 @@
         "indexedDB"
       ],
       "storage": true
+    },
+    "sdk-support": {
+      "support": {
+        "oldest": "0.1.0-alpha.0",
+        "before": "0.2.0"
+      },
+      "refusals": [
+        "This app was built with SDK 0.0.9. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0.",
+        "This app was built with SDK 0.1.0-0. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0.",
+        null,
+        null,
+        null,
+        null,
+        "This app was built with SDK 0.2.0-beta.1. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0.",
+        "This app was built with SDK 0.2.0. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0.",
+        "This app was built with SDK 1.0.0. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0.",
+        "This app was built with SDK 1.0.0-beta. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0.",
+        "This app was built with SDK 1.0.0-beta.1. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0.",
+        "This app was built with SDK 1.0.0-1. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0.",
+        "This app was built with SDK 1.0.0+abc. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0.",
+        "app.json does not say which SDK built it. Build it with brydio build. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0.",
+        "app.json does not say which SDK built it. Build it with brydio build. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0.",
+        "app.json does not say which SDK built it. Build it with brydio build. Brydio runs apps built with SDK 0.1.0-alpha.0 or newer, before 0.2.0."
+      ]
     },
     "tool-writes": [
       "create",
