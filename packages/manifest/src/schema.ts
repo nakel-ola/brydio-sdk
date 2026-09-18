@@ -41,11 +41,21 @@ export {
  * import report can say which collection and which field, not just "invalid".
  */
 
+const placementSettingSchema = z.object({
+  type: z.enum(['string', 'url']),
+  label: z.string().min(1).max(60),
+  required: z.boolean().optional(),
+  placeholder: z.string().max(200).optional(),
+});
+
+export type PlacementSettingSpec = z.infer<typeof placementSettingSchema>;
+
 const placementSchema = z.object({
   kind: z.enum(['project-tab', 'project-sidebar', 'workspace-sidebar']),
   screen: z.string().min(1).max(FIELD_LIMITS.nameChars),
   label: z.string().min(1).max(60).optional(),
   icon: z.string().max(60).optional(),
+  settings: z.record(z.string().regex(FIELD_NAME), placementSettingSchema).optional(),
 });
 
 const collectionSchema = z.object({

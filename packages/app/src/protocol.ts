@@ -100,7 +100,7 @@ export type InstanceScope = 'workspace' | 'project' | 'personal';
 export interface HostContext {
   theme: 'light' | 'dark';
   locale: string;
-  placement: { id: string; kind: PlacementKind; projectId?: string };
+  placement: { id: string; kind: PlacementKind; projectId?: string; settings?: Record<string, string> };
   instance: { id: string; name: string; scope: InstanceScope };
   selection?: unknown;
   size: { width: number; height: number };

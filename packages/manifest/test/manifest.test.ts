@@ -78,6 +78,25 @@ describe('the Issues manifest', () => {
     expect(parsed.placements?.[0]).toEqual({ kind: 'project-tab', screen: 'board', label: 'Issues', icon: 'kanban' });
   });
 
+  test('parses settings collected when an app is placed', () => {
+    const parsed = appManifestSchema.parse({
+      ...ISSUES_MANIFEST,
+      placements: [{
+        kind: 'workspace-sidebar',
+        screen: 'board',
+        settings: {
+          siteUrl: { type: 'url', label: 'SharePoint site', required: true },
+        },
+      }],
+    });
+
+    expect(parsed.placements?.[0]?.settings?.siteUrl).toEqual({
+      type: 'url',
+      label: 'SharePoint site',
+      required: true,
+    });
+  });
+
   test('reads its collections the way the store and the tools do', () => {
     const [issues, labels] = collectionsOf(ISSUES_MANIFEST);
 
@@ -282,4 +301,3 @@ describe('which SDK a Brydio runs (A5-F04-S03)', () => {
     expect(versions.map(a => versions.map(b => compareVersions(a, b)))).toEqual(server);
   });
 });
-

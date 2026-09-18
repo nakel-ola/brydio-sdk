@@ -137,6 +137,7 @@ person before it runs.
 - `message`
 - `members`
 - `projects`
+- `model`
 
 A named connection grant is `connection:<name>`. `*` never grants a
 connection. A collection the app keeps must appear in `grants.collections`,

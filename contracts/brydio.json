@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "d8bbf22225b84a4d3dcda97a9b53754b4d7789e0",
+    "commit": "df3c9e43ebde084c29d2dd19bdfd07ccf985363d",
     "dirty": false
   },
   "contracts": {
@@ -1595,7 +1595,8 @@
         "navigate",
         "message",
         "members",
-        "projects"
+        "projects",
+        "model"
       ],
       "reads": [
         true,
