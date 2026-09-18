@@ -1,6 +1,6 @@
 {
   "name": "@brydio/ui",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "description": "The catalogue of elements a Brydio app draws with: their names, settings and events.",
   "license": "MIT",
   "author": "Brydio Inc.",
