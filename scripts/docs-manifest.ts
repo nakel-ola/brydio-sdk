@@ -3,7 +3,6 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import type { z } from 'zod';
 
 import { baseManifestSchema, MANIFEST_LIMITS } from '../packages/manifest/src/base.ts';
 import { DOCUMENT_LIMITS } from '../packages/manifest/src/document-limits.ts';
@@ -14,8 +13,8 @@ import { manifestExtensionsSchema, MAX_CUSTOM_TOOLS } from '../packages/manifest
 
 const ROOT = resolve(import.meta.dir, '..');
 
-type BaseField = keyof z.infer<typeof baseManifestSchema>;
-type ExtensionField = keyof z.infer<typeof manifestExtensionsSchema>;
+type BaseField = keyof typeof baseManifestSchema.shape & string;
+type ExtensionField = keyof typeof manifestExtensionsSchema.shape & string;
 type ManifestField = BaseField | ExtensionField;
 
 interface FieldDoc {
@@ -160,10 +159,12 @@ const table = (headings: string[], rows: string[][]): string =>
     ...rows.map(row => `| ${row.join(' | ')} |`),
   ].join('\n');
 
-function schemaFor(field: ManifestField) {
-  if (field in baseManifestSchema.shape) return baseManifestSchema.shape[field as BaseField];
+function schemaFor(field: ManifestField): { isOptional(): boolean } {
+  if (field in baseManifestSchema.shape) {
+    return (baseManifestSchema.shape as Record<string, { isOptional(): boolean }>)[field]!;
+  }
 
-  return manifestExtensionsSchema.shape[field as ExtensionField];
+  return (manifestExtensionsSchema.shape as Record<string, { isOptional(): boolean }>)[field]!;
 }
 
 /** The complete manifest reference, suitable for writing or checking in a test. */
