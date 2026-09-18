@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { build, create, CreateRefused, SDK_ROOT, test as runTests, validate } from '../src/index.ts';
+import { build, create, CreateRefused, publish, SDK_ROOT, test as runTests, validate } from '../src/index.ts';
 
 const made: string[] = [];
 
@@ -112,7 +112,54 @@ describe('brydio create', () => {
       expect(`${types.stdout}${types.stderr}`).not.toContain('error TS');
       expect(types.exitCode).toBe(0);
       expect(readFileSync(join(dir, '.gitignore'), 'utf8')).toContain('node_modules/');
+      expect(Object.keys(json(join(dir, 'package.json')).dependencies).every(name => name.startsWith('@brydio/') || name === 'preact')).toBe(true);
       expect(json(join(dir, 'package.json')).devDependencies['@brydio/manifest']).toBe(`file:${join(SDK_ROOT, 'packages/manifest')}`);
+    },
+    120_000,
+  );
+
+  test(
+    'publishes a fresh Preact app with no edits',
+    async () => {
+      const into = place();
+      const dir = await create('fresh-publish', { into, template: 'preact', out: () => {} });
+      const uploads: string[] = [];
+      const route = async (input: string | URL | Request) => {
+        const url = String(input);
+
+        if (url.endsWith('/api/v1/apps/sdk')) {
+          return Response.json({ oldest: '0.1.0-alpha.0', before: '0.2.0' });
+        }
+
+        if (url.endsWith('/latest')) return Response.json({ statusCode: 404 }, { status: 404 });
+
+        uploads.push(url);
+
+        return Response.json(
+          {
+            created: true,
+            appKey: 'fresh-publish',
+            version: '0.1.0',
+            versionId: 'version_1',
+            bundleHash: 'a'.repeat(64),
+            publishedBy: 'user_1',
+            publishedAt: '2026-09-18T19:45:00.000Z',
+            files: [],
+          },
+          { status: 201 },
+        );
+      };
+
+      const code = await publish(dir, {
+        apiUrl: 'http://brydio.test',
+        token: 'session-token',
+        screenshots: false,
+        fetch: route as typeof fetch,
+        out: () => {},
+      });
+
+      expect(code).toBe(0);
+      expect(uploads).toEqual(['http://brydio.test/api/v1/apps/publish']);
     },
     120_000,
   );
