@@ -173,6 +173,52 @@ describe('what the screens call, against the grants', () => {
     expect(screen("import { useMembers } from '@brydio/app/preact';\nuseMembers(ids);", { tools: ['*'], collections: ['*'], host: ['members'] })).toEqual([]);
   });
 
+  test('knows an app’s own custom tools, which it once called unknown in its own manifest', () => {
+    // A custom tool (A3-F08) is one of the app's tools. Leaving them out made
+    // `validate` refuse the screen that called one and warn that granting it
+    // was meaningless — on every app that has one, which is every app with a
+    // handler (Wren's finding, 18 Sep).
+    const LIST_PRS = { name: 'list_prs', description: 'Open pull requests.', handler: 'handlers/list_prs.js' };
+    const CLOSE = { name: 'close_issue', description: 'Close one.', handler: 'handlers/close_issue.js', collection: 'issues', write: true };
+    const withCustom = (custom: unknown[], grants: Record<string, unknown>, source: string) =>
+      validate(
+        built(issues('0.2.0', { title: 'string' }, { grants, tools: { generated: true, custom } }), {
+          'src/screens/board.tsx': source,
+          // The handlers as a built bundle holds them: the manifest names them,
+          // so validate reads the bundle for them.
+          'dist/handlers/list_prs.js': 'export {};',
+          'dist/handlers/close_issue.js': 'export {};',
+        }),
+      ).problems;
+    const calls = (tool: string) => `import { tools } from '@brydio/app';\ntools.call('${tool}');`;
+
+    // Called and granted by its own name: nothing to say.
+    expect(withCustom([LIST_PRS], { tools: ['list_prs'], collections: ['*'] }, calls('list_prs'))).toEqual([]);
+
+    // Called and not granted: refused, and told to add it by its own name. The
+    // manifest check speaks first here; the call check says the same thing for
+    // an app whose manifest is granted by `*`.
+    expect(withCustom([LIST_PRS], { tools: [], collections: ['*'] }, calls('list_prs')).map(one => [one.code, one.message])).toEqual([
+      ['grant_tool_missing', 'app.json: "grants.tools": list_prs is a custom tool but not asked for: add it to grants.tools.'],
+    ]);
+
+    // A custom tool is granted by its own name or `*`, never by its collection,
+    // even when it names one — the host's rule in both halves (`allowsTool`,
+    // `customToolProblems`). Granting only the collection is not enough.
+    expect(withCustom([CLOSE], { tools: ['issues'], collections: ['*'] }, calls('close_issue')).map(one => one.code)).toContain('grant_tool_missing');
+    expect(withCustom([CLOSE], { tools: ['close_issue'], collections: ['*'] }, calls('close_issue'))).toEqual([]);
+    // Granted by name, but its collection is not open to the app: still refused.
+    expect(withCustom([CLOSE], { tools: ['close_issue'], collections: [] }, calls('close_issue')).map(one => one.code)).toContain('grant_collection_missing');
+
+    // And granting one is not a grant that names nothing.
+    expect(withCustom([LIST_PRS], { tools: ['list_prs'], collections: ['*'] }, 'const a = 1;').map(one => one.code)).not.toContain('grant_tool_unknown');
+
+    // A tool the app really doesn't have is still unknown, and says what it has.
+    expect(withCustom([LIST_PRS], { tools: ['*'], collections: ['*'] }, calls('list_tickets')).map(one => one.message)).toContainEqual(
+      expect.stringContaining('"list_tickets" is not one of this app\'s tools.'),
+    );
+  });
+
   test('warns about a grant that names nothing, or that no screen uses, and still passes', () => {
     const root = built(issues('0.2.0', { title: 'string' }, { grants: { tools: ['issues', 'list_tickets'], collections: ['issues', 'labels', 'tickets'], host: ['navigate', 'message'] } }), {
       'src/screens/board.tsx': "const go = () => router.navigate('/');",

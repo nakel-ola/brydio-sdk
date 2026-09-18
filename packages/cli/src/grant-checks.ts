@@ -21,31 +21,56 @@ import type { ScreenCall } from './calls.ts';
 export function grantProblems(manifest: AppManifestWithData, calls: readonly (ScreenCall & { file: string })[], manifestFile: string): Problem[] {
   const problems: Problem[] = [];
   const grants = { tools: manifest.grants?.tools ?? [], collections: manifest.grants?.collections ?? [], host: manifest.grants?.host ?? [] };
-  const tools = new Map(generatedToolsOf(manifest).map(tool => [tool.name, tool.collection]));
+  // Every tool the app has: the ones its collections generate, and the ones it
+  // wrote itself (A3-F08). A custom tool may name a collection, and is then
+  // granted by that collection too; one that names none is granted by its own
+  // name or by `*`, exactly as `allowsTool` in `apps/api/src/apps/manifest/
+  // grants.ts` reads it. Leaving the custom ones out made an app's own tool
+  // "unknown" in its own manifest — a false error on every app that has one.
+  const generated = new Map(generatedToolsOf(manifest).map(tool => [tool.name, tool.collection as string | undefined]));
+  const custom = new Map((manifest.tools?.custom ?? []).map(tool => [tool.name, tool.collection as string | undefined]));
+  const tools = new Map([...generated, ...custom]);
   const collections = new Map(collectionsOf(manifest).map(spec => [spec.name, spec]));
   const at = (call: ScreenCall & { file: string }) => ({ file: call.file, line: call.line, column: call.column });
   const collectionGranted = (collection: string) => grants.collections.includes('*') || grants.collections.includes(collection);
-  const toolGranted = (tool: string, collection: string) =>
-    (grants.tools.includes('*') || grants.tools.includes(tool) || grants.tools.includes(collection)) && collectionGranted(collection);
+  const toolGranted = (tool: string, collection: string | undefined) => {
+    const named = grants.tools.includes('*') || grants.tools.includes(tool);
+    // A generated tool is granted by its collection's name too; a custom one is
+    // not, and needs its own name or `*`. That is the host's rule in both
+    // halves — `allowsTool` and `customToolProblems` in
+    // `apps/api/src/apps/manifest/` — and the SDK says the same or it is lying.
+    const byCollection = !custom.has(tool) && collection !== undefined && grants.tools.includes(collection);
+
+    if (!named && !byCollection) return false;
+
+    // A tool on no collection needs no collection grant: there is nothing to grant.
+    return collection === undefined || collectionGranted(collection);
+  };
 
   const checkTool = (call: ScreenCall & { file: string }, tool: string) => {
-    const collection = tools.get(tool);
-
-    if (collection === undefined) {
+    if (!tools.has(tool)) {
       problems.push({
         code: 'tool_unknown',
         severity: 'error',
         ...at(call),
         message: tools.size
           ? `"${tool}" is not one of this app's tools. Its tools are ${[...tools.keys()].join(', ')}.`
-          : `"${tool}" is not one of this app's tools. It has none: its collections generate them.`,
+          : `"${tool}" is not one of this app's tools. It has none: its collections generate them, and it declares none of its own.`,
       });
-    } else if (!toolGranted(tool, collection)) {
+
+      return;
+    }
+
+    const collection = tools.get(tool);
+
+    if (!toolGranted(tool, collection)) {
       problems.push({
         code: 'grant_tool_missing',
         severity: 'error',
         ...at(call),
-        message: `"${tool}" is called here but not asked for: add it, or its collection ${collection}, to grants.tools.`,
+        // One sentence, with the collection named only where granting it would
+        // actually work: a custom tool is granted by its own name alone.
+        message: `"${tool}" is called here but not asked for: ${collection && !custom.has(tool) ? `add it, or its collection ${collection},` : 'add it'} to grants.tools.`,
       });
     }
   };
