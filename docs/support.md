@@ -41,16 +41,10 @@ version stays there until the SDK is genuinely open to people outside Brydio.
 
 ## Telling us something is wrong
 
-<!-- OWNER DECISION NEEDED: the address a stranger writes to. Until it is
-     chosen, `release:build` refuses to build publishable packages — see
-     `scripts/release-build.ts`. Do not invent one. -->
+Email [support@brydio.app](mailto:support@brydio.app) with the package name,
+version and a small reproduction. Do not include credentials, workspace data
+or security details.
 
-**This has not been decided yet.** The address a report should go to is the
-owner's to choose, and an invented one would be worse than none: a person
-would write to it and hear nothing.
-
-**A security problem must not go to a public place.** When the address above
-is settled, a report about a vulnerability needs its own private destination,
-separate from anything public, so that a person who finds a hole can tell us
-without telling everybody else at the same time. That is written up in
-[security.md](security.md).
+Send security problems privately to
+[security@brydio.app](mailto:security@brydio.app), as described in
+[security.md](security.md). Do not open a public issue for a vulnerability.

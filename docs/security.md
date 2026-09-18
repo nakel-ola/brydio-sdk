@@ -6,16 +6,11 @@ be reported in a place where everyone can read it before we have fixed it.
 
 ## Where to send it
 
-<!-- OWNER DECISION NEEDED: a private destination, separate from anything
-     public. `release:build` refuses to build publishable packages until it is
-     set in release.json. Do not invent one. -->
+Email [security@brydio.app](mailto:security@brydio.app). Include the affected
+package and version, what you observed, and the smallest reproduction you can
+share safely. Do not include real workspace data or credentials.
 
-**Not decided yet, and deliberately left blank rather than guessed.** A
-security address has to be one a real person reads promptly and privately.
-Until the owner chooses it, the release build refuses to make publishable
-packages, so nothing goes out telling people to report holes to nowhere.
-
-**Please do not open a public issue for a security problem** in the meantime.
+Please do not open a public issue for a security problem.
 
 ## What is worth reporting
 
