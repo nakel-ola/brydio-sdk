@@ -78,12 +78,21 @@ function elementPage(name: ElementName, basePath: string): string {
 <section><h2>Renderer contact sheet</h2><p>These paths will hold the checked light and dark captures.</p><div class="contact-sheet"><figure><figcaption>Light</figcaption><img src="${href(basePath, `images/catalogue/${name}-light.png`)}" alt="${name} light renderer capture"></figure><figure><figcaption>Dark</figcaption><img src="${href(basePath, `images/catalogue/${name}-dark.png`)}" alt="${name} dark renderer capture"></figure></div></section>`, basePath);
 }
 
+export function captureExample(name: ElementName) {
+  const example = structuredClone(EXAMPLES[name]);
+  if (name === 'bry-dialog') {
+    const dialog = example.nodes.find(node => node.id === example.root);
+    if (dialog) dialog.props.open = true;
+  }
+  return example;
+}
+
 function capturePage(name: ElementName, theme: 'light' | 'dark'): string {
-  const serialized = escapeHtml(JSON.stringify(EXAMPLES[name]));
+  const serialized = escapeHtml(JSON.stringify(captureExample(name)));
   const themeClass = theme === 'dark' ? 'dark' : 'light';
 
   return `<!doctype html>
-<html lang="en" class="${themeClass}">
+<html lang="en" class="${themeClass}" data-capture="true">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">

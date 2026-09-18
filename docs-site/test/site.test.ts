@@ -65,6 +65,15 @@ test('builds capture pages with browser assets reachable from their nested route
   expect(capture).toContain('src="../../../assets/catalogue.js"');
 });
 
+test('opens the dialog only in its capture page', async () => {
+  const { outDir } = await build();
+  const documented = await page(outDir, 'elements/bry-dialog/index.html');
+  const capture = await page(outDir, 'capture/bry-dialog/light/index.html');
+
+  expect(documented).toContain('&quot;open&quot;:false');
+  expect(capture).toContain('&quot;open&quot;:true');
+});
+
 test('renders the generated references and package guidance as static routes', async () => {
   const { outDir, site } = await build();
   const routes = [
