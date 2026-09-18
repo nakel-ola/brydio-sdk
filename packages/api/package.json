@@ -1,0 +1,22 @@
+{
+  "name": "@brydio/api",
+  "version": "0.1.0-alpha.0",
+  "description": "Typed access to Brydio projects, files, chats, and named connections from an app screen.",
+  "license": "MIT",
+  "author": "Brydio Inc.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nakel-ola/brydio-sdk",
+    "directory": "packages/api"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "@brydio/app": "0.1.0-alpha.0"
+  }
+}

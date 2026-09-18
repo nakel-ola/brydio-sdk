@@ -92,6 +92,35 @@ describe('tools (contracts §9, as built)', () => {
   });
 });
 
+describe('app API calls', () => {
+  test('sends one grant-checked api/call and resolves api/result', async () => {
+    const { bridge, take, hostSays, connect } = harness({ app: { grants: { host: ['projects'] } } });
+
+    await connect();
+    take();
+
+    const call = bridge.callApi('projects.list', { query: 'road' }, 'projects');
+
+    expect(take()).toEqual([
+      { jsonrpc: '2.0', id: '1', method: 'api/call', params: { action: 'projects.list', input: { query: 'road' } } },
+    ]);
+    hostSays('api/result', { id: '1', result: [{ id: 'prj_1', name: 'Roadmap' }] });
+    expect(await call).toEqual([{ id: 'prj_1', name: 'Roadmap' }]);
+  });
+
+  test('refuses an undeclared family locally, and a named connection is never covered by star', async () => {
+    const broad = harness({ app: { grants: { host: ['*'] } } });
+
+    expect(() => broad.bridge.callApi('connections.request', { connection: 'github' }, 'connection:github')).toThrow(GrantError);
+    expect(broad.take()).toEqual([]);
+
+    const named = harness({ app: { grants: { host: ['connection:github'] } } });
+
+    void named.bridge.callApi('connections.request', { connection: 'github', path: '/user' }, 'connection:github');
+    expect(named.take()).toHaveLength(1);
+  });
+});
+
 describe('answering events and listing people', () => {
   test('says it acknowledges events, and acks each one once its handlers’ synchronous part has run, before anything they await', async () => {
     const { bridge, take, hostSays, connect, sent } = harness();

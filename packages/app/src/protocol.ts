@@ -219,6 +219,36 @@ export interface ToolsCallParams {
   input: Record<string, unknown>;
 }
 
+/** One supported Brydio API action. The host owns the closed registry behind it. */
+export type ApiAction =
+  | 'projects.list'
+  | 'projects.get'
+  | 'projects.create'
+  | 'projects.update'
+  | 'projects.remove'
+  | 'projects.archiveChats'
+  | 'files.list'
+  | 'files.read'
+  | 'files.upload'
+  | 'files.addFromConnection'
+  | 'files.replace'
+  | 'files.remove'
+  | 'chats.list'
+  | 'chats.get'
+  | 'chats.create'
+  | 'chats.update'
+  | 'chats.send'
+  | 'chats.remove'
+  | 'connections.request';
+
+/** The host grant an API action needs. Connections are always granted by name. */
+export type ApiGrant = 'projects' | 'files' | 'chats' | `connection:${string}`;
+
+export interface ApiCallParams {
+  action: ApiAction;
+  input: Record<string, unknown>;
+}
+
 export interface UiNavigateParams {
   to: NavigateTarget;
 }
@@ -261,6 +291,7 @@ export const WORKER_METHODS = [
   'tree/mount',
   'tree/patch',
   'tools/call',
+  'api/call',
   'data/get',
   'data/list',
   'data/subscribe',
@@ -338,6 +369,8 @@ export const HOST_METHODS = [
   'tree/refused',
   'tools/result',
   'tools/error',
+  'api/result',
+  'api/error',
   'data/result',
   'data/error',
   'data/changed',

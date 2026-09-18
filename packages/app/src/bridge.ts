@@ -2,6 +2,8 @@ import { workerPort, type Port } from './port.ts';
 import {
   PROTOCOL,
   type AppDocument,
+  type ApiAction,
+  type ApiGrant,
   type AppInfo,
   type DataChange,
   type MemberName,
@@ -293,6 +295,19 @@ export class Bridge {
   }
 
   /**
+   * Calls one action from `@brydio/api` through the authenticated host.
+   * The package supplies the family grant for a fast local refusal; the
+   * host checks its closed action registry and recorded install grant again.
+   */
+  callApi<T = unknown>(action: ApiAction, input: Record<string, unknown>, grant: ApiGrant): Promise<T> {
+    const refused = this.#grant('host', grant);
+
+    if (refused) throw refused;
+
+    return this.request('api/call', { action, input }) as Promise<T>;
+  }
+
+  /**
    * One record, through §9's own `data/get` (Brydio `5d6cd53`): the host runs
    * the collection's generated `get_*` tool with its checks, and counts it
    * against a screen's reads (120 a minute) rather than its tool calls (20),
@@ -552,6 +567,8 @@ export class Bridge {
       }
       case 'host/result':
       case 'host/error':
+      case 'api/result':
+      case 'api/error':
       case 'ui/result':
       case 'ui/error':
       case 'data/result':
@@ -672,7 +689,7 @@ const namesIn = <T>(result: unknown, kind: 'members' | 'projects'): T[] => {
 };
 
 /** The host capabilities `*` covers. */
-const HOST_CAPABILITIES: readonly string[] = ['navigate', 'message', 'members', 'projects'];
+const HOST_CAPABILITIES: readonly string[] = ['navigate', 'message', 'members', 'projects', 'files', 'chats'];
 
 /** A collection's generated tool names, as the server names them. */
 const generatedTools = ({ label, plural }: { label: string; plural: string }) => [

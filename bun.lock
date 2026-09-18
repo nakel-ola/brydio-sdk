@@ -9,6 +9,13 @@
         "typescript": "5.9.3",
       },
     },
+    "packages/api": {
+      "name": "@brydio/api",
+      "version": "0.1.0-alpha.0",
+      "dependencies": {
+        "@brydio/app": "0.1.0-alpha.0",
+      },
+    },
     "packages/app": {
       "name": "@brydio/app",
       "version": "0.1.0-alpha.0",
@@ -91,6 +98,8 @@
     },
   },
   "packages": {
+    "@brydio/api": ["@brydio/api@workspace:packages/api"],
+
     "@brydio/app": ["@brydio/app@workspace:packages/app"],
 
     "@brydio/cli": ["@brydio/cli@workspace:packages/cli"],
