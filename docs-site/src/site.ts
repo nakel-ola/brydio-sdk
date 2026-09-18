@@ -20,8 +20,16 @@ export interface SiteBuild {
 }
 
 function normalizeBasePath(basePath: string): string {
-  const leading = basePath.startsWith('/') ? basePath : `/${basePath}`;
-  return leading.endsWith('/') ? leading : `${leading}/`;
+  const segments = basePath.split('/').filter(Boolean);
+  if (segments.some(segment => segment === '.' || segment === '..' || segment.includes('\\'))) {
+    throw new Error(`Invalid docs base path: ${basePath}`);
+  }
+  return segments.length ? `/${segments.join('/')}/` : '/';
+}
+
+export function outputDirectoryForBasePath(outputRoot: string, basePath: string): string {
+  const relative = normalizeBasePath(basePath).slice(1, -1);
+  return relative ? join(outputRoot, relative) : outputRoot;
 }
 
 function href(basePath: string, route = ''): string {
@@ -180,7 +188,9 @@ export async function buildDocsSite({ outDir, basePath }: SiteBuildOptions): Pro
 
 if (import.meta.main) {
   const basePath = process.env.DOCS_BASE_PATH ?? '/';
-  const outDir = join(ROOT, 'docs-site', 'dist');
+  const outputRoot = join(ROOT, 'docs-site', 'dist');
+  await rm(outputRoot, { force: true, recursive: true });
+  const outDir = outputDirectoryForBasePath(outputRoot, basePath);
   const site = await buildDocsSite({ outDir, basePath });
   console.log(`Built ${site.routes.length} documentation routes in ${outDir}`);
 }
