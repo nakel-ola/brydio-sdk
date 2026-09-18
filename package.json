@@ -13,7 +13,8 @@
     "release:build": "bun scripts/release-build.ts",
     "docs:bridge": "bun run scripts/docs-bridge.ts",
     "docs:elements": "bun run scripts/docs-elements.ts",
-    "docs:manifest": "bun run scripts/docs-manifest.ts"
+    "docs:manifest": "bun run scripts/docs-manifest.ts",
+    "docs:build": "bun run docs-site/src/site.ts"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",

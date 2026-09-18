@@ -3,3 +3,5 @@ dist/
 .DS_Store
 *.log
 release/
+docs-site/dist/
+docs-site/.capture/
