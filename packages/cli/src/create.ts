@@ -26,7 +26,7 @@ export type Template = (typeof TEMPLATES)[number];
 /** The SDK checkout this command runs from, where the templates and packages are. */
 export const SDK_ROOT = resolve(import.meta.dir, '..', '..', '..');
 
-const SDK_PACKAGES = ['app', 'ui', 'manifest', 'cli', 'fake-host'] as const;
+const SDK_PACKAGES = ['app', 'ui', 'manifest', 'api', 'cli', 'fake-host'] as const;
 
 /** What a template holds that a new app must not start with. */
 const LEFT_BEHIND = new Set(['node_modules', 'dist', '.DS_Store']);

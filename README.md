@@ -34,6 +34,7 @@ it is Issues, in `../brydio-issues`.
 | `packages/ui` | The list of building blocks and what each accepts. A copy of Brydio's own list, as committed. |
 | `packages/manifest` | The rules for a manifest, the tools Brydio makes from it, and the bundle rules and fingerprint. Copies of Brydio's server rules. |
 | `packages/app` | What runs inside a screen: it keeps the screen's tree of building blocks, talks to Brydio, and lets you write screens with Preact (a small React). |
+| `packages/api` | Typed project, file, chat and named-connection reads and writes. Every call goes through the app bridge; no token, cookie or server address reaches the app. |
 | `packages/fake-host` | A pretend Brydio for tests: it runs a built screen, remembers what it drew, lets a test press buttons, and answers tools from sample records. |
 | `packages/cli` | The `brydio` command: `build`, `validate`, `test`, `dev` and `publish`. |
 | `templates/preact` | A starter app (a checklist) to copy. |

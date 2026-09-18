@@ -299,10 +299,12 @@ export class Bridge {
    * The package supplies the family grant for a fast local refusal; the
    * host checks its closed action registry and recorded install grant again.
    */
-  callApi<T = unknown>(action: ApiAction, input: Record<string, unknown>, grant: ApiGrant): Promise<T> {
-    const refused = this.#grant('host', grant);
+  callApi<T = unknown>(action: ApiAction, input: Record<string, unknown>, grant: ApiGrant | readonly ApiGrant[]): Promise<T> {
+    for (const capability of Array.isArray(grant) ? grant : [grant]) {
+      const refused = this.#grant('host', capability);
 
-    if (refused) throw refused;
+      if (refused) throw refused;
+    }
 
     return this.request('api/call', { action, input }) as Promise<T>;
   }

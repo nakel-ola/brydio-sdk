@@ -46,6 +46,9 @@
     "names": {
       "entry": "screens/names.js"
     },
+    "api": {
+      "entry": "screens/api.js"
+    },
     "listed": {
       "entry": "screens/listed.js"
     },
@@ -65,7 +68,8 @@
     ],
     "host": [
       "message",
-      "navigate"
+      "navigate",
+      "projects"
     ]
   }
 }

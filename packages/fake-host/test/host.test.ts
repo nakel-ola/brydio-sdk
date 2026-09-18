@@ -21,6 +21,23 @@ afterEach(() => {
 });
 
 describe('a screen, end to end in a worker', () => {
+  test('crosses the real bridge through @brydio/api and receives the host result', async () => {
+    host = FakeHost.start({
+      entry: screen('api'),
+      manifest,
+      api: async call => {
+        expect(call).toEqual({ action: 'projects.list', input: { query: 'road' } });
+
+        return [{ id: 'prj_1', name: 'Roadmap', role: 'owner', chatCount: 2, createdAt: '2026-09-18', lastActiveAt: '2026-09-18' }];
+      },
+    });
+
+    await host.mounted();
+    await host.waitFor(() => host!.byText('Roadmap'), { what: 'the API result' });
+
+    expect(host.apiCalls).toEqual([{ action: 'projects.list', input: { query: 'road' } }]);
+  });
+
   test('says ready with the built app’s name, mounts, and reads through the list tool', async () => {
     host = FakeHost.start({ entry: screen('counter'), manifest, fixtures: { notes: [{ title: 'First' }, { title: 'Second' }] } });
 
@@ -277,12 +294,13 @@ test('data/get and data/list are answered through the collection’s own tools, 
 
 test('host/members and host/projects name only who and what the directory holds, and need the grant', async () => {
   const directory = { members: [{ id: 'user_ada', name: 'Ada Lovelace' }], projects: [{ id: 'project_web', name: 'Website' }] };
+  const withoutDirectory = { ...manifest, grants: { ...manifest.grants, host: ['message', 'navigate'] } };
 
-  host = FakeHost.start({ entry: screen('names'), manifest, directory });
+  host = FakeHost.start({ entry: screen('names'), manifest: withoutDirectory, directory });
   await host.mounted();
   await host.waitFor(() => host!.findAll(node => node.type === 'bry-text').length === 2, { what: 'both answers' });
 
-  // The plain fixture's install grants `message` only, so Brydio refuses both, in its words.
+  // This install did not ask for either directory, so Brydio refuses both, in its words.
   expect(host.findAll(node => node.type === 'bry-text').map(node => node.props.text)).toEqual([
     'members: plain did not ask to see the names of people.',
     'projects: plain did not ask to see the names of projects.',

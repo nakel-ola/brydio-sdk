@@ -11,6 +11,7 @@ export {
   FakeHost,
   TREE_PROTOCOL,
   wordsOf,
+  type ApiCall,
   type AskAnswer,
   type FakeHostOptions,
   hostRefusal,

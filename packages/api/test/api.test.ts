@@ -56,7 +56,7 @@ describe('@brydio/api', () => {
   });
 
   test('maps every file and chat read and write without an address or credential', () => {
-    const app = host(['files', 'chats']);
+    const app = host(['files', 'chats', 'connection:microsoft']);
 
     void api.files.list('prj_1');
     void api.files.read('src_1');
@@ -104,6 +104,15 @@ describe('@brydio/api', () => {
     const app = host(['files']);
 
     expect(() => api.projects.list()).toThrow('Add "projects" to grants.host');
+    expect(app.sent).toEqual([]);
+  });
+
+  test('requires the exact connection as well as files before importing one', () => {
+    const app = host(['files', 'connection:github']);
+
+    expect(() =>
+      api.files.addFromConnection('prj_1', { connection: 'microsoft', itemId: 'item_1' }),
+    ).toThrow('Add "connection:microsoft" to grants.host');
     expect(app.sent).toEqual([]);
   });
 });

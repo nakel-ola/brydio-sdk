@@ -59,6 +59,8 @@ export interface FakeHostOptions {
   fixtures?: Fixtures;
   /** Tools of the test's own, or replacements for generated ones, by name. */
   tools?: Record<string, ToolHandler>;
+  /** Answers calls made through `@brydio/api`, as Brydio's authenticated host would. */
+  api?: (call: ApiCall) => unknown | Promise<unknown>;
   context?: Partial<HostContext>;
   /** How writes are answered. `allow` unless said. */
   asks?: AskAnswer | ((call: ToolCall) => AskAnswer);
@@ -88,6 +90,12 @@ export interface FakeHostOptions {
 export interface NavigateTo {
   kind: 'chat' | 'file' | 'item' | 'project';
   id: string;
+}
+
+/** One `@brydio/api` call a screen sent to the pretend host. */
+export interface ApiCall {
+  action: string;
+  input: Record<string, unknown>;
 }
 
 /** Why Brydio turns a call away before running it. */
@@ -146,6 +154,8 @@ export class FakeHost {
   /** Every message the worker sent, in order. */
   readonly received: Rpc[] = [];
   readonly calls: ToolCall[] = [];
+  /** Every call made through `@brydio/api`, in order. */
+  readonly apiCalls: ApiCall[] = [];
   readonly refusals: Refusal[] = [];
   readonly toasts: { text: string; tone: 'info' | 'success' | 'danger' }[] = [];
   /** Each names request the screen made: which kind, and the ids. */
@@ -498,6 +508,11 @@ export class FakeHost {
 
         void this.#call(message.id, params);
         break;
+      case 'api/call':
+        if (!this.app || message.id === undefined) break;
+
+        void this.#api(message.id, params);
+        break;
       case 'data/get':
       case 'data/list':
         if (!this.app || message.id === undefined) break;
@@ -548,6 +563,43 @@ export class FakeHost {
     }
 
     this.#changed();
+  }
+
+  /** Answers the public app API at the same request boundary as the real host. */
+  async #api(id: string | number, params: Record<string, unknown>): Promise<void> {
+    const action = params.action;
+    const input = params.input;
+
+    if (typeof action !== 'string' || !input || typeof input !== 'object' || Array.isArray(input)) {
+      this.#send({ jsonrpc: '2.0', method: 'api/error', params: { id, error: { code: -32602, message: 'A Brydio API call needs an action and an input object.' } } });
+
+      return;
+    }
+
+    const call: ApiCall = { action, input: input as Record<string, unknown> };
+
+    this.apiCalls.push(call);
+
+    if (!this.#options.api) {
+      this.#send({ jsonrpc: '2.0', method: 'api/error', params: { id, error: { code: -32601, message: 'The Brydio app API is not configured for this test.' } } });
+
+      return;
+    }
+
+    this.#busy += 1;
+
+    try {
+      const result = await this.#options.api(call);
+
+      this.#send({ jsonrpc: '2.0', method: 'api/result', params: { id, result } as never });
+    } catch (failure) {
+      const message = failure instanceof Error ? failure.message : 'That API call did not work.';
+
+      this.#send({ jsonrpc: '2.0', method: 'api/error', params: { id, error: { code: -32000, message: message.slice(0, 300) } } });
+    } finally {
+      this.#busy -= 1;
+      this.#changed();
+    }
   }
 
   /**

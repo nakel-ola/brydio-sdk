@@ -58,7 +58,7 @@ export interface ConnectionResponse<T = unknown> {
 
 type Input = Record<string, unknown>;
 
-const call = <T>(action: ApiAction, input: Input, grant: ApiGrant): Promise<T> =>
+const call = <T>(action: ApiAction, input: Input, grant: ApiGrant | readonly ApiGrant[]): Promise<T> =>
   defaultBridge().callApi<T>(action, input, grant);
 
 export const api = {
@@ -96,7 +96,7 @@ export const api = {
       projectId: string,
       input: { connection: string; link?: string; driveId?: string; itemId?: string },
     ): Promise<FileSummary> {
-      return call('files.addFromConnection', { projectId, ...input }, 'files');
+      return call('files.addFromConnection', { projectId, ...input }, ['files', `connection:${input.connection}`]);
     },
     replace(id: string, file: FileInput): Promise<FileSummary> {
       return call('files.replace', { id, file }, 'files');

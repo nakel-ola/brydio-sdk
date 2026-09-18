@@ -17,7 +17,7 @@ anywhere, and each version is published with provenance. The workflow is
    into a fresh app with no workspace links, and builds, validates, tests
    and type-checks that app.
 6. Each package is published in dependency order: `manifest`, `ui`, `app`,
-   `fake-host`, `cli`.
+   `api`, `fake-host`, `cli`.
 
 A pull request that touches the packages, the release script or the
 workflow runs steps 2 to 5 and publishes nothing.
@@ -26,7 +26,7 @@ workflow runs steps 2 to 5 and publishes nothing.
 
 **npm cannot configure a trusted publisher for a package that does not exist
 yet.** Trusted publishing is set on a package's own settings page, so each
-of the five packages has to exist on npm before OIDC can publish it. This is
+of the six packages has to exist on npm before OIDC can publish it. This is
 a known limitation ([npm/cli#8544](https://github.com/npm/cli/issues/8544));
 PyPI allows configuring publishing before a package exists, npm does not.
 
@@ -38,7 +38,7 @@ So, once, in this order:
 
    ```sh
    bun run release:build
-   cd release/manifest && npm publish --access public   # then ui, app, fake-host, cli
+   cd release/manifest && npm publish --access public   # then ui, app, api, fake-host, cli
    ```
 
    A placeholder version is enough; it only has to make the package exist.

@@ -50,6 +50,31 @@ is Brydio's, not the app's, and an app cannot skip it.
 A tool the manifest does not ask for is a `GrantError` before the call leaves
 the worker.
 
+## `api.projects`, `api.files`, `api.chats` and `api.connections`
+
+Import these from `@brydio/api`. They are typed reads and writes over Brydio's
+own projects, files and chats, plus a named connection the person has already
+made. The app receives no session token, cookie, API address or OAuth token.
+
+Each family needs its host grant: `projects`, `files`, `chats`, or the exact
+`connection:<name>`. `*` covers the first three and never a connection. Reads
+run after Brydio checks the installed grant and the current person's access.
+Writes wait for Brydio's approval card and run the server-held request only
+after **Allow once**.
+
+```ts
+import { api } from '@brydio/api';
+
+const projects = await api.projects.list();
+const issues = await api.connections.use('github').request({
+  path: '/repos/brydio/brydio/issues',
+  query: { state: 'open' },
+});
+```
+
+A connection request takes a relative path, never an origin. `GET` and `HEAD`
+are reads. `POST`, `PUT`, `PATCH` and `DELETE` are approval-gated writes.
+
 ## `data.get(collection, id)`
 
 One record by id, through the generated `get_*` tool.

@@ -32,7 +32,7 @@ export const ROOT = resolve(import.meta.dir, '..');
 export const RELEASE = join(ROOT, 'release');
 
 /** In the order they depend on one another, so each is built after what it imports. */
-export const RELEASED = ['manifest', 'ui', 'app', 'fake-host', 'cli'] as const;
+export const RELEASED = ['manifest', 'ui', 'app', 'api', 'fake-host', 'cli'] as const;
 
 /** What each package ships that isn't compiled from TypeScript, relative to its folder. */
 const COPIED: Partial<Record<(typeof RELEASED)[number], string[]>> = {
@@ -288,4 +288,3 @@ if (import.meta.main) {
     process.exit(1);
   }
 }
-

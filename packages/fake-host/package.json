@@ -23,6 +23,7 @@
     "zod": "4.6.2"
   },
   "devDependencies": {
+    "@brydio/api": "0.1.0-alpha.0",
     "@brydio/app": "0.1.0-alpha.0"
   }
 }
