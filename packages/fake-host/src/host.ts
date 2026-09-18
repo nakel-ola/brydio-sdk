@@ -151,7 +151,8 @@ export class FakeHost {
   /** Each names request the screen made: which kind, and the ids. */
   readonly namesAsked: { kind: 'members' | 'projects'; ids: string[] }[] = [];
   /** Chats the screen asked Brydio to draft about a record, in order (never sent: the person sends them). */
-  readonly asks: { text: string; target: { collection: string; id: string; title?: string } }[] = [];
+  /** Each draft the app asked for. `target` is null for a draft with no attachment (A8-F02-S03). */
+  readonly asks: { text: string; target: { collection: string; id: string; title?: string } | null }[] = [];
   /** What the screen asked to open, and whether it was. */
   readonly navigations: (NavigateTo & { opened: boolean; error?: string })[] = [];
   /** What the worker threw, or failed to load with. */
@@ -573,6 +574,12 @@ export class FakeHost {
    * `ui/message`, as `screen-session.ts` answers it and the API decides it:
    * the text and record checked, the `message` grant asked, and on success a
    * draft recorded in `asks` and `ui/result { drafted: true }`. Nothing is sent.
+   *
+   * **A message with no `target` is a draft with no attachment** (A8-F02-S03):
+   * the words alone, which the person reads in their composer. Everything else
+   * is the same — the size cap, the `message` grant, and nothing sent. There
+   * is no record to check because there is no record: an app whose subject is
+   * something Brydio deliberately keeps nothing of has none to give.
    */
   #ask(id: string | number | undefined, params: Record<string, unknown>): void {
     const fail = (code: number, message: string) => {
@@ -581,15 +588,18 @@ export class FakeHost {
     const text = params.text;
     const target = params.target as { collection?: unknown; id?: unknown; title?: unknown } | null | undefined;
 
+    if (typeof text !== 'string' || !text.trim()) {
+      return fail(-32602, 'An app asks about one of its records: say what to ask, and which record.');
+    }
+
     if (
-      typeof text !== 'string' ||
-      !text.trim() ||
-      !target ||
-      typeof target.collection !== 'string' ||
-      !target.collection ||
-      typeof target.id !== 'string' ||
-      !target.id ||
-      (target.title !== undefined && typeof target.title !== 'string')
+      target !== undefined &&
+      target !== null &&
+      (typeof target.collection !== 'string' ||
+        !target.collection ||
+        typeof target.id !== 'string' ||
+        !target.id ||
+        (target.title !== undefined && typeof target.title !== 'string'))
     ) {
       return fail(-32602, 'An app asks about one of its records: say what to ask, and which record.');
     }
@@ -600,13 +610,20 @@ export class FakeHost {
 
     if (!host.includes('message') && !host.includes('*')) return fail(-32000, `${this.#options.manifest?.name ?? this.app?.name} did not ask to post messages in a chat.`);
 
-    const collection = target.collection;
+    if (!target) {
+      // No attachment, so nothing to look up and nothing to leak: the words
+      // alone go into the composer.
+      this.asks.push({ text, target: null });
+    } else {
+      const collection = target.collection as string;
+      const targetId = target.id as string;
 
-    if (this.store && (!this.store.has(collection) || !this.store.records(collection).some(record => record.id === target.id))) {
-      return fail(-32000, 'There is no such record.');
+      if (this.store && (!this.store.has(collection) || !this.store.records(collection).some(record => record.id === targetId))) {
+        return fail(-32000, 'There is no such record.');
+      }
+
+      this.asks.push({ text, target: { collection, id: targetId, ...(typeof target.title === 'string' ? { title: target.title } : {}) } });
     }
-
-    this.asks.push({ text, target: { collection, id: target.id, ...(typeof target.title === 'string' ? { title: target.title } : {}) } });
 
     if (id !== undefined) this.#send({ jsonrpc: '2.0', method: 'ui/result', params: { id, result: { drafted: true } } });
 

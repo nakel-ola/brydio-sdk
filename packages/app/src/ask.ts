@@ -12,6 +12,22 @@ import { defaultBridge, type Bridge } from './bridge.ts';
  * read.
  */
 
+/**
+ * The record the chat is about, or **`null` for a chat about something Brydio
+ * does not keep** (`tasks/apps` A8-F02-S03).
+ *
+ * With a record, Brydio attaches it, and **the assistant reads the record as
+ * the person, each time, so the attachment can't show what they couldn't
+ * read.** That guarantee is why the record path is safe.
+ *
+ * With `null` there is no attachment and so nothing to guarantee: the whole
+ * message is the words in `text`, which the person reads in their own
+ * composer before sending. It exists for an app whose subject is not its own
+ * — a pull request the app fetched and **deliberately keeps nothing of** —
+ * where storing a record to make an attachment possible would break the
+ * promise that Brydio keeps nothing of it.
+ */
+
 /** The record the chat is about. `title` is what the attachment is called. */
 export interface AskTarget {
   collection: string;
@@ -32,8 +48,18 @@ export const MAX_ASK_BYTES = 64 * 1024;
  * <bry-button label="Ask about this issue" onPress={() => void askAbout({ collection: 'issues', id, title }, `What's left on "${title}"?`)} />
  * ```
  */
-export function askAbout(target: AskTarget, text: string, bridge: Bridge = defaultBridge()): Promise<{ drafted: boolean }> {
+export function askAbout(
+  target: AskTarget | null,
+  text: string,
+  bridge: Bridge = defaultBridge()
+): Promise<{ drafted: boolean }> {
   // The text's size, the record and the `message` grant are the host's to check, in its words:
   // checked here too, they would only add to every screen that asks.
-  return bridge.request('ui/message', { text, target }).then(result => ({ drafted: (result as { drafted?: boolean } | undefined)?.drafted === true }));
+  //
+  // `target` is left out of the call entirely when there is none, rather than
+  // sent as null: a host that predates this answers "say which record", which
+  // is the right refusal, instead of reading a null as a record.
+  return bridge
+    .request('ui/message', target ? { text, target } : { text })
+    .then(result => ({ drafted: (result as { drafted?: boolean } | undefined)?.drafted === true }));
 }

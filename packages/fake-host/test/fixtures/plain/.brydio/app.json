@@ -1,22 +1,71 @@
 {
   "name": "plain",
   "version": "1.0.0",
-  "data": { "notes": { "schema": { "title": "string", "pinned": "boolean?" } } },
-  "screens": {
-    "counter": { "entry": "screens/counter.js" },
-    "broken": { "entry": "screens/broken.js" },
-    "silent": { "entry": "screens/silent.js" },
-    "walls": { "entry": "screens/walls.js" },
-    "flood": { "entry": "screens/flood.js" },
-    "where": { "entry": "screens/where.js" },
-    "watched": { "entry": "screens/watched.js" },
-    "opens": { "entry": "screens/opens.js" },
-    "reads": { "entry": "screens/reads.js" },
-    "drives": { "entry": "screens/drives.js" },
-    "ledger": { "entry": "screens/ledger.js" },
-    "names": { "entry": "screens/names.js" },
-    "listed": { "entry": "screens/listed.js" },
-    "asks": { "entry": "screens/asks.js" }
+  "data": {
+    "notes": {
+      "schema": {
+        "title": "string",
+        "pinned": "boolean?"
+      }
+    }
   },
-  "grants": { "tools": ["*"], "collections": ["*"], "host": ["message", "navigate"] }
+  "screens": {
+    "counter": {
+      "entry": "screens/counter.js"
+    },
+    "broken": {
+      "entry": "screens/broken.js"
+    },
+    "silent": {
+      "entry": "screens/silent.js"
+    },
+    "walls": {
+      "entry": "screens/walls.js"
+    },
+    "flood": {
+      "entry": "screens/flood.js"
+    },
+    "where": {
+      "entry": "screens/where.js"
+    },
+    "watched": {
+      "entry": "screens/watched.js"
+    },
+    "opens": {
+      "entry": "screens/opens.js"
+    },
+    "reads": {
+      "entry": "screens/reads.js"
+    },
+    "drives": {
+      "entry": "screens/drives.js"
+    },
+    "ledger": {
+      "entry": "screens/ledger.js"
+    },
+    "names": {
+      "entry": "screens/names.js"
+    },
+    "listed": {
+      "entry": "screens/listed.js"
+    },
+    "asks": {
+      "entry": "screens/asks.js"
+    },
+    "asks-nothing": {
+      "entry": "screens/asks-nothing.js"
+    }
+  },
+  "grants": {
+    "tools": [
+      "*"
+    ],
+    "collections": [
+      "*"
+    ],
+    "host": [
+      "message",
+      "navigate"
+    ]
+  }
 }

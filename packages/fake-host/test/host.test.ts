@@ -324,6 +324,48 @@ test('host/members with no ids lists the people the app may name, by name, filte
   expect(host.findAll(node => node.type === 'bry-text').map(node => node.props.text)).toEqual(['Ada Lovelace, Adam Smith, Cy Twombly', 'Ada Lovelace (AL)']);
 });
 
+/**
+ * A8-F02-S03: a chat about something the app keeps no record of.
+ *
+ * The record path is safe because the assistant reads the record **as the
+ * person, each time**, so an attachment can never show them what they could
+ * not read themselves. A draft with no attachment needs no such guarantee —
+ * there is nothing to read but the words, and the person reads those in their
+ * own composer before sending.
+ *
+ * It exists so an app whose subject is not its own — a pull request it
+ * fetched and deliberately keeps nothing of — does not have to store a record
+ * to be able to ask about it.
+ */
+test('askAbout with no record drafts the words alone, and attaches nothing', async () => {
+  host = FakeHost.start({ entry: screen('asks-nothing'), manifest, fixtures: { notes: [{ id: 'note_a', title: 'First' }] } });
+  await host.mounted();
+  await host.waitFor(() => host!.findAll(node => node.type === 'bry-text').length === 1, { what: 'the answer' });
+
+  expect(host.findAll(node => node.type === 'bry-text')[0]!.props.text).toBe('no record: drafted');
+
+  // The absence is the point, asserted rather than inferred from the happy path.
+  expect(host.asks).toEqual([{ text: 'What is this pull request doing to the login page?', target: null }]);
+  expect(host.asks.every(ask => ask.target === null)).toBe(true);
+
+  // And the call carried no `target` key at all, rather than a null one: a
+  // host that predates this answers "say which record" instead of reading a
+  // null as a record.
+  const sent = host.received.filter(message => message.method === 'ui/message');
+
+  expect(sent).toHaveLength(1);
+  expect(Object.keys((sent[0]!.params ?? {}) as object)).toEqual(['text']);
+
+  host.stop();
+
+  // The `message` grant still governs it: no grant, no draft.
+  host = FakeHost.start({ entry: screen('asks-nothing'), manifest: { ...manifest, grants: { ...manifest.grants, host: [] } } });
+  await host.mounted();
+  await host.waitFor(() => host!.findAll(node => node.type === 'bry-text').length === 1, { what: 'the refusal' });
+  expect(host.findAll(node => node.type === 'bry-text')[0]!.props.text).toBe('no record: plain did not ask to post messages in a chat.');
+  expect(host.asks).toEqual([]);
+});
+
 test('askAbout drafts a chat about a record for the person to send, and never sends it', async () => {
   host = FakeHost.start({ entry: screen('asks'), manifest, fixtures: { notes: [{ id: 'note_a', title: 'First' }] } });
   await host.mounted();
