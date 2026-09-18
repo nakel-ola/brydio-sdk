@@ -22,7 +22,7 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
-## 0.1.0-alpha.2
+## 0.1.0-alpha.3
 
 The app API release.
 
@@ -38,6 +38,8 @@ Nothing to change unless an app adopts `@brydio/api`; declare the matching
 
 `0.1.0-alpha.1` was tagged, but the release stopped before publishing because
 the support and private security addresses had not yet been chosen.
+`0.1.0-alpha.2` was tagged after that fix, but npm rejected provenance from
+the private source repository before publishing any package.
 
 ## 0.1.0-alpha.0
 

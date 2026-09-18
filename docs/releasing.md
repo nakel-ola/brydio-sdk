@@ -2,8 +2,9 @@
 
 The packages are published to npm under the `@brydio` scope, MIT licensed,
 by GitHub Actions with **npm trusted publishing**: no token is stored
-anywhere, and each version is published with provenance. The workflow is
-[`.github/workflows/release.yml`](../.github/workflows/release.yml).
+anywhere. npm cannot accept provenance from a private source repository, so
+releases use OIDC without `--provenance` while this repository remains private.
+The workflow is [`.github/workflows/release.yml`](../.github/workflows/release.yml).
 
 ## What a release does
 

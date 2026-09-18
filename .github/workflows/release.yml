@@ -2,10 +2,10 @@
 #
 # npm's trusted publishing: GitHub Actions asks npm for a short-lived OIDC
 # token at publish time, npm checks that this repository and this workflow
-# are the ones the package names as its trusted publisher, and the version is
-# published with provenance. Nothing is stored in the repository or in the
-# repository's secrets, and there is no `NODE_AUTH_TOKEN` and no `NPM_TOKEN`
-# in this file on purpose.
+# are the ones the package names as its trusted publisher. Nothing is stored
+# in the repository or in its secrets, and there is no `NODE_AUTH_TOKEN` or
+# `NPM_TOKEN` in this file on purpose. npm provenance is unavailable while the
+# source repository is private.
 #
 # A tag starting with `v` publishes. A pull request runs the same build and
 # the same install test and publishes nothing, so the release path is
@@ -99,5 +99,5 @@ jobs:
           set -euo pipefail
           for package in manifest ui app api fake-host cli; do
             echo "Publishing @brydio/$package"
-            (cd "$package" && npm publish --access public --provenance --tag next)
+            (cd "$package" && npm publish --access public --tag next)
           done

@@ -290,7 +290,8 @@ describe('the release build', () => {
       .split(/\s+/);
 
     expect(names).toEqual([...RELEASED]);
-    expect(workflow).toContain('npm publish --access public --provenance --tag next');
+    expect(workflow).toContain('npm publish --access public --tag next');
+    expect(workflow).not.toContain('--provenance');
   });
 
   test('will not build publishable packages from a tree that has changes in it', () => {
