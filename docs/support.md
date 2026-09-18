@@ -10,7 +10,10 @@ These are the SDK. If one of them breaks, that is a bug and we want to hear
 about it.
 
 - **`@brydio/app`** — the worker runtime, the Preact bindings, and the calls a
-  screen makes: `data/*`, `tools.call`, `navigate`, `host`, `onToolResult`.
+  screen makes: `connect`, `host`, `tools`, `data`, `navigate`, `toast`, and
+  `onTeardown`.
+- **`@brydio/api`** — typed project, file, chat and named-connection calls
+  through the app bridge. It exposes no token, cookie or server address.
 - **`@brydio/manifest`** — the manifest's shape, its field types and its
   migrations, and the sentences it refuses with.
 - **`@brydio/ui`** — the catalogue: the elements a screen may draw, their

@@ -17,7 +17,7 @@ it is Issues, in `../brydio-issues`.
   the assistant in a chat.
 - A **screen** is a small program that runs out of sight, in a sealed box with
   no internet and no page to draw on. It describes what it wants on screen
-  using **fifteen building blocks** (stacks and grids, headings and text,
+  using **28 building blocks** (stacks and grids, headings and text,
   buttons, fields and choices, cards, rows, badges and the like), and Brydio
   draws them. It can't use colours, styles or anything
   Brydio doesn't offer, which is why every app looks right.
@@ -154,16 +154,18 @@ When Brydio's answers change, those tests fail with Brydio beside them. Then
 run `bun run contracts:record`, which writes the new answers and the Brydio
 commit they came from, and review the diff before committing it.
 
-Nothing here is published to npm yet. An app uses the packages straight from
-this folder (see `../brydio-issues/package.json`). What a release will do, and
-the one-off the owner has to do first, is [releasing.md](docs/releasing.md);
-`bun run release:build` makes the packages a registry would get, and refuses
-to make publishable ones from a tree with uncommitted changes or without the
-addresses [support.md](docs/support.md) needs.
+Five packages are public on npm at `0.1.0-alpha.0`: `@brydio/manifest`,
+`@brydio/ui`, `@brydio/app`, `@brydio/fake-host` and `@brydio/cli`.
+`@brydio/api@0.1.0-alpha.1` is built for the next release but has not had its
+owner-run first publish. The exact release state and remaining owner steps are
+in [releasing.md](docs/releasing.md). `bun run release:build` makes the six
+packages a registry would get, and refuses publishable output from a dirty tree
+or without the addresses [support.md](docs/support.md) needs.
 
 What the packages promise and what they do not, and how to report a problem,
 are [support.md](docs/support.md) and [security.md](docs/security.md).
 
+The [documentation index](docs/README.md) links every public reference.
 Everything a screen can ask Brydio to do, with its limits and what a refusal
 looks like, is [bridge.md](docs/bridge.md). Every element a screen may draw,
 with its settings, is [elements.md](docs/elements.md) — generated from the catalogue by
