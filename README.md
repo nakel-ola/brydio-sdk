@@ -154,13 +154,12 @@ When Brydio's answers change, those tests fail with Brydio beside them. Then
 run `bun run contracts:record`, which writes the new answers and the Brydio
 commit they came from, and review the diff before committing it.
 
-Five packages are public on npm at `0.1.0-alpha.0`: `@brydio/manifest`,
-`@brydio/ui`, `@brydio/app`, `@brydio/fake-host` and `@brydio/cli`.
-`@brydio/api@0.1.0-alpha.1` is built for the next release but has not had its
-owner-run first publish. The exact release state and remaining owner steps are
-in [releasing.md](docs/releasing.md). `bun run release:build` makes the six
-packages a registry would get, and refuses publishable output from a dirty tree
-or without the addresses [support.md](docs/support.md) needs.
+All six packages are public on npm at `0.1.0-alpha.3` under the `next` tag:
+`@brydio/manifest`, `@brydio/ui`, `@brydio/app`, `@brydio/api`,
+`@brydio/fake-host` and `@brydio/cli`. The exact release state and remaining
+owner steps are in [releasing.md](docs/releasing.md). `bun run release:build`
+makes the six packages a registry would get, and refuses publishable output
+from a dirty tree or without the addresses [support.md](docs/support.md) names.
 
 What the packages promise and what they do not, and how to report a problem,
 are [support.md](docs/support.md) and [security.md](docs/security.md).
