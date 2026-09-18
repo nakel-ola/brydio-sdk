@@ -22,6 +22,26 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.5
+
+The placement-context and public documentation release.
+
+- **Placement settings reach app screens.** `HostContext.placement` now carries
+  the optional settings declared for that installed placement.
+- **Apps may declare the `model` host grant.** The manifest, validation words,
+  fake host and recorded Brydio contract now agree on the grant used by
+  assistant-backed screens.
+- **The public documentation site is generated from the SDK.** It covers every
+  catalogue element with real light and dark renderer captures, plus the
+  package, manifest, bridge and publish-checklist references.
+- **Published packages include npm provenance.** The source repository is now
+  public, so the trusted-publishing workflow can attach verifiable build
+  provenance without an npm token.
+
+Apps that need per-placement configuration should read
+`context.placement.settings`. Apps that call the host model must add `model` to
+their manifest's host grants.
+
 ## 0.1.0-alpha.4
 
 The complete app API release, with the installed CLI restored.

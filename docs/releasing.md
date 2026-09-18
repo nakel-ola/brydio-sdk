@@ -2,8 +2,8 @@
 
 The packages are published to npm under the `@brydio` scope, MIT licensed,
 by GitHub Actions with **npm trusted publishing**: no token is stored
-anywhere. npm cannot accept provenance from a private source repository, so
-releases use OIDC without `--provenance` while this repository remains private.
+anywhere. The source repository is public, so releases use OIDC with npm
+provenance attached.
 The workflow is [`.github/workflows/release.yml`](../.github/workflows/release.yml).
 
 ## Current release inventory
@@ -18,8 +18,8 @@ Checked against npm and GitHub on 18 September 2026:
 | `@brydio/api` | `0.1.0-alpha.4` is public under `next`; `latest` remains `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
 | `@brydio/fake-host` | `0.1.0-alpha.4` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
 | `@brydio/cli` | `0.1.0-alpha.4` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
-| SDK repository | `nakel-ola/brydio-sdk` is private | The owner decides when to make it public. |
-| Docs site | No GitHub Pages site and no configured homepage | The owner chooses the domain and hosting vendor. |
+| SDK repository | `nakel-ola/brydio-sdk` is public | Keep release sources and tags public. |
+| Docs site | Cloudflare Workers assets are configured; no production deployment or domain is recorded | The owner chooses the domain and deployment trigger. |
 | Support destinations | `support@brydio.app` and private `security@brydio.app` are set | Keep both monitored; a publishable build refuses if either is removed. |
 
 Release run
@@ -59,10 +59,8 @@ changelog section, and push one matching `v<version>` tag. The workflow
 publishes under `next`; moving `latest` or `alpha` remains a separate owner
 action.
 
-While the source repository is private, npm does not accept provenance for
-these packages, so the workflow uses OIDC without `--provenance`. Make the
-repository public before restoring provenance; do not replace OIDC with a
-token as a workaround.
+The public source repository lets npm attach provenance to these packages.
+The workflow uses OIDC with `--provenance`; do not replace OIDC with a token.
 
 ## The licence
 

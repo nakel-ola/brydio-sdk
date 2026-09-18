@@ -4,8 +4,8 @@
 # token at publish time, npm checks that this repository and this workflow
 # are the ones the package names as its trusted publisher. Nothing is stored
 # in the repository or in its secrets, and there is no `NODE_AUTH_TOKEN` or
-# `NPM_TOKEN` in this file on purpose. npm provenance is unavailable while the
-# source repository is private.
+# `NPM_TOKEN` in this file on purpose. The public source repository lets npm
+# attach provenance to every published package.
 #
 # A tag starting with `v` publishes. A pull request runs the same build and
 # the same install test and publishes nothing, so the release path is
@@ -99,5 +99,5 @@ jobs:
           set -euo pipefail
           for package in manifest ui app api fake-host cli; do
             echo "Publishing @brydio/$package"
-            (cd "$package" && npm publish --access public --tag next)
+            (cd "$package" && npm publish --access public --tag next --provenance)
           done

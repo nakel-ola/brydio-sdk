@@ -1,6 +1,6 @@
 {
   "name": "@brydio/manifest",
-  "version": "0.1.0-alpha.4",
+  "version": "0.1.0-alpha.5",
   "description": "The shape of a Brydio app's manifest, its collections' schemas, and the checks that say what is wrong with one.",
   "license": "MIT",
   "author": "Brydio Inc.",

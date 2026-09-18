@@ -99,7 +99,7 @@ test('renders the generated references and package guidance as static routes', a
 
   const packages = await page(outDir, 'packages/index.html');
   expect(packages).toContain('@brydio/app');
-  expect(packages).toContain('0.1.0-alpha.4');
+  expect(packages).toContain('0.1.0-alpha.5');
 });
 
 test('renders generated catalogue child and event guidance beside examples', async () => {

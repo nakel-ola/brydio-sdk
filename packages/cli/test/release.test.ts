@@ -296,7 +296,7 @@ describe('the release build', () => {
 
     expect(names).toEqual([...RELEASED]);
     expect(workflow).toContain('npm publish --access public --tag next');
-    expect(workflow).not.toContain('--provenance');
+    expect(workflow).toContain('--provenance');
   });
 
   test('will not build publishable packages from a tree that has changes in it', () => {
