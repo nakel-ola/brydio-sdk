@@ -22,7 +22,7 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
-## 0.1.0-alpha.1
+## 0.1.0-alpha.2
 
 The app API release.
 
@@ -35,6 +35,9 @@ The app API release.
 
 Nothing to change unless an app adopts `@brydio/api`; declare the matching
 `projects`, `files`, `chats` or exact `connection:<name>` host grant first.
+
+`0.1.0-alpha.1` was tagged, but the release stopped before publishing because
+the support and private security addresses had not yet been chosen.
 
 ## 0.1.0-alpha.0
 
