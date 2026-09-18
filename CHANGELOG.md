@@ -22,6 +22,17 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.4
+
+The complete app API release, with the installed CLI restored.
+
+- **The `brydio` executable remains attached to `@brydio/cli`.** npm 11 no
+  longer accepts a leading `./` in a published `bin` path; the release build
+  now writes the canonical `bin/brydio.js` path npm expects.
+
+`0.1.0-alpha.3` published all six packages successfully, but npm removed that
+CLI mapping while normalizing its package manifest. Use this release instead.
+
 ## 0.1.0-alpha.3
 
 The app API release.

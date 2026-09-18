@@ -7,6 +7,7 @@ import {
   changelogRefusal,
   commitOf,
   commitRefusal,
+  publishedBin,
   RELEASED,
   ROOT,
   releaseBuild,
@@ -35,6 +36,10 @@ const run = (command: string[], cwd: string) => {
 };
 
 describe('the release build', () => {
+  test('writes npm-valid executable paths without a leading dot segment', () => {
+    expect(publishedBin({ brydio: './bin/brydio.ts' })).toEqual({ brydio: 'bin/brydio.js' });
+  });
+
   test(
     'installs from its tarballs into a new app, which builds, validates, tests and type-checks',
     async () => {

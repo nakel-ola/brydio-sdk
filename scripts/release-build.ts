@@ -159,6 +159,10 @@ export function commitRefusal(
 /** A source path's compiled form: `./src/index.ts` → `./src/index.js`. Anything else is kept. */
 const compiled = (path: string) => path.replace(/\.tsx?$/, '.js');
 
+/** npm 11 rejects a leading `./` in published bin paths and silently removes the command. */
+export const publishedBin = (bin: Record<string, string>): Record<string, string> =>
+  Object.fromEntries(Object.entries(bin).map(([key, path]) => [key, compiled(path).replace(/^\.\//, '')]));
+
 /** An export entry for a published package: the types beside the code for TypeScript sources. */
 function exportEntry(path: string): string | { types: string; default: string } {
   return /\.tsx?$/.test(path) ? { types: path.replace(/\.tsx?$/, '.d.ts'), default: compiled(path) } : path;
@@ -259,7 +263,7 @@ export async function releaseBuild(options: ReleaseOptions = {}): Promise<Record
       ...(settings.repository ? { repository: { type: 'git', url: settings.repository, directory: `packages/${name}` } } : {}),
       gitHead: commit,
       exports: Object.fromEntries(Object.entries(pkg.exports ?? {}).map(([key, path]) => [key, exportEntry(path)])) as never,
-      ...(pkg.bin ? { bin: Object.fromEntries(Object.entries(pkg.bin).map(([key, path]) => [key, compiled(path)])) } : {}),
+      ...(pkg.bin ? { bin: publishedBin(pkg.bin) } : {}),
       files: [...includes, 'LICENSE', ...(COPIED[name] ?? []).map(path => path.split('/')[0]!)].filter((one, index, all) => all.indexOf(one) === index),
       ...(pkg.dependencies ? { dependencies: pkg.dependencies } : {}),
     };

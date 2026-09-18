@@ -1,6 +1,6 @@
 {
   "name": "@brydio/app",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "description": "The runtime a Brydio app's screen runs on, inside its worker: the tree, the bridge to the host, and the Preact adapter.",
   "license": "MIT",
   "author": "Brydio Inc.",
@@ -24,8 +24,8 @@
     "src"
   ],
   "dependencies": {
-    "@brydio/manifest": "0.1.0-alpha.3",
-    "@brydio/ui": "0.1.0-alpha.3",
+    "@brydio/manifest": "0.1.0-alpha.4",
+    "@brydio/ui": "0.1.0-alpha.4",
     "@prefresh/core": "1.5.11",
     "preact": "10.29.8"
   }
