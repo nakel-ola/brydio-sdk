@@ -78,6 +78,31 @@ function elementPage(name: ElementName, basePath: string): string {
 <section><h2>Renderer contact sheet</h2><p>These paths will hold the checked light and dark captures.</p><div class="contact-sheet"><figure><figcaption>Light</figcaption><img src="${href(basePath, `images/catalogue/${name}-light.png`)}" alt="${name} light renderer capture"></figure><figure><figcaption>Dark</figcaption><img src="${href(basePath, `images/catalogue/${name}-dark.png`)}" alt="${name} dark renderer capture"></figure></div></section>`, basePath);
 }
 
+function capturePage(name: ElementName, theme: 'light' | 'dark'): string {
+  const serialized = escapeHtml(JSON.stringify(EXAMPLES[name]));
+  const themeClass = theme === 'dark' ? 'dark' : 'light';
+
+  return `<!doctype html>
+<html lang="en" class="${themeClass}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${name} ${theme} capture</title>
+  <link rel="stylesheet" href="../../../assets/tokens.css">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 720px; min-height: 480px; margin: 0; }
+    body { display: grid; place-items: center; padding: 48px; background: var(--bg-canvas); color: var(--fg); font: 14px/1.5 Inter, ui-sans-serif, system-ui, sans-serif; }
+    .live-example { width: min(100%, 624px); }
+  </style>
+</head>
+<body>
+  <div class="live-example" data-example="${serialized}" aria-label="${name} ${theme} renderer capture"></div>
+  <script type="module" src="../../../assets/catalogue.js"></script>
+</body>
+</html>`;
+}
+
 async function packagePage(basePath: string): Promise<string> {
   const packages = await readdir(join(ROOT, 'packages'), { withFileTypes: true });
   const sections = await Promise.all(packages.filter(entry => entry.isDirectory()).sort((a, b) => a.name.localeCompare(b.name)).map(async entry => {
@@ -120,6 +145,10 @@ export async function buildDocsSite({ outDir, basePath }: SiteBuildOptions): Pro
   const catalogueReference = renderMarkdown(await docs('elements.md'), { linkFor: target => routeForMarkdown(normalizedBasePath, target) });
   await writeRoute('elements/index.html', shell('Catalogue', `<p class="eyebrow">Catalogue examples</p><p class="lede">Start with a working example, then check the generated contract for every setting, event, and child rule.</p><div class="page-grid">${ELEMENT_NAMES.map(name => `<a href="${href(normalizedBasePath, `elements/${name}/`)}"><strong>${name}</strong>${escapeHtml(EXAMPLES[name].about)}</a>`).join('')}</div><section class="generated-reference">${catalogueReference}</section>`, normalizedBasePath));
   for (const name of ELEMENT_NAMES) await writeRoute(`elements/${name}/index.html`, elementPage(name, normalizedBasePath));
+  for (const name of ELEMENT_NAMES) {
+    await writeRoute(`capture/${name}/light/index.html`, capturePage(name, 'light'));
+    await writeRoute(`capture/${name}/dark/index.html`, capturePage(name, 'dark'));
+  }
   await writeRoute('bridge/index.html', await markdownPage('The bridge', 'bridge.md'));
   await writeRoute('manifest/index.html', await markdownPage('Manifest', 'manifest.md'));
   await writeRoute('publish-checklist/index.html', await markdownPage('The publish checklist', 'publish-checklist.md'));
@@ -128,6 +157,7 @@ export async function buildDocsSite({ outDir, basePath }: SiteBuildOptions): Pro
   await writeRoute('packages/index.html', await packagePage(normalizedBasePath));
 
   await writeFile(join(outDir, 'assets', 'styles.css'), await readFile(join(import.meta.dir, 'styles.css')));
+  await writeFile(join(outDir, 'assets', 'tokens.css'), await readFile(join(ROOT, 'packages', 'ui', 'src', 'web', 'tokens.css')));
   await browserBundle(outDir);
   const publicDirectory = join(ROOT, 'docs-site', 'public');
   try {

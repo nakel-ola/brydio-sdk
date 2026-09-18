@@ -14,7 +14,8 @@
     "docs:bridge": "bun run scripts/docs-bridge.ts",
     "docs:elements": "bun run scripts/docs-elements.ts",
     "docs:manifest": "bun run scripts/docs-manifest.ts",
-    "docs:build": "bun run docs-site/src/site.ts"
+    "docs:build": "bun run docs-site/src/site.ts",
+    "docs:images": "bun run docs-site/src/capture.ts"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",

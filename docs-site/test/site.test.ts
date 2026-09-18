@@ -57,6 +57,14 @@ test('builds a route for every catalogue element with its contract and example',
   }
 });
 
+test('builds capture pages with browser assets reachable from their nested route', async () => {
+  const { outDir } = await build();
+  const capture = await page(outDir, 'capture/bry-button/light/index.html');
+
+  expect(capture).toContain('href="../../../assets/tokens.css"');
+  expect(capture).toContain('src="../../../assets/catalogue.js"');
+});
+
 test('renders the generated references and package guidance as static routes', async () => {
   const { outDir, site } = await build();
   const routes = [
