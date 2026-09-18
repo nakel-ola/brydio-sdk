@@ -15,11 +15,14 @@
     "docs:elements": "bun run scripts/docs-elements.ts",
     "docs:manifest": "bun run scripts/docs-manifest.ts",
     "docs:build": "bun run docs-site/src/site.ts",
-    "docs:images": "bun run docs-site/src/capture.ts"
+    "docs:images": "bun run docs-site/src/capture.ts",
+    "docs:check": "bun test packages/cli/test/elements-doc.test.ts packages/cli/test/bridge-doc.test.ts packages/manifest/test/manifest-doc.test.ts packages/cli/test/checklist-doc.test.ts docs-site/test && bun run docs:build && bun run check-types",
+    "docs:deploy": "wrangler deploy"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "wrangler": "4.135.0"
   },
   "devEngines": {
     "packageManager": {

@@ -4,6 +4,9 @@ These pages are the public contract for Brydio app builders. A static docs
 site can publish this directory once the owner chooses its domain and host.
 Until then, the repository renders every page directly.
 
+For a browsable static build, renderer captures, and the local authoring
+commands, see the [SDK documentation site](../docs-site/README.md).
+
 - [Manifest](manifest.md) lists every field, collection schema type, grant,
   placement, migration operation, and limit. It includes the full Issues
   manifest as a worked example.

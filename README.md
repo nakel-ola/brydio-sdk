@@ -164,7 +164,9 @@ from a dirty tree or without the addresses [support.md](docs/support.md) names.
 What the packages promise and what they do not, and how to report a problem,
 are [support.md](docs/support.md) and [security.md](docs/security.md).
 
-The [documentation index](docs/README.md) links every public reference.
+The [documentation index](docs/README.md) links every public reference. The
+[SDK documentation site](docs-site/README.md) turns those references into a
+static, browsable build with checked renderer captures.
 Everything a screen can ask Brydio to do, with its limits and what a refusal
 looks like, is [bridge.md](docs/bridge.md). Every element a screen may draw,
 with its settings, is [elements.md](docs/elements.md) — generated from the catalogue by
