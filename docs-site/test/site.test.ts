@@ -7,7 +7,7 @@ import { CATALOGUE, ELEMENT_NAMES, type ElementName } from '../../packages/ui/sr
 import { valuesOf } from '../../scripts/docs-elements.ts';
 import { EXAMPLES, jsxFor } from '../src/examples.ts';
 import { renderMarkdown } from '../src/markdown.ts';
-import { buildDocsSite, routeForMarkdown } from '../src/site.ts';
+import { buildDocsSite, outputDirectoryForBasePath, routeForMarkdown } from '../src/site.ts';
 
 const builds: string[] = [];
 
@@ -149,6 +149,18 @@ test('keeps root-relative internal links valid at root and under a base path', a
       }
     }
   }
+});
+
+test('writes a base-path build at the matching static request path', async () => {
+  const outputRoot = await mkdtemp(join(tmpdir(), 'brydio-docs-site-prefix-'));
+  builds.push(outputRoot);
+  const outDir = outputDirectoryForBasePath(outputRoot, '/sdk/');
+
+  await buildDocsSite({ outDir, basePath: '/sdk/' });
+
+  await expect(page(outputRoot, 'sdk/index.html')).resolves.toContain('href="/sdk/assets/styles.css"');
+  await expect(page(outputRoot, 'sdk/assets/styles.css')).resolves.toContain(':root');
+  await expect(page(outputRoot, 'sdk/bridge/index.html')).resolves.toContain('<main');
 });
 
 test('keeps wrapped list text in its list item', () => {

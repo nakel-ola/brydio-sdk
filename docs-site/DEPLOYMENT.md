@@ -17,6 +17,9 @@ Worker entry point, binding, route, secret, or runtime network dependency.
 
 The static build writes folder index files, so Workers' default HTML handling
 serves paths such as `/bridge/` without a custom rewrite.
+When `DOCS_BASE_PATH=/sdk/` is set, the builder writes the same site under
+`docs-site/dist/sdk`, so the request path and asset tree still match without a
+rewrite.
 
 ## Open owner decisions
 

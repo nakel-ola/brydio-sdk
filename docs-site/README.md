@@ -15,6 +15,9 @@ will live below a path prefix. For example:
 DOCS_BASE_PATH=/sdk/ bun run docs:build
 ```
 
+That build is written under `docs-site/dist/sdk`, matching the `/sdk/`
+request path without a rewrite.
+
 ## Preview
 
 Build first, then serve the static directory locally:
