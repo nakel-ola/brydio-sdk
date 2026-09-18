@@ -27,7 +27,31 @@ interface ImageEntry {
   sourceHash: string;
 }
 
-type ImageManifest = Record<ElementName, ImageEntry>;
+export type ImageManifest = Record<ElementName, ImageEntry>;
+
+export interface PublishFileSystem {
+  mkdir(path: string, options: { recursive: true }): Promise<void>;
+  mkdtemp(prefix: string): Promise<string>;
+  rename(from: string, to: string): Promise<void>;
+  rm(path: string, options: { force: true; recursive: true }): Promise<void>;
+  readdir(path: string): Promise<string[]>;
+  writeFile(path: string, data: string): Promise<void>;
+}
+
+export interface PublishOptions {
+  imageDirectory?: string;
+  imageParent?: string;
+  fileSystem?: PublishFileSystem;
+}
+
+const PUBLISH_FILE_SYSTEM: PublishFileSystem = {
+  async mkdir(path, options) { await mkdir(path, options); },
+  mkdtemp,
+  rename,
+  async rm(path, options) { await rm(path, options); },
+  readdir,
+  async writeFile(path, data) { await writeFile(path, data); },
+};
 
 async function firstExecutable(paths: readonly string[]): Promise<string | undefined> {
   for (const path of paths) {
@@ -178,39 +202,44 @@ async function capture(chrome: string, route: string, output: string): Promise<v
   validatePng(await readFile(output), route);
 }
 
-async function publish(captures: string, manifest: ImageManifest): Promise<void> {
-  await mkdir(IMAGE_PARENT, { recursive: true });
-  const next = await mkdtemp(join(IMAGE_PARENT, '.catalogue-next-'));
-  const backup = join(IMAGE_PARENT, `.catalogue-backup-${process.pid}`);
+export async function publish(captures: string, manifest: ImageManifest, options: PublishOptions = {}): Promise<void> {
+  const imageDirectory = options.imageDirectory ?? IMAGE_DIRECTORY;
+  const imageParent = options.imageParent ?? dirname(imageDirectory);
+  const fileSystem = options.fileSystem ?? PUBLISH_FILE_SYSTEM;
+  await fileSystem.mkdir(imageParent, { recursive: true });
+  const next = await fileSystem.mkdtemp(join(imageParent, '.catalogue-next-'));
+  const backup = join(imageParent, `.catalogue-backup-${process.pid}`);
   let previousMoved = false;
+  let published = false;
 
   try {
     for (const entry of Object.values(manifest)) {
-      await rename(join(captures, entry.light), join(next, entry.light));
-      await rename(join(captures, entry.dark), join(next, entry.dark));
+      await fileSystem.rename(join(captures, entry.light), join(next, entry.light));
+      await fileSystem.rename(join(captures, entry.dark), join(next, entry.dark));
     }
-    await writeFile(join(next, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+    await fileSystem.writeFile(join(next, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
     const expected = new Set(['manifest.json', ...Object.values(manifest).flatMap(entry => [entry.light, entry.dark])]);
-    const staged = await readdir(next);
+    const staged = await fileSystem.readdir(next);
     if (staged.length !== expected.size || staged.some(file => !expected.has(file))) throw new Error('Capture staging directory is incomplete.');
 
     try {
-      await rename(IMAGE_DIRECTORY, backup);
+      await fileSystem.rename(imageDirectory, backup);
       previousMoved = true;
     } catch (error) {
       if (!(error instanceof Error) || !('code' in error) || error.code !== 'ENOENT') throw error;
     }
-    await rename(next, IMAGE_DIRECTORY);
-    if (previousMoved) await rm(backup, { force: true, recursive: true });
+    await fileSystem.rename(next, imageDirectory);
+    published = true;
   } catch (error) {
-    if (previousMoved) {
-      await rm(IMAGE_DIRECTORY, { force: true, recursive: true });
-      await rename(backup, IMAGE_DIRECTORY);
+    if (previousMoved && !published) {
+      await fileSystem.rm(imageDirectory, { force: true, recursive: true });
+      await fileSystem.rename(backup, imageDirectory);
     }
     throw error;
   } finally {
-    await rm(next, { force: true, recursive: true });
+    await fileSystem.rm(next, { force: true, recursive: true });
   }
+  if (previousMoved) await fileSystem.rm(backup, { force: true, recursive: true });
 }
 
 async function main(): Promise<void> {
