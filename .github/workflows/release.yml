@@ -97,7 +97,7 @@ jobs:
         working-directory: release
         run: |
           set -euo pipefail
-          for package in manifest ui app fake-host cli; do
+          for package in manifest ui app api fake-host cli; do
             echo "Publishing @brydio/$package"
-            (cd "$package" && npm publish --access public --provenance)
+            (cd "$package" && npm publish --access public --provenance --tag next)
           done

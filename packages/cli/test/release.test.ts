@@ -282,6 +282,17 @@ describe('the release build', () => {
     expect(changelogRefusal('9.9.9', log, true)).toBeNull();
   });
 
+  test('the tag workflow publishes every released package in dependency order', () => {
+    const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'release.yml'), 'utf8');
+    const names = workflow
+      .match(/for package in ([^;]+); do/)?.[1]
+      ?.trim()
+      .split(/\s+/);
+
+    expect(names).toEqual([...RELEASED]);
+    expect(workflow).toContain('npm publish --access public --provenance --tag next');
+  });
+
   test('will not build publishable packages from a tree that has changes in it', () => {
     const commit = 'a'.repeat(40);
 

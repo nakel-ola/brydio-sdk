@@ -22,6 +22,20 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.1
+
+The app API release.
+
+- **`@brydio/api`** adds typed project, file, chat and named-connection calls
+  through Brydio's authenticated app bridge. Apps receive no token, cookie or
+  server address, and writes wait for the person's approval in Brydio.
+- **The fake host** can answer app API calls, so a compiled screen can test the
+  same bridge it uses in Brydio.
+- **All six packages publish together** in dependency order.
+
+Nothing to change unless an app adopts `@brydio/api`; declare the matching
+`projects`, `files`, `chats` or exact `connection:<name>` host grant first.
+
 ## 0.1.0-alpha.0
 
 The first packages: `@brydio/manifest`, `@brydio/ui`, `@brydio/app`,

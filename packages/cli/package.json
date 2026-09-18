@@ -1,6 +1,6 @@
 {
   "name": "@brydio/cli",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "brydio build, validate and dev: turn an app's source into the bundle Brydio loads.",
   "license": "MIT",
   "author": "Brydio Inc.",
@@ -23,8 +23,8 @@
     "ts-plugin"
   ],
   "dependencies": {
-    "@brydio/manifest": "0.1.0-alpha.0",
-    "@brydio/ui": "0.1.0-alpha.0",
+    "@brydio/manifest": "0.1.0-alpha.1",
+    "@brydio/ui": "0.1.0-alpha.1",
     "typescript": "5.9.3"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@brydio/api",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "Typed access to Brydio projects, files, chats, and named connections from an app screen.",
   "license": "MIT",
   "author": "Brydio Inc.",
@@ -17,6 +17,6 @@
     "src"
   ],
   "dependencies": {
-    "@brydio/app": "0.1.0-alpha.0"
+    "@brydio/app": "0.1.0-alpha.1"
   }
 }
