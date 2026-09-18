@@ -12,21 +12,21 @@ Checked against npm and GitHub on 18 September 2026:
 
 | Item | State | What remains |
 |---|---|---|
-| `@brydio/manifest` | `0.1.0-alpha.3` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
-| `@brydio/ui` | `0.1.0-alpha.3` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
-| `@brydio/app` | `0.1.0-alpha.3` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
-| `@brydio/api` | `0.1.0-alpha.3` is public under `next`; `latest` remains `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
-| `@brydio/fake-host` | `0.1.0-alpha.3` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
-| `@brydio/cli` | `0.1.0-alpha.3` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
+| `@brydio/manifest` | `0.1.0-alpha.4` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
+| `@brydio/ui` | `0.1.0-alpha.4` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
+| `@brydio/app` | `0.1.0-alpha.4` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
+| `@brydio/api` | `0.1.0-alpha.4` is public under `next`; `latest` remains `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
+| `@brydio/fake-host` | `0.1.0-alpha.4` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
+| `@brydio/cli` | `0.1.0-alpha.4` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
 | SDK repository | `nakel-ola/brydio-sdk` is private | The owner decides when to make it public. |
 | Docs site | No GitHub Pages site and no configured homepage | The owner chooses the domain and hosting vendor. |
 | Support destinations | `support@brydio.app` and private `security@brydio.app` are set | Keep both monitored; a publishable build refuses if either is removed. |
 
 Release run
-[`35384539354`](https://github.com/nakel-ola/brydio-sdk/actions/runs/35384539354)
-completed on commit `19f96a9`: type-check, tests, the publishable build, tag
+[`35385516669`](https://github.com/nakel-ola/brydio-sdk/actions/runs/35385516669)
+completed on commit `3668aa5`: type-check, tests, the publishable build, tag
 match, install-from-tarballs proof and dependency-ordered publish all passed.
-Each `0.1.0-alpha.3` package records that commit as `gitHead`.
+Each `0.1.0-alpha.4` package records that commit as `gitHead`.
 
 `npm create @brydio/app` is deliberately absent from this release. The
 current `brydio create` reads templates and `tsconfig.base.json` from a local
