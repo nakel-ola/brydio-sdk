@@ -154,7 +154,7 @@ When Brydio's answers change, those tests fail with Brydio beside them. Then
 run `bun run contracts:record`, which writes the new answers and the Brydio
 commit they came from, and review the diff before committing it.
 
-All six packages are public on npm at `0.1.0-alpha.4` under the `next` tag:
+All six packages are public on npm at `0.1.0-alpha.5` under the `next` tag:
 `@brydio/manifest`, `@brydio/ui`, `@brydio/app`, `@brydio/api`,
 `@brydio/fake-host` and `@brydio/cli`. The exact release state and remaining
 owner steps are in [releasing.md](docs/releasing.md). `bun run release:build`
