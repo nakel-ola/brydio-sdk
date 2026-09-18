@@ -28,10 +28,12 @@ function href(basePath: string, route = ''): string {
   return `${basePath}${route}`;
 }
 
-function routeForMarkdown(basePath: string, target: string): string {
+export function routeForMarkdown(basePath: string, target: string): string {
   if (/^(?:https?:|mailto:|#)/.test(target)) return target;
-  const route = target.replace(/^\.\//, '').replace(/\.md(#.*)?$/, '$1').replace(/#$/, '');
-  return href(basePath, route ? `${route.replace(/\/$/, '')}/` : '');
+  const fragmentAt = target.indexOf('#');
+  const document = (fragmentAt === -1 ? target : target.slice(0, fragmentAt)).replace(/^\.\//, '').replace(/\.md$/, '');
+  const fragment = fragmentAt === -1 ? '' : target.slice(fragmentAt);
+  return `${href(basePath, document ? `${document.replace(/\/$/, '')}/` : '')}${fragment}`;
 }
 
 function shell(title: string, content: string, basePath: string): string {
@@ -115,7 +117,8 @@ export async function buildDocsSite({ outDir, basePath }: SiteBuildOptions): Pro
   const markdownPage = async (title: string, source: string) => shell(title, renderMarkdown(await docs(source), { linkFor: target => routeForMarkdown(normalizedBasePath, target) }), normalizedBasePath);
 
   await writeRoute('index.html', shell('Documentation', `<p class="eyebrow">Contract bench</p><h1>Build a Brydio app without reading its source.</h1><p class="lede">The reference below is generated from the SDK contracts. It names the bridge, manifest rules, element settings, and release checks your app must meet.</p><div class="page-grid"><a href="${href(normalizedBasePath, 'elements/')}"><strong>Catalogue</strong>Every element and a working example.</a><a href="${href(normalizedBasePath, 'bridge/')}"><strong>Bridge</strong>The worker's route into Brydio.</a><a href="${href(normalizedBasePath, 'manifest/')}"><strong>Manifest</strong>Describe an app before it runs.</a><a href="${href(normalizedBasePath, 'publish-checklist/')}"><strong>Publish checklist</strong>Find the exact refusal before release.</a></div>`, normalizedBasePath));
-  await writeRoute('elements/index.html', shell('Catalogue', `<p class="eyebrow">Catalogue</p><h1>Elements with their accepted settings.</h1><div class="page-grid">${ELEMENT_NAMES.map(name => `<a href="${href(normalizedBasePath, `elements/${name}/`)}"><strong>${name}</strong>${escapeHtml(EXAMPLES[name].about)}</a>`).join('')}</div>`, normalizedBasePath));
+  const catalogueReference = renderMarkdown(await docs('elements.md'), { linkFor: target => routeForMarkdown(normalizedBasePath, target) });
+  await writeRoute('elements/index.html', shell('Catalogue', `<p class="eyebrow">Catalogue examples</p><p class="lede">Start with a working example, then check the generated contract for every setting, event, and child rule.</p><div class="page-grid">${ELEMENT_NAMES.map(name => `<a href="${href(normalizedBasePath, `elements/${name}/`)}"><strong>${name}</strong>${escapeHtml(EXAMPLES[name].about)}</a>`).join('')}</div><section class="generated-reference">${catalogueReference}</section>`, normalizedBasePath));
   for (const name of ELEMENT_NAMES) await writeRoute(`elements/${name}/index.html`, elementPage(name, normalizedBasePath));
   await writeRoute('bridge/index.html', await markdownPage('The bridge', 'bridge.md'));
   await writeRoute('manifest/index.html', await markdownPage('Manifest', 'manifest.md'));

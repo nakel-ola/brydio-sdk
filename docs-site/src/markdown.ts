@@ -21,13 +21,16 @@ function slug(value: string): string {
 }
 
 function inline(value: string, options: MarkdownOptions): string {
-  const escaped = escapeHtml(value);
-  const links = escaped.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label: string, href: string) => {
+  const links: string[] = [];
+  const withPlaceholders = value.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label: string, href: string) => {
     const target = options.linkFor?.(href) ?? href;
-    return `<a href="${escapeHtml(target)}">${label}</a>`;
+    links.push(`<a href="${escapeHtml(target)}">${escapeHtml(label)}</a>`);
+    return `\u0000link-${links.length - 1}\u0000`;
   });
+  const escaped = escapeHtml(withPlaceholders);
+  const restoredLinks = escaped.replace(/\u0000link-(\d+)\u0000/g, (_match, index: string) => links[Number(index)] ?? '');
 
-  return links
+  return restoredLinks
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 }
@@ -88,7 +91,7 @@ export function renderMarkdown(source: string, options: MarkdownOptions = {}): s
       while (index < lines.length && (lines[index] ?? '').includes('|') && (lines[index] ?? '').trim() !== '') {
         rows.push(tableCells(lines[index++] ?? ''));
       }
-      html.push(`<table><thead><tr>${headers.map(cell => `<th>${inline(cell, options)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${inline(cell, options)}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
+      html.push(`<div class="table-scroll" tabindex="0" role="region" aria-label="Reference table"><table><thead><tr>${headers.map(cell => `<th>${inline(cell, options)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${inline(cell, options)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
       continue;
     }
 

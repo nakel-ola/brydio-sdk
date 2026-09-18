@@ -7,7 +7,7 @@ import { CATALOGUE, ELEMENT_NAMES, type ElementName } from '../../packages/ui/sr
 import { valuesOf } from '../../scripts/docs-elements.ts';
 import { EXAMPLES, jsxFor } from '../src/examples.ts';
 import { renderMarkdown } from '../src/markdown.ts';
-import { buildDocsSite } from '../src/site.ts';
+import { buildDocsSite, routeForMarkdown } from '../src/site.ts';
 
 const builds: string[] = [];
 
@@ -85,6 +85,27 @@ test('renders the generated references and package guidance as static routes', a
   expect(packages).toContain('0.1.0-alpha.4');
 });
 
+test('renders generated catalogue child and event guidance beside examples', async () => {
+  const { outDir } = await build();
+  const catalogue = await page(outDir, 'elements/index.html');
+
+  expect(catalogue).toContain('<h2 id="bry-button"><code>bry-button</code></h2>');
+  expect(catalogue).toContain('Holds nothing: it is drawn from its settings alone.');
+  expect(catalogue).toContain('Tells the app: <code>press</code>.');
+  expect(catalogue).toContain('An action button.');
+});
+
+test('contains generated reference tables on narrow screens', async () => {
+  const { outDir } = await build();
+  const checklist = await page(outDir, 'publish-checklist/index.html');
+  const styles = await page(outDir, 'assets/styles.css');
+
+  expect(checklist).toContain('<div class="table-scroll"');
+  expect(styles).toContain('.table-scroll { overflow-x: auto; max-width: 100%;');
+  expect(styles).toContain('.table-scroll code { white-space: normal; overflow-wrap: anywhere; }');
+  expect(styles).toContain('main { min-width: 0;');
+});
+
 test('keeps root-relative internal links valid at root and under a base path', async () => {
   for (const basePath of ['/', '/sdk/']) {
     const { outDir } = await build(basePath);
@@ -115,6 +136,14 @@ test('keeps root-relative internal links valid at root and under a base path', a
 
 test('keeps wrapped list text in its list item', () => {
   expect(renderMarkdown('- **validate**: checked before\n  uploading\n')).toBe('<ul><li><strong>validate</strong>: checked before uploading</li></ul>');
+});
+
+test('rewrites a Markdown document link before its fragment', () => {
+  expect(routeForMarkdown('/sdk/', 'bridge.md#brydioapi')).toBe('/sdk/bridge/#brydioapi');
+});
+
+test('escapes a Markdown link destination exactly once', () => {
+  expect(renderMarkdown('[reference](https://example.com/?a=1&b=2)')).toBe('<p><a href="https://example.com/?a=1&amp;b=2">reference</a></p>');
 });
 
 test('emits a self-contained build without unresolved template values', async () => {
