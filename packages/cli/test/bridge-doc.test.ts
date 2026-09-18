@@ -11,7 +11,10 @@ import {
   MAX_TOAST_CHARS,
   READY_BUDGET_MS,
   START_BUDGET_MS,
+  HOST_METHODS,
+  WORKER_METHODS,
 } from '../../app/src/protocol.ts';
+import { bridgeDoc } from '../../../scripts/docs-bridge.ts';
 
 /**
  * `docs/bridge.md` and the bridge say the same (A9-F03-S02).
@@ -48,6 +51,18 @@ function callsInSource(): string[] {
 }
 
 describe('the bridge reference', () => {
+  test('is the generated page, to the character', () => {
+    expect(page.trim()).toBe(bridgeDoc().trim());
+  });
+
+  test('has a protocol row for every method the worker and host send', () => {
+    const methods = [...WORKER_METHODS, ...HOST_METHODS];
+    const missing = methods.filter(method => !page.includes(`| \`${method}\` |`));
+
+    expect(methods.length).toBeGreaterThan(30);
+    expect(missing).toEqual([]);
+  });
+
   test('has a section for every call a screen can make', () => {
     const calls = callsInSource();
 

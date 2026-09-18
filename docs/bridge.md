@@ -1,66 +1,83 @@
 # The bridge
 
-Everything a screen can ask Brydio to do, and what comes back when it will
-not. A screen runs in a worker with no page, no network and no storage of its
-own, so this is the whole of its reach — there is nothing else to call.
+A screen runs in a worker with no page, network, storage, cookies, or server
+address. The SDK bridge is its only route into Brydio.
 
-Each call below is a method on `@brydio/app`. Its limits are the host's, not
-suggestions: `packages/cli/test/bridge-doc.test.ts` reads the numbers out of
-the code and fails if this page says anything else.
+The wire protocol is `brydio-tree/1`. **This page is generated** by
+`bun run docs:bridge`. The protocol table reads `WORKER_METHODS` and
+`HOST_METHODS` directly, and every limit below reads its exported constant.
+Do not edit this page by hand.
 
-## What a refusal looks like
+## Errors
 
-Four errors, and which one you get says who refused.
-
-| Error | Means | What to do |
+| Error | Who refused | What to do |
 |---|---|---|
-| `GrantError` | The app asked for something **its own manifest never asked to be granted**. Thrown in the worker, before anything reaches Brydio. | Add the tool, collection or capability to `grants` in `.brydio/app.json`. The message names it. |
-| `HostError` | **Brydio** refused or failed the call. `code` is JSON-RPC's; `-32000` is a refusal. | Read `message`: it is written for a person. A refusal is usually a grant the workspace did not give, or a person saying no. |
-| `ToolError` | The tool **ran and said no**. `code` is the tool's own word — `stale`, `refused`, `invalid` — and `data` carries what it sent; for `stale`, the record as it is now under `current`. | For `stale`, read the record again and offer the person the newer one. |
-| `TeardownError` | The host **stopped the screen** before the answer arrived. | Nothing. The worker is going; do not retry. |
+| `GrantError` | The app's own manifest did not ask for the tool, collection, or host grant. | Add the named grant to `.brydio/app.json`. |
+| `HostError` | Brydio refused or failed the request. | Read its `message`. Code `-32000` is a refusal. |
+| `ToolError` | The tool ran and returned `isError`. | Use its tool code and data. On `stale`, read the record again. |
+| `TeardownError` | Brydio stopped the screen before a reply arrived. | Do not retry from the worker that is stopping. |
 
-A tool that answers with `isError` rejects as a `ToolError` through
-`tools.call`. Use `tools.result` where you would rather have the whole result
-than a rejection.
+`tools.call` rejects a tool result with `isError`. `tools.result` returns the
+whole `ToolResult` instead.
 
-## `connect()`
+## Public calls
 
-Says hello and resolves with the `HostContext`: the theme, the locale, the
-placement, the instance, what the person has selected and the size the screen
-is drawn at. Nothing an app sends reaches Brydio before this has resolved.
+### `connect()`
 
-`mount()` does it for you, so a screen that draws needs only one of the two.
+Sends `worker/ready` once and resolves with `HostContext`. `mount()` calls it
+for a screen that draws immediately.
 
-## `host.context` and `host.subscribe(listener)`
+### `host.context` and `host.subscribe(listener)`
 
-`host.context` is the latest context, or `null` before the first has arrived.
-`subscribe` calls the listener each time Brydio sends it again — the person
-changed theme, resized the tab, selected something else — and returns a
-function that stops listening.
+`host.context` is the latest context or `null`. `host.subscribe` receives each
+later theme, size, selection, placement, or instance update and returns an
+unsubscribe function.
 
-## `tools.call(tool, input)` and `tools.result(tool, input)`
+### `tools.call(tool, input)` and `tools.result(tool, input)`
 
-Calls one of the app's tools: the generated ones for its collections, and any
-the manifest declares. **A write waits for the person to agree first** — that
-is Brydio's, not the app's, and an app cannot skip it.
+Calls one generated or custom tool. A write waits for Brydio to show an
+approval card. A missing manifest grant throws `GrantError` before the message
+leaves the worker.
 
-- `call` resolves with what the tool returned and rejects on refusal.
-- `result` answers with the whole `ToolResult`, `isError` and all.
+### `data.get(collection, id)` and `data.list(collection, query)`
 
-A tool the manifest does not ask for is a `GrantError` before the call leaves
-the worker.
+`data.get` returns one record. `data.list` accepts `filter`, `sort`, `limit`,
+and `cursor`; a page is 50 by default, 200 at most.
+The result carries `items` and `nextCursor`.
 
-## `api.projects`, `api.files`, `api.chats` and `api.connections`
+### `data.watch(collection, onChange, onEnd)`
 
-Import these from `@brydio/api`. They are typed reads and writes over Brydio's
-own projects, files and chats, plus a named connection the person has already
-made. The app receives no session token, cookie, API address or OAuth token.
+Watches one collection and returns a function that stops. Each change has only
+`{ id, op, version }`, so the screen reads the record again under current
+access. One open app may watch at most 5 collections.
 
-Each family needs its host grant: `projects`, `files`, `chats`, or the exact
-`connection:<name>`. `*` covers the first three and never a connection. Reads
-run after Brydio checks the installed grant and the current person's access.
-Writes wait for Brydio's approval card and run the server-held request only
-after **Allow once**.
+### `navigate(to)`
+
+Opens a chat, file, project, or app item and resolves with `{ opened }`. It
+needs `navigate` in `grants.host`.
+
+### `toast(text, tone)`
+
+Shows one Brydio toast in the `info`, `success`, or `danger` tone. Text is cut at 200 characters.
+
+### `mount(build, options)`
+
+Connects, gives the plain builder a remote root and `HostContext`, and sends
+the first tree. That tree must arrive within 2 seconds. The Preact entry point has
+its own `mount`; a screen uses one or the other.
+
+### `onTeardown(listener)`
+
+Runs when Brydio stops the screen. Use it to release local resources. Calls
+started during teardown will not receive an answer.
+
+## `@brydio/api`
+
+`api.projects`, `api.files`, `api.chats`, and `api.connections` are typed
+calls over `api/call`. The app receives no token, cookie, API address, or
+connection credential. Each family needs `projects`, `files`, `chats`, or the
+exact `connection:<name>` host grant. `*` never grants a connection. Reads run
+after Brydio checks the current person. Writes wait for **Allow once**.
 
 ```ts
 import { api } from '@brydio/api';
@@ -72,75 +89,59 @@ const issues = await api.connections.use('github').request({
 });
 ```
 
-A connection request takes a relative path, never an origin. `GET` and `HEAD`
-are reads. `POST`, `PUT`, `PATCH` and `DELETE` are approval-gated writes.
+A connection path is relative. `GET` and `HEAD` are reads. `POST`, `PUT`,
+`PATCH`, and `DELETE` are approval-gated writes.
 
-## `data.get(collection, id)`
+## Protocol methods
 
-One record by id, through the generated `get_*` tool.
+| Method | Direction | Payload | Result or effect |
+|---|---|---|---|
+| `worker/ready` | app to Brydio | `WorkerReadyParams`: protocol, app name/version, SDK and capabilities | Starts the session; Brydio answers with `host/context`. |
+| `tree/mount` | app to Brydio | `TreeMountParams`: root id and the complete first node list | Replaces the empty tree. It must arrive inside the first-tree budget. |
+| `tree/patch` | app to Brydio | `TreePatchParams`: ordered insert, remove, move, props and text operations | Changes the mounted tree. A refused operation produces `tree/refused`. |
+| `tools/call` | app to Brydio | `ToolsCallParams`: call id, tool name and input record | `tools/result` or `tools/error` with the same id. |
+| `api/call` | app to Brydio | `ApiCallParams`: one closed `ApiAction` and its input record | `api/result` or `api/error`. Writes wait for Brydio approval. |
+| `data/get` | app to Brydio | `{ collection, id }` plus the envelope id | `data/result` with one record, or `data/error`. |
+| `data/list` | app to Brydio | `{ collection, filter?, sort?, limit?, cursor? }` plus the envelope id | `data/result` with one page, or `data/error`. |
+| `data/subscribe` | app to Brydio | `DataWatchParams`: collection, plus the envelope id | `data/result` starts the watch; changes arrive as `data/changed`. |
+| `data/unsubscribe` | app to Brydio | `DataWatchParams`: collection, plus the envelope id | `data/result` after the host stops that watch. |
+| `ui/navigate` | app to Brydio | `UiNavigateParams`: a chat, file, project, or app item target | `ui/result` with `{ opened }`, or `ui/error`. |
+| `ui/toast` | app to Brydio | `UiToastParams`: text and optional tone | No reply. Brydio shows the sentence in its own toast. |
+| `host/members` | app to Brydio | `{ ids? }` plus the envelope id | `host/result` with visible member names, or `host/error`. |
+| `host/projects` | app to Brydio | `{ ids }` plus the envelope id | `host/result` with visible project names, or `host/error`. |
+| `ui/message` | app to Brydio | `{ text, target? }` plus the envelope id | `ui/result` after Brydio opens or appends to a chat, or `ui/error`. |
+| `tree/ack` | app to Brydio | `{ node, name }` after the event handler starts | No reply. It lets Brydio clear the event budget. |
+| `dev/updated` | app to Brydio | `DevUpdatedParams`: build number | No reply. The development host keeps the worker. |
+| `dev/restart` | app to Brydio | `DevUpdatedParams`: build number and reason | No reply. The development host replaces the worker. |
+| `host/context` | Brydio to app | `HostContext`: theme, locale, placement, instance, selection and size | Resolves `connect()` the first time and notifies context subscribers later. |
+| `tree/event` | Brydio to app | `TreeEventParams`: node id, event name and optional detail | Runs the element handler. An ack-capable worker sends `tree/ack`. |
+| `tree/refused` | Brydio to app | `TreeRefusedParams`: operation, optional node and reason | Notifies refusal listeners. The third refusal stops the app. |
+| `tools/result` | Brydio to app | `ToolsResultParams`: call id and `ToolResult` | Resolves `tools.result`; `tools.call` rejects if `isError` is true. |
+| `tools/error` | Brydio to app | `ToolsErrorParams`: call id and JSON-RPC error | Rejects the matching tool call with `HostError`. |
+| `api/result` | Brydio to app | `{ id, result }` | Resolves the matching `@brydio/api` call. |
+| `api/error` | Brydio to app | `{ id, error }` | Rejects the matching `@brydio/api` call with `HostError`. |
+| `data/result` | Brydio to app | `DataResultParams`: request id and result | Resolves a get, list, subscribe or unsubscribe request. |
+| `data/error` | Brydio to app | `{ id, error }` | Rejects the matching data request with `HostError`. |
+| `data/changed` | Brydio to app | `DataChangedParams`: collection and id/op/version changes | Calls every listener for that watched collection. |
+| `data/ended` | Brydio to app | `DataEndedParams`: collection and reason | Ends that watch and calls its `onEnd` listeners. |
+| `ui/result` | Brydio to app | `UiResultParams`: request id and result | Resolves the matching navigation or message request. |
+| `ui/error` | Brydio to app | `{ id, error }` | Rejects the matching UI request with `HostError`. |
+| `host/result` | Brydio to app | `{ id, result }` | Resolves the matching member or project name request. |
+| `host/error` | Brydio to app | `{ id, error }` | Rejects the matching host request with `HostError`. |
+| `dev/update` | Brydio to app | `DevUpdateParams`: new entry URL and build number | The worker answers `dev/updated` or `dev/restart`. |
+| `worker/teardown` | Brydio to app | No required fields | Rejects pending work with `TeardownError`, runs teardown listeners, and stops. |
 
-## `data.list(collection, query)`
-
-A page of records, through the generated `list_*` tool.
-
-- **Page size: 50 by default, 200 at most.** Asking for more is refused
-  rather than quietly trimmed.
-- The answer carries the records and a cursor when there are more.
-
-## `data.watch(collection, onChange, onEnd)`
-
-Calls `onChange` with each burst of changes to a collection — whoever made
-them, the person, the assistant or another screen — until the function it
-returns is called.
-
-- **A change names a record (`{ id, op, version }`) and never says what it
-  holds.** Read it again: that way a watch can never leak a record the person
-  may not see.
-- **At most five collections watched per open app.**
-- `onEnd` hears why Brydio stopped or refused the watch.
-
-## `navigate(to)`
-
-Asks Brydio to open a chat, a file, a project or one of the app's own items,
-and resolves with `{ opened }`. Needs the `navigate` host capability, so
-without it in `grants.host` it is a `GrantError`.
-
-## `toast(text, tone)`
-
-One sentence in Brydio's own toast, with `tone` of `info`, `success` or
-`danger`. **Cut at 200 characters.** It is not a way to draw: it is for
-saying what just happened.
-
-## `mount(build, options)`
-
-Connects and draws a screen with the plain API: `build` is handed the root and
-the host's context, and whatever it appends goes up as the first tree. It
-resolves with the root, so a later change is `root.append(…)` and the host
-sees it.
-
-The Preact binding in `@brydio/app/preact` has its own `mount`, which does the
-same thing with components; a screen uses one or the other, not both.
-
-**The first tree has to go up within 2 seconds of connecting**, so do the
-drawing first and the reading after: append what you have, then fill it in
-when `data.list` answers.
-
-## `onTeardown(listener)`
-
-Called when Brydio stops the screen, before the worker ends. For letting go
-of what you are holding, not for a last call — nothing will answer.
-
-## The limits every call lives under
+## Limits
 
 | Limit | Value | What happens |
 |---|---|---|
 | One message | **512 KB** | Brydio stops the app rather than reading it. |
-| Refusals | **3** | The third refusal stops the app: an app that keeps asking for what it was told it cannot have is not going to stop by itself. |
-| Loading the code | **10 s** | From the frame appearing to the worker saying hello. |
-| First tree | **2 s** | From hello to the first `tree/mount`. |
-| A node's id | **128 characters** | |
-| A toast | **200 characters** | Cut to fit. |
+| Refusals | **3** | The third refused tree operation stops the app. |
+| Loading the code | **10 s** | From the frame appearing to `worker/ready`. |
+| First tree | **2 s** | From `worker/ready` to `tree/mount`. |
+| A node's id | **128 characters** | Longer ids are refused. |
+| A toast | **200 characters** | Longer text is cut. |
 
-Calls per minute are the host's, and a workspace's administrator sees them in
-the app's activity; a call refused for going too fast is a `HostError` that
-says so.
+Calls per minute are Brydio's limit, not an SDK constant. An administrator
+sees the rate in app activity. A rate refusal is a `HostError` with a message
+written for the builder.
