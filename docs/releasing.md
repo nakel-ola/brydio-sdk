@@ -8,27 +8,27 @@ The workflow is [`.github/workflows/release.yml`](../.github/workflows/release.y
 
 ## Current release inventory
 
-Checked against npm and GitHub on 19 September 2026, before the alpha.6 tag:
+Checked against npm and GitHub on 19 September 2026, after the alpha.6 tag:
 
 | Item | State | What remains |
 |---|---|---|
-| `@brydio/manifest` | `0.1.0-alpha.5` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
-| `@brydio/ui` | `0.1.0-alpha.5` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
-| `@brydio/app` | `0.1.0-alpha.5` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
-| `@brydio/api` | `0.1.0-alpha.5` is public under `next`; `latest` remains `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
-| `@brydio/fake-host` | `0.1.0-alpha.5` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
-| `@brydio/cli` | `0.1.0-alpha.5` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
-| `@brydio/create-app` | `0.1.0-alpha.0` was registered locally under `alpha`; `nakel-ola/brydio-sdk` / `release.yml` is its trusted publisher | Publish `0.1.0-alpha.6` through the synchronized OIDC tag, then assign only this package's `latest` tag. |
+| `@brydio/manifest` | `0.1.0-alpha.6` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
+| `@brydio/ui` | `0.1.0-alpha.6` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
+| `@brydio/app` | `0.1.0-alpha.6` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
+| `@brydio/api` | `0.1.0-alpha.6` is public under `next`; `latest` remains `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
+| `@brydio/fake-host` | `0.1.0-alpha.6` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
+| `@brydio/cli` | `0.1.0-alpha.6` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
+| `@brydio/create-app` | `0.1.0-alpha.6` is public under `latest` and `next`; `alpha` remains the locally registered `0.1.0-alpha.0` | No release action remains. |
 | SDK repository | `nakel-ola/brydio-sdk` is public | Keep release sources and tags public. |
 | Docs site | Cloudflare Workers assets are configured; no production deployment or domain is recorded | The owner chooses the domain and deployment trigger. |
 | Support destinations | `support@brydio.app` and private `security@brydio.app` are set | Keep both monitored; a publishable build refuses if either is removed. |
 
 Release run
-[`35402393806`](https://github.com/nakel-ola/brydio-sdk/actions/runs/35402393806)
-completed on commit `f9e9941`: type-check, tests, the publishable build, tag
-match, install-from-tarballs proof and dependency-ordered publish all passed.
-Each `0.1.0-alpha.5` package records that commit as `gitHead` and includes npm
-provenance from the public source repository.
+[`35468784814`](https://github.com/nakel-ola/brydio-sdk/actions/runs/35468784814)
+completed on commit `24bd1c6`: type-check, 462 tests, the publishable build,
+tag match, install-from-tarballs proof and dependency-ordered publish all
+passed. Each `0.1.0-alpha.6` package records that commit as `gitHead` and
+includes npm provenance from the public source repository.
 
 `0.1.0-alpha.6` adds `@brydio/create-app`, which carries both templates and
 `tsconfig.base.json`. Its launcher supplies the exact synchronized version to
@@ -51,8 +51,8 @@ linked for SDK development.
 6. `create-app` publishes first under `next`, so missing first-publish trust
    stops before an existing package is changed. The workflow then publishes
    `manifest`, `ui`, `app`, `api`, `fake-host` and `cli` under `next`.
-7. An authenticated owner assigns `latest` only to the verified
-   `@brydio/create-app` version. OIDC deliberately cannot change dist-tags.
+7. Dist-tags remain a separate authenticated owner action. OIDC deliberately
+   cannot change them.
 
 A pull request that touches the packages, the release script or the
 workflow runs steps 2 to 5 and publishes nothing.
