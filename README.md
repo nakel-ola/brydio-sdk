@@ -37,6 +37,7 @@ it is Issues, in `../brydio-issues`.
 | `packages/api` | Typed project, file, chat and named-connection reads and writes. Every call goes through the app bridge; no token, cookie or server address reaches the app. |
 | `packages/fake-host` | A pretend Brydio for tests: it runs a built screen, remembers what it drew, lets a test press buttons, and answers tools from sample records. |
 | `packages/cli` | The `brydio` command: `build`, `validate`, `test`, `dev` and `publish`. |
+| `packages/create-app` | The packaged templates and initializer behind `npm create @brydio/app`. |
 | `templates/preact` | A starter app (a checklist) to copy. |
 | `CONTRACT-NOTES.md` | Every place the plan and Brydio's actual code differed, and which way this went. |
 
@@ -49,6 +50,14 @@ It is not for app screens — Brydio draws those itself with its own kit, and
 nothing built on this SDK needs the web components. See `packages/ui/README.md`.
 
 ## The `brydio` command
+
+Start a Preact app outside this checkout (with Bun 1.3 or newer installed):
+
+```sh
+npm create @brydio/app my-app
+cd my-app
+bun run test
+```
 
 Run these in an app's folder (they need [Bun](https://bun.sh) 1.3):
 
@@ -154,11 +163,11 @@ When Brydio's answers change, those tests fail with Brydio beside them. Then
 run `bun run contracts:record`, which writes the new answers and the Brydio
 commit they came from, and review the diff before committing it.
 
-All six packages are public on npm at `0.1.0-alpha.5` under the `next` tag:
-`@brydio/manifest`, `@brydio/ui`, `@brydio/app`, `@brydio/api`,
-`@brydio/fake-host` and `@brydio/cli`. The exact release state and remaining
-owner steps are in [releasing.md](docs/releasing.md). `bun run release:build`
-makes the six packages a registry would get, and refuses publishable output
+The seven synchronized packages are `@brydio/create-app`, `@brydio/manifest`,
+`@brydio/ui`, `@brydio/app`, `@brydio/api`, `@brydio/fake-host` and
+`@brydio/cli`. The exact registry state and remaining owner steps are in
+[releasing.md](docs/releasing.md). `bun run release:build`
+makes the seven packages a registry would get, and refuses publishable output
 from a dirty tree or without the addresses [support.md](docs/support.md) names.
 
 What the packages promise and what they do not, and how to report a problem,

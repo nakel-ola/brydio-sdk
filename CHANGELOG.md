@@ -22,6 +22,23 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.6
+
+The packaged create experience.
+
+- **`npm create @brydio/app <name>` starts outside an SDK checkout.** The new
+  `@brydio/create-app` package carries the Preact and plain templates plus the
+  shared TypeScript configuration.
+- **Generated apps use exact registry dependencies.** The standalone command
+  writes `@brydio/*@0.1.0-alpha.6` and no checkout `file:` paths or overrides;
+  `brydio create` inside this repository keeps its local-link behavior.
+- **The release proof starts from the initializer tarball.** A clean temporary
+  consumer installs the compiled package, creates the Preact app, then installs,
+  builds, validates, type-checks, and tests it without source-workspace links.
+
+Existing apps need no source changes. New apps need Bun 1.3 or newer and can
+start with `npm create @brydio/app my-app`.
+
 ## 0.1.0-alpha.5
 
 The placement-context and public documentation release.

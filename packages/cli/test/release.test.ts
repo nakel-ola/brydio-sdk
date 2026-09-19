@@ -1,7 +1,8 @@
 import { afterAll, describe, expect, test } from 'bun:test';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import {
   changelogRefusal,
@@ -41,7 +42,7 @@ describe('the release build', () => {
   });
 
   test(
-    'installs from its tarballs into a new app, which builds, validates, tests and type-checks',
+    'creates from its tarballs in a clean folder, then installs, builds, validates, tests and type-checks',
     async () => {
       // Read around the build, not after it: this checkout is shared, and a
       // commit landing mid-test would otherwise fail on a moving HEAD. In CI
@@ -65,32 +66,53 @@ describe('the release build', () => {
 
       expect(Object.keys(tarball).sort()).toEqual(RELEASED.map(name => `@brydio/${name}`).sort());
 
-      // A copy of the template, pointed at the tarballs and nothing else of this checkout's.
-      const app = join(mkdtempSync(join(tmpdir(), 'brydio-released-')), 'released');
+      const createPackage = built['@brydio/create-app']!;
 
-      made.push(join(app, '..'));
-      cpSync(join(ROOT, 'templates', 'preact'), app, { recursive: true, filter: from => !['node_modules', 'dist'].includes(basename(from)) });
+      expect(existsSync(join(createPackage, 'templates', 'preact', 'src', 'screens', 'home.tsx'))).toBe(true);
+      expect(existsSync(join(createPackage, 'templates', 'plain', 'src', 'screens', 'home.ts'))).toBe(true);
+      expect(existsSync(join(createPackage, 'tsconfig.base.json'))).toBe(true);
+
+      // Install the initializer and all of its dependencies from tarballs in
+      // an empty consumer, then call the installed compiled entry point.
+      const launcher = mkdtempSync(join(tmpdir(), 'brydio-create-consumer-'));
+      const appRoot = mkdtempSync(join(tmpdir(), 'brydio-released-'));
+      const app = join(appRoot, 'released');
+
+      made.push(launcher, appRoot);
+      writeFileSync(
+        join(launcher, 'package.json'),
+        JSON.stringify({
+          private: true,
+          dependencies: { '@brydio/create-app': `file:${tarball['@brydio/create-app']}` },
+          overrides: Object.fromEntries(Object.entries(tarball).map(([name, path]) => [name, `file:${path}`])),
+        }),
+      );
+
+      const initializerInstalled = run([process.execPath, 'install'], launcher);
+
+      expect(initializerInstalled.code, initializerInstalled.output).toBe(0);
+
+      const initializer = (await import(pathToFileURL(join(launcher, 'node_modules', '@brydio', 'create-app', 'src', 'main.js')).href)) as {
+        main(argv: string[], options: { into: string; install: false; out: () => void }): Promise<number>;
+      };
+
+      expect(await initializer.main(['released'], { into: appRoot, install: false, out: () => {} })).toBe(0);
+      expect(existsSync(join(app, '.brydio', 'app.json'))).toBe(true);
+      expect(existsSync(join(app, 'src', 'screens', 'home.tsx'))).toBe(true);
+      expect(existsSync(join(app, 'test', 'home.test.ts'))).toBe(true);
 
       const pkg = JSON.parse(readFileSync(join(app, 'package.json'), 'utf8'));
-      const linked = (section: Record<string, string>) =>
-        Object.fromEntries(Object.entries(section).map(([name, version]) => [name, tarball[name] ? `file:${tarball[name]}` : version]));
+
+      expect(JSON.stringify(pkg)).not.toContain('file:');
+      expect(pkg.overrides).toBeUndefined();
 
       writeFileSync(
         join(app, 'package.json'),
         JSON.stringify({
           ...pkg,
-          name: 'released',
-          dependencies: linked(pkg.dependencies),
-          devDependencies: linked(pkg.devDependencies),
           overrides: Object.fromEntries(Object.entries(tarball).map(([name, path]) => [name, `file:${path}`])),
         }),
       );
-
-      const tsconfig = JSON.parse(readFileSync(join(app, 'tsconfig.json'), 'utf8'));
-      const base = JSON.parse(readFileSync(join(ROOT, 'tsconfig.base.json'), 'utf8'));
-      const { extends: _, ...own } = tsconfig;
-
-      writeFileSync(join(app, 'tsconfig.json'), JSON.stringify({ ...own, compilerOptions: { ...base.compilerOptions, ...tsconfig.compilerOptions } }));
 
       const installed = run([process.execPath, 'install'], app);
 
@@ -287,7 +309,26 @@ describe('the release build', () => {
     expect(changelogRefusal('9.9.9', log, true)).toBeNull();
   });
 
-  test('the tag workflow publishes every released package in dependency order', () => {
+  test('keeps every package and template on one exact SDK version', () => {
+    const versions = RELEASED.map(name => JSON.parse(readFileSync(join(ROOT, 'packages', name, 'package.json'), 'utf8')).version as string);
+    const version = versions[0]!;
+
+    expect([...new Set(versions)]).toEqual([version]);
+
+    for (const template of ['preact', 'plain']) {
+      const pkg = JSON.parse(readFileSync(join(ROOT, 'templates', template, 'package.json'), 'utf8')) as {
+        dependencies: Record<string, string>;
+        devDependencies: Record<string, string>;
+      };
+      const brydio = Object.entries({ ...pkg.dependencies, ...pkg.devDependencies })
+        .filter(([name]) => name.startsWith('@brydio/'))
+        .map(([, dependencyVersion]) => dependencyVersion);
+
+      expect([...new Set(brydio)], template).toEqual([version]);
+    }
+  });
+
+  test('the tag workflow publishes every released package in the safe order', () => {
     const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'release.yml'), 'utf8');
     const names = workflow
       .match(/for package in ([^;]+); do/)?.[1]

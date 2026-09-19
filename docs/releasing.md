@@ -8,7 +8,7 @@ The workflow is [`.github/workflows/release.yml`](../.github/workflows/release.y
 
 ## Current release inventory
 
-Checked against npm and GitHub on 18 September 2026:
+Checked against npm and GitHub on 19 September 2026, before the alpha.6 tag:
 
 | Item | State | What remains |
 |---|---|---|
@@ -18,6 +18,7 @@ Checked against npm and GitHub on 18 September 2026:
 | `@brydio/api` | `0.1.0-alpha.5` is public under `next`; `latest` remains `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
 | `@brydio/fake-host` | `0.1.0-alpha.5` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
 | `@brydio/cli` | `0.1.0-alpha.5` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
+| `@brydio/create-app` | Not yet present on npm; `0.1.0-alpha.6` is the first synchronized release candidate | Create the package with provenance, configure `nakel-ola/brydio-sdk` / `release.yml` as its trusted publisher, then publish the synchronized tag. Assign only this package's `latest` tag after the OIDC publish. |
 | SDK repository | `nakel-ola/brydio-sdk` is public | Keep release sources and tags public. |
 | Docs site | Cloudflare Workers assets are configured; no production deployment or domain is recorded | The owner chooses the domain and deployment trigger. |
 | Support destinations | `support@brydio.app` and private `security@brydio.app` are set | Keep both monitored; a publishable build refuses if either is removed. |
@@ -29,10 +30,11 @@ match, install-from-tarballs proof and dependency-ordered publish all passed.
 Each `0.1.0-alpha.5` package records that commit as `gitHead` and includes npm
 provenance from the public source repository.
 
-`npm create @brydio/app` is deliberately absent from this release. The
-current `brydio create` reads templates and `tsconfig.base.json` from a local
-checkout and writes `file:` dependencies. Packaging that command now would
-give a new builder an app that cannot install away from this repository.
+`0.1.0-alpha.6` adds `@brydio/create-app`, which carries both templates and
+`tsconfig.base.json`. Its launcher supplies the exact synchronized version to
+the existing create flow, so `npm create @brydio/app <name>` writes registry
+dependencies and no checkout paths. Checkout `brydio create` remains locally
+linked for SDK development.
 
 ## What a release does
 
@@ -42,20 +44,28 @@ give a new builder an app that cannot install away from this repository.
    with its `exports` and `bin` pointing at the compiled files, the MIT
    licence and the commit it was built from.
 4. The tag is checked against the version in the built packages.
-5. `packages/cli/test/release.test.ts` packs the tarballs, installs them
-   into a fresh app with no workspace links, and builds, validates, tests
-   and type-checks that app.
-6. Each package is published in dependency order: `manifest`, `ui`, `app`,
-   `api`, `fake-host`, `cli`, under the `next` dist-tag.
+5. `packages/cli/test/release.test.ts` packs all seven tarballs, installs the
+   compiled initializer into an empty consumer, creates a fresh Preact app,
+   and installs, builds, validates, tests and type-checks it with no workspace
+   links.
+6. `create-app` publishes first under `next`, so missing first-publish trust
+   stops before an existing package is changed. The workflow then publishes
+   `manifest`, `ui`, `app`, `api`, `fake-host` and `cli` under `next`.
+7. An authenticated owner assigns `latest` only to the verified
+   `@brydio/create-app` version. OIDC deliberately cannot change dist-tags.
 
 A pull request that touches the packages, the release script or the
 workflow runs steps 2 to 5 and publishes nothing.
 
 ## Trusted publishing setup
 
-All six packages exist on npm and trust this repository's `release.yml`
-workflow. The workflow stores no npm token. Future releases start with a
-clean, reviewed commit, bump all six packages together, add the matching
+The six existing packages trust this repository's `release.yml` workflow.
+The workflow stores no npm token. A new npm package must exist before a trusted
+publisher can be configured, so `create-app` needs one authenticated,
+provenance-producing bootstrap publication and then the same trust binding;
+do not replace that with a provenance-free final artifact or add a token to
+this repository. Future releases start with a clean, reviewed commit, bump all
+seven packages together, add the matching
 changelog section, and push one matching `v<version>` tag. The workflow
 publishes under `next`; moving `latest` or `alpha` remains a separate owner
 action.

@@ -31,14 +31,24 @@ import { join, relative, resolve } from 'node:path';
 export const ROOT = resolve(import.meta.dir, '..');
 export const RELEASE = join(ROOT, 'release');
 
-/** In the order they depend on one another, so each is built after what it imports. */
-export const RELEASED = ['manifest', 'ui', 'app', 'api', 'fake-host', 'cli'] as const;
+/** The initializer is first so missing first-publish trust stops before any existing package is released. */
+export const RELEASED = ['create-app', 'manifest', 'ui', 'app', 'api', 'fake-host', 'cli'] as const;
 
 /** What each package ships that isn't compiled from TypeScript, relative to its folder. */
 const COPIED: Partial<Record<(typeof RELEASED)[number], string[]>> = {
   ui: ['src/web/tokens.css'],
   cli: ['ts-plugin'],
 };
+
+/** Repository-root assets carried by a package, from source path to package path. */
+const ROOT_ASSETS: Partial<Record<(typeof RELEASED)[number], Array<{ source: string; target: string }>>> = {
+  'create-app': [
+    { source: 'templates', target: 'templates' },
+    { source: 'tsconfig.base.json', target: 'tsconfig.base.json' },
+  ],
+};
+
+const TEMPLATE_LEFT_BEHIND = new Set(['node_modules', 'dist', '.DS_Store']);
 
 interface PackageJson {
   name: string;
@@ -253,6 +263,13 @@ export async function releaseBuild(options: ReleaseOptions = {}): Promise<Record
 
     for (const path of COPIED[name] ?? []) cpSync(join(source, path), join(target, path), { recursive: true });
 
+    for (const asset of ROOT_ASSETS[name] ?? []) {
+      cpSync(join(ROOT, asset.source), join(target, asset.target), {
+        recursive: true,
+        filter: from => !TEMPLATE_LEFT_BEHIND.has(from.split('/').at(-1)!),
+      });
+    }
+
     const published: PackageJson = {
       name: pkg.name,
       version: pkg.version,
@@ -264,7 +281,12 @@ export async function releaseBuild(options: ReleaseOptions = {}): Promise<Record
       gitHead: commit,
       exports: Object.fromEntries(Object.entries(pkg.exports ?? {}).map(([key, path]) => [key, exportEntry(path)])) as never,
       ...(pkg.bin ? { bin: publishedBin(pkg.bin) } : {}),
-      files: [...includes, 'LICENSE', ...(COPIED[name] ?? []).map(path => path.split('/')[0]!)].filter((one, index, all) => all.indexOf(one) === index),
+      files: [
+        ...includes,
+        'LICENSE',
+        ...(COPIED[name] ?? []).map(path => path.split('/')[0]!),
+        ...(ROOT_ASSETS[name] ?? []).map(asset => asset.target.split('/')[0]!),
+      ].filter((one, index, all) => all.indexOf(one) === index),
       ...(pkg.dependencies ? { dependencies: pkg.dependencies } : {}),
     };
 

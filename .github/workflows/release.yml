@@ -21,6 +21,10 @@ on:
   pull_request:
     paths:
       - 'packages/**'
+      - 'templates/**'
+      - 'tsconfig.base.json'
+      - 'CHANGELOG.md'
+      - 'bun.lock'
       - 'scripts/release-build.ts'
       - '.github/workflows/release.yml'
 
@@ -89,15 +93,16 @@ jobs:
       - name: Install the tarballs into a new app
         run: bun test packages/cli/test/release.test.ts
 
-      # Each package is published from its own built folder, in the order they
-      # depend on one another. No token: npm asks GitHub for an OIDC one, and
-      # setting NODE_AUTH_TOKEN here would turn trusted publishing off.
-      - name: Publish, in dependency order
+      # The new initializer goes first, so missing first-publish trust stops
+      # before an existing package is released. No token: npm asks GitHub for
+      # an OIDC one, and setting NODE_AUTH_TOKEN here would turn trusted
+      # publishing off.
+      - name: Publish the synchronized packages
         if: startsWith(github.ref, 'refs/tags/v')
         working-directory: release
         run: |
           set -euo pipefail
-          for package in manifest ui app api fake-host cli; do
+          for package in create-app manifest ui app api fake-host cli; do
             echo "Publishing @brydio/$package"
             (cd "$package" && npm publish --access public --tag next --provenance)
           done

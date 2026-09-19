@@ -1,6 +1,6 @@
 {
   "name": "@brydio/fake-host",
-  "version": "0.1.0-alpha.5",
+  "version": "0.1.0-alpha.6",
   "description": "A pretend Brydio for testing an app's screens: builds the app, runs a built screen in a worker, draws nothing, and answers its tools from fixtures.",
   "license": "MIT",
   "author": "Brydio Inc.",
@@ -17,13 +17,13 @@
     "src"
   ],
   "dependencies": {
-    "@brydio/cli": "0.1.0-alpha.5",
-    "@brydio/manifest": "0.1.0-alpha.5",
-    "@brydio/ui": "0.1.0-alpha.5",
+    "@brydio/cli": "0.1.0-alpha.6",
+    "@brydio/manifest": "0.1.0-alpha.6",
+    "@brydio/ui": "0.1.0-alpha.6",
     "zod": "4.6.2"
   },
   "devDependencies": {
-    "@brydio/api": "0.1.0-alpha.5",
-    "@brydio/app": "0.1.0-alpha.5"
+    "@brydio/api": "0.1.0-alpha.6",
+    "@brydio/app": "0.1.0-alpha.6"
   }
 }

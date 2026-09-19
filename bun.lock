@@ -12,67 +12,67 @@
     },
     "packages/api": {
       "name": "@brydio/api",
-      "version": "0.1.0-alpha.5",
+      "version": "0.1.0-alpha.6",
       "dependencies": {
-        "@brydio/app": "0.1.0-alpha.0",
+        "@brydio/app": "0.1.0-alpha.6",
       },
     },
     "packages/app": {
       "name": "@brydio/app",
-      "version": "0.1.0-alpha.5",
+      "version": "0.1.0-alpha.6",
       "dependencies": {
-        "@brydio/manifest": "0.1.0-alpha.0",
-        "@brydio/ui": "0.1.0-alpha.0",
+        "@brydio/manifest": "0.1.0-alpha.6",
+        "@brydio/ui": "0.1.0-alpha.6",
         "@prefresh/core": "1.5.11",
         "preact": "10.29.8",
       },
     },
     "packages/cli": {
       "name": "@brydio/cli",
-      "version": "0.1.0-alpha.5",
+      "version": "0.1.0-alpha.6",
       "bin": {
         "brydio": "./bin/brydio.ts",
       },
       "dependencies": {
-        "@brydio/manifest": "0.1.0-alpha.5",
-        "@brydio/ui": "0.1.0-alpha.5",
+        "@brydio/manifest": "0.1.0-alpha.6",
+        "@brydio/ui": "0.1.0-alpha.6",
         "typescript": "5.9.3",
       },
     },
     "packages/create-app": {
       "name": "@brydio/create-app",
-      "version": "0.1.0-alpha.5",
+      "version": "0.1.0-alpha.6",
       "bin": {
         "create-app": "./bin/create-app.ts",
       },
       "dependencies": {
-        "@brydio/cli": "0.1.0-alpha.5",
+        "@brydio/cli": "0.1.0-alpha.6",
       },
     },
     "packages/fake-host": {
       "name": "@brydio/fake-host",
-      "version": "0.1.0-alpha.5",
+      "version": "0.1.0-alpha.6",
       "dependencies": {
-        "@brydio/cli": "0.1.0-alpha.0",
-        "@brydio/manifest": "0.1.0-alpha.0",
-        "@brydio/ui": "0.1.0-alpha.0",
+        "@brydio/cli": "0.1.0-alpha.6",
+        "@brydio/manifest": "0.1.0-alpha.6",
+        "@brydio/ui": "0.1.0-alpha.6",
         "zod": "4.6.2",
       },
       "devDependencies": {
-        "@brydio/api": "0.1.0-alpha.0",
-        "@brydio/app": "0.1.0-alpha.0",
+        "@brydio/api": "0.1.0-alpha.6",
+        "@brydio/app": "0.1.0-alpha.6",
       },
     },
     "packages/manifest": {
       "name": "@brydio/manifest",
-      "version": "0.1.0-alpha.5",
+      "version": "0.1.0-alpha.6",
       "dependencies": {
         "zod": "4.6.2",
       },
     },
     "packages/ui": {
       "name": "@brydio/ui",
-      "version": "0.1.0-alpha.5",
+      "version": "0.1.0-alpha.6",
       "dependencies": {
         "lit": "3.3.3",
       },
@@ -84,12 +84,12 @@
       "name": "brydio-template-plain",
       "version": "0.1.0",
       "dependencies": {
-        "@brydio/app": "0.1.0-alpha.0",
+        "@brydio/app": "0.1.0-alpha.6",
       },
       "devDependencies": {
-        "@brydio/cli": "0.1.0-alpha.0",
-        "@brydio/fake-host": "0.1.0-alpha.0",
-        "@brydio/manifest": "0.1.0-alpha.0",
+        "@brydio/cli": "0.1.0-alpha.6",
+        "@brydio/fake-host": "0.1.0-alpha.6",
+        "@brydio/manifest": "0.1.0-alpha.6",
         "@types/bun": "1.4.2",
         "typescript": "5.9.3",
       },
@@ -98,12 +98,12 @@
       "name": "brydio-template-preact",
       "version": "0.1.0",
       "dependencies": {
-        "@brydio/app": "0.1.0-alpha.0",
+        "@brydio/app": "0.1.0-alpha.6",
       },
       "devDependencies": {
-        "@brydio/cli": "0.1.0-alpha.0",
-        "@brydio/fake-host": "0.1.0-alpha.0",
-        "@brydio/manifest": "0.1.0-alpha.0",
+        "@brydio/cli": "0.1.0-alpha.6",
+        "@brydio/fake-host": "0.1.0-alpha.6",
+        "@brydio/manifest": "0.1.0-alpha.6",
         "@types/bun": "1.4.2",
         "typescript": "5.9.3",
       },
