@@ -98,8 +98,10 @@ test('renders the generated references and package guidance as static routes', a
   expect(checklist).not.toContain('# The publish checklist');
 
   const packages = await page(outDir, 'packages/index.html');
+  const app = JSON.parse(await readFile(join(import.meta.dir, '../../packages/app/package.json'), 'utf8')) as { version: string };
+
   expect(packages).toContain('@brydio/app');
-  expect(packages).toContain('0.1.0-alpha.5');
+  expect(packages).toContain(`Version ${app.version}.`);
 });
 
 test('renders generated catalogue child and event guidance beside examples', async () => {
