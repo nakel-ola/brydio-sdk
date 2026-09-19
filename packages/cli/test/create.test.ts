@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { build, create, CreateRefused, publish, SDK_ROOT, test as runTests, validate } from '../src/index.ts';
+import { build, create, CreateRefused, publish, SDK_ROOT, test as runTests, validate, type CreateOptions } from '../src/index.ts';
 
 const made: string[] = [];
 
@@ -57,6 +57,30 @@ describe('brydio create', () => {
     expect(existsSync(join(dir, 'dist'))).toBe(false);
     expect(existsSync(join(dir, 'src/screens/home.ts'))).toBe(true);
     expect(lines.join('\n')).toContain('bun run dev');
+  });
+
+  test('uses exact registry versions without checkout overrides when a version is given', async () => {
+    const into = place();
+    const options: CreateOptions & { version: string } = {
+      into,
+      template: 'preact',
+      version: '0.1.0-alpha.6',
+      install: false,
+      out: () => {},
+    };
+    const dir = await create('registry-app', options);
+    const pkg = json(join(dir, 'package.json'));
+
+    expect(pkg.dependencies).toEqual({ '@brydio/app': '0.1.0-alpha.6' });
+    expect(pkg.devDependencies).toMatchObject({
+      '@brydio/cli': '0.1.0-alpha.6',
+      '@brydio/fake-host': '0.1.0-alpha.6',
+      '@brydio/manifest': '0.1.0-alpha.6',
+      '@types/bun': '1.4.2',
+      typescript: '5.9.3',
+    });
+    expect(pkg.overrides).toBeUndefined();
+    expect(JSON.stringify(pkg)).not.toContain('file:');
   });
 
   test('asks Preact or plain when not told', async () => {

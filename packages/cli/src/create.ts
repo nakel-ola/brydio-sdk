@@ -42,6 +42,8 @@ export interface CreateOptions {
   install?: ((dir: string) => boolean) | false;
   /** Where the SDK's templates and packages are. This checkout unless given. */
   sdk?: string;
+  /** Exact published SDK version to write instead of checkout file links. */
+  version?: string;
 }
 
 export class CreateRefused extends Error {}
@@ -88,16 +90,21 @@ export async function create(name: string, options: CreateOptions = {}): Promise
       Object.fromEntries(
         Object.entries((section ?? {}) as Record<string, string>).map(([dependency, version]) => [
           dependency,
-          dependency.startsWith('@brydio/') ? `file:${join(sdk, 'packages', dependency.slice('@brydio/'.length))}` : version,
+          dependency.startsWith('@brydio/')
+            ? (options.version ?? `file:${join(sdk, 'packages', dependency.slice('@brydio/'.length))}`)
+            : version,
         ]),
       );
+    const { overrides: _, ...withoutOverrides } = pkg;
 
     return {
-      ...pkg,
+      ...withoutOverrides,
       name,
       dependencies: linked(pkg.dependencies),
       devDependencies: linked(pkg.devDependencies),
-      overrides: Object.fromEntries(SDK_PACKAGES.map(one => [`@brydio/${one}`, `file:${join(sdk, 'packages', one)}`])),
+      ...(options.version
+        ? {}
+        : { overrides: Object.fromEntries(SDK_PACKAGES.map(one => [`@brydio/${one}`, `file:${join(sdk, 'packages', one)}`])) }),
     };
   });
 
