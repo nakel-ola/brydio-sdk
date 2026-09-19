@@ -18,7 +18,7 @@ Checked against npm and GitHub on 19 September 2026, before the alpha.6 tag:
 | `@brydio/api` | `0.1.0-alpha.5` is public under `next`; `latest` remains `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
 | `@brydio/fake-host` | `0.1.0-alpha.5` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
 | `@brydio/cli` | `0.1.0-alpha.5` is public under `next`; `latest` and `alpha` remain `0.1.0-alpha.0` | Promote a tag only by an explicit owner decision. |
-| `@brydio/create-app` | Not yet present on npm; `0.1.0-alpha.6` is the first synchronized release candidate | Create the package with provenance, configure `nakel-ola/brydio-sdk` / `release.yml` as its trusted publisher, then publish the synchronized tag. Assign only this package's `latest` tag after the OIDC publish. |
+| `@brydio/create-app` | `0.1.0-alpha.0` was registered locally under `alpha`; `nakel-ola/brydio-sdk` / `release.yml` is its trusted publisher | Publish `0.1.0-alpha.6` through the synchronized OIDC tag, then assign only this package's `latest` tag. |
 | SDK repository | `nakel-ola/brydio-sdk` is public | Keep release sources and tags public. |
 | Docs site | Cloudflare Workers assets are configured; no production deployment or domain is recorded | The owner chooses the domain and deployment trigger. |
 | Support destinations | `support@brydio.app` and private `security@brydio.app` are set | Keep both monitored; a publishable build refuses if either is removed. |
@@ -59,16 +59,15 @@ workflow runs steps 2 to 5 and publishes nothing.
 
 ## Trusted publishing setup
 
-The six existing packages trust this repository's `release.yml` workflow.
-The workflow stores no npm token. A new npm package must exist before a trusted
-publisher can be configured, so `create-app` needs one authenticated,
-provenance-producing bootstrap publication and then the same trust binding;
-do not replace that with a provenance-free final artifact or add a token to
-this repository. Future releases start with a clean, reviewed commit, bump all
-seven packages together, add the matching
-changelog section, and push one matching `v<version>` tag. The workflow
-publishes under `next`; moving `latest` or `alpha` remains a separate owner
-action.
+All seven packages trust this repository's `release.yml` workflow. The workflow
+stores no npm token. `create-app` was first registered as `0.1.0-alpha.0` from
+the owner's local npm login with 2FA, matching the original six packages, then
+bound to the same trusted publisher. Its synchronized `0.1.0-alpha.6` release
+and every release after it come from OIDC with provenance. Future releases
+start with a clean, reviewed commit, bump all seven packages together, add the
+matching changelog section, and push one matching `v<version>` tag. The
+workflow publishes under `next`; moving `latest` or `alpha` remains a separate
+owner action.
 
 The public source repository lets npm attach provenance to these packages.
 The workflow uses OIDC with `--provenance`; do not replace OIDC with a token.
