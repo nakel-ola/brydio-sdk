@@ -235,21 +235,7 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
     if (!manifest || !name) throw new DevRefused('The build has no app.json with a name.');
 
     const projectId = await chooseProject();
-    const shelf = await call('GET', '/api/v1/extensions?kind=app');
-
-    if (shelf.status !== 200) throw new DevRefused(turnedAway(shelf, apiUrl));
-
-    let appId = (shelf.json as { id: string; slug: string }[]).find(one => one.slug === name)?.id;
-
-    if (!appId) {
-      const made = await call('POST', '/api/v1/extensions/apps', { name, components: [] });
-
-      if (made.status !== 201 && made.status !== 200) throw new DevRefused(turnedAway(made, apiUrl));
-
-      appId = (made.json as { id: string }).id;
-    }
-
-    const started = await call('POST', DEV_PATH, { appId, projectId, origin: url, manifest });
+    const started = await call('POST', DEV_PATH, { projectId, origin: url, manifest });
 
     if (started.status !== 201 && started.status !== 200) throw new DevRefused(turnedAway(started, apiUrl));
 

@@ -50,8 +50,6 @@ function brydio(answers: Record<string, (body: any) => [number, unknown]> = {}) 
   const calls: Call[] = [];
   const defaults: Record<string, (body: any) => [number, unknown]> = {
     'GET /api/v1/projects': () => [200, [{ id: 'p_1', name: 'Launch' }, { id: 'p_2', name: 'Bugs' }]],
-    'GET /api/v1/extensions?kind=app': () => [200, []],
-    'POST /api/v1/extensions/apps': () => [201, { id: 'ext_tiny' }],
     'POST /api/v1/apps/development': body => [201, { id: 'dev_1', instanceId: 'i_1', placementId: 'pl_1', projectId: body.projectId, build: 0 }],
     'POST /api/v1/apps/development/dev_1/heartbeat': body => [200, { build: body.build ?? 0 }],
     'DELETE /api/v1/apps/development/dev_1': () => [204, null],
@@ -95,38 +93,34 @@ async function run(root: string, server: ReturnType<typeof brydio>, more: Record
 }
 
 describe('brydio dev, signed in', () => {
-  test('puts the app on the shelf, asks for the project once, and starts a development tab from this machine', async () => {
+  test('keeps a new app private, asks for the project once, and starts a development tab', async () => {
     const root = tiny();
     const server = brydio();
     const { session, lines } = await run(root, server);
 
     expect(server.calls.map(call => `${call.method} ${call.path}`)).toEqual([
       'GET /api/v1/projects',
-      'GET /api/v1/extensions?kind=app',
-      'POST /api/v1/extensions/apps',
       'POST /api/v1/apps/development',
     ]);
 
     const started = server.calls.at(-1)!.body;
 
-    expect(started).toMatchObject({ appId: 'ext_tiny', projectId: 'p_2', origin: session.url });
+    expect(started).toMatchObject({ projectId: 'p_2', origin: session.url });
+    expect(started).not.toHaveProperty('appId');
     expect(started.manifest).toMatchObject({ name: 'tiny', screens: { home: { entry: 'screens/home.js' } } });
     expect(session.url).toMatch(/^http:\/\/localhost:\d+$/);
     expect(JSON.parse(readFileSync(join(root, DEV_CONFIG), 'utf8'))).toEqual({ apiUrl: 'http://brydio.test', projectId: 'p_2' });
     expect(lines.join('\n')).toContain('/projects/p_2?tab=app-pl_1');
 
-    // The second run remembers the project and finds the app on the shelf.
+    // The second run remembers the project without exposing the app on the shelf.
     await session.stop();
     sessions.splice(0);
 
-    const again = brydio({ 'GET /api/v1/extensions?kind=app': () => [200, [{ id: 'ext_tiny', slug: 'tiny' }]] });
+    const again = brydio();
 
     await run(root, again, { ask: async () => { throw new Error('asked again'); } });
 
-    expect(again.calls.map(call => `${call.method} ${call.path}`)).toEqual([
-      'GET /api/v1/extensions?kind=app',
-      'POST /api/v1/apps/development',
-    ]);
+    expect(again.calls.map(call => `${call.method} ${call.path}`)).toEqual(['POST /api/v1/apps/development']);
   });
 
   test('serves the built files, and only them, from localhost with the headers the frame needs', async () => {
@@ -196,16 +190,18 @@ describe('brydio dev, signed in', () => {
     expect(session.development).toBeNull();
   });
 
-  test('stops, in Brydio\'s words, where adding apps is not allowed or Apps are off', async () => {
+  test('stops, in Brydio\'s words, where Developer mode or Apps are off', async () => {
     const forbidden = brydio({
-      'POST /api/v1/apps/development': () => [403, { message: 'Only an admin can install apps in this workspace.' }],
+      'POST /api/v1/apps/development': () => [403, { message: 'Developer mode is off for this workspace.' }],
     });
 
     await expect(run(tiny(), forbidden, { projectId: 'p_1' })).rejects.toThrow(
-      new DevRefused('Only an admin can install apps in this workspace.'),
+      new DevRefused('Developer mode is off for this workspace.'),
     );
 
-    const off = brydio({ 'GET /api/v1/extensions?kind=app': () => [423, { message: 'Locked' }] });
+    const off = brydio({
+      'POST /api/v1/apps/development': () => [423, { message: 'Locked' }],
+    });
 
     await expect(run(tiny(), off, { projectId: 'p_1' })).rejects.toThrow(/Apps aren't switched on/);
   });
@@ -260,7 +256,7 @@ describe('brydio dev on a new app', () => {
       made.push(into);
 
       const root = await create(`fresh-${template}`, { into, template, out: () => {} });
-      const server = brydio({ 'GET /api/v1/extensions?kind=app': () => [200, []] });
+      const server = brydio();
       const { session } = await run(root, server, { projectId: 'p_1' });
       const started = server.calls.find(call => call.path === '/api/v1/apps/development')!.body;
 
