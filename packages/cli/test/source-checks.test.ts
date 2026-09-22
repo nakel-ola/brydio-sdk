@@ -10,10 +10,10 @@ const codes = (source: string, file = 'screen.tsx') => checkSource(file, source)
 
 describe('elements and settings, in JSX', () => {
   test('an element Brydio does not have, with its file, line and column', () => {
-    const [problem] = checkSource('src/screens/home.tsx', 'const a = 1;\nconst x = (\n  <bry-stack>\n    <bry-chart />\n  </bry-stack>\n);');
+    const [problem] = checkSource('src/screens/home.tsx', 'const a = 1;\nconst x = (\n  <bry-stack>\n    <bry-hologram />\n  </bry-stack>\n);');
 
     expect(problem).toMatchObject({ code: 'element_unknown', file: 'src/screens/home.tsx', line: 4, column: 6 });
-    expect(problem!.message).toContain('"bry-chart"');
+    expect(problem!.message).toContain('"bry-hologram"');
     expect(codes('const x = <div />;')).toEqual(['element_unknown']);
     expect(codes('const x = <svg:rect />;')).toEqual(['element_unknown']);
   });

@@ -50,7 +50,7 @@ describe('the editor plugin (A5-F03-S03)', () => {
     "import { mount } from '@brydio/app/preact';",
     'const Board = () => (',
     '  <bry-stack gap="9">',
-    '    <bry-chart />',
+    '    <bry-hologram />',
     '    <bry-button label="Save" tone="danger" />',
     '  </bry-stack>',
     ');',
@@ -68,7 +68,7 @@ describe('the editor plugin (A5-F03-S03)', () => {
 
       expect(found.map(one => [SCREEN.slice(one.start!, one.start! + one.length!), one.messageText])).toEqual([
         ['gap', 'bry-stack gap must be one of 1, 2, 3, 4, 5, 6, 7, 8. [prop_value_invalid]'],
-        ['bry-chart', expect.stringMatching(/^Brydio has no element called "bry-chart"\. A screen draws with bry-stack, .* \[element_unknown\]$/)],
+        ['bry-hologram', expect.stringMatching(/^Brydio has no element called "bry-hologram"\. A screen draws with bry-stack, .* \[element_unknown\]$/)],
         ['tone', 'bry-button has no setting called "tone". [prop_unknown]'],
         ['document', expect.stringContaining('[dom_global]')],
       ]);
@@ -106,7 +106,7 @@ describe('the editor plugin (A5-F03-S03)', () => {
       app.done();
     }
 
-    const loose = editor({ 'src/screens/home.tsx': 'const x = <bry-chart />;\n' });
+    const loose = editor({ 'src/screens/home.tsx': 'const x = <bry-hologram />;\n' });
 
     try {
       rmSync(join(loose.root, '.brydio'), { recursive: true });

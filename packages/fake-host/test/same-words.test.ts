@@ -11,7 +11,7 @@ import { TreeStore } from '../src/index.ts';
  */
 
 const MISTAKES: { jsx: string; node: { type: string; props?: Record<string, unknown> } }[] = [
-  { jsx: '<bry-chart />', node: { type: 'bry-chart' } },
+  { jsx: '<bry-hologram />', node: { type: 'bry-hologram' } },
   { jsx: '<bry-button label="Save" tone="danger" />', node: { type: 'bry-button', props: { label: 'Save', tone: 'danger' } } },
   { jsx: '<bry-stack style="color: red" />', node: { type: 'bry-stack', props: { style: 'color: red' } } },
   { jsx: '<bry-stack gap="9" />', node: { type: 'bry-stack', props: { gap: '9' } } },
@@ -34,11 +34,11 @@ describe('an unknown element or setting', () => {
   });
 
   test('keeps validate’s advice as a hint, printed after the sentence', () => {
-    const [element] = checkSource('a.tsx', 'const x = <bry-chart />;');
+    const [element] = checkSource('a.tsx', 'const x = <bry-hologram />;');
     const [style] = checkSource('a.tsx', 'const x = <bry-stack className="box" />;');
 
     expect(element!.hint).toStartWith('A screen draws with bry-stack, ');
-    expect(formatProblem(element!)).toContain('Brydio has no element called "bry-chart". A screen draws with bry-stack,');
+    expect(formatProblem(element!)).toContain('Brydio has no element called "bry-hologram". A screen draws with bry-stack,');
     expect(style).toMatchObject({ code: 'style_forbidden', message: 'bry-stack has no setting called "className".' });
     expect(formatProblem(style!)).toContain('bry-stack has no setting called "className". There are no classes in a Brydio app');
   });

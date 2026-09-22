@@ -42,10 +42,10 @@ describe('pictures of every screen (A5-F04-S04)', () => {
       'blank, narrow, dark: It drew nothing.',
       'blank, wide, light: It drew nothing.',
       'blank, wide, dark: It drew nothing.',
-      'wrong, narrow, light: Brydio refused part of it: Brydio has no element called "bry-chart".',
-      'wrong, narrow, dark: Brydio refused part of it: Brydio has no element called "bry-chart".',
-      'wrong, wide, light: Brydio refused part of it: Brydio has no element called "bry-chart".',
-      'wrong, wide, dark: Brydio refused part of it: Brydio has no element called "bry-chart".',
+      'wrong, narrow, light: Brydio refused part of it: Brydio has no element called "bry-hologram".',
+      'wrong, narrow, dark: Brydio refused part of it: Brydio has no element called "bry-hologram".',
+      'wrong, wide, light: Brydio refused part of it: Brydio has no element called "bry-hologram".',
+      'wrong, wide, dark: Brydio refused part of it: Brydio has no element called "bry-hologram".',
     ]);
   });
 

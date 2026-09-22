@@ -74,7 +74,7 @@ const hostAtHead = () =>
   })());
 
 describe('the catalogue as a whole', () => {
-  test('has the twenty-eight Brydio draws, all named bry-', () => {
+  test('has every element Brydio draws, all named bry-', () => {
     expect(ELEMENT_NAMES).toEqual([
       'bry-stack',
       'bry-heading',
@@ -104,6 +104,33 @@ describe('the catalogue as a whole', () => {
       'bry-markdown',
       'bry-diff',
       'bry-file-grid',
+      // ADR-A23 (catalogue-a)
+      'bry-accordion',
+      'bry-alert',
+      'bry-alert-dialog',
+      'bry-aspect-ratio',
+      'bry-attachment',
+      'bry-breadcrumb',
+      'bry-bubble',
+      'bry-carousel',
+      'bry-chart',
+      'bry-collapsible',
+      'bry-direction',
+      'bry-drawer',
+      'bry-hover-card',
+      'bry-item',
+      'bry-kbd',
+      'bry-marker',
+      'bry-message',
+      'bry-message-scroller',
+      'bry-popover',
+      'bry-progress',
+      'bry-scroll-area',
+      'bry-separator',
+      'bry-sheet',
+      'bry-spinner',
+      'bry-tabs',
+      'bry-tooltip',
     ]);
   });
 
