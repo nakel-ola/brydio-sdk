@@ -2038,6 +2038,101 @@
         "messages": [
           "Invalid string: must match pattern /^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$/"
         ]
+      },
+      {
+        "ok": true,
+        "data": {
+          "name": "issues",
+          "version": "0.1.0",
+          "displayName": "Issues",
+          "placements": [
+            {
+              "kind": "project-tab",
+              "screen": "board",
+              "label": "Issues",
+              "icon": "kanban"
+            }
+          ],
+          "data": {
+            "issues": {
+              "schema": {
+                "title": "string",
+                "status": [
+                  "todo",
+                  "doing",
+                  "done"
+                ],
+                "assignee": "member?",
+                "labels": "string[]",
+                "body": "text?",
+                "project": "project?"
+              },
+              "search": [
+                "title",
+                "body"
+              ],
+              "label": "issue"
+            },
+            "labels": {
+              "schema": {
+                "name": "string",
+                "colour": "token"
+              },
+              "label": "label"
+            }
+          },
+          "tools": {
+            "generated": true,
+            "custom": []
+          },
+          "screens": {
+            "board": {
+              "entry": "screens/board.js"
+            }
+          },
+          "grants": {
+            "tools": [
+              "*"
+            ],
+            "collections": [
+              "*"
+            ],
+            "host": [
+              "secrets"
+            ]
+          },
+          "secrets": [
+            {
+              "name": "api_key",
+              "label": "API key",
+              "required": true
+            },
+            {
+              "name": "board_token",
+              "label": "Board token",
+              "scope": "instance"
+            }
+          ]
+        }
+      },
+      {
+        "ok": false,
+        "messages": [
+          "The app declares secrets but does not ask to read them: add \"secrets\" to grants.host."
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "The secret api_key is declared twice; keep one."
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "A secret name is lower case letters, digits and underscores, starting with a letter.",
+          "Invalid option: expected one of \"install\"|\"instance\""
+        ]
       }
     ],
     "migrations": {
