@@ -1,8 +1,11 @@
 import {
   BUNDLE_MANIFEST,
+  DEVELOPER_KEY_MESSAGE,
   bundleProblem,
   compareVersions,
+  developerKeyIn,
   findSecrets,
+  holdsDeveloperKey,
   secretsInJson,
   isScriptPath,
   publishedMigrationProblems,
@@ -63,6 +66,15 @@ export function validate(dir: string, options: ValidateOptions = {}): ValidateRe
     problems.push({ code: secret.code, severity: 'error', file: manifestFile, path: secret.path, message: secret.message });
   }
 
+  // A developer API key is never in an app (ADR-A22, ADR-A24): not in the manifest, not in a source.
+  if (holdsDeveloperKey(JSON.stringify(project.raw))) {
+    problems.push({ code: 'developer_key_in_bundle', severity: 'error', file: manifestFile, message: DEVELOPER_KEY_MESSAGE });
+  }
+
+  for (const [file, text] of screenSources(project.root)) {
+    if (holdsDeveloperKey(text)) problems.push({ code: 'developer_key_in_bundle', severity: 'error', file, message: DEVELOPER_KEY_MESSAGE });
+  }
+
   if (project.manifest) {
     const built = existsSync(outDir) ? filesUnder(outDir) : null;
 
@@ -107,6 +119,11 @@ export function validate(dir: string, options: ValidateOptions = {}): ValidateRe
       for (const secret of findSecrets(built)) {
         problems.push({ code: secret.code, severity: 'error', file: `${dist}/${secret.path.split('.json')[0]}.json`, path: secret.path, message: secret.message });
       }
+
+      // What `POST /apps/publish` refuses as `developer_key_in_bundle`: a key in any built file, scripts included.
+      const keyIn = developerKeyIn(built);
+
+      if (keyIn) problems.push({ code: 'developer_key_in_bundle', severity: 'error', file: `${dist}/${keyIn}`, message: DEVELOPER_KEY_MESSAGE });
 
       const shipped = built.get(BUNDLE_MANIFEST);
 

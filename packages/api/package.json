@@ -1,7 +1,7 @@
 {
   "name": "@brydio/api",
   "version": "0.1.0-alpha.6",
-  "description": "Typed access to Brydio projects, files, chats, and named connections from an app screen.",
+  "description": "Typed access to Brydio projects, files, chats, and named connections from an app screen, and Brydio's AI from your own server.",
   "license": "MIT",
   "author": "Brydio Inc.",
   "repository": {
@@ -11,7 +11,8 @@
   },
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./ai": "./src/ai.ts"
   },
   "files": [
     "src"

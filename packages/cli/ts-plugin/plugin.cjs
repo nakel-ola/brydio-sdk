@@ -722,6 +722,9 @@ function importRefusal(file, specifier) {
     const inside = import_node_path.posix.normalize(import_node_path.posix.join(import_node_path.posix.dirname(file.split("\\").join("/")), specifier));
     return inside === ".." || inside.startsWith("../") || import_node_path.posix.isAbsolute(inside) ? `import "${specifier}" reaches outside the app's folder. A screen imports only its own files, @brydio packages and Preact.` : null;
   }
+  if (specifier === "@brydio/api/ai" || specifier.startsWith("@brydio/api/ai/")) {
+    return `import "${specifier}": that client takes a developer API key, which never goes in an app. A handler asks Brydio's model through its model grant instead.`;
+  }
   if (ALLOWED_PACKAGES.test(specifier))
     return null;
   if (specifier.startsWith("/") || /^[A-Za-z]:[\\/]/.test(specifier) || /^[a-z][a-z0-9+.-]*:/i.test(specifier)) {

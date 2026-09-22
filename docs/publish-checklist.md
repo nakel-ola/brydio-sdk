@@ -180,6 +180,7 @@ Screens may call only tools that exist:
 | Code | Refused with | validate | server | How to fix |
 |---|---|---|---|---|
 | `secret_in_bundle` | That package contains a secret. Header values and client secrets are entered here, never shipped in a file — remove it and import again. | yes | publish | Remove the value, and treat it as leaked. |
+| `developer_key_in_bundle` | That package contains a Brydio developer API key. A key belongs on your own server, never in an app: revoke it in Settings › Developer, and call Brydio’s model from a handler with the model grant instead. | yes | publish | Revoke the key in Settings › Developer, remove it, and use the handler's `model` grant. |
 
 This is Brydio's existing scan (`extensions/apps/secret-scan.ts`), copied
 exactly. It looks at the value keys (`value`, `secret`, `token`, `apiKey`, …)
@@ -188,6 +189,14 @@ anywhere in the bundle's `app.json`, and in `servers.json` and
 `<your key>`. `app.json` is served to every screen that opens the app, so it
 holds nothing private. Scripts aren't scanned, on purpose: a pattern scan of
 minified code misses real keys and refuses innocent strings.
+
+A Brydio developer API key (`bry_live_`, 12 hex characters, `_`, 43
+base64url characters) is the one exception. Its shape is exact, so every file
+is read for it: the manifest, every source under `src/`, and every built file,
+scripts included. No part of an app is given a Brydio credential (ADR-A24),
+so a key inside one is always a leak. `validate` also refuses importing
+`@brydio/api/ai`, the key's client, from a screen or handler
+(`import_not_allowed`). `docs/ai.md` has the whole of it.
 
 ## 8. The grants list everything the screens call, and nothing they don't
 

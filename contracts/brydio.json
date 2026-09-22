@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "df3c9e43ebde084c29d2dd19bdfd07ccf985363d",
+    "commit": "cc0587239f2b28510e066560529aada24e948339",
     "dirty": false
   },
   "contracts": {
@@ -1499,6 +1499,10 @@
       "--fg-on-solid on --danger",
       "--bubble-user-fg on --bubble-user"
     ],
+    "developer-key-scan": {
+      "code": "developer_key_in_bundle",
+      "message": "That package contains a Brydio developer API key. A key belongs on your own server, never in an app: revoke it in Settings › Developer, and call Brydio’s model from a handler with the model grant instead."
+    },
     "field-types": [
       {
         "type": {

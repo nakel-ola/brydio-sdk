@@ -32,6 +32,14 @@ is **42.1 KB**: 15.6 KB, or 37%, smaller (8.4 KB against 14.5 KB gzipped).
 The difference is Preact itself. What you give up for it is components and
 hooks: here you keep the nodes you need and change them yourself.
 
+## Brydio's AI
+
+A custom tool's handler can ask Brydio's model with the `model` host grant
+(`model.generate`). It needs no key, and the calls are counted against your
+publisher. A developer API key (`BRYDIO_API_KEY`) is for your own server
+with `@brydio/api/ai`, never for this app: `bun run validate` refuses an app
+that holds one. See the SDK's `docs/ai.md`.
+
 ## The elements
 
 Every element, its settings and its events are in the SDK's catalogue,

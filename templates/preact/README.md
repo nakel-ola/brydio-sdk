@@ -24,6 +24,14 @@ bun run validate   # brydio validate: what Brydio would refuse at publish
 `brydio dev` signs in with `BRYDIO_API_URL` and `BRYDIO_TOKEN`, asks once
 which project to use, and remembers it in `.brydio/dev.json`.
 
+## Brydio's AI
+
+A custom tool's handler can ask Brydio's model with the `model` host grant
+(`model.generate`). It needs no key, and the calls are counted against your
+publisher. A developer API key (`BRYDIO_API_KEY`) is for your own server
+with `@brydio/api/ai`, never for this app: `bun run validate` refuses an app
+that holds one. See the SDK's `docs/ai.md`.
+
 ## The elements
 
 Every element, its settings and its events are in the SDK's catalogue,

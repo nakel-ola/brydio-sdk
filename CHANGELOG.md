@@ -22,6 +22,18 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## Unreleased
+
+- **`@brydio/api/ai` calls Brydio's AI from your own server** with a
+  developer API key (`BRYDIO_API_KEY`, made in Brydio's Settings ›
+  Developer): `ai.generate`, `ai.summarize` and `ai.agent`. It is for code you
+  run, never an app. Inside an app a handler keeps using the `model` grant.
+  See `docs/ai.md`.
+- **`brydio validate` refuses a developer API key in an app**, as
+  `developer_key_in_bundle`, wherever it is: the manifest, a source, or any
+  built file. It also refuses importing `@brydio/api/ai` from a screen or
+  handler. If validate finds your key, revoke it in Settings › Developer.
+
 ## 0.1.0-alpha.6
 
 The packaged create experience.
