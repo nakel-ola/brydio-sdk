@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "df3c9e43ebde084c29d2dd19bdfd07ccf985363d",
+    "commit": "56c69b79e5a9ba4a737b9b1922a32d40cc9eaaa3",
     "dirty": false
   },
   "contracts": {
@@ -2034,6 +2034,207 @@
         "ok": false,
         "messages": [
           "Invalid string: must match pattern /^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$/"
+        ]
+      },
+      {
+        "ok": true,
+        "data": {
+          "name": "issues",
+          "version": "0.1.0",
+          "displayName": "Issues",
+          "placements": [
+            {
+              "kind": "project-sidebar",
+              "screen": "board",
+              "children": {
+                "tool": "list_issues",
+                "noun": "sprints",
+                "create": {
+                  "tool": "create_sprint",
+                  "noun": "sprint",
+                  "titleField": "name"
+                },
+                "nested": [
+                  {
+                    "noun": "issues",
+                    "create": {
+                      "tool": "create_issue",
+                      "noun": "issue",
+                      "parentField": "sprint"
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "data": {
+            "issues": {
+              "schema": {
+                "title": "string",
+                "status": [
+                  "todo",
+                  "doing",
+                  "done"
+                ],
+                "assignee": "member?",
+                "labels": "string[]",
+                "body": "text?",
+                "project": "project?"
+              },
+              "search": [
+                "title",
+                "body"
+              ],
+              "label": "issue"
+            },
+            "labels": {
+              "schema": {
+                "name": "string",
+                "colour": "token"
+              },
+              "label": "label"
+            },
+            "sprints": {
+              "schema": {
+                "name": "string"
+              },
+              "label": "sprint"
+            }
+          },
+          "tools": {
+            "generated": true,
+            "custom": []
+          },
+          "screens": {
+            "board": {
+              "entry": "screens/board.js"
+            }
+          },
+          "grants": {
+            "tools": [
+              "*"
+            ],
+            "collections": [
+              "*"
+            ],
+            "host": [
+              "navigate",
+              "message"
+            ]
+          }
+        }
+      },
+      {
+        "ok": true,
+        "data": {
+          "name": "issues",
+          "version": "0.1.0",
+          "displayName": "Issues",
+          "placements": [
+            {
+              "kind": "project-sidebar",
+              "screen": "board",
+              "children": {
+                "tool": "list_issues",
+                "nested": [
+                  {
+                    "noun": "items"
+                  },
+                  {
+                    "noun": "items"
+                  },
+                  {
+                    "noun": "items"
+                  }
+                ]
+              }
+            }
+          ],
+          "data": {
+            "issues": {
+              "schema": {
+                "title": "string",
+                "status": [
+                  "todo",
+                  "doing",
+                  "done"
+                ],
+                "assignee": "member?",
+                "labels": "string[]",
+                "body": "text?",
+                "project": "project?"
+              },
+              "search": [
+                "title",
+                "body"
+              ],
+              "label": "issue"
+            },
+            "labels": {
+              "schema": {
+                "name": "string",
+                "colour": "token"
+              },
+              "label": "label"
+            },
+            "sprints": {
+              "schema": {
+                "name": "string"
+              },
+              "label": "sprint"
+            }
+          },
+          "tools": {
+            "generated": true,
+            "custom": []
+          },
+          "screens": {
+            "board": {
+              "entry": "screens/board.js"
+            }
+          },
+          "grants": {
+            "tools": [
+              "*"
+            ],
+            "collections": [
+              "*"
+            ],
+            "host": [
+              "navigate",
+              "message"
+            ]
+          }
+        }
+      },
+      {
+        "ok": false,
+        "messages": [
+          "The \"board\" folder nests 5 levels deep; a sidebar folder may nest at most 4."
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "The \"board\" folder creates with make_sprint, which is not one of the app's tools."
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "The \"board\" folder creates with list_issues, which only reads: name a tool that makes records, or mark a custom one write: true."
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "A field name is letters, digits and _, starting with a lower-case letter."
+        ]
+      },
+      {
+        "ok": false,
+        "messages": [
+          "Too small: expected number to be >=15"
         ]
       }
     ],

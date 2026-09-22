@@ -50,12 +50,60 @@ const placementSettingSchema = z.object({
 
 export type PlacementSettingSpec = z.infer<typeof placementSettingSchema>;
 
+/**
+ * How deep a folder's rows may nest, counting its own rows as the first
+ * level (ADR-A21): Issues → sprints → issues is two. Each level is listed
+ * only when a person opens its parent, so depth costs nothing while closed;
+ * the limit is for the sidebar's width and a person's patience.
+ */
+export const MAX_FOLDER_DEPTH = 4;
+
+/**
+ * "New sprint" on a folder's level (ADR-A21): one of the app's tools, run
+ * through the screen's door with the name the person typed in `titleField`
+ * and, below the first level, the row it is created under in `parentField`.
+ */
+const folderCreateSchema = z.object({
+  tool: z.string().min(1).max(64),
+  /** "sprint", in "New sprint". */
+  noun: z.string().min(1).max(40).optional(),
+  titleField: z.string().regex(FIELD_NAME, 'A field name is letters, digits and _, starting with a lower-case letter.').optional(),
+  parentField: z.string().regex(FIELD_NAME, 'A field name is letters, digits and _, starting with a lower-case letter.').optional(),
+});
+
+/** A level below a folder's own rows: what they are called, and how one is made. */
+const folderLevelSchema = z.object({
+  noun: z.string().min(1).max(60).optional(),
+  create: folderCreateSchema.optional(),
+});
+
 const placementSchema = z.object({
   kind: z.enum(['project-tab', 'project-sidebar', 'workspace-sidebar']),
   screen: z.string().min(1).max(FIELD_LIMITS.nameChars),
   label: z.string().min(1).max(60).optional(),
   icon: z.string().max(60).optional(),
   settings: z.record(z.string().regex(FIELD_NAME), placementSettingSchema).optional(),
+  /**
+   * A folder (A2-F02-S02): a sidebar item whose rows one of the app's read
+   * tools lists live, only while it is open. It can nest, and offer "New …"
+   * at each level, when the app opts in (ADR-A21).
+   */
+  children: z
+    .object({
+      tool: z.string().min(1).max(64),
+      refreshSeconds: z.number().int().min(15).max(3600).optional(),
+      cap: z.number().int().min(1).max(50).optional(),
+      noun: z.string().min(1).max(60).optional(),
+      /** A "New …" row at the folder's first level (ADR-A21). */
+      create: folderCreateSchema.optional(),
+      /**
+       * The levels under the first, in order (ADR-A21). A row the tool marks
+       * `hasChildren` opens only when a level is declared for it; without
+       * `nested` the folder stays one flat list.
+       */
+      nested: z.array(folderLevelSchema).max(8).optional(),
+    })
+    .optional(),
 });
 
 const collectionSchema = z.object({
@@ -166,7 +214,10 @@ export type DataProblemCode =
   | 'custom_name_taken'
   | 'custom_collection_unknown'
   | 'custom_input_invalid'
-  | 'placement_screen_unknown';
+  | 'placement_screen_unknown'
+  | 'placement_children_too_deep'
+  | 'placement_create_tool_unknown'
+  | 'placement_create_not_write';
 
 type Additions = z.infer<z.ZodObject<typeof extensionShape>>;
 
@@ -331,6 +382,77 @@ export function dataProblems(additions: Additions, options: { grants?: boolean }
         code: 'placement_screen_unknown',
         message: `A ${placement.kind} placement opens "${placement.screen}", which is not one of the app's screens.`,
       });
+    }
+  }
+
+  problems.push(...folderProblems(additions));
+
+  return problems;
+}
+
+/**
+ * A folder that nests or creates (ADR-A21) must stay within
+ * `MAX_FOLDER_DEPTH`, and each "New …" must name a tool the app has that
+ * changes records. Only the new keys are checked: a published manifest's
+ * existing folder still reads as it did.
+ */
+function folderProblems(additions: Additions): DataProblem[] {
+  const problems: DataProblem[] = [];
+  const custom = new Map((additions.tools?.custom ?? []).map(tool => [tool.name, tool]));
+  const generatedWrites =
+    additions.tools?.generated === false
+      ? new Set<string>()
+      : new Set(
+          Object.entries(additions.data ?? {}).flatMap(([name, declared]) => {
+            const label = labelOf(name, declared.label);
+
+            return [`create_${label}`, `update_${label}`, `delete_${label}`, `batch_${label}s`];
+          })
+        );
+  const generatedReads =
+    additions.tools?.generated === false
+      ? new Set<string>()
+      : new Set(
+          Object.entries(additions.data ?? {}).flatMap(([name, declared]) => {
+            const label = labelOf(name, declared.label);
+
+            return [`get_${label}`, `list_${label}s`, `search_${label}s`];
+          })
+        );
+
+  for (const placement of additions.placements ?? []) {
+    const children = placement.children;
+
+    if (!children) continue;
+
+    const depth = 1 + (children.nested?.length ?? 0);
+
+    if (depth > MAX_FOLDER_DEPTH) {
+      problems.push({
+        code: 'placement_children_too_deep',
+        message: `The "${placement.screen}" folder nests ${depth} levels deep; a sidebar folder may nest at most ${MAX_FOLDER_DEPTH}.`,
+      });
+    }
+
+    const creates = [children.create, ...(children.nested ?? []).map(level => level.create)];
+
+    for (const create of creates) {
+      if (!create) continue;
+
+      const own = custom.get(create.tool);
+      const reads = own ? own.write !== true : generatedReads.has(create.tool);
+
+      if (!own && !reads && !generatedWrites.has(create.tool)) {
+        problems.push({
+          code: 'placement_create_tool_unknown',
+          message: `The "${placement.screen}" folder creates with ${create.tool}, which is not one of the app's tools.`,
+        });
+      } else if (reads) {
+        problems.push({
+          code: 'placement_create_not_write',
+          message: `The "${placement.screen}" folder creates with ${create.tool}, which only reads: name a tool that makes records, or mark a custom one write: true.`,
+        });
+      }
     }
   }
 

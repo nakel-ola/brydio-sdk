@@ -33,6 +33,13 @@ const reading = (result: { success: boolean; data?: unknown; error?: { issues: {
 const codesOf = (manifest: unknown) => validateManifest(manifest).problems.map(problem => problem.code);
 const withData = (data: Record<string, unknown>) => ({ ...ISSUES_MANIFEST, data });
 const bytes = (text: string) => new TextEncoder().encode(text);
+/** The Issues manifest with a folder in the project sidebar (ADR-A21): sprints, then their issues. */
+const withFolder = (children: Record<string, unknown>) => ({
+  ...ISSUES_MANIFEST,
+  data: { ...ISSUES_MANIFEST.data, sprints: { schema: { name: 'string' }, label: 'sprint' } },
+  placements: [{ kind: 'project-sidebar', screen: 'board', children: { tool: 'list_issues', ...children } }],
+});
+const LEVEL = { noun: 'items' };
 
 /** Manifests on both sides of every rule, for comparing with the server's reading. */
 const CORPUS: unknown[] = [
@@ -55,6 +62,17 @@ const CORPUS: unknown[] = [
   withData({ issues: { schema: { a: 'boolean?', b: 'token?', c: 'string[]?' }, index: ['a'] } }),
   { ...ISSUES_MANIFEST, sdk: '0.1.0-alpha.0' },
   { ...ISSUES_MANIFEST, sdk: 'latest' },
+  withFolder({
+    noun: 'sprints',
+    create: { tool: 'create_sprint', noun: 'sprint', titleField: 'name' },
+    nested: [{ noun: 'issues', create: { tool: 'create_issue', noun: 'issue', parentField: 'sprint' } }],
+  }),
+  withFolder({ nested: [LEVEL, LEVEL, LEVEL] }),
+  withFolder({ nested: [LEVEL, LEVEL, LEVEL, LEVEL] }),
+  withFolder({ create: { tool: 'make_sprint' } }),
+  withFolder({ nested: [{ create: { tool: 'list_issues' } }] }),
+  withFolder({ create: { tool: 'create_sprint', titleField: 'Name!' } }),
+  withFolder({ refreshSeconds: 5 }),
 ];
 
 describe('the example manifests', () => {
@@ -146,6 +164,19 @@ describe('validateManifest', () => {
     expect(codesOf(CORPUS[13])).toEqual(['data_search_not_text', 'data_search_unknown_field']);
     expect(codesOf(CORPUS[14])).toEqual(['data_label_taken']);
     expect(codesOf(CORPUS[15])).toEqual(['data_collection_name_format', 'data_label_format']);
+  });
+
+  test('lets a folder nest four levels and make rows, and names what goes wrong (ADR-A21)', () => {
+    expect(validateManifest(CORPUS[19]).ok).toBe(true);
+    expect(validateManifest(CORPUS[19]).manifest?.placements?.[0]?.children?.nested?.[0]?.create?.parentField).toBe('sprint');
+    expect(validateManifest(CORPUS[20]).ok).toBe(true);
+    expect(validateManifest(CORPUS[21]).problems).toEqual([
+      { code: 'placement_children_too_deep', message: 'The "board" folder nests 5 levels deep; a sidebar folder may nest at most 4.' },
+    ]);
+    expect(codesOf(CORPUS[22])).toEqual(['placement_create_tool_unknown']);
+    expect(codesOf(CORPUS[23])).toEqual(['placement_create_not_write']);
+    expect(validateManifest(CORPUS[24]).problems[0]).toMatchObject({ code: 'manifest_invalid', path: 'placements.0.children.create.titleField' });
+    expect(validateManifest(CORPUS[25]).problems[0]).toMatchObject({ code: 'manifest_invalid', path: 'placements.0.children.refreshSeconds' });
   });
 
   test('calls a field of the wrong shape manifest_invalid, with its path', () => {
