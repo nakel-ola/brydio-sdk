@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
 import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
+import { BRAND, OWNED } from '../../../test-support/owner-rules.ts';
 import { callsOf, main, validate, type Problem } from '../src/index.ts';
 
 /**
@@ -19,7 +20,8 @@ function app(files: Record<string, string>): string {
 
   made.push(root);
 
-  for (const [path, content] of Object.entries(files)) {
+  // A logo, an icon and a server beside whatever the test is about.
+  for (const [path, content] of Object.entries({ ...OWNED, ...files })) {
     mkdirSync(dirname(join(root, path)), { recursive: true });
     writeFileSync(join(root, path), content);
   }
@@ -35,6 +37,7 @@ const issues = (version: string, schema: Record<string, unknown>, extra: Record<
   JSON.stringify({
     name: 'issues',
     version,
+    ...BRAND,
     data: { issues: { schema, label: 'issue' }, labels: { schema: { name: 'string' }, label: 'label' } },
     screens: { board: { entry: 'screens/board.js' } },
     grants: { tools: ['*'], collections: ['*'] },
@@ -325,5 +328,47 @@ describe('Brydio’s own apps', () => {
 
     expect(result.problems.filter(problem => problem.severity === 'error')).toEqual([]);
     expect(result.ok).toBe(true);
+  });
+});
+
+describe('the owner’s rules, found before the publish route finds them (ADR-A20, ADR-A19)', () => {
+  test('a missing logo and icon, in the route’s words, naming each field', () => {
+    const bare = app({ '.brydio/app.json': JSON.stringify({ ...JSON.parse(V020), logo: undefined, icon: './brand/icon.svg' }) });
+
+    expect(validate(bare).problems.filter(one => one.code.startsWith('brand_')).map(one => [one.code, one.path, one.message])).toEqual([
+      ['brand_logo_missing', 'logo', 'An app needs a logo: set "logo" to { "color": "./…", "mono": "./…" }, one image in colour and one in a single colour.'],
+      ['brand_icon_missing', 'icon', 'An icon is now two images: set "icon" to { "color": "./…", "mono": "./…" } instead of one path.'],
+    ]);
+  });
+
+  test('a one-colour icon in two colours', () => {
+    const root = built(V020, { 'brand/icon-mono.svg': '<svg viewBox="0 0 48 48"><path fill="#000"/><path fill="#f00"/></svg>' });
+
+    expect(found(validate(root).problems)).toEqual([
+      ['brand_mono_colours', 'icon.mono paints in 2 colours (#000000, #ff0000). A one-colour image paints in one colour, or in currentColor, on transparency.'],
+    ]);
+  });
+
+  test('an app with nothing to call, and the same app with a server beside it', () => {
+    const none = JSON.stringify({ name: 'quiet', version: '0.1.0', ...BRAND, screens: { board: { entry: 'screens/board.js' } } });
+    const quiet = built(none, { 'servers.json': '{"servers":{}}' });
+
+    expect(found(validate(quiet).problems)).toEqual([
+      ['app_has_no_tools', 'This app gives the assistant nothing to call. Keep a collection with generated tools, add a custom tool, or bundle an MCP server or an integration.'],
+    ]);
+    expect(validate(built(none)).problems).toEqual([]);
+  });
+
+  test('builds the four images into the bundle, beside the code', async () => {
+    const { build } = await import('../src/index.ts');
+    const root = app({ '.brydio/app.json': V020, 'src/screens/board.ts': 'export const board = 1;\n' });
+    const result = await build(root, { checkSource: false });
+
+    expect([...result.files.keys()].filter(path => path.startsWith('brand/')).sort()).toEqual([
+      'brand/icon-mono.svg',
+      'brand/icon.svg',
+      'brand/logo-mono.svg',
+      'brand/logo.svg',
+    ]);
   });
 });

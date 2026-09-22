@@ -4,7 +4,24 @@
  * a copy of the server's own, so an app that passes here passes there.
  */
 
-export { APP_NAME_FORMAT, MANIFEST_LIMITS, SEMVER_FORMAT, baseManifestSchema } from './base.ts';
+export { APP_NAME_FORMAT, MANIFEST_LIMITS, SEMVER_FORMAT, baseManifestSchema, brandImagesSchema } from './base.ts';
+
+export {
+  BRAND_FIELDS,
+  BRAND_LIMITS,
+  brandFilePath,
+  brandPathsOf,
+  brandProblems,
+  brandShapeOf,
+  isBrandPath,
+  pngVerdict,
+  svgColours,
+  toolsProblem,
+  type BrandField,
+  type RequirementCode,
+  type RequirementFiles,
+  type RequirementProblem,
+} from './requirements.ts';
 
 export {
   BUNDLE_MANIFEST,
@@ -12,6 +29,7 @@ export {
   BUNDLE_PATH_MAX_CHARS,
   bundleBytes,
   bundleHash,
+  brandOf,
   bundleProblem,
   codeOf,
   isBundlePath,

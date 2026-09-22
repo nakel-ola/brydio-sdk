@@ -34,6 +34,22 @@ goes no sooner than the next major.
   built file. It also refuses importing `@brydio/api/ai` from a screen or
   handler. If validate finds your key, revoke it in Settings › Developer.
 
+Two rules for every app, from the owner's decisions of 22 September 2026.
+**Both break an app that doesn't meet them**: `brydio validate` and Brydio's
+publish route now refuse it.
+
+- **A logo and an icon, each in colour and in one colour (ADR-A20).** Add
+  `"logo": { "color": "./…", "mono": "./…" }` and the same for `"icon"`, and
+  the four images beside the manifest. `brydio build` copies them into the
+  bundle. The one-colour images are a PNG with transparency, or an SVG in
+  one colour or `currentColor`; the sidebar tints them with the theme. The
+  templates ship Brydio's plain mark in `brand/` to start from. A one-path
+  `icon` still reads, but no longer publishes. Codes: `brand_*`, in
+  [the publish checklist](docs/publish-checklist.md).
+- **Something the assistant can call (ADR-A19).** A collection with generated
+  tools, a custom tool, a server in `servers.json` or an integration in
+  `integrations/`. An app with none is `app_has_no_tools`.
+
 ## 0.1.0-alpha.6
 
 The packaged create experience.

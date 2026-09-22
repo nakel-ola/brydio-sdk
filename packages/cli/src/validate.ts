@@ -1,6 +1,8 @@
 import {
   BUNDLE_MANIFEST,
   DEVELOPER_KEY_MESSAGE,
+  brandPathsOf,
+  brandProblems,
   bundleProblem,
   compareVersions,
   developerKeyIn,
@@ -9,6 +11,7 @@ import {
   secretsInJson,
   isScriptPath,
   publishedMigrationProblems,
+  toolsProblem,
   unknownHostGrant,
 } from '@brydio/manifest';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -74,6 +77,8 @@ export function validate(dir: string, options: ValidateOptions = {}): ValidateRe
   for (const [file, text] of screenSources(project.root)) {
     if (holdsDeveloperKey(text)) problems.push({ code: 'developer_key_in_bundle', severity: 'error', file, message: DEVELOPER_KEY_MESSAGE });
   }
+
+  if (project.manifest) problems.push(...ownerRules(project.root, project.raw, manifestFile));
 
   if (project.manifest) {
     const built = existsSync(outDir) ? filesUnder(outDir) : null;
@@ -148,6 +153,58 @@ export function validate(dir: string, options: ValidateOptions = {}): ValidateRe
   }
 
   return { ok: !problems.some(problem => problem.severity === 'error'), problems };
+}
+
+/**
+ * The owner's two rules for every app, in the publish route's words: a logo
+ * and an icon in colour and in one colour (ADR-A20), read from where the
+ * manifest says they are in the app, and something the assistant can call
+ * (ADR-A19), counting the servers in `servers.json` and the files in
+ * `integrations/` beside the manifest's own tools.
+ */
+function ownerRules(root: string, raw: Record<string, unknown>, manifestFile: string): Problem[] {
+  const brand = new Map<string, Uint8Array>();
+
+  for (const path of brandPathsOf(raw).values()) {
+    const at = join(root, path);
+
+    if (existsSync(at) && statSync(at).isFile()) brand.set(path, readFileSync(at));
+  }
+
+  const problems = brandProblems(raw, brand);
+  const tools = toolsProblem(raw, bundledParts(root, raw));
+
+  if (tools) problems.push(tools);
+
+  return problems.map(problem => ({
+    code: problem.code,
+    severity: 'error' as const,
+    file: manifestFile,
+    path: problem.path,
+    message: problem.message,
+  }));
+}
+
+/** The MCP servers and integrations the app bundles, where the manifest says they are. */
+function bundledParts(root: string, raw: Record<string, unknown>): { servers: number; integrations: number } {
+  const inside = (declared: unknown, fallback: string) =>
+    join(root, (typeof declared === 'string' ? declared : fallback).replace(/^\.\//, ''));
+  let servers = 0;
+
+  try {
+    const file = inside(raw.servers, './servers.json');
+    const parsed = existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as { servers?: unknown }) : null;
+
+    servers = parsed?.servers && typeof parsed.servers === 'object' ? Object.keys(parsed.servers).length : 0;
+  } catch {
+    // A servers.json that does not parse offers no server.
+  }
+
+  const folder = inside(raw.integrations, './integrations/');
+  const integrations =
+    existsSync(folder) && statSync(folder).isDirectory() ? readdirSync(folder).filter(name => name.endsWith('.json')).length : 0;
+
+  return { servers, integrations };
 }
 
 /** Every screen source under `src/`, tests aside, by its path from the app's root. */

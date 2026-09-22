@@ -40,6 +40,16 @@ export const linksSchema = z.object({
   support: z.string().optional(),
 });
 
+/**
+ * One of an app's two images, in its two variants (ADR-A20): `color` for a
+ * tile and the app's own page, `mono` for the sidebar, where the theme tints
+ * it. Both are `./`-prefixed paths inside the app.
+ */
+export const brandImagesSchema = z.object({
+  color: z.string(),
+  mono: z.string(),
+});
+
 export const requiresSchema = z.object({
   servers: z.array(z.string()).default([]),
   integrations: z.array(z.string()).default([]),
@@ -58,7 +68,10 @@ export const baseManifestSchema = z.object({
   license: z.string().max(MANIFEST_LIMITS.licenseChars).optional(),
   keywords: z.array(z.string()).max(MANIFEST_LIMITS.keywords).optional(),
   links: linksSchema.optional(),
-  icon: z.string().optional(),
+  /** Required to publish (ADR-A20); optional here so every stored manifest still reads. */
+  logo: brandImagesSchema.optional(),
+  /** The two-variant icon (ADR-A20), or the one path every app had before it, still read. */
+  icon: z.union([z.string(), brandImagesSchema]).optional(),
   brandColor: z.string().optional(),
   brandColorDark: z.string().optional(),
   defaultPrompts: z.array(z.string()).max(MANIFEST_LIMITS.defaultPrompts).optional(),

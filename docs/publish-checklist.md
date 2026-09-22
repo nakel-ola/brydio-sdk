@@ -73,6 +73,64 @@ first.
 | `data_search_not_text` | `<collection>.<field>` cannot be searched: only text fields can. | yes | publish | Search only text fields. |
 | `manifest_sdk_overwritten` (warning, from `brydio build`) | The manifest says "sdk": `<value>`, which brydio build writes itself. The build says `<version>`; take the line out of the manifest. | build | no | Delete `sdk` from the manifest. |
 
+## 1a. The app has a logo and an icon, and gives the assistant something to call
+
+Two rules the owner set for every app (22 September 2026). Both are read
+from `.brydio/app.json` and the files beside it, and both are refused by the
+publish route in the same words, with no `app.json:` in front.
+
+**A logo and an icon, in colour and in one colour** (ADR-A20). The manifest
+names four image files, `./`-prefixed paths inside the app:
+
+```json
+"logo": { "color": "./brand/logo.svg", "mono": "./brand/logo-mono.svg" },
+"icon": { "color": "./brand/icon.svg", "mono": "./brand/icon-mono.svg" }
+```
+
+`brydio build` copies them into the bundle beside the code; they are the only
+files that aren't scripts a bundle may hold, and Brydio keeps them with the
+version rather than as code. The coloured icon is drawn on tiles, the
+coloured logo on the app's own page, and the one-colour icon in the sidebar,
+tinted by the theme. The rules:
+
+- Each file is a PNG, JPEG, WebP or SVG of at most 512 KB, with no script,
+  event handler or outside link in an SVG.
+- The icon is square: 48 to 1024 pixels across, or a square view box.
+- The logo is 48 to 1024 pixels tall, at most 2048 wide, and from as wide as
+  it is tall to four times as wide. An SVG's view box is held to the same
+  proportions.
+- A one-colour image is a PNG with transparency whose visible pixels are all
+  one colour (anti-aliased edges of that colour are fine), or an SVG that
+  paints with one colour or `currentColor`. An SVG's colours are read from
+  `fill`, `stroke`, `stop-color`, `flood-color` and `color`, in attributes
+  and in `style`; a shape with no fill paints in black unless the `<svg>` or
+  a `<g>` sets one; an embedded `<image>` can't be read, so it is refused.
+  A JPEG has no transparency and a WebP isn't decoded, so neither can be the
+  one-colour image.
+
+An app from before these rules has `"icon": "./icon.png"`. Brydio still reads
+that, and still draws the one image wherever the app appears, but it is not
+enough to publish a new version.
+
+**Something for the assistant to call** (ADR-A19): a collection with
+generated tools (on unless `tools.generated` is `false`), a custom tool in
+`tools.custom`, an MCP server in `servers.json` or `requires.servers`, or an
+integration in `integrations/` or `requires.integrations`.
+
+| Code | Refused with | validate | server | How to fix |
+|---|---|---|---|---|
+| `brand_logo_missing` | An app needs a logo: set "logo" to { "color": "./…", "mono": "./…" }, one image in colour and one in a single colour. | yes | publish | Add `logo` with both images. |
+| `brand_icon_missing` | An app needs an icon: set "icon" to { "color": "./…", "mono": "./…" }, one square image in colour and one in a single colour. (For one path: An icon is now two images: set "icon" to { "color": "./…", "mono": "./…" } instead of one path.) | yes | publish | Add `icon` with both images. |
+| `brand_path_invalid` | `<field>` must be a path inside the package that starts with ./ and ends in .png, .jpg, .webp or .svg. | yes | publish | Write the path as `./brand/icon.svg`. |
+| `brand_file_missing` | `<field>` names `<path>`, which is not in the package. | yes | publish | Add the file, or fix the path. |
+| `brand_file_too_large` | `<field>` is `<n>` KB. A logo or icon file is at most 512 KB. | yes | publish | Make the image smaller, or use an SVG. |
+| `brand_file_unreadable` | `<field>` is not a PNG, JPEG, WebP or SVG that Brydio can read. (Or: `<field>` carries a script, an event handler or a link to somewhere else, which a logo or icon cannot.) | yes | publish | Export the image again as a plain PNG or SVG. |
+| `brand_icon_shape` | `<field>` is `<width>×<height>`. An icon is square, from 48 to 1024 pixels across. | yes | publish | Make the icon square and of that size. |
+| `brand_logo_shape` | `<field>` is `<width>×<height>`. A logo is 48 to 1024 pixels tall, at most 2048 wide, and from as wide as it is tall to four times as wide. | yes | publish | Crop or resize the logo. |
+| `brand_mono_type` | `<field>` is a `<JPEG or WebP>`. A one-colour image is a PNG with transparency, or an SVG. | yes | publish | Save the one-colour image as a PNG or an SVG. |
+| `brand_mono_colours` | `<field>` paints in `<n>` colours (`<colours>`). A one-colour image paints in one colour, or in currentColor, on transparency. (Or: `<field>` has pixels of more than one colour; has no transparent pixels, so it would draw as a solid block; or embeds an image, so it can't be read as one colour.) | yes | publish | Paint the whole mark in one colour, or `currentColor`, on a transparent ground. |
+| `app_has_no_tools` | This app gives the assistant nothing to call. Keep a collection with generated tools, add a custom tool, or bundle an MCP server or an integration. | yes | publish | Keep a collection with generated tools, add a custom tool, or bundle a server or an integration. |
+
 ## 2. Screens use only catalogue elements and the settings each one takes
 
 Checked by reading each screen's source with TypeScript's parser, against
@@ -172,7 +230,7 @@ Screens may call only tools that exist:
 | `handler_not_built` | The "`<tool>`" tool runs "`<handler>`", which is not a script in this bundle. Run brydio build. | yes | publish (`handler_missing`) | Run `brydio build`, or fix the handler's path. |
 | `bundle_stale` (warning) | The built manifest is not the manifest as it is now. Run brydio build again. | yes | no | Run `brydio build`. |
 | `bundle_too_large` | That bundle is `<size>`, over the 1.00 MB cap. The largest file is "`<file>`" at `<size>`. | yes | publish | Make the screens smaller; start with the largest file. |
-| `bundle_file_not_code` | "`<file>`" is not a script. A bundle holds only .js files and app.json. (From `brydio build`: The "`<screen>`" screen brings in "`<file>`", which a bundle cannot hold. A Brydio app has no CSS, HTML or images: Brydio draws every element itself.) | yes | publish | Remove the import of CSS, HTML or images. |
+| `bundle_file_not_code` | "`<file>`" is not a script. A bundle holds only .js files and app.json (and the logo and icon files the manifest names). (From `brydio build`: The "`<screen>`" screen brings in "`<file>`", which a bundle cannot hold. A Brydio app has no CSS, HTML or images: Brydio draws every element itself.) | yes | publish | Remove the import of CSS, HTML or images. |
 | `runtime_too_large` | The "`<screen>`" screen carries `<n>` KB of Brydio's runtime, over the 30 KB a screen may carry. Something in @brydio is being bundled that this screen does not use. | no: `brydio build` (minified) refuses it, and `validate` reads a build | no | Import what the screen uses from `@brydio/app`, not a schema or checking library; say so on the channel if the SDK itself leaks. |
 | `bundle_path_invalid` | "`<path>`" is not a path a bundle can hold. | yes | publish | Use plain ASCII names with no hidden segments. |
 | `bundle_manifest_missing` | That bundle has no app.json at its root. | yes | publish | Run `brydio build`. |

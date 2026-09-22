@@ -61,7 +61,16 @@ const FIELD_DOCS: Record<ManifestField, FieldDoc> = {
     takes: '`{ privacy?, terms?, support? }`',
     description: 'Public policy and support links shown with the app.',
   },
-  icon: { takes: 'text', description: 'The app icon reference used by Brydio.' },
+  logo: {
+    takes: '`{ color, mono }`, two `./` paths',
+    description:
+      'Required to publish. The app’s logo in colour and in one colour: PNG, JPEG, WebP or SVG, 48 to 1024 pixels tall, up to four times as wide, at most 512 KB. The one-colour one is a PNG with transparency or an SVG in one colour or `currentColor`.',
+  },
+  icon: {
+    takes: '`{ color, mono }`, two `./` paths',
+    description:
+      'Required to publish. The app’s square icon in colour, for tiles, and in one colour, which the sidebar tints. 48 to 1024 pixels across. A single path is still read for older versions, but is not enough to publish.',
+  },
   brandColor: { takes: 'text', description: 'The legacy light-theme brand colour.' },
   brandColorDark: { takes: 'text', description: 'The legacy dark-theme brand colour.' },
   defaultPrompts: {

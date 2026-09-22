@@ -1,6 +1,8 @@
 {
   "name": "pictured",
   "version": "1.0.0",
+  "logo": { "color": "./brand/logo.svg", "mono": "./brand/logo-mono.svg" },
+  "icon": { "color": "./brand/icon.svg", "mono": "./brand/icon-mono.svg" },
   "placements": [{ "kind": "project-tab", "screen": "home", "label": "Pictured" }],
   "data": { "notes": { "schema": { "title": "string" } } },
   "screens": {
