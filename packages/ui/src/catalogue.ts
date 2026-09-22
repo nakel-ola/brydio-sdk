@@ -137,6 +137,50 @@ export const FILE_KINDS = ['document', 'spreadsheet', 'presentation', 'pdf', 'im
 /** An ISO date is ten characters: `2026-09-16`. */
 const ISO_DATE = 10;
 
+// ADR-A23 (catalogue-b)
+/** The most days a calendar holds chosen at once: a year's worth. */
+export const CALENDAR_DAYS = 366;
+/** The most choices a combobox offers. Past this the app searches for them itself. */
+export const COMBOBOX_MAX = 500;
+/** The most commands one `bry-command` list holds. */
+export const COMMAND_ITEMS = 200;
+/** The most rows one page of a data table shows. */
+export const DATA_TABLE_PAGE = 100;
+/** A prefix or suffix on an input group is a few characters: `https://`, `.com`, `kg`. */
+const AFFIX = 24;
+/** The longest one-time code. */
+export const OTP_MAX = 8;
+/** The most menus on one menubar. */
+export const MENUBAR_MENUS = 8;
+/** The most sections along one section menu, and the most entries under one. */
+export const SECTION_MENU_SECTIONS = 8;
+export const SECTION_MENU_ENTRIES = 12;
+/** The most pages a pagination can say there are. */
+export const PAGES = 100_000;
+/** The most questions one questionnaire asks, and the most choices one question offers. */
+export const QUESTIONS = 50;
+export const QUESTION_CHOICES = 20;
+/** The most choices a radio group shows. More belongs in a select. */
+export const RADIO_MAX = 20;
+/** The furthest a slider reaches either side of nought. */
+export const SLIDER_LIMIT = 1_000_000;
+/** The most toggles in one toggle group. */
+export const TOGGLE_GROUP_ITEMS = 12;
+
+/** A menu item, as `bry-menu`, `bry-context-menu` and `bry-menubar` take it. */
+const MENU_ITEM = {
+  kind: 'shape',
+  fields: {
+    id: { kind: 'text', max: KEY_MAX },
+    label: { kind: 'text', max: LABEL_MAX },
+    icon: { kind: 'enum', values: MENU_ICONS },
+    tone: { kind: 'enum', values: ['default', 'danger'] },
+    separator: { kind: 'boolean' },
+    disabled: { kind: 'boolean' },
+  },
+  required: ['id', 'label'],
+} as const;
+
 /**
  * Every element an app may use, as the host declares them: Phase 0's five,
  * then each one Brydio has added since, in the order it registers them.
@@ -624,6 +668,383 @@ export const CATALOGUE = {
     },
     required: ['count'],
     events: ['open', 'select', 'menu', 'range'],
+    children: false,
+  },
+  // ADR-A23 (catalogue-b)
+  'bry-button-group': {
+    // Buttons that belong together, drawn joined. `label` names the group.
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      orientation: { kind: 'enum', values: ['horizontal', 'vertical'] },
+    },
+    required: ['label'],
+    events: [],
+    children: true,
+  },
+  'bry-calendar': {
+    // A month always open. `mode` single, multiple or range; the chosen days
+    // are `values`, ISO dates, and `change` carries `{ values }`.
+    props: {
+      mode: { kind: 'enum', values: ['single', 'multiple', 'range'] },
+      values: { kind: 'list', max: CALENDAR_DAYS, of: { kind: 'text', max: ISO_DATE } },
+      month: { kind: 'text', max: ISO_DATE },
+      min: { kind: 'text', max: ISO_DATE },
+      max: { kind: 'text', max: ISO_DATE },
+      label: { kind: 'text', max: LABEL_MAX },
+      disabled: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    events: ['change'],
+    children: false,
+  },
+  'bry-combobox': {
+    // A select with a search box: `change` with `{ value }`.
+    props: {
+      value: { kind: 'text', max: LABEL_MAX },
+      options: { kind: 'options', max: COMBOBOX_MAX },
+      placeholder: { kind: 'text', max: LABEL_MAX },
+      search: { kind: 'text', max: LABEL_MAX },
+      empty: { kind: 'text', max: LABEL_MAX },
+      label: { kind: 'text', max: LABEL_MAX },
+      size: { kind: 'enum', values: ['sm', 'md'] },
+      disabled: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['options'],
+    events: ['change'],
+    children: false,
+  },
+  'bry-command': {
+    // A search box over things to do, in the screen. `select` with `{ id }`,
+    // `change` with the search's `{ value }`.
+    props: {
+      items: {
+        kind: 'list',
+        max: COMMAND_ITEMS,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            label: { kind: 'text', max: LABEL_MAX },
+            group: { kind: 'text', max: LABEL_MAX },
+            icon: { kind: 'enum', values: MENU_ICONS },
+            hint: { kind: 'text', max: 40 },
+            disabled: { kind: 'boolean' },
+          },
+          required: ['id', 'label'],
+        },
+      },
+      placeholder: { kind: 'text', max: LABEL_MAX },
+      label: { kind: 'text', max: LABEL_MAX },
+      loading: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['items'],
+    events: ['select', 'change'],
+    children: false,
+  },
+  'bry-context-menu': {
+    // A `bry-menu`'s items, opened by a right-click or the menu key on its child.
+    props: {
+      items: { kind: 'list', max: MENU_ITEMS, of: MENU_ITEM },
+    },
+    required: ['items'],
+    events: ['select'],
+    children: true,
+  },
+  'bry-data-table': {
+    // A table sorted, filtered, paged, chosen in and shown by column, by the
+    // person, at once; each change is told to the app.
+    props: {
+      columns: {
+        kind: 'list',
+        max: TABLE_COLUMNS,
+        of: {
+          kind: 'shape',
+          fields: {
+            key: { kind: 'text', max: KEY_MAX },
+            heading: { kind: 'text', max: LABEL_MAX },
+            align: { kind: 'enum', values: ['start', 'end'] },
+            sortable: { kind: 'boolean' },
+            hideable: { kind: 'boolean' },
+          },
+          required: ['key', 'heading'],
+        },
+      },
+      rows: {
+        kind: 'list',
+        max: TABLE_ROWS,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            cells: { kind: 'list', max: TABLE_COLUMNS, of: { kind: 'text', max: LABEL_MAX } },
+          },
+          required: ['id', 'cells'],
+        },
+      },
+      sort: {
+        kind: 'shape',
+        fields: { key: { kind: 'text', max: KEY_MAX }, direction: { kind: 'enum', values: ['asc', 'desc'] } },
+        required: ['key', 'direction'],
+      },
+      filter: { kind: 'text', max: LABEL_MAX },
+      placeholder: { kind: 'text', max: LABEL_MAX },
+      page: { kind: 'int', min: 1, max: TABLE_ROWS },
+      perPage: { kind: 'int', min: 1, max: DATA_TABLE_PAGE },
+      hidden: { kind: 'list', max: TABLE_COLUMNS, of: { kind: 'text', max: KEY_MAX } },
+      selectable: { kind: 'boolean' },
+      selected: { kind: 'list', max: TABLE_ROWS, of: { kind: 'text', max: KEY_MAX } },
+      label: { kind: 'text', max: LABEL_MAX },
+      loading: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['columns'],
+    events: ['sort', 'filter', 'page', 'columns', 'select'],
+    children: false,
+  },
+  'bry-field': {
+    // A control's name, description and error, around the control.
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      description: { kind: 'text', max: PARAGRAPH_MAX },
+      error: { kind: 'text', max: LABEL_MAX },
+      required: { kind: 'boolean' },
+      orientation: { kind: 'enum', values: ['vertical', 'horizontal'] },
+    },
+    required: ['label'],
+    events: [],
+    children: true,
+  },
+  'bry-input-group': {
+    // A `bry-input` with an icon, a prefix, a suffix or a button fixed to it.
+    props: {
+      value: { kind: 'text', max: INPUT_MAX },
+      placeholder: { kind: 'text', max: LABEL_MAX },
+      label: { kind: 'text', max: LABEL_MAX },
+      kind: { kind: 'enum', values: ['text', 'email', 'url', 'search'] },
+      icon: { kind: 'enum', values: MENU_ICONS },
+      prefix: { kind: 'text', max: AFFIX },
+      suffix: { kind: 'text', max: AFFIX },
+      action: { kind: 'text', max: LABEL_MAX },
+      actionIcon: { kind: 'enum', values: MENU_ICONS },
+      maxLength: { kind: 'int', min: 1, max: INPUT_MAX },
+      disabled: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    events: ['change', 'submit', 'action'],
+    children: false,
+  },
+  'bry-input-otp': {
+    // A one-time code in a row of boxes: `change` as it is typed, `complete` when full.
+    props: {
+      value: { kind: 'text', max: OTP_MAX },
+      length: { kind: 'int', min: 4, max: OTP_MAX },
+      pattern: { kind: 'enum', values: ['digits', 'alphanumeric'] },
+      label: { kind: 'text', max: LABEL_MAX },
+      disabled: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['label'],
+    events: ['change', 'complete'],
+    children: false,
+  },
+  'bry-menubar': {
+    // Menus over one part of the screen: commands, never the app's navigation.
+    props: {
+      menus: {
+        kind: 'list',
+        max: MENUBAR_MENUS,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            label: { kind: 'text', max: LABEL_MAX },
+            items: { kind: 'list', max: MENU_ITEMS, of: MENU_ITEM },
+          },
+          required: ['id', 'label', 'items'],
+        },
+      },
+      label: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['menus', 'label'],
+    events: ['select'],
+    children: false,
+  },
+  'bry-native-select': {
+    // `bry-select`'s contract, drawn by the system's own list.
+    props: {
+      value: { kind: 'text', max: LABEL_MAX },
+      options: { kind: 'options', max: SELECT_MAX },
+      placeholder: { kind: 'text', max: LABEL_MAX },
+      label: { kind: 'text', max: LABEL_MAX },
+      size: { kind: 'enum', values: ['sm', 'md'] },
+      disabled: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['options'],
+    events: ['change'],
+    children: false,
+  },
+  'bry-section-menu': {
+    // shadcn's Navigation Menu, held to the sections of this screen: nothing
+    // is a link, nothing opens another screen.
+    props: {
+      sections: {
+        kind: 'list',
+        max: SECTION_MENU_SECTIONS,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            label: { kind: 'text', max: LABEL_MAX },
+            entries: {
+              kind: 'list',
+              max: SECTION_MENU_ENTRIES,
+              of: {
+                kind: 'shape',
+                fields: {
+                  id: { kind: 'text', max: KEY_MAX },
+                  label: { kind: 'text', max: LABEL_MAX },
+                  description: { kind: 'text', max: LABEL_MAX },
+                  disabled: { kind: 'boolean' },
+                },
+                required: ['id', 'label'],
+              },
+            },
+            disabled: { kind: 'boolean' },
+          },
+          required: ['id', 'label'],
+        },
+      },
+      current: { kind: 'text', max: KEY_MAX },
+      label: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['sections', 'label'],
+    events: ['select'],
+    children: false,
+  },
+  'bry-pagination': {
+    // Which page shows, from 1, of `count`: `page` with `{ page }`.
+    props: {
+      page: { kind: 'int', min: 1, max: PAGES },
+      count: { kind: 'int', min: 1, max: PAGES },
+      label: { kind: 'text', max: LABEL_MAX },
+      disabled: { kind: 'boolean' },
+    },
+    required: ['page', 'count'],
+    events: ['page'],
+    children: false,
+  },
+  'bry-questionnaire': {
+    // Questions asked one at a time: `answer`, `step`, and `submit` with `{ answers }`.
+    props: {
+      title: { kind: 'text', max: LABEL_MAX },
+      questions: {
+        kind: 'list',
+        max: QUESTIONS,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            kind: { kind: 'enum', values: ['single', 'multiple', 'text', 'rating'] },
+            prompt: { kind: 'text', max: LABEL_MAX },
+            description: { kind: 'text', max: PARAGRAPH_MAX },
+            choices: {
+              kind: 'list',
+              max: QUESTION_CHOICES,
+              of: {
+                kind: 'shape',
+                fields: { value: { kind: 'text', max: KEY_MAX }, label: { kind: 'text', max: LABEL_MAX } },
+                required: ['value', 'label'],
+              },
+            },
+            required: { kind: 'boolean' },
+            scale: { kind: 'int', min: 3, max: 10 },
+            placeholder: { kind: 'text', max: LABEL_MAX },
+          },
+          required: ['id', 'kind', 'prompt'],
+        },
+      },
+      action: { kind: 'text', max: LABEL_MAX },
+      working: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['questions'],
+    events: ['answer', 'step', 'submit'],
+    children: false,
+  },
+  'bry-radio-group': {
+    // One choice with every choice in view: `change` with `{ value }`.
+    props: {
+      value: { kind: 'text', max: LABEL_MAX },
+      options: { kind: 'options', max: RADIO_MAX },
+      label: { kind: 'text', max: LABEL_MAX },
+      orientation: { kind: 'enum', values: ['vertical', 'horizontal'] },
+      disabled: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['options', 'label'],
+    events: ['change'],
+    children: false,
+  },
+  'bry-slider': {
+    // A number along a line: `change` as it moves, `commit` when let go.
+    props: {
+      value: { kind: 'int', min: -SLIDER_LIMIT, max: SLIDER_LIMIT },
+      min: { kind: 'int', min: -SLIDER_LIMIT, max: SLIDER_LIMIT },
+      max: { kind: 'int', min: -SLIDER_LIMIT, max: SLIDER_LIMIT },
+      step: { kind: 'int', min: 1, max: SLIDER_LIMIT },
+      label: { kind: 'text', max: LABEL_MAX },
+      disabled: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['label'],
+    events: ['change', 'commit'],
+    children: false,
+  },
+  'bry-toggle': {
+    // A button that stays pressed: `change` with `{ pressed }`.
+    props: {
+      pressed: { kind: 'boolean' },
+      label: { kind: 'text', max: LABEL_MAX },
+      icon: { kind: 'enum', values: BUTTON_ICONS },
+      hideLabel: { kind: 'boolean' },
+      variant: { kind: 'enum', values: ['default', 'outline'] },
+      size: { kind: 'enum', values: ['sm', 'md'] },
+      disabled: { kind: 'boolean' },
+    },
+    required: ['label'],
+    events: ['change'],
+    children: false,
+  },
+  'bry-toggle-group': {
+    // Toggles side by side, one or many pressed: `change` with `{ values }`.
+    props: {
+      type: { kind: 'enum', values: ['single', 'multiple'] },
+      items: {
+        kind: 'list',
+        max: TOGGLE_GROUP_ITEMS,
+        of: {
+          kind: 'shape',
+          fields: {
+            value: { kind: 'text', max: KEY_MAX },
+            label: { kind: 'text', max: LABEL_MAX },
+            icon: { kind: 'enum', values: BUTTON_ICONS },
+            hideLabel: { kind: 'boolean' },
+            disabled: { kind: 'boolean' },
+          },
+          required: ['value', 'label'],
+        },
+      },
+      values: { kind: 'list', max: TOGGLE_GROUP_ITEMS, of: { kind: 'text', max: KEY_MAX } },
+      label: { kind: 'text', max: LABEL_MAX },
+      variant: { kind: 'enum', values: ['default', 'outline'] },
+      size: { kind: 'enum', values: ['sm', 'md'] },
+      disabled: { kind: 'boolean' },
+    },
+    required: ['items', 'label'],
+    events: ['change'],
     children: false,
   },
 } as const satisfies Readonly<Record<`bry-${string}`, ElementSpec>>;

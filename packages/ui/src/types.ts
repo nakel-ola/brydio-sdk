@@ -115,6 +115,73 @@ export interface ElementEventDetails {
     /** Lines chosen in one file, on one side, `start` to `end` inclusive. */
     select: { file: string; side: 'old' | 'new'; start: number; end: number };
   };
+  // ADR-A23 (catalogue-b)
+  'bry-calendar': {
+    /** The chosen days, ISO dates: one, the sorted many, or a range's `[start]` then `[start, end]`. */
+    change: { values: string[] };
+  };
+  'bry-command': {
+    /** The id of the command chosen. */
+    select: { id: string };
+  };
+  'bry-context-menu': {
+    /** The id of the item chosen. */
+    select: { id: string };
+  };
+  'bry-data-table': {
+    /** The column whose heading was pressed, and the direction it is now sorted. */
+    sort: { key: string; direction: 'asc' | 'desc' };
+    /** What the filter box holds now. */
+    filter: { value: string };
+    /** The page now showing, from 1. */
+    page: { page: number };
+    /** The keys of the columns now hidden. */
+    columns: { hidden: string[] };
+    /** The ids of the rows now chosen. */
+    select: { rows: string[] };
+  };
+  'bry-input-group': {
+    /** The button at the field's end was pressed, with what the field held. */
+    action: { value: string };
+  };
+  'bry-input-otp': {
+    /** The last box was filled: the whole code. */
+    complete: { value: string };
+  };
+  'bry-menubar': {
+    /** The menu and the id of the item chosen in it. */
+    select: { menu: string; id: string };
+  };
+  'bry-section-menu': {
+    /** The id of the section or entry chosen. */
+    select: { id: string };
+  };
+  'bry-pagination': {
+    /** The page asked for, from 1. */
+    page: { page: number };
+  };
+  'bry-questionnaire': {
+    /** One question answered: a choice's value, the list of them, the text, or the rating. */
+    answer: { question: string; value: string | string[] | number };
+    /** The question now showing, from 0. */
+    step: { index: number };
+    /** Every answer, keyed by question id. */
+    submit: { answers: Record<string, string | string[] | number> };
+  };
+  'bry-slider': {
+    /** Where it is now, as it moves. */
+    change: { value: number };
+    /** Where it settled when let go: the one to save. */
+    commit: { value: number };
+  };
+  'bry-toggle': {
+    /** Whether it is pressed now. */
+    change: { pressed: boolean };
+  };
+  'bry-toggle-group': {
+    /** The values of the toggles pressed now. */
+    change: { values: string[] };
+  };
 }
 
 /** What an element's event carries: its own detail if it has one, else the shared one. */
