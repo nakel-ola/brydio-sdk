@@ -101,7 +101,7 @@
     "light": "bry-skeleton-light.png",
     "dark": "bry-skeleton-dark.png",
     "lightHash": "1728ff0a15d17296b952a33000d4366e6ef150965495b93c9233317f0995d891",
-    "darkHash": "9b3f9fcf304f8b68a3319330365c191c0e94b3c302872ec7eaa5a997ae3f1b96",
+    "darkHash": "a4fb317a5a678d79e0803836e4103598d940f9d329c0d1cec926ce60e35f73f1",
     "sourceHash": "69c3bbf502f3b994b3fb7054dc9b2401acc8398b3661dd7d521719906d896db4"
   },
   "bry-table": {
@@ -486,7 +486,7 @@
     "light": "bry-spinner-light.png",
     "dark": "bry-spinner-dark.png",
     "lightHash": "ebe547ac33497e5f06f6bd9bfb7816a76439caea33f6f1b447cb75efb56da77e",
-    "darkHash": "c9f33eb91897df34d2a6bb9a1b8fde5c780928f00a03c26420f3181450f9a8a1",
+    "darkHash": "7333714d07db63ec7cfa2695c54a56a9622daeda257e9f9b873e19ef6701be80",
     "sourceHash": "c56372b4d561641d4905a786d232f0517db6a84ceeac0592bfb5861de490a473"
   },
   "bry-tabs": {
