@@ -182,6 +182,58 @@ export interface ElementEventDetails {
     /** The values of the toggles pressed now. */
     change: { values: string[] };
   };
+  // ADR-A23 (catalogue-a)
+  'bry-accordion': {
+    /** The ids of the sections open now. */
+    change: { expanded: string[] };
+  };
+  'bry-alert-dialog': {
+    /** The action was pressed. It stays open until the app closes it. */
+    action: undefined;
+    /** Nothing when the person cancelled; `{ refused }` when another dialog was already open. */
+    close: { refused: string } | undefined;
+  };
+  'bry-attachment': {
+    open: undefined;
+    remove: undefined;
+  };
+  'bry-breadcrumb': {
+    /** The id of the step pressed. */
+    select: { id: string };
+  };
+  'bry-carousel': {
+    /** The slide now shown. */
+    change: { index: number };
+  };
+  'bry-collapsible': {
+    /** Whether it is open now. */
+    change: { open: boolean };
+  };
+  'bry-drawer': {
+    close: { refused: string } | undefined;
+  };
+  'bry-hover-card': {
+    open: undefined;
+    close: undefined;
+  };
+  'bry-message': {
+    retry: undefined;
+  };
+  'bry-message-scroller': {
+    /** The person reached the top: send older messages. */
+    more: undefined;
+  };
+  'bry-popover': {
+    open: undefined;
+    close: undefined;
+  };
+  'bry-sheet': {
+    close: { refused: string } | undefined;
+  };
+  'bry-tabs': {
+    /** The id of the tab chosen. */
+    change: { id: string };
+  };
 }
 
 /** What an element's event carries: its own detail if it has one, else the shared one. */

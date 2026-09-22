@@ -181,6 +181,26 @@ const MENU_ITEM = {
   required: ['id', 'label'],
 } as const;
 
+// ADR-A23 (catalogue-a)
+/** The most sections an accordion has. */
+export const ACCORDION_SECTIONS = 20;
+/** The shapes an aspect ratio holds, wide to tall. */
+export const RATIOS = ['21:9', '16:9', '3:2', '4:3', '1:1', '3:4', '2:3', '9:16'] as const;
+/** The most steps a breadcrumb shows. */
+export const BREADCRUMB_STEPS = 8;
+/** The most slides a carousel shows. */
+export const CAROUSEL_SLIDES = 50;
+/** The most categories along a chart's axis, or slices offered to a pie. */
+export const CHART_POINTS = 60;
+/** The most series one chart holds: one for each of Brydio's chart colours. */
+export const CHART_SERIES = 6;
+/** The largest value a chart takes, either side of zero. */
+export const CHART_VALUE = 1_000_000_000_000;
+/** A shortcut is a few keys. */
+export const KBD_MAX = 40;
+/** The most tabs one set has. */
+export const TABS_MAX = 12;
+
 /**
  * Every element an app may use, as the host declares them: Phase 0's five,
  * then each one Brydio has added since, in the order it registers them.
@@ -1046,6 +1066,335 @@ export const CATALOGUE = {
     required: ['items', 'label'],
     events: ['change'],
     children: false,
+  },
+  // ADR-A23 (catalogue-a)
+  'bry-accordion': {
+    // Sections that open and close under their headings. `sections` names them
+    // in order and the n-th child is the n-th section's content; `expanded` is
+    // the ids open, one at a time unless `multiple`. A change raises `change`
+    // with `{ expanded }`.
+    props: {
+      sections: {
+        kind: 'list',
+        max: ACCORDION_SECTIONS,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            title: { kind: 'text', max: LABEL_MAX },
+            disabled: { kind: 'boolean' },
+          },
+          required: ['id', 'title'],
+        },
+      },
+      expanded: { kind: 'list', max: ACCORDION_SECTIONS, of: { kind: 'text', max: KEY_MAX } },
+      multiple: { kind: 'boolean' },
+    },
+    required: ['sections'],
+    events: ['change'],
+    children: true,
+  },
+  'bry-alert': {
+    // A note that stays on the screen, in one of the five tones with the tone's
+    // icon. Children sit under the words.
+    props: {
+      title: { kind: 'text', max: LABEL_MAX },
+      description: { kind: 'text', max: PARAGRAPH_MAX },
+      tone: { kind: 'enum', values: TONES },
+    },
+    required: ['title'],
+    events: [],
+    children: true,
+  },
+  'bry-alert-dialog': {
+    // A yes-or-no that must be answered, in the app's one dialog slot; the
+    // backdrop doesn't close it. Cancel and Escape raise `close`; the action
+    // raises `action` and it stays open until the app closes it.
+    props: {
+      open: { kind: 'boolean' },
+      title: { kind: 'text', max: LABEL_MAX },
+      description: { kind: 'text', max: PARAGRAPH_MAX },
+      action: { kind: 'text', max: LABEL_MAX },
+      tone: { kind: 'enum', values: ['default', 'danger'] },
+      cancel: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['title', 'action'],
+    events: ['action', 'close'],
+    children: false,
+  },
+  'bry-aspect-ratio': {
+    // Holds its children to one named shape, whatever the width.
+    props: { ratio: { kind: 'enum', values: RATIOS } },
+    events: [],
+    children: true,
+  },
+  'bry-attachment': {
+    // A file as a chip: its kind's icon, name and size (`bytes`). `pressable`
+    // raises `open`; `removable` adds a Remove button raising `remove`.
+    props: {
+      name: { kind: 'text', max: LABEL_MAX },
+      kind: { kind: 'enum', values: FILE_KINDS },
+      bytes: { kind: 'int', min: 0, max: 2_000_000_000 },
+      pressable: { kind: 'boolean' },
+      removable: { kind: 'boolean' },
+    },
+    required: ['name'],
+    events: ['open', 'remove'],
+    children: false,
+  },
+  'bry-breadcrumb': {
+    // Where the screen is, from the top. The last item is the page; pressing an
+    // earlier one raises `select` with `{ id }`.
+    props: {
+      items: {
+        kind: 'list',
+        max: BREADCRUMB_STEPS,
+        of: {
+          kind: 'shape',
+          fields: { id: { kind: 'text', max: KEY_MAX }, label: { kind: 'text', max: LABEL_MAX } },
+          required: ['id', 'label'],
+        },
+      },
+    },
+    required: ['items'],
+    events: ['select'],
+    children: false,
+  },
+  'bry-bubble': {
+    // One said thing in Brydio's chat bubble: `self` at the end, `other` (the
+    // default) at the start.
+    props: {
+      text: { kind: 'text', max: PARAGRAPH_MAX },
+      from: { kind: 'enum', values: ['self', 'other'] },
+    },
+    events: [],
+    children: true,
+  },
+  'bry-carousel': {
+    // Its children as slides, one at a time. `index` is the slide shown;
+    // Previous, Next and the arrow keys raise `change` with `{ index }`.
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      index: { kind: 'int', min: 0, max: CAROUSEL_SLIDES - 1 },
+    },
+    required: ['label'],
+    events: ['change'],
+    children: true,
+  },
+  'bry-chart': {
+    // Numbers as a bar, line, area or pie chart in Brydio's chart colours,
+    // never the app's. Values are whole numbers and `decimals` places the
+    // point: 1234 with `decimals: 2` is 12.34. A pie draws the first series,
+    // five slices and "Other".
+    props: {
+      kind: { kind: 'enum', values: ['bar', 'line', 'area', 'pie'] },
+      label: { kind: 'text', max: LABEL_MAX },
+      categories: { kind: 'list', max: CHART_POINTS, of: { kind: 'text', max: LABEL_MAX } },
+      series: {
+        kind: 'list',
+        max: CHART_SERIES,
+        of: {
+          kind: 'shape',
+          fields: {
+            name: { kind: 'text', max: LABEL_MAX },
+            values: {
+              kind: 'list',
+              max: CHART_POINTS,
+              of: { kind: 'int', min: -CHART_VALUE, max: CHART_VALUE },
+            },
+          },
+          required: ['name', 'values'],
+        },
+      },
+      decimals: { kind: 'int', min: 0, max: 4 },
+      stacked: { kind: 'boolean' },
+      loading: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['kind', 'label', 'categories', 'series'],
+    events: [],
+    children: false,
+  },
+  'bry-collapsible': {
+    // One section under a button bearing its `title`; pressing it raises
+    // `change` with `{ open }`.
+    props: { title: { kind: 'text', max: LABEL_MAX }, open: { kind: 'boolean' } },
+    required: ['title'],
+    events: ['change'],
+    children: true,
+  },
+  'bry-direction': {
+    // Its children read left to right or right to left, whatever the page
+    // reads.
+    props: { dir: { kind: 'enum', values: ['ltr', 'rtl'] } },
+    required: ['dir'],
+    events: [],
+    children: true,
+  },
+  'bry-drawer': {
+    // A panel from the bottom edge, in the app's one dialog slot. Escape and
+    // the backdrop close it and raise `close`.
+    props: {
+      open: { kind: 'boolean' },
+      title: { kind: 'text', max: LABEL_MAX },
+      description: { kind: 'text', max: PARAGRAPH_MAX },
+    },
+    required: ['title'],
+    events: ['close'],
+    children: true,
+  },
+  'bry-hover-card': {
+    // A preview shown while the pointer rests on, or the focus is in, its first
+    // child; the rest of its children are the preview. Raises `open` and
+    // `close`.
+    props: { side: { kind: 'enum', values: ['top', 'bottom'] } },
+    events: ['open', 'close'],
+    children: true,
+  },
+  'bry-item': {
+    // One thing that stands on its own, as shadcn's Item: an icon, a title and
+    // a line, and its children as actions at the end. Not `bry-list-row`, which
+    // is one line among many in a list.
+    props: {
+      title: { kind: 'text', max: LABEL_MAX },
+      description: { kind: 'text', max: LABEL_MAX },
+      icon: { kind: 'enum', values: MENU_ICONS },
+      variant: { kind: 'enum', values: ['default', 'outline', 'muted'] },
+      size: { kind: 'enum', values: ['sm', 'md'] },
+      pressable: { kind: 'boolean' },
+      loading: { kind: 'boolean' },
+    },
+    events: ['press'],
+    children: true,
+  },
+  'bry-kbd': {
+    // A key or shortcut as a keycap: `mod+k` is ⌘K on a Mac and Ctrl+K
+    // elsewhere.
+    props: { text: { kind: 'text', max: KBD_MAX } },
+    required: ['text'],
+    events: [],
+    children: false,
+  },
+  'bry-marker': {
+    // A mark across a thread or timeline ("Today"), read as a separator named
+    // by its text.
+    props: { text: { kind: 'text', max: LABEL_MAX }, tone: { kind: 'enum', values: TONES } },
+    required: ['text'],
+    events: [],
+    children: false,
+  },
+  'bry-message': {
+    // One message: who sent it, their initials, when (`meta`), and its
+    // children. `from: self` sits at the end; a `failed` one shows Retry,
+    // raising `retry`.
+    props: {
+      name: { kind: 'text', max: LABEL_MAX },
+      meta: { kind: 'text', max: LABEL_MAX },
+      from: { kind: 'enum', values: ['self', 'other'] },
+      status: { kind: 'enum', values: ['sent', 'sending', 'failed'] },
+    },
+    required: ['name'],
+    events: ['retry'],
+    children: true,
+  },
+  'bry-message-scroller': {
+    // A thread's messages, oldest first, kept at the newest while the person is
+    // at the bottom. With `more`, reaching the top raises `more`.
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      more: { kind: 'boolean' },
+      loading: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['label'],
+    events: ['more'],
+    children: true,
+  },
+  'bry-popover': {
+    // A small panel opened from its first child; the rest of its children are
+    // the panel. Opening raises `open`, closing `close`; the app may set `open`
+    // too.
+    props: {
+      open: { kind: 'boolean' },
+      title: { kind: 'text', max: LABEL_MAX },
+      side: { kind: 'enum', values: ['top', 'bottom'] },
+      align: { kind: 'enum', values: ['start', 'center', 'end'] },
+    },
+    events: ['open', 'close'],
+    children: true,
+  },
+  'bry-progress': {
+    // How far along something is, as a percentage; without `value` it says only
+    // that it is under way.
+    props: { value: { kind: 'int', min: 0, max: 100 }, label: { kind: 'text', max: LABEL_MAX } },
+    required: ['label'],
+    events: [],
+    children: false,
+  },
+  'bry-scroll-area': {
+    // Its children in a region that scrolls on its own, up to a named `size`.
+    props: { label: { kind: 'text', max: LABEL_MAX }, size: { kind: 'enum', values: SIZES } },
+    required: ['label'],
+    events: [],
+    children: true,
+  },
+  'bry-separator': {
+    // A hairline between groups, across or down. A screen reader skips it.
+    props: { orientation: { kind: 'enum', values: ['horizontal', 'vertical'] } },
+    events: [],
+    children: false,
+  },
+  'bry-sheet': {
+    // A panel from the `end` (default) or `start` side, in the app's one dialog
+    // slot. Closing raises `close`.
+    props: {
+      open: { kind: 'boolean' },
+      title: { kind: 'text', max: LABEL_MAX },
+      description: { kind: 'text', max: PARAGRAPH_MAX },
+      side: { kind: 'enum', values: ['start', 'end'] },
+    },
+    required: ['title'],
+    events: ['close'],
+    children: true,
+  },
+  'bry-spinner': {
+    // Something is under way; `label` is what a screen reader says.
+    props: { label: { kind: 'text', max: LABEL_MAX }, size: { kind: 'enum', values: SIZES } },
+    events: [],
+    children: false,
+  },
+  'bry-tabs': {
+    // Views of one thing, one at a time. `tabs` names them and the n-th child
+    // is the n-th tab's panel; choosing one raises `change` with `{ id }`.
+    props: {
+      tabs: {
+        kind: 'list',
+        max: TABS_MAX,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            label: { kind: 'text', max: LABEL_MAX },
+            disabled: { kind: 'boolean' },
+          },
+          required: ['id', 'label'],
+        },
+      },
+      value: { kind: 'text', max: KEY_MAX },
+      label: { kind: 'text', max: LABEL_MAX },
+      variant: { kind: 'enum', values: ['segmented', 'line'] },
+    },
+    required: ['tabs'],
+    events: ['change'],
+    children: true,
+  },
+  'bry-tooltip': {
+    // A short hint over its child on hover and focus. It raises nothing: a hint
+    // is never the only place something is said.
+    props: { text: { kind: 'text', max: LABEL_MAX }, side: { kind: 'enum', values: ['top', 'bottom'] } },
+    required: ['text'],
+    events: [],
+    children: true,
   },
 } as const satisfies Readonly<Record<`bry-${string}`, ElementSpec>>;
 

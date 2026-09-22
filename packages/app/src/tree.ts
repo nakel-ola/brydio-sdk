@@ -899,3 +899,67 @@ export const slider = (attributes: ElementAttributes<'bry-slider'>) => createEle
 export const toggle = (attributes: ElementAttributes<'bry-toggle'>) => createElement('bry-toggle', attributes);
 
 export const toggleGroup = (attributes: ElementAttributes<'bry-toggle-group'>) => createElement('bry-toggle-group', attributes);
+
+// ADR-A23 (catalogue-a). A popover's, a hover card's and a tooltip's first
+// child is the anchor; an accordion's and tabs' children are their panels, in
+// the order their sections or tabs are named.
+
+export const accordion = (attributes: ElementAttributes<'bry-accordion'>, ...panels: Child[]) =>
+  createElement('bry-accordion', attributes, ...panels);
+
+export const alert = (attributes: ElementAttributes<'bry-alert'>, ...children: Child[]) => createElement('bry-alert', attributes, ...children);
+
+export const alertDialog = (attributes: ElementAttributes<'bry-alert-dialog'>) => createElement('bry-alert-dialog', attributes);
+
+export const aspectRatio = (attributes?: ElementAttributes<'bry-aspect-ratio'> | null, ...children: Child[]) =>
+  createElement('bry-aspect-ratio', attributes, ...children);
+
+export const attachment = (attributes: ElementAttributes<'bry-attachment'>) => createElement('bry-attachment', attributes);
+
+export const breadcrumb = (attributes: ElementAttributes<'bry-breadcrumb'>) => createElement('bry-breadcrumb', attributes);
+
+export const bubble = (attributes?: ElementAttributes<'bry-bubble'> | null, ...children: Child[]) => createElement('bry-bubble', attributes, ...children);
+
+export const carousel = (attributes: ElementAttributes<'bry-carousel'>, ...slides: Child[]) => createElement('bry-carousel', attributes, ...slides);
+
+export const chart = (attributes: ElementAttributes<'bry-chart'>) => createElement('bry-chart', attributes);
+
+export const collapsible = (attributes: ElementAttributes<'bry-collapsible'>, ...children: Child[]) =>
+  createElement('bry-collapsible', attributes, ...children);
+
+export const direction = (attributes: ElementAttributes<'bry-direction'>, ...children: Child[]) =>
+  createElement('bry-direction', attributes, ...children);
+
+export const drawer = (attributes: ElementAttributes<'bry-drawer'>, ...children: Child[]) => createElement('bry-drawer', attributes, ...children);
+
+export const hoverCard = (attributes?: ElementAttributes<'bry-hover-card'> | null, ...children: Child[]) =>
+  createElement('bry-hover-card', attributes, ...children);
+
+export const item = (attributes?: ElementAttributes<'bry-item'> | null, ...actions: Child[]) => createElement('bry-item', attributes, ...actions);
+
+export const kbd = (attributes: ElementAttributes<'bry-kbd'>) => createElement('bry-kbd', attributes);
+
+export const marker = (attributes: ElementAttributes<'bry-marker'>) => createElement('bry-marker', attributes);
+
+export const message = (attributes: ElementAttributes<'bry-message'>, ...children: Child[]) => createElement('bry-message', attributes, ...children);
+
+export const messageScroller = (attributes: ElementAttributes<'bry-message-scroller'>, ...messages: Child[]) =>
+  createElement('bry-message-scroller', attributes, ...messages);
+
+export const popover = (attributes?: ElementAttributes<'bry-popover'> | null, ...children: Child[]) =>
+  createElement('bry-popover', attributes, ...children);
+
+export const progress = (attributes: ElementAttributes<'bry-progress'>) => createElement('bry-progress', attributes);
+
+export const scrollArea = (attributes: ElementAttributes<'bry-scroll-area'>, ...children: Child[]) =>
+  createElement('bry-scroll-area', attributes, ...children);
+
+export const separator = (attributes?: ElementAttributes<'bry-separator'> | null) => createElement('bry-separator', attributes);
+
+export const sheet = (attributes: ElementAttributes<'bry-sheet'>, ...children: Child[]) => createElement('bry-sheet', attributes, ...children);
+
+export const spinner = (attributes?: ElementAttributes<'bry-spinner'> | null) => createElement('bry-spinner', attributes);
+
+export const tabs = (attributes: ElementAttributes<'bry-tabs'>, ...panels: Child[]) => createElement('bry-tabs', attributes, ...panels);
+
+export const tooltip = (attributes: ElementAttributes<'bry-tooltip'>, anchor: Child) => createElement('bry-tooltip', attributes, anchor);

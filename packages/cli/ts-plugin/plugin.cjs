@@ -162,6 +162,15 @@ var MENU_ITEM = {
   },
   required: ["id", "label"]
 };
+var ACCORDION_SECTIONS = 20;
+var RATIOS = ["21:9", "16:9", "3:2", "4:3", "1:1", "3:4", "2:3", "9:16"];
+var BREADCRUMB_STEPS = 8;
+var CAROUSEL_SLIDES = 50;
+var CHART_POINTS = 60;
+var CHART_SERIES = 6;
+var CHART_VALUE = 1000000000000;
+var KBD_MAX = 40;
+var TABS_MAX = 12;
 var CATALOGUE = {
   "bry-stack": {
     props: {
@@ -930,6 +939,277 @@ var CATALOGUE = {
     required: ["items", "label"],
     events: ["change"],
     children: false
+  },
+  "bry-accordion": {
+    props: {
+      sections: {
+        kind: "list",
+        max: ACCORDION_SECTIONS,
+        of: {
+          kind: "shape",
+          fields: {
+            id: { kind: "text", max: KEY_MAX },
+            title: { kind: "text", max: LABEL_MAX },
+            disabled: { kind: "boolean" }
+          },
+          required: ["id", "title"]
+        }
+      },
+      expanded: { kind: "list", max: ACCORDION_SECTIONS, of: { kind: "text", max: KEY_MAX } },
+      multiple: { kind: "boolean" }
+    },
+    required: ["sections"],
+    events: ["change"],
+    children: true
+  },
+  "bry-alert": {
+    props: {
+      title: { kind: "text", max: LABEL_MAX },
+      description: { kind: "text", max: PARAGRAPH_MAX },
+      tone: { kind: "enum", values: TONES }
+    },
+    required: ["title"],
+    events: [],
+    children: true
+  },
+  "bry-alert-dialog": {
+    props: {
+      open: { kind: "boolean" },
+      title: { kind: "text", max: LABEL_MAX },
+      description: { kind: "text", max: PARAGRAPH_MAX },
+      action: { kind: "text", max: LABEL_MAX },
+      tone: { kind: "enum", values: ["default", "danger"] },
+      cancel: { kind: "text", max: LABEL_MAX }
+    },
+    required: ["title", "action"],
+    events: ["action", "close"],
+    children: false
+  },
+  "bry-aspect-ratio": {
+    props: { ratio: { kind: "enum", values: RATIOS } },
+    events: [],
+    children: true
+  },
+  "bry-attachment": {
+    props: {
+      name: { kind: "text", max: LABEL_MAX },
+      kind: { kind: "enum", values: FILE_KINDS },
+      bytes: { kind: "int", min: 0, max: 2000000000 },
+      pressable: { kind: "boolean" },
+      removable: { kind: "boolean" }
+    },
+    required: ["name"],
+    events: ["open", "remove"],
+    children: false
+  },
+  "bry-breadcrumb": {
+    props: {
+      items: {
+        kind: "list",
+        max: BREADCRUMB_STEPS,
+        of: {
+          kind: "shape",
+          fields: { id: { kind: "text", max: KEY_MAX }, label: { kind: "text", max: LABEL_MAX } },
+          required: ["id", "label"]
+        }
+      }
+    },
+    required: ["items"],
+    events: ["select"],
+    children: false
+  },
+  "bry-bubble": {
+    props: {
+      text: { kind: "text", max: PARAGRAPH_MAX },
+      from: { kind: "enum", values: ["self", "other"] }
+    },
+    events: [],
+    children: true
+  },
+  "bry-carousel": {
+    props: {
+      label: { kind: "text", max: LABEL_MAX },
+      index: { kind: "int", min: 0, max: CAROUSEL_SLIDES - 1 }
+    },
+    required: ["label"],
+    events: ["change"],
+    children: true
+  },
+  "bry-chart": {
+    props: {
+      kind: { kind: "enum", values: ["bar", "line", "area", "pie"] },
+      label: { kind: "text", max: LABEL_MAX },
+      categories: { kind: "list", max: CHART_POINTS, of: { kind: "text", max: LABEL_MAX } },
+      series: {
+        kind: "list",
+        max: CHART_SERIES,
+        of: {
+          kind: "shape",
+          fields: {
+            name: { kind: "text", max: LABEL_MAX },
+            values: {
+              kind: "list",
+              max: CHART_POINTS,
+              of: { kind: "int", min: -CHART_VALUE, max: CHART_VALUE }
+            }
+          },
+          required: ["name", "values"]
+        }
+      },
+      decimals: { kind: "int", min: 0, max: 4 },
+      stacked: { kind: "boolean" },
+      loading: { kind: "boolean" },
+      empty: { kind: "text", max: LABEL_MAX }
+    },
+    required: ["kind", "label", "categories", "series"],
+    events: [],
+    children: false
+  },
+  "bry-collapsible": {
+    props: { title: { kind: "text", max: LABEL_MAX }, open: { kind: "boolean" } },
+    required: ["title"],
+    events: ["change"],
+    children: true
+  },
+  "bry-direction": {
+    props: { dir: { kind: "enum", values: ["ltr", "rtl"] } },
+    required: ["dir"],
+    events: [],
+    children: true
+  },
+  "bry-drawer": {
+    props: {
+      open: { kind: "boolean" },
+      title: { kind: "text", max: LABEL_MAX },
+      description: { kind: "text", max: PARAGRAPH_MAX }
+    },
+    required: ["title"],
+    events: ["close"],
+    children: true
+  },
+  "bry-hover-card": {
+    props: { side: { kind: "enum", values: ["top", "bottom"] } },
+    events: ["open", "close"],
+    children: true
+  },
+  "bry-item": {
+    props: {
+      title: { kind: "text", max: LABEL_MAX },
+      description: { kind: "text", max: LABEL_MAX },
+      icon: { kind: "enum", values: MENU_ICONS },
+      variant: { kind: "enum", values: ["default", "outline", "muted"] },
+      size: { kind: "enum", values: ["sm", "md"] },
+      pressable: { kind: "boolean" },
+      loading: { kind: "boolean" }
+    },
+    events: ["press"],
+    children: true
+  },
+  "bry-kbd": {
+    props: { text: { kind: "text", max: KBD_MAX } },
+    required: ["text"],
+    events: [],
+    children: false
+  },
+  "bry-marker": {
+    props: { text: { kind: "text", max: LABEL_MAX }, tone: { kind: "enum", values: TONES } },
+    required: ["text"],
+    events: [],
+    children: false
+  },
+  "bry-message": {
+    props: {
+      name: { kind: "text", max: LABEL_MAX },
+      meta: { kind: "text", max: LABEL_MAX },
+      from: { kind: "enum", values: ["self", "other"] },
+      status: { kind: "enum", values: ["sent", "sending", "failed"] }
+    },
+    required: ["name"],
+    events: ["retry"],
+    children: true
+  },
+  "bry-message-scroller": {
+    props: {
+      label: { kind: "text", max: LABEL_MAX },
+      more: { kind: "boolean" },
+      loading: { kind: "boolean" },
+      empty: { kind: "text", max: LABEL_MAX }
+    },
+    required: ["label"],
+    events: ["more"],
+    children: true
+  },
+  "bry-popover": {
+    props: {
+      open: { kind: "boolean" },
+      title: { kind: "text", max: LABEL_MAX },
+      side: { kind: "enum", values: ["top", "bottom"] },
+      align: { kind: "enum", values: ["start", "center", "end"] }
+    },
+    events: ["open", "close"],
+    children: true
+  },
+  "bry-progress": {
+    props: { value: { kind: "int", min: 0, max: 100 }, label: { kind: "text", max: LABEL_MAX } },
+    required: ["label"],
+    events: [],
+    children: false
+  },
+  "bry-scroll-area": {
+    props: { label: { kind: "text", max: LABEL_MAX }, size: { kind: "enum", values: SIZES } },
+    required: ["label"],
+    events: [],
+    children: true
+  },
+  "bry-separator": {
+    props: { orientation: { kind: "enum", values: ["horizontal", "vertical"] } },
+    events: [],
+    children: false
+  },
+  "bry-sheet": {
+    props: {
+      open: { kind: "boolean" },
+      title: { kind: "text", max: LABEL_MAX },
+      description: { kind: "text", max: PARAGRAPH_MAX },
+      side: { kind: "enum", values: ["start", "end"] }
+    },
+    required: ["title"],
+    events: ["close"],
+    children: true
+  },
+  "bry-spinner": {
+    props: { label: { kind: "text", max: LABEL_MAX }, size: { kind: "enum", values: SIZES } },
+    events: [],
+    children: false
+  },
+  "bry-tabs": {
+    props: {
+      tabs: {
+        kind: "list",
+        max: TABS_MAX,
+        of: {
+          kind: "shape",
+          fields: {
+            id: { kind: "text", max: KEY_MAX },
+            label: { kind: "text", max: LABEL_MAX },
+            disabled: { kind: "boolean" }
+          },
+          required: ["id", "label"]
+        }
+      },
+      value: { kind: "text", max: KEY_MAX },
+      label: { kind: "text", max: LABEL_MAX },
+      variant: { kind: "enum", values: ["segmented", "line"] }
+    },
+    required: ["tabs"],
+    events: ["change"],
+    children: true
+  },
+  "bry-tooltip": {
+    props: { text: { kind: "text", max: LABEL_MAX }, side: { kind: "enum", values: ["top", "bottom"] } },
+    required: ["text"],
+    events: [],
+    children: true
   }
 };
 var ELEMENT_NAMES = Object.keys(CATALOGUE);

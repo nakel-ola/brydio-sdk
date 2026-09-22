@@ -23,6 +23,10 @@ import './draw/catalogue-b-menus.ts';
 import './draw/calendar.ts';
 import './draw/data-table.ts';
 import './draw/questionnaire.ts';
+// ADR-A23 (catalogue-a)
+import './draw/a23-content.ts';
+import './draw/a23-layout.ts';
+import './draw/a23-overlays.ts';
 import { defineCatalogue } from './define.ts';
 
 export { BryElement } from './base.ts';

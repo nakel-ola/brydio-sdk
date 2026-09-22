@@ -614,3 +614,20 @@ drawAs(
     `,
   ],
 );
+
+// ADR-A23 (catalogue-a)
+/**
+ * The one dialog slot, for the other modals (an alert dialog, a drawer, a
+ * sheet), which share it with `bry-dialog` as they do in the shell.
+ */
+export const dialogSlot = {
+  /** Takes the slot for `element`. False when another modal holds it. */
+  claim(element: Element): boolean {
+    if (free()) holder = element;
+
+    return holds(element);
+  },
+  release(element: Element): void {
+    if (holds(element)) holder = null;
+  },
+};
