@@ -74,7 +74,7 @@ const hostAtHead = () =>
   })());
 
 describe('the catalogue as a whole', () => {
-  test('has the twenty-eight Brydio draws, all named bry-', () => {
+  test('has the forty-six Brydio draws, all named bry-', () => {
     expect(ELEMENT_NAMES).toEqual([
       'bry-stack',
       'bry-heading',
@@ -104,6 +104,25 @@ describe('the catalogue as a whole', () => {
       'bry-markdown',
       'bry-diff',
       'bry-file-grid',
+      // ADR-A23 (catalogue-b)
+      'bry-button-group',
+      'bry-calendar',
+      'bry-combobox',
+      'bry-command',
+      'bry-context-menu',
+      'bry-data-table',
+      'bry-field',
+      'bry-input-group',
+      'bry-input-otp',
+      'bry-menubar',
+      'bry-native-select',
+      'bry-section-menu',
+      'bry-pagination',
+      'bry-questionnaire',
+      'bry-radio-group',
+      'bry-slider',
+      'bry-toggle',
+      'bry-toggle-group',
     ]);
   });
 
@@ -118,7 +137,7 @@ describe('the catalogue as a whole', () => {
   test('keeps free text to the settings that are words for a person', () => {
     for (const name of ELEMENT_NAMES) {
       for (const [prop, spec] of Object.entries(CATALOGUE[name].props) as [string, PropSpec][]) {
-        if (spec.kind === 'text') expect(['text', 'label', 'title', 'value', 'placeholder', 'error', 'name', 'description', 'meta', 'action', 'empty', 'selected', 'cancel', 'min', 'max', 'settled']).toContain(prop);
+        if (spec.kind === 'text') expect(['text', 'label', 'title', 'value', 'placeholder', 'error', 'name', 'description', 'meta', 'action', 'empty', 'selected', 'cancel', 'min', 'max', 'settled', 'search', 'month', 'filter', 'current', 'prefix', 'suffix']).toContain(prop);
       }
     }
   });
@@ -209,8 +228,41 @@ describe('the same as Brydio’s receiver', () => {
       ['bry-diff', 'files', Array.from({ length: 301 }, (_, at) => ({ path: `f${at}` }))],
     ];
 
-    const values = [...cases, ...fields, ...later];
-    const empties = ['bry-button', 'bry-select', 'bry-label', 'bry-badge', 'bry-avatar', 'bry-empty-state', 'bry-table', 'bry-virtual-list', 'bry-dialog', 'bry-menu', 'bry-checkbox', 'bry-switch', 'bry-board', 'bry-board-column', 'bry-markdown', 'bry-diff'];
+    // ADR-A23 (catalogue-b)
+    const catalogueB: [string, string, unknown][] = [
+      ['bry-button-group', 'orientation', 'diagonal'],
+      ['bry-calendar', 'mode', 'week'],
+      ['bry-calendar', 'values', ['2026-09-16T00:00']],
+      ['bry-calendar', 'values', Array.from({ length: 367 }, () => '2026-09-16')],
+      ['bry-combobox', 'options', Array.from({ length: 501 }, (_, at) => ({ value: `v${at}`, label: 'x' }))],
+      ['bry-command', 'items', [{ id: 'a', label: 'A', icon: 'rocket' }]],
+      ['bry-command', 'items', [{ id: 'a', label: 'A', hint: 'x'.repeat(41) }]],
+      ['bry-context-menu', 'items', [{ id: 'a', label: 'A', href: '/x' }]],
+      ['bry-data-table', 'perPage', 101],
+      ['bry-data-table', 'page', 0],
+      ['bry-data-table', 'hidden', 'title'],
+      ['bry-data-table', 'columns', [{ key: 'title', heading: 'Title', hideable: 'no' }]],
+      ['bry-field', 'orientation', 'diagonal'],
+      ['bry-input-group', 'prefix', 'x'.repeat(25)],
+      ['bry-input-group', 'actionIcon', 'rocket'],
+      ['bry-input-otp', 'length', 9],
+      ['bry-input-otp', 'pattern', 'letters'],
+      ['bry-menubar', 'menus', [{ id: 'file', label: 'File' }]],
+      ['bry-native-select', 'size', 'lg'],
+      ['bry-section-menu', 'sections', [{ id: 'a', label: 'A', href: '/elsewhere' }]],
+      ['bry-pagination', 'count', 0],
+      ['bry-questionnaire', 'questions', [{ id: 'q', kind: 'essay', prompt: 'Why?' }]],
+      ['bry-questionnaire', 'questions', [{ id: 'q', kind: 'rating', prompt: 'How?', scale: 11 }]],
+      ['bry-radio-group', 'options', Array.from({ length: 21 }, (_, at) => ({ value: `v${at}`, label: 'x' }))],
+      ['bry-slider', 'value', 1.5],
+      ['bry-slider', 'step', 0],
+      ['bry-toggle', 'pressed', 'yes'],
+      ['bry-toggle-group', 'type', 'some'],
+      ['bry-toggle-group', 'items', [{ value: 'a', label: 'A', icon: 'rocket' }]],
+    ];
+
+    const values = [...cases, ...fields, ...later, ...catalogueB];
+    const empties = ['bry-button', 'bry-select', 'bry-label', 'bry-badge', 'bry-avatar', 'bry-empty-state', 'bry-table', 'bry-virtual-list', 'bry-dialog', 'bry-menu', 'bry-checkbox', 'bry-switch', 'bry-board', 'bry-board-column', 'bry-markdown', 'bry-diff', 'bry-button-group', 'bry-combobox', 'bry-command', 'bry-context-menu', 'bry-data-table', 'bry-field', 'bry-input-otp', 'bry-menubar', 'bry-native-select', 'bry-section-menu', 'bry-pagination', 'bry-questionnaire', 'bry-radio-group', 'bry-slider', 'bry-toggle', 'bry-toggle-group'];
     const host = await brydioAnswers('catalogue-refusals', [HOST_LIST, tokenNames], async () => {
       const { host: list } = await hostAtHead();
 
@@ -220,7 +272,7 @@ describe('the same as Brydio’s receiver', () => {
       };
     });
 
-    for (const [type, name, value] of later) expect(refusalFor(type as never, name, value)).not.toBeNull();
+    for (const [type, name, value] of [...later, ...catalogueB]) expect(refusalFor(type as never, name, value)).not.toBeNull();
 
     expect(values.map(([type, name, value]) => refusalFor(type as never, name, value))).toEqual(host.values);
     expect(empties.map(type => refusalForProps(type as never, {}))).toEqual(host.empties);
@@ -376,10 +428,86 @@ describe('checks', () => {
     // @ts-expect-error a diff needs its files
     const fileless: ElementAttributes<'bry-diff'> = { label: 'Changes' };
 
+    // ADR-A23 (catalogue-b)
+    const joined: ElementAttributes<'bry-button-group'> = { label: 'Actions', orientation: 'vertical' };
+    // @ts-expect-error a button group needs its label
+    const unnamedGroup: ElementAttributes<'bry-button-group'> = { orientation: 'horizontal' };
+    const leave: ElementAttributes<'bry-calendar'> = { mode: 'range', values: ['2026-09-14'], onChange: event => event.detail.values.join() };
+    // @ts-expect-error a calendar's change carries its values, not one value
+    const oneDay: ElementAttributes<'bry-calendar'> = { onChange: event => event.detail.value };
+    const person: ElementAttributes<'bry-combobox'> = { options: [{ value: 'ada', label: 'Ada' }], onChange: event => event.detail.value.trim() };
+    // @ts-expect-error a combobox needs its options
+    const nobody: ElementAttributes<'bry-combobox'> = { value: 'ada' };
+    const palette: ElementAttributes<'bry-command'> = {
+      items: [{ id: 'new', label: 'New', group: 'Issues', icon: 'add', hint: '3' }],
+      onSelect: event => event.detail.id.trim(),
+      onChange: event => event.detail.value.trim(),
+    };
+    // @ts-expect-error a command's icons are the shell's own
+    const rocketCommand: ElementAttributes<'bry-command'> = { items: [{ id: 'go', label: 'Go', icon: 'rocket' }] };
+    const rightClick: ElementAttributes<'bry-context-menu'> = { items: [{ id: 'copy', label: 'Copy' }], onSelect: event => event.detail.id.trim() };
+    const grid: ElementAttributes<'bry-data-table'> = {
+      columns: [{ key: 'title', heading: 'Title', sortable: true, hideable: false }],
+      rows: [{ id: 'a', cells: ['Fix the door'] }],
+      perPage: 20,
+      hidden: ['age'],
+      selected: ['a'],
+      onSort: event => event.detail.direction satisfies 'asc' | 'desc',
+      onFilter: event => event.detail.value.trim(),
+      onPage: event => event.detail.page.toFixed(),
+      onColumns: event => event.detail.hidden.join(),
+      onSelect: event => event.detail.rows.join(),
+    };
+    // @ts-expect-error a data table's selection is a list of row ids
+    const oneRow: ElementAttributes<'bry-data-table'> = { columns: [], selected: 'a' };
+    const named: ElementAttributes<'bry-field'> = { label: 'Title', description: 'Short', error: 'Needed', required: true, orientation: 'horizontal' };
+    // @ts-expect-error a field raises nothing
+    const fieldChange: ElementAttributes<'bry-field'> = { label: 'Title', onChange: () => {} };
+    const site: ElementAttributes<'bry-input-group'> = { prefix: 'https://', icon: 'search', onAction: event => event.detail.value.trim(), onSubmit: event => event.detail.value };
+    // @ts-expect-error an input group's icons are the shell's own
+    const rocketGroup: ElementAttributes<'bry-input-group'> = { icon: 'rocket' };
+    const code: ElementAttributes<'bry-input-otp'> = { label: 'Code', length: 6, pattern: 'digits', onComplete: event => event.detail.value.trim() };
+    // @ts-expect-error a code needs its label
+    const unnamedCode: ElementAttributes<'bry-input-otp'> = { length: 6 };
+    const bar: ElementAttributes<'bry-menubar'> = { label: 'Editor', menus: [{ id: 'file', label: 'File', items: [{ id: 'new', label: 'New' }] }], onSelect: event => `${event.detail.menu} ${event.detail.id}` };
+    // @ts-expect-error a menubar's menu needs its items
+    const empty: ElementAttributes<'bry-menubar'> = { label: 'Editor', menus: [{ id: 'file', label: 'File' }] };
+    const system: ElementAttributes<'bry-native-select'> = { options: [{ value: 'a', label: 'A' }], onChange: event => event.detail.value.trim() };
+    const sections: ElementAttributes<'bry-section-menu'> = { label: 'Report', sections: [{ id: 'a', label: 'A', entries: [{ id: 'b', label: 'B', description: 'More' }] }], onSelect: event => event.detail.id.trim() };
+    // @ts-expect-error a section is never a link
+    const linked: ElementAttributes<'bry-section-menu'> = { label: 'Report', sections: [{ id: 'a', label: 'A', href: '/x' }] };
+    const pages: ElementAttributes<'bry-pagination'> = { page: 2, count: 9, onPage: event => event.detail.page.toFixed() };
+    // @ts-expect-error a pagination needs how many pages there are
+    const countless: ElementAttributes<'bry-pagination'> = { page: 2 };
+    const survey: ElementAttributes<'bry-questionnaire'> = {
+      questions: [{ id: 'q', kind: 'rating', prompt: 'How?', scale: 5 }],
+      onAnswer: event => `${event.detail.question} ${String(event.detail.value)}`,
+      onStep: event => event.detail.index.toFixed(),
+      onSubmit: event => Object.keys(event.detail.answers).join(),
+    };
+    // @ts-expect-error a question's kind is one of the four
+    const essay: ElementAttributes<'bry-questionnaire'> = { questions: [{ id: 'q', kind: 'essay', prompt: 'Why?' }] };
+    const radios: ElementAttributes<'bry-radio-group'> = { label: 'Notify', options: [{ value: 'a', label: 'A' }], onChange: event => event.detail.value.trim() };
+    // @ts-expect-error a radio group needs its label
+    const unnamedRadios: ElementAttributes<'bry-radio-group'> = { options: [] };
+    const hours: ElementAttributes<'bry-slider'> = { label: 'Hours', value: 4, onChange: event => event.detail.value.toFixed(), onCommit: event => event.detail.value.toFixed() };
+    // @ts-expect-error a slider's value is a number
+    const textual: ElementAttributes<'bry-slider'> = { label: 'Hours', value: '4' };
+    const bold: ElementAttributes<'bry-toggle'> = { label: 'Bold', pressed: true, onChange: event => event.detail.pressed satisfies boolean };
+    // @ts-expect-error a toggle's variant is default or outline
+    const loudToggle: ElementAttributes<'bry-toggle'> = { label: 'Bold', variant: 'danger' };
+    const view: ElementAttributes<'bry-toggle-group'> = { label: 'View', type: 'single', items: [{ value: 'a', label: 'A' }], onChange: event => event.detail.values.join() };
+    // @ts-expect-error a toggle group needs its items
+    const itemless: ElementAttributes<'bry-toggle-group'> = { label: 'View' };
+
     expect([
       fine, unlabelled, wide, pressed, typed, chosen, choiceless, loud, submitted,
       sorted, headless, centred, long, asked, more, drawn, due, ticked, worded, dragged,
       board, column, untitled, pixels, iconic, rocket, small, notes, changes, fileless,
-    ]).toHaveLength(30);
+      joined, unnamedGroup, leave, oneDay, person, nobody, palette, rocketCommand, rightClick, grid,
+      oneRow, named, fieldChange, site, rocketGroup, code, unnamedCode, bar, empty, system,
+      sections, linked, pages, countless, survey, essay, radios, unnamedRadios, hours, textual,
+      bold, loudToggle, view, itemless,
+    ]).toHaveLength(64);
   });
 });
