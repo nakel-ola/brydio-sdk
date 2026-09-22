@@ -112,7 +112,7 @@ export async function renderScreenshots(root: string, options: ScreenshotOptions
         try {
           host = FakeHost.start({ entry: join(project.root, 'dist', declared.entry), manifest, fixtures: samples, context });
           await host.mounted(options.timeout ?? 5_000);
-          await host.idle(25, options.timeout ?? 5_000);
+          await settled(host, options.timeout ?? 5_000);
 
           if (host.refusals.length) {
             fail(`Brydio refused part of it: ${host.refusals[0]!.reason}`);
@@ -160,6 +160,46 @@ export async function renderScreenshots(root: string, options: ScreenshotOptions
 }
 
 /** The screen's tree as `tree/mount` would carry it, parent before child. */
+/**
+ * Waits until the screen has finished drawing, not merely paused.
+ *
+ * `idle(25)` alone was a race: a screen is quiet for longer than 25 ms between
+ * mounting and its first data call on a busy machine, so the picture was taken
+ * before anything was drawn ("It drew nothing") or half-way through (a
+ * different fingerprint). A shared CI runner hit it every time, and a server
+ * capturing a publisher's screens under load would have refused a good app.
+ *
+ * Two rules. A tree with nothing drawn is never taken as finished while there
+ * is patience left — a slow start is not an empty screen. A drawn tree is
+ * finished once two quiet moments in a row show the same tree. Both hold
+ * however slow the machine is; a fast one pays a single extra quiet moment.
+ */
+async function settled(host: FakeHost, timeout: number): Promise<void> {
+  const started = Date.now();
+  // How long an empty screen is given to draw something before it is reported
+  // as drawing nothing. Far above any scheduling delay, and it only costs this
+  // much on the failing path.
+  const patience = Math.min(timeout, 2_000);
+  let last = '';
+
+  for (;;) {
+    const left = Math.max(1, timeout - (Date.now() - started));
+
+    await host.idle(25, left);
+
+    const tree = snapshot(host);
+    const now = JSON.stringify(tree);
+    const drawn = Boolean(tree && tree.nodes.length >= 2);
+    const elapsed = Date.now() - started;
+
+    if (drawn && now === last) return;
+    if (!drawn && elapsed >= patience) return;
+    if (elapsed >= timeout) return;
+
+    last = now;
+  }
+}
+
 function snapshot(host: FakeHost): Screenshot['tree'] | null {
   const root = host.tree.root;
 

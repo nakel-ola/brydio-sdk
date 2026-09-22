@@ -6,7 +6,8 @@
   "screens": {
     "home": { "entry": "screens/home.js" },
     "blank": { "entry": "screens/blank.js" },
-    "wrong": { "entry": "screens/wrong.js" }
+    "wrong": { "entry": "screens/wrong.js" },
+    "slow": { "entry": "screens/slow.js" }
   },
   "grants": { "tools": ["*"], "collections": ["*"] }
 }
