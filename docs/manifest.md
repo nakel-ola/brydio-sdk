@@ -94,6 +94,30 @@ Each `placements` entry has a `kind`, a `screen`, and optional `label` and
 `workspace-sidebar`. `screen` must name a key in `screens`. Each screen has
 one `entry`, a relative `.js` or `.mjs` path inside the built bundle.
 
+### Folders
+
+A `project-sidebar` or `workspace-sidebar` placement with `children` is a
+folder: its row opens into rows one of the app's read tools lists, only while
+it is open. `children` takes `tool`, and optional `refreshSeconds` (15 to
+3600, default 60), `cap` (1 to 50, default 20) and `noun` ("pull requests").
+The tool is called with `{ folder }` and answers `{ items, nextCursor?,
+total?, empty? }`; each item is `{ id, title, subtitle?, icon?, badge?,
+hasChildren? }`.
+
+A folder nests only when it declares `nested`: a list of the levels under
+its own rows, each with an optional `noun` and `create`. A row marked
+`hasChildren` then opens into the rows the same tool lists for
+`{ folder, parent }`, one level at a time. A folder is at most 4 levels
+deep, its own rows counting as the first, so `nested` has at most three
+entries.
+
+`create` (on `children` for the first level, or on a `nested` level) puts
+"New `<noun>`" at the end of that level. It takes `tool`, a tool that makes
+records, and optional `noun` ("sprint"), `titleField` (default `title`) and
+`parentField` (default `parent`). The name the person types goes in
+`titleField`; below the first level the row it is made under goes in
+`parentField`. It runs as the person's own click on the app's screen would.
+
 ## Collections and schema types
 
 Each key in `data` is a collection name. A collection has a required `schema`,

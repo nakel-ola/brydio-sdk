@@ -42,6 +42,9 @@ first.
 | `manifest_not_json` | app.json is not valid JSON. (`validate` adds where the parser stopped.) | yes | publish, as `manifest_invalid` | Fix the JSON. |
 | `manifest_invalid` | The schema's sentence for the field at `<path>`. For example, the name must be lowercase letters, digits and dashes; the version must look like 1.2.0; "Custom tools are not available yet." | yes | publish | Change the field the path names. |
 | `placement_screen_unknown` | A `<kind>` placement opens "`<screen>`", which is not one of the app's screens. | yes | publish | Declare the screen under `screens`, or point the placement at one that is declared. |
+| `placement_children_too_deep` | The "`<screen>`" folder nests `<n>` levels deep; a sidebar folder may nest at most 4. | yes | publish | Declare at most three levels under `children.nested`. |
+| `placement_create_tool_unknown` | The "`<screen>`" folder creates with `<tool>`, which is not one of the app's tools. | yes | publish | Name a generated `create_…` tool or one of `tools.custom` in `children.create.tool`. |
+| `placement_create_not_write` | The "`<screen>`" folder creates with `<tool>`, which only reads: name a tool that makes records, or mark a custom one write: true. | yes | publish | Point `create.tool` at a tool that makes records, or give the custom tool `write: true`. |
 | `data_too_many_collections` | An app may keep at most `<n>` collections. | yes | publish | Keep fewer collections. |
 | `data_collection_name_format` | `<collection>` is not a collection name: lower-case letters, digits and _, starting with a letter, at most 40 characters. | yes | publish | Rename the collection. |
 | `data_label_format` | `<collection>`'s label must be one lower-case word the tools can be named with, at most 40 characters. | yes | publish | Give `label` one lower-case word. |
