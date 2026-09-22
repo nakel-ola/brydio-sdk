@@ -34,15 +34,15 @@ function draftOf<T>(element: Element, sent: T): { draft: T; set: (next: T) => vo
   return { draft: current.draft as T, set: next => void (current.draft = next) };
 }
 
-/** The control's accessible name: its own `label`, or the `bry-label` around it. */
+/** The control's accessible name: its own `label`, or the `bry-label` or `bry-field` around it. */
 function nameOf(element: Element): string | undefined {
   const own = str(element.label);
 
   if (own) return own;
 
-  const around = element.closest('bry-label') as (HTMLElement & { text?: unknown }) | null;
+  const around = element.closest('bry-label, bry-field') as (HTMLElement & { text?: unknown; label?: unknown }) | null;
 
-  return str(around?.text) || undefined;
+  return str(around?.text) || str(around?.label) || undefined;
 }
 
 const FIELD = css`
