@@ -35,7 +35,7 @@ describe('pictures of every screen (A5-F04-S04)', () => {
 
   // A screen that draws nothing is given two seconds to start before it is
   // reported, once per width and theme — so this case waits on purpose.
-  test('names a screen that draws nothing or has a node refused, at each width and theme', { timeout: 30_000 }, async () => {
+  test('names a screen that draws nothing or has a node refused, at each width and theme', async () => {
     const { screenshots, problems } = await renderScreenshots(app, { screens: ['blank', 'wrong'] });
 
     expect(screenshots).toEqual([]);
@@ -49,7 +49,7 @@ describe('pictures of every screen (A5-F04-S04)', () => {
       'wrong, wide, light: Brydio refused part of it: Brydio has no element called "bry-chart".',
       'wrong, wide, dark: Brydio refused part of it: Brydio has no element called "bry-chart".',
     ]);
-  });
+  }, { timeout: 30_000 });
 
   test('waits for a screen that is slow to start, rather than picturing it before it draws', async () => {
     const { screenshots, problems } = await renderScreenshots(app, { screens: ['slow'] });
