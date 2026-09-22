@@ -318,7 +318,7 @@
      and the shape behind it are drawn in different files, and neither gets
      to hold its own opinion about how tall a tab is. */
   --tab-h: 2.35rem;
-  --sidebar-w: 16.25rem; /* 260 */
+  --sidebar-w: 19rem; /* 304 */
   --sidebar-w-collapsed: 3.5rem; /* 56 */
   --thread-max-w: 46rem;
   --composer-max-w: 46rem;
