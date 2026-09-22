@@ -20,6 +20,23 @@ test('adds an item', async () => {
 });
 ```
 
+A custom tool's handler is tested the same way, without a worker: `runHandler`
+gives it the client Brydio gives it, with the same refusals. Secrets are only
+the names the manifest declares, need the `secrets` grant, and a value the
+handler held comes back as `[secret]`, as Brydio would pass it on.
+
+```ts
+import { runHandler } from '@brydio/fake-host';
+import listInvoices from '../src/handlers/list_invoices.ts';
+import manifest from '../.brydio/app.json';
+
+test('asks for the key before listing', async () => {
+  const run = await runHandler(listInvoices, {}, { manifest, secrets: {} });
+
+  expect(run.result).toEqual({ message: 'Set the API key in the app’s settings first.' });
+});
+```
+
 Run the app's tests with `brydio test`. The command builds once, then runs its
 `*.test.ts` files against that build.
 
