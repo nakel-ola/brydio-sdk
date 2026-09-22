@@ -108,7 +108,7 @@ describe('what the host stops an app for', () => {
 
     expect(host.stopped).toBe('refusals');
     expect(host.refusals).toEqual([
-      { op: 'mount', node: 'a', reason: 'Brydio has no element called "bry-slider".' },
+      { op: 'mount', node: 'a', reason: 'Brydio has no element called "bry-sparkline".' },
       { op: 'insert', node: 'b', reason: 'bry-button needs a label.' },
       { op: 'props', node: 'root', reason: 'bry-stack gap must be one of 1, 2, 3, 4, 5, 6, 7, 8.' },
     ]);

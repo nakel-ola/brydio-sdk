@@ -2,7 +2,7 @@
 self.addEventListener('message', event => {
   if (event.data?.method !== 'host/context') return;
 
-  self.postMessage({ jsonrpc: '2.0', method: 'tree/mount', params: { root: 'root', nodes: [{ id: 'root', type: 'bry-stack', children: ['a'] }, { id: 'a', type: 'bry-slider' }] } });
+  self.postMessage({ jsonrpc: '2.0', method: 'tree/mount', params: { root: 'root', nodes: [{ id: 'root', type: 'bry-stack', children: ['a'] }, { id: 'a', type: 'bry-sparkline' }] } });
   self.postMessage({
     jsonrpc: '2.0',
     method: 'tree/patch',

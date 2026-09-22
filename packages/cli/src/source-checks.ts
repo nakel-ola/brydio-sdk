@@ -110,6 +110,25 @@ const FACTORIES: Readonly<Record<string, ElementName>> = {
   boardColumn: 'bry-board-column',
   markdown: 'bry-markdown',
   diff: 'bry-diff',
+  // ADR-A23 (catalogue-b)
+  buttonGroup: 'bry-button-group',
+  calendar: 'bry-calendar',
+  combobox: 'bry-combobox',
+  command: 'bry-command',
+  contextMenu: 'bry-context-menu',
+  dataTable: 'bry-data-table',
+  field: 'bry-field',
+  inputGroup: 'bry-input-group',
+  inputOtp: 'bry-input-otp',
+  menubar: 'bry-menubar',
+  nativeSelect: 'bry-native-select',
+  sectionMenu: 'bry-section-menu',
+  pagination: 'bry-pagination',
+  questionnaire: 'bry-questionnaire',
+  radioGroup: 'bry-radio-group',
+  slider: 'bry-slider',
+  toggle: 'bry-toggle',
+  toggleGroup: 'bry-toggle-group',
 };
 
 /** Modules whose `h` and `createElement` take an element's name first. */

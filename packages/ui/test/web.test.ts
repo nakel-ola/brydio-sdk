@@ -1281,3 +1281,391 @@ describe('file grid (A6-F06-S01)', () => {
     expect(tiles().map(tile => tile.getAttribute('data-file'))).toEqual(['f2']);
   });
 });
+
+// ADR-A23 (catalogue-b)
+describe('catalogue-b’s drawings (ADR-A23)', () => {
+  /** The details of the element's own event, not the native ones of the controls inside it. */
+  const heard = (selector: string, name: string) => {
+    const got: unknown[] = [];
+
+    document.querySelector(selector)!.addEventListener(name, event => {
+      if (event instanceof CustomEvent) got.push(event.detail);
+    });
+
+    return got;
+  };
+  const attr = (value: unknown) => JSON.stringify(value).replace(/"/g, '&quot;');
+  const OPTIONS = attr([{ value: 'todo', label: 'To do' }, { value: 'done', label: 'Done' }]);
+  const typeInto = (input: HTMLInputElement | HTMLTextAreaElement, value: string) => {
+    input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+  };
+  const key = (target: Element, name: string, extra: KeyboardEventInit = {}) =>
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: name, bubbles: true, composed: true, ...extra }));
+
+  test('a button group is a named group around its buttons', async () => {
+    await page(`<bry-button-group label="Formatting" orientation="vertical"><bry-button label="Bold"></bry-button></bry-button-group>`);
+
+    const group = shadowOf('bry-button-group').querySelector('[role="group"]')!;
+
+    expect(group.getAttribute('aria-label')).toBe('Formatting');
+    expect(group.getAttribute('data-orientation')).toBe('vertical');
+    expect(shadowOf('bry-button-group').querySelector('slot')).not.toBeNull();
+  });
+
+  test('a field names its control and shows its description and error', async () => {
+    await page(`<bry-field label="Title" description="What went wrong" error="Needed." required><bry-input></bry-input></bry-field>`);
+
+    const field = shadowOf('bry-field');
+
+    expect(field.querySelector('#name')!.textContent).toContain('Title');
+    expect(field.querySelector('#description')!.textContent).toBe('What went wrong');
+    expect(field.querySelector('#error')!.textContent).toBe('Needed.');
+    expect(shadowOf('bry-input').querySelector('input')!.getAttribute('aria-label')).toBe('Title');
+  });
+
+  test('an input group types, submits and presses its action with the value', async () => {
+    await page(`<bry-input-group label="Site" prefix="https://" action="Go" value="a"></bry-input-group>`);
+
+    const changes = heard('bry-input-group', 'change');
+    const actions = heard('bry-input-group', 'action');
+    const submits = heard('bry-input-group', 'submit');
+    const input = shadowOf('bry-input-group').querySelector('input')!;
+
+    expect(input.getAttribute('aria-label')).toBe('Site');
+    expect(shadowOf('bry-input-group').textContent).toContain('https://');
+    typeInto(input, 'brydio.app');
+    key(input, 'Enter');
+    (shadowOf('bry-input-group').querySelector('.action') as HTMLButtonElement).click();
+    expect(changes).toEqual([{ value: 'brydio.app' }]);
+    expect(submits).toEqual([{ value: 'brydio.app' }]);
+    expect(actions).toEqual([{ value: 'brydio.app' }]);
+  });
+
+  test('a one-time code keeps only digits, and says complete when full', async () => {
+    await page(`<bry-input-otp label="Code" length="4"></bry-input-otp>`);
+
+    const changes = heard('bry-input-otp', 'change');
+    const done = heard('bry-input-otp', 'complete');
+    const input = shadowOf('bry-input-otp').querySelector('input')!;
+
+    typeInto(input, '12a3');
+    typeInto(input, '1234');
+    expect(changes).toEqual([{ value: '123' }, { value: '1234' }]);
+    expect(done).toEqual([{ value: '1234' }]);
+    expect(shadowOf('bry-input-otp').querySelectorAll('.slot')).toHaveLength(4);
+  });
+
+  test('a native select is the system’s select, and shows the app’s value until it changes', async () => {
+    await page(`<bry-native-select label="Status" value="todo" options="${OPTIONS}"></bry-native-select>`);
+
+    const changes = heard('bry-native-select', 'change');
+    const select = shadowOf('bry-native-select').querySelector('select')!;
+
+    expect(select.getAttribute('aria-label')).toBe('Status');
+    select.value = 'done';
+    select.dispatchEvent(new Event('change'));
+    expect(changes).toEqual([{ value: 'done' }]);
+    expect(select.value).toBe('todo');
+  });
+
+  test('a radio group is named and says the choice', async () => {
+    await page(`<bry-radio-group label="Status" options="${OPTIONS}" value="todo"></bry-radio-group>`);
+
+    const changes = heard('bry-radio-group', 'change');
+    const group = shadowOf('bry-radio-group').querySelector('[role="radiogroup"]')!;
+    const radios = group.querySelectorAll('input');
+
+    expect(group.getAttribute('aria-label')).toBe('Status');
+    expect((radios[0] as HTMLInputElement).checked).toBe(true);
+    (radios[1] as HTMLInputElement).checked = true;
+    radios[1]!.dispatchEvent(new Event('change'));
+    expect(changes).toEqual([{ value: 'done' }]);
+  });
+
+  test('a slider says change as it moves and commit when let go', async () => {
+    await page(`<bry-slider label="Volume" min="0" max="10" value="3"></bry-slider>`);
+
+    const changes = heard('bry-slider', 'change');
+    const commits = heard('bry-slider', 'commit');
+    const range = shadowOf('bry-slider').querySelector('input')!;
+
+    expect(range.getAttribute('aria-label')).toBe('Volume');
+    typeInto(range, '7');
+    range.dispatchEvent(new Event('change'));
+    expect(changes).toEqual([{ value: 7 }]);
+    expect(commits).toEqual([{ value: 7 }]);
+  });
+
+  test('a toggle stays pressed and says so', async () => {
+    await page(`<bry-toggle label="Bold" icon="check" hide-label></bry-toggle>`);
+
+    const changes = heard('bry-toggle', 'change');
+    const button = shadowOf('bry-toggle').querySelector('button')!;
+
+    expect(button.getAttribute('aria-label')).toBe('Bold');
+    button.click();
+    await settle();
+    expect(changes).toEqual([{ pressed: true }]);
+    expect(shadowOf('bry-toggle').querySelector('button')!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  test('a toggle group presses one or many, and is one tab stop the arrows move through', async () => {
+    const items = attr([{ value: 'b', label: 'Bold' }, { value: 'i', label: 'Italic' }, { value: 'u', label: 'Underline' }]);
+
+    await page(`<bry-toggle-group id="one" label="Align" items="${items}" values='["b"]'></bry-toggle-group><bry-toggle-group id="many" type="multiple" label="Style" items="${items}" values='["b"]'></bry-toggle-group>`);
+
+    const one = heard('#one', 'change');
+    const many = heard('#many', 'change');
+    const buttons = (selector: string) => Array.from(shadowOf(selector).querySelectorAll('button'));
+
+    expect(buttons('#one').map(button => button.getAttribute('tabindex'))).toEqual(['0', '-1', '-1']);
+    buttons('#one')[1]!.click();
+    buttons('#many')[1]!.click();
+    expect(one).toEqual([{ values: ['i'] }]);
+    expect(many).toEqual([{ values: ['b', 'i'] }]);
+
+    key(buttons('#one')[0]!, 'ArrowRight');
+    await settle();
+    expect(buttons('#one').map(button => button.getAttribute('tabindex'))).toEqual(['-1', '0', '-1']);
+  });
+
+  test('a pagination shows the ends and neighbours and asks for a page', async () => {
+    await page(`<bry-pagination page="5" count="10"></bry-pagination>`);
+
+    const asked = heard('bry-pagination', 'page');
+    const root = shadowOf('bry-pagination');
+    const numbers = Array.from(root.querySelectorAll('[data-page]')).map(button => button.textContent!.trim());
+
+    expect(numbers).toEqual(['1', '4', '5', '6', '10']);
+    expect(root.querySelector('[aria-current="page"]')!.textContent!.trim()).toBe('5');
+    expect(root.querySelector('a')).toBeNull();
+    (root.querySelector('[data-page="6"]') as HTMLButtonElement).click();
+    (Array.from(root.querySelectorAll('button')).find(button => button.textContent!.trim() === 'Previous') as HTMLButtonElement).click();
+    expect(asked).toEqual([{ page: 6 }, { page: 4 }]);
+  });
+
+  test('a combobox searches its options and says the choice', async () => {
+    await page(`<bry-combobox label="Status" options="${OPTIONS}" empty="Nothing."></bry-combobox>`);
+
+    const changes = heard('bry-combobox', 'change');
+
+    (shadowOf('bry-combobox').querySelector('[role="combobox"]') as HTMLButtonElement).click();
+    await settle();
+
+    const search = shadowOf('bry-combobox').querySelector('.search') as HTMLInputElement;
+
+    typeInto(search, 'zzz');
+    await settle();
+    expect(shadowOf('bry-combobox').querySelector('[data-empty]')!.textContent).toBe('Nothing.');
+    typeInto(search, 'don');
+    await settle();
+    key(search, 'Enter');
+    expect(changes).toEqual([{ value: 'done' }]);
+  });
+
+  test('a command filters, groups and chooses, and says what was searched', async () => {
+    const items = attr([{ id: 'new', label: 'New issue', group: 'Issues' }, { id: 'close', label: 'Close issue', group: 'Issues', hint: '3' }, { id: 'help', label: 'Help' }]);
+
+    await page(`<bry-command label="Commands" items="${items}"></bry-command>`);
+
+    const chosen = heard('bry-command', 'select');
+    const searched = heard('bry-command', 'change');
+    const input = shadowOf('bry-command').querySelector('input')!;
+
+    expect(shadowOf('bry-command').querySelector('.heading')!.textContent).toBe('Issues');
+    typeInto(input, 'close');
+    await settle();
+    key(input, 'Enter');
+    expect(searched).toEqual([{ value: 'close' }]);
+    expect(chosen).toEqual([{ id: 'close' }]);
+
+    await page(`<bry-command items="[]" empty="No commands."></bry-command><bry-command id="busy" loading items="[]"></bry-command>`);
+    expect(shadowOf('bry-command').querySelector('[data-empty]')!.textContent).toBe('No commands.');
+    expect(shadowOf('#busy').querySelector('[role="status"]')).not.toBeNull();
+  });
+
+  test('a context menu opens on the menu key and says the item chosen', async () => {
+    await page(`<bry-context-menu items="${attr([{ id: 'copy', label: 'Copy' }, { id: 'bin', label: 'Delete', tone: 'danger' }])}"><bry-card title="Issue"></bry-card></bry-context-menu>`);
+
+    const chosen = heard('bry-context-menu', 'select');
+    const anchor = shadowOf('bry-context-menu').querySelector('.anchor')!;
+
+    key(anchor, 'F10', { shiftKey: true });
+    await settle();
+    expect(shadowOf('bry-context-menu').querySelectorAll('[role="menuitem"]')).toHaveLength(2);
+    key(anchor, 'ArrowDown');
+    key(anchor, 'Enter');
+    expect(chosen).toEqual([{ id: 'bin' }]);
+
+    anchor.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, composed: true, cancelable: true }));
+    await settle();
+    (shadowOf('bry-context-menu').querySelector('[data-item="copy"]') as HTMLButtonElement).click();
+    expect(chosen).toEqual([{ id: 'bin' }, { id: 'copy' }]);
+  });
+
+  test('a menubar is one tab stop, moves along with the arrows and says the menu and the item', async () => {
+    const menus = attr([
+      { id: 'file', label: 'File', items: [{ id: 'save', label: 'Save' }] },
+      { id: 'edit', label: 'Edit', items: [{ id: 'undo', label: 'Undo' }, { id: 'redo', label: 'Redo' }] },
+    ]);
+
+    await page(`<bry-menubar label="Editor" menus="${menus}"></bry-menubar>`);
+
+    const chosen = heard('bry-menubar', 'select');
+    const bar = shadowOf('bry-menubar').querySelector('[role="menubar"]')!;
+    const triggers = () => Array.from(shadowOf('bry-menubar').querySelectorAll('[data-menu]'));
+
+    expect(bar.getAttribute('aria-label')).toBe('Editor');
+    expect(triggers().map(trigger => trigger.getAttribute('tabindex'))).toEqual(['0', '-1']);
+    key(bar, 'ArrowRight');
+    await settle();
+    expect(triggers().map(trigger => trigger.getAttribute('tabindex'))).toEqual(['-1', '0']);
+    key(bar, 'Enter');
+    await settle();
+    key(bar, 'ArrowDown');
+    key(bar, 'Enter');
+    expect(chosen).toEqual([{ menu: 'edit', id: 'redo' }]);
+    expect(shadowOf('bry-menubar').querySelector('a')).toBeNull();
+  });
+
+  test('a section menu is a group of this screen’s sections, never a link or a navigation landmark', async () => {
+    const sections = attr([
+      { id: 'overview', label: 'Overview' },
+      { id: 'reports', label: 'Reports', entries: [{ id: 'weekly', label: 'Weekly', description: 'Every Monday' }] },
+    ]);
+
+    await page(`<bry-section-menu label="Sections" current="overview" sections="${sections}"></bry-section-menu>`);
+
+    const chosen = heard('bry-section-menu', 'select');
+    const root = shadowOf('bry-section-menu');
+
+    expect(root.querySelector('nav, a')).toBeNull();
+    expect(root.querySelector('[role="group"]')!.getAttribute('aria-label')).toBe('Sections');
+    expect(root.querySelector('[data-section="overview"]')!.getAttribute('aria-current')).toBe('true');
+    (root.querySelector('[data-section="reports"]') as HTMLButtonElement).click();
+    await settle();
+    expect(root.querySelector('[data-entry="weekly"]')!.textContent).toContain('Every Monday');
+    (root.querySelector('[data-entry="weekly"]') as HTMLButtonElement).click();
+    (root.querySelector('[data-section="overview"]') as HTMLButtonElement).click();
+    expect(chosen).toEqual([{ id: 'weekly' }, { id: 'overview' }]);
+  });
+
+  test('a calendar chooses one day, many, or a range, as ISO dates', async () => {
+    await page(
+      `<bry-calendar id="one" month="2026-09-01"></bry-calendar><bry-calendar id="many" mode="multiple" values='["2026-09-03"]'></bry-calendar><bry-calendar id="span" mode="range" values='["2026-09-10"]' max="2026-09-20"></bry-calendar>`,
+    );
+
+    const one = heard('#one', 'change');
+    const many = heard('#many', 'change');
+    const span = heard('#span', 'change');
+    const day = (selector: string, iso: string) => shadowOf(selector).querySelector(`[data-day="${iso}"]`) as HTMLButtonElement;
+
+    expect(shadowOf('#one').querySelector('[role="grid"]')).not.toBeNull();
+    day('#one', '2026-09-16').click();
+    day('#many', '2026-09-01').click();
+    day('#span', '2026-09-05').click();
+    expect(one).toEqual([{ values: ['2026-09-16'] }]);
+    expect(many).toEqual([{ values: ['2026-09-01', '2026-09-03'] }]);
+    expect(span).toEqual([{ values: ['2026-09-05', '2026-09-10'] }]);
+    expect(day('#span', '2026-09-21').disabled).toBe(true);
+    expect(shadowOf('#one').querySelectorAll('[role="gridcell"] button[tabindex="0"]')).toHaveLength(1);
+  });
+
+  test('a data table sorts, filters, pages, hides columns and chooses rows, and tells the app each', async () => {
+    const columns = attr([{ key: 'title', heading: 'Title', sortable: true }, { key: 'age', heading: 'Age', align: 'end', sortable: true }]);
+    const rows = attr([
+      { id: 'a', cells: ['Crash', '10'] },
+      { id: 'b', cells: ['Accents', '2'] },
+      { id: 'c', cells: ['Flicker', '9'] },
+    ]);
+
+    await page(`<bry-data-table label="Issues" selectable per-page="2" columns="${columns}" rows="${rows}"></bry-data-table>`);
+
+    const root = () => shadowOf('bry-data-table');
+    const ids = () => Array.from(root().querySelectorAll('tbody tr')).map(row => row.getAttribute('data-row'));
+    const told = Object.fromEntries(['sort', 'filter', 'page', 'columns', 'select'].map(name => [name, heard('bry-data-table', name)]));
+
+    expect(ids()).toEqual(['a', 'b']);
+    (root().querySelector('[data-sort="age"]') as HTMLButtonElement).click();
+    await settle();
+    expect(ids()).toEqual(['b', 'c']);
+    (root().querySelector('[data-page="next"]') as HTMLButtonElement).click();
+    await settle();
+    expect(ids()).toEqual(['a']);
+    typeInto(root().querySelector('.filter') as HTMLInputElement, 'flick');
+    await settle();
+    expect(ids()).toEqual(['c']);
+    (root().querySelector('tbody input') as HTMLInputElement).dispatchEvent(new Event('change'));
+    await settle();
+    (Array.from(root().querySelectorAll('button')).find(button => button.textContent!.trim() === 'Columns') as HTMLButtonElement).click();
+    await settle();
+
+    const age = root().querySelector('[data-column="age"]') as HTMLInputElement;
+
+    age.checked = false;
+    age.dispatchEvent(new Event('change'));
+    await settle();
+
+    expect(told).toEqual({
+      sort: [{ key: 'age', direction: 'asc' }],
+      filter: [{ value: 'flick' }],
+      page: [{ page: 2 }, { page: 1 }],
+      columns: [{ hidden: ['age'] }],
+      select: [{ rows: ['c'] }],
+    });
+    expect(root().querySelectorAll('thead th')).toHaveLength(2);
+
+    typeInto(root().querySelector('.filter') as HTMLInputElement, 'nothing like it');
+    await settle();
+    expect(root().querySelector('[data-empty]')).not.toBeNull();
+
+    await page(`<bry-data-table loading columns="${columns}"></bry-data-table>`);
+    expect(root().querySelector('[role="status"]')!.getAttribute('aria-label')).toBe('Loading');
+  });
+
+  test('a questionnaire asks one question at a time, holds Next for a required one, and sends every answer', async () => {
+    const questions = attr([
+      { id: 'role', kind: 'single', prompt: 'Your role?', required: true, choices: [{ value: 'dev', label: 'Developer' }, { value: 'pm', label: 'Manager' }] },
+      { id: 'score', kind: 'rating', prompt: 'How likely?', scale: 5 },
+      { id: 'why', kind: 'text', prompt: 'Why?' },
+    ]);
+
+    await page(`<bry-questionnaire title="Survey" action="Send it" questions="${questions}"></bry-questionnaire>`);
+
+    const root = () => shadowOf('bry-questionnaire');
+    const told = Object.fromEntries(['answer', 'step', 'submit'].map(name => [name, heard('bry-questionnaire', name)]));
+    const next = () => root().querySelector('.next') as HTMLButtonElement;
+    const submit = () => root().querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
+
+    expect(root().querySelector('legend')!.textContent).toContain('Your role?');
+    expect(root().querySelector('[role="progressbar"]')!.getAttribute('aria-valuenow')).toBe('1');
+    expect(next().disabled).toBe(true);
+
+    const pm = root().querySelectorAll('input[type="radio"]')[1] as HTMLInputElement;
+
+    pm.checked = true;
+    pm.dispatchEvent(new Event('change'));
+    await settle();
+    expect(next().disabled).toBe(false);
+    submit();
+    await settle();
+
+    const four = root().querySelectorAll('input[type="radio"]')[3] as HTMLInputElement;
+
+    four.checked = true;
+    four.dispatchEvent(new Event('change'));
+    submit();
+    await settle();
+    typeInto(root().querySelector('textarea')!, 'Fast');
+    await settle();
+    expect(next().textContent!.trim()).toBe('Send it');
+    submit();
+
+    expect(told).toEqual({
+      answer: [{ question: 'role', value: 'pm' }, { question: 'score', value: 4 }, { question: 'why', value: 'Fast' }],
+      step: [{ index: 1 }, { index: 2 }],
+      submit: [{ answers: { role: 'pm', score: 4, why: 'Fast' } }],
+    });
+  });
+});

@@ -858,3 +858,44 @@ export const boardColumn = (attributes: ElementAttributes<'bry-board-column'>, .
 export const markdown = (attributes: ElementAttributes<'bry-markdown'>) => createElement('bry-markdown', attributes);
 
 export const diff = (attributes: ElementAttributes<'bry-diff'>) => createElement('bry-diff', attributes);
+
+// ADR-A23 (catalogue-b)
+export const buttonGroup = (attributes: ElementAttributes<'bry-button-group'>, ...buttons: Child[]) =>
+  createElement('bry-button-group', attributes, ...buttons);
+
+export const calendar = (attributes?: ElementAttributes<'bry-calendar'> | null) => createElement('bry-calendar', attributes);
+
+export const combobox = (attributes: ElementAttributes<'bry-combobox'>) => createElement('bry-combobox', attributes);
+
+export const command = (attributes: ElementAttributes<'bry-command'>) => createElement('bry-command', attributes);
+
+/** A context menu, whose one child is what it opens on. */
+export const contextMenu = (attributes: ElementAttributes<'bry-context-menu'>, ...children: Child[]) =>
+  createElement('bry-context-menu', attributes, ...children);
+
+export const dataTable = (attributes: ElementAttributes<'bry-data-table'>) => createElement('bry-data-table', attributes);
+
+/** A field, whose one child is the control it names. */
+export const field = (attributes: ElementAttributes<'bry-field'>, ...children: Child[]) => createElement('bry-field', attributes, ...children);
+
+export const inputGroup = (attributes?: ElementAttributes<'bry-input-group'> | null) => createElement('bry-input-group', attributes);
+
+export const inputOtp = (attributes: ElementAttributes<'bry-input-otp'>) => createElement('bry-input-otp', attributes);
+
+export const menubar = (attributes: ElementAttributes<'bry-menubar'>) => createElement('bry-menubar', attributes);
+
+export const nativeSelect = (attributes: ElementAttributes<'bry-native-select'>) => createElement('bry-native-select', attributes);
+
+export const sectionMenu = (attributes: ElementAttributes<'bry-section-menu'>) => createElement('bry-section-menu', attributes);
+
+export const pagination = (attributes: ElementAttributes<'bry-pagination'>) => createElement('bry-pagination', attributes);
+
+export const questionnaire = (attributes: ElementAttributes<'bry-questionnaire'>) => createElement('bry-questionnaire', attributes);
+
+export const radioGroup = (attributes: ElementAttributes<'bry-radio-group'>) => createElement('bry-radio-group', attributes);
+
+export const slider = (attributes: ElementAttributes<'bry-slider'>) => createElement('bry-slider', attributes);
+
+export const toggle = (attributes: ElementAttributes<'bry-toggle'>) => createElement('bry-toggle', attributes);
+
+export const toggleGroup = (attributes: ElementAttributes<'bry-toggle-group'>) => createElement('bry-toggle-group', attributes);

@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "56c69b79e5a9ba4a737b9b1922a32d40cc9eaaa3",
+    "commit": "d16f17afdc68f9755f57a464a6fcc155ede43704",
     "dirty": false
   },
   "contracts": {
@@ -1196,6 +1196,1170 @@
             "range"
           ],
           "children": false
+        },
+        "bry-button-group": {
+          "props": {
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "orientation": {
+              "kind": "enum",
+              "values": [
+                "horizontal",
+                "vertical"
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "events": [],
+          "children": true
+        },
+        "bry-calendar": {
+          "props": {
+            "mode": {
+              "kind": "enum",
+              "values": [
+                "single",
+                "multiple",
+                "range"
+              ]
+            },
+            "values": {
+              "kind": "list",
+              "max": 366,
+              "of": {
+                "kind": "text",
+                "max": 10
+              }
+            },
+            "month": {
+              "kind": "text",
+              "max": 10
+            },
+            "min": {
+              "kind": "text",
+              "max": 10
+            },
+            "max": {
+              "kind": "text",
+              "max": 10
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "events": [
+            "change"
+          ],
+          "children": false
+        },
+        "bry-combobox": {
+          "props": {
+            "value": {
+              "kind": "text",
+              "max": 200
+            },
+            "options": {
+              "kind": "options",
+              "max": 500
+            },
+            "placeholder": {
+              "kind": "text",
+              "max": 200
+            },
+            "search": {
+              "kind": "text",
+              "max": 200
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "size": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md"
+              ]
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "options"
+          ],
+          "events": [
+            "change"
+          ],
+          "children": false
+        },
+        "bry-command": {
+          "props": {
+            "items": {
+              "kind": "list",
+              "max": 200,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "group": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "icon": {
+                    "kind": "enum",
+                    "values": [
+                      "add",
+                      "archive",
+                      "calendar",
+                      "check",
+                      "copy",
+                      "dismiss",
+                      "docs",
+                      "info",
+                      "mail",
+                      "members",
+                      "notes",
+                      "pin",
+                      "rename",
+                      "retry",
+                      "search",
+                      "settings",
+                      "tasks",
+                      "trash"
+                    ]
+                  },
+                  "hint": {
+                    "kind": "text",
+                    "max": 40
+                  },
+                  "disabled": {
+                    "kind": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            },
+            "placeholder": {
+              "kind": "text",
+              "max": 200
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "loading": {
+              "kind": "boolean"
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "items"
+          ],
+          "events": [
+            "select",
+            "change"
+          ],
+          "children": false
+        },
+        "bry-context-menu": {
+          "props": {
+            "items": {
+              "kind": "list",
+              "max": 20,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "icon": {
+                    "kind": "enum",
+                    "values": [
+                      "add",
+                      "archive",
+                      "calendar",
+                      "check",
+                      "copy",
+                      "dismiss",
+                      "docs",
+                      "info",
+                      "mail",
+                      "members",
+                      "notes",
+                      "pin",
+                      "rename",
+                      "retry",
+                      "search",
+                      "settings",
+                      "tasks",
+                      "trash"
+                    ]
+                  },
+                  "tone": {
+                    "kind": "enum",
+                    "values": [
+                      "default",
+                      "danger"
+                    ]
+                  },
+                  "separator": {
+                    "kind": "boolean"
+                  },
+                  "disabled": {
+                    "kind": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            }
+          },
+          "required": [
+            "items"
+          ],
+          "events": [
+            "select"
+          ],
+          "children": true
+        },
+        "bry-data-table": {
+          "props": {
+            "columns": {
+              "kind": "list",
+              "max": 12,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "key": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "heading": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "align": {
+                    "kind": "enum",
+                    "values": [
+                      "start",
+                      "end"
+                    ]
+                  },
+                  "sortable": {
+                    "kind": "boolean"
+                  },
+                  "hideable": {
+                    "kind": "boolean"
+                  }
+                },
+                "required": [
+                  "key",
+                  "heading"
+                ]
+              }
+            },
+            "rows": {
+              "kind": "list",
+              "max": 500,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "cells": {
+                    "kind": "list",
+                    "max": 12,
+                    "of": {
+                      "kind": "text",
+                      "max": 200
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "cells"
+                ]
+              }
+            },
+            "sort": {
+              "kind": "shape",
+              "fields": {
+                "key": {
+                  "kind": "text",
+                  "max": 128
+                },
+                "direction": {
+                  "kind": "enum",
+                  "values": [
+                    "asc",
+                    "desc"
+                  ]
+                }
+              },
+              "required": [
+                "key",
+                "direction"
+              ]
+            },
+            "filter": {
+              "kind": "text",
+              "max": 200
+            },
+            "placeholder": {
+              "kind": "text",
+              "max": 200
+            },
+            "page": {
+              "kind": "int",
+              "min": 1,
+              "max": 500
+            },
+            "perPage": {
+              "kind": "int",
+              "min": 1,
+              "max": 100
+            },
+            "hidden": {
+              "kind": "list",
+              "max": 12,
+              "of": {
+                "kind": "text",
+                "max": 128
+              }
+            },
+            "selectable": {
+              "kind": "boolean"
+            },
+            "selected": {
+              "kind": "list",
+              "max": 500,
+              "of": {
+                "kind": "text",
+                "max": 128
+              }
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "loading": {
+              "kind": "boolean"
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "columns"
+          ],
+          "events": [
+            "sort",
+            "filter",
+            "page",
+            "columns",
+            "select"
+          ],
+          "children": false
+        },
+        "bry-field": {
+          "props": {
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "description": {
+              "kind": "text",
+              "max": 4000
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            },
+            "required": {
+              "kind": "boolean"
+            },
+            "orientation": {
+              "kind": "enum",
+              "values": [
+                "vertical",
+                "horizontal"
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "events": [],
+          "children": true
+        },
+        "bry-input-group": {
+          "props": {
+            "value": {
+              "kind": "text",
+              "max": 1000
+            },
+            "placeholder": {
+              "kind": "text",
+              "max": 200
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "kind": {
+              "kind": "enum",
+              "values": [
+                "text",
+                "email",
+                "url",
+                "search"
+              ]
+            },
+            "icon": {
+              "kind": "enum",
+              "values": [
+                "add",
+                "archive",
+                "calendar",
+                "check",
+                "copy",
+                "dismiss",
+                "docs",
+                "info",
+                "mail",
+                "members",
+                "notes",
+                "pin",
+                "rename",
+                "retry",
+                "search",
+                "settings",
+                "tasks",
+                "trash"
+              ]
+            },
+            "prefix": {
+              "kind": "text",
+              "max": 24
+            },
+            "suffix": {
+              "kind": "text",
+              "max": 24
+            },
+            "action": {
+              "kind": "text",
+              "max": 200
+            },
+            "actionIcon": {
+              "kind": "enum",
+              "values": [
+                "add",
+                "archive",
+                "calendar",
+                "check",
+                "copy",
+                "dismiss",
+                "docs",
+                "info",
+                "mail",
+                "members",
+                "notes",
+                "pin",
+                "rename",
+                "retry",
+                "search",
+                "settings",
+                "tasks",
+                "trash"
+              ]
+            },
+            "maxLength": {
+              "kind": "int",
+              "min": 1,
+              "max": 1000
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "events": [
+            "change",
+            "submit",
+            "action"
+          ],
+          "children": false
+        },
+        "bry-input-otp": {
+          "props": {
+            "value": {
+              "kind": "text",
+              "max": 8
+            },
+            "length": {
+              "kind": "int",
+              "min": 4,
+              "max": 8
+            },
+            "pattern": {
+              "kind": "enum",
+              "values": [
+                "digits",
+                "alphanumeric"
+              ]
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "events": [
+            "change",
+            "complete"
+          ],
+          "children": false
+        },
+        "bry-menubar": {
+          "props": {
+            "menus": {
+              "kind": "list",
+              "max": 8,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "items": {
+                    "kind": "list",
+                    "max": 20,
+                    "of": {
+                      "kind": "shape",
+                      "fields": {
+                        "id": {
+                          "kind": "text",
+                          "max": 128
+                        },
+                        "label": {
+                          "kind": "text",
+                          "max": 200
+                        },
+                        "icon": {
+                          "kind": "enum",
+                          "values": [
+                            "add",
+                            "archive",
+                            "calendar",
+                            "check",
+                            "copy",
+                            "dismiss",
+                            "docs",
+                            "info",
+                            "mail",
+                            "members",
+                            "notes",
+                            "pin",
+                            "rename",
+                            "retry",
+                            "search",
+                            "settings",
+                            "tasks",
+                            "trash"
+                          ]
+                        },
+                        "tone": {
+                          "kind": "enum",
+                          "values": [
+                            "default",
+                            "danger"
+                          ]
+                        },
+                        "separator": {
+                          "kind": "boolean"
+                        },
+                        "disabled": {
+                          "kind": "boolean"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "label",
+                  "items"
+                ]
+              }
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "menus",
+            "label"
+          ],
+          "events": [
+            "select"
+          ],
+          "children": false
+        },
+        "bry-native-select": {
+          "props": {
+            "value": {
+              "kind": "text",
+              "max": 200
+            },
+            "options": {
+              "kind": "options",
+              "max": 100
+            },
+            "placeholder": {
+              "kind": "text",
+              "max": 200
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "size": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md"
+              ]
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "options"
+          ],
+          "events": [
+            "change"
+          ],
+          "children": false
+        },
+        "bry-section-menu": {
+          "props": {
+            "sections": {
+              "kind": "list",
+              "max": 8,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "entries": {
+                    "kind": "list",
+                    "max": 12,
+                    "of": {
+                      "kind": "shape",
+                      "fields": {
+                        "id": {
+                          "kind": "text",
+                          "max": 128
+                        },
+                        "label": {
+                          "kind": "text",
+                          "max": 200
+                        },
+                        "description": {
+                          "kind": "text",
+                          "max": 200
+                        },
+                        "disabled": {
+                          "kind": "boolean"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label"
+                      ]
+                    }
+                  },
+                  "disabled": {
+                    "kind": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            },
+            "current": {
+              "kind": "text",
+              "max": 128
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "sections",
+            "label"
+          ],
+          "events": [
+            "select"
+          ],
+          "children": false
+        },
+        "bry-pagination": {
+          "props": {
+            "page": {
+              "kind": "int",
+              "min": 1,
+              "max": 100000
+            },
+            "count": {
+              "kind": "int",
+              "min": 1,
+              "max": 100000
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "disabled": {
+              "kind": "boolean"
+            }
+          },
+          "required": [
+            "page",
+            "count"
+          ],
+          "events": [
+            "page"
+          ],
+          "children": false
+        },
+        "bry-questionnaire": {
+          "props": {
+            "title": {
+              "kind": "text",
+              "max": 200
+            },
+            "questions": {
+              "kind": "list",
+              "max": 50,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "kind": {
+                    "kind": "enum",
+                    "values": [
+                      "single",
+                      "multiple",
+                      "text",
+                      "rating"
+                    ]
+                  },
+                  "prompt": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "description": {
+                    "kind": "text",
+                    "max": 4000
+                  },
+                  "choices": {
+                    "kind": "list",
+                    "max": 20,
+                    "of": {
+                      "kind": "shape",
+                      "fields": {
+                        "value": {
+                          "kind": "text",
+                          "max": 128
+                        },
+                        "label": {
+                          "kind": "text",
+                          "max": 200
+                        }
+                      },
+                      "required": [
+                        "value",
+                        "label"
+                      ]
+                    }
+                  },
+                  "required": {
+                    "kind": "boolean"
+                  },
+                  "scale": {
+                    "kind": "int",
+                    "min": 3,
+                    "max": 10
+                  },
+                  "placeholder": {
+                    "kind": "text",
+                    "max": 200
+                  }
+                },
+                "required": [
+                  "id",
+                  "kind",
+                  "prompt"
+                ]
+              }
+            },
+            "action": {
+              "kind": "text",
+              "max": 200
+            },
+            "working": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "questions"
+          ],
+          "events": [
+            "answer",
+            "step",
+            "submit"
+          ],
+          "children": false
+        },
+        "bry-radio-group": {
+          "props": {
+            "value": {
+              "kind": "text",
+              "max": 200
+            },
+            "options": {
+              "kind": "options",
+              "max": 20
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "orientation": {
+              "kind": "enum",
+              "values": [
+                "vertical",
+                "horizontal"
+              ]
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "options",
+            "label"
+          ],
+          "events": [
+            "change"
+          ],
+          "children": false
+        },
+        "bry-slider": {
+          "props": {
+            "value": {
+              "kind": "int",
+              "min": -1000000,
+              "max": 1000000
+            },
+            "min": {
+              "kind": "int",
+              "min": -1000000,
+              "max": 1000000
+            },
+            "max": {
+              "kind": "int",
+              "min": -1000000,
+              "max": 1000000
+            },
+            "step": {
+              "kind": "int",
+              "min": 1,
+              "max": 1000000
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "events": [
+            "change",
+            "commit"
+          ],
+          "children": false
+        },
+        "bry-toggle": {
+          "props": {
+            "pressed": {
+              "kind": "boolean"
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "icon": {
+              "kind": "enum",
+              "values": [
+                "add",
+                "archive",
+                "calendar",
+                "check",
+                "copy",
+                "dismiss",
+                "docs",
+                "info",
+                "mail",
+                "members",
+                "notes",
+                "pin",
+                "rename",
+                "retry",
+                "search",
+                "settings",
+                "tasks",
+                "trash",
+                "more",
+                "close",
+                "arrowRight",
+                "chevronRight",
+                "chevronDown",
+                "chevronUp"
+              ]
+            },
+            "hideLabel": {
+              "kind": "boolean"
+            },
+            "variant": {
+              "kind": "enum",
+              "values": [
+                "default",
+                "outline"
+              ]
+            },
+            "size": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md"
+              ]
+            },
+            "disabled": {
+              "kind": "boolean"
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "events": [
+            "change"
+          ],
+          "children": false
+        },
+        "bry-toggle-group": {
+          "props": {
+            "type": {
+              "kind": "enum",
+              "values": [
+                "single",
+                "multiple"
+              ]
+            },
+            "items": {
+              "kind": "list",
+              "max": 12,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "value": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "icon": {
+                    "kind": "enum",
+                    "values": [
+                      "add",
+                      "archive",
+                      "calendar",
+                      "check",
+                      "copy",
+                      "dismiss",
+                      "docs",
+                      "info",
+                      "mail",
+                      "members",
+                      "notes",
+                      "pin",
+                      "rename",
+                      "retry",
+                      "search",
+                      "settings",
+                      "tasks",
+                      "trash",
+                      "more",
+                      "close",
+                      "arrowRight",
+                      "chevronRight",
+                      "chevronDown",
+                      "chevronUp"
+                    ]
+                  },
+                  "hideLabel": {
+                    "kind": "boolean"
+                  },
+                  "disabled": {
+                    "kind": "boolean"
+                  }
+                },
+                "required": [
+                  "value",
+                  "label"
+                ]
+              }
+            },
+            "values": {
+              "kind": "list",
+              "max": 12,
+              "of": {
+                "kind": "text",
+                "max": 128
+              }
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "variant": {
+              "kind": "enum",
+              "values": [
+                "default",
+                "outline"
+              ]
+            },
+            "size": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md"
+              ]
+            },
+            "disabled": {
+              "kind": "boolean"
+            }
+          },
+          "required": [
+            "items",
+            "label"
+          ],
+          "events": [
+            "change"
+          ],
+          "children": false
         }
       },
       "textNode": "#text"
@@ -1261,7 +2425,36 @@
         "bry-diff files[0].status must be one of added, modified, removed, renamed.",
         "bry-diff files[0] needs a path.",
         "bry-diff files[0].patch must be text of at most 200000 characters.",
-        "bry-diff files must be a list of at most 300."
+        "bry-diff files must be a list of at most 300.",
+        "bry-button-group orientation must be one of horizontal, vertical.",
+        "bry-calendar mode must be one of single, multiple, range.",
+        "bry-calendar values[0] must be text of at most 10 characters.",
+        "bry-calendar values must be a list of at most 366.",
+        "bry-combobox options must be a list of at most 500 choices, each with a value and a label of at most 200 characters (and optionally a member id as avatar), and no value twice.",
+        "bry-command items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash.",
+        "bry-command items[0].hint must be text of at most 40 characters.",
+        "bry-context-menu items[0] has no field called \"href\".",
+        "bry-data-table perPage must be a whole number from 1 to 100.",
+        "bry-data-table page must be a whole number from 1 to 500.",
+        "bry-data-table hidden must be a list of at most 12.",
+        "bry-data-table columns[0].hideable must be true or false.",
+        "bry-field orientation must be one of vertical, horizontal.",
+        "bry-input-group prefix must be text of at most 24 characters.",
+        "bry-input-group actionIcon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash.",
+        "bry-input-otp length must be a whole number from 4 to 8.",
+        "bry-input-otp pattern must be one of digits, alphanumeric.",
+        "bry-menubar menus[0] needs a items.",
+        "bry-native-select size must be one of sm, md.",
+        "bry-section-menu sections[0] has no field called \"href\".",
+        "bry-pagination count must be a whole number from 1 to 100000.",
+        "bry-questionnaire questions[0].kind must be one of single, multiple, text, rating.",
+        "bry-questionnaire questions[0].scale must be a whole number from 3 to 10.",
+        "bry-radio-group options must be a list of at most 20 choices, each with a value and a label of at most 200 characters (and optionally a member id as avatar), and no value twice.",
+        "bry-slider value must be a whole number from -1000000 to 1000000.",
+        "bry-slider step must be a whole number from 1 to 1000000.",
+        "bry-toggle pressed must be true or false.",
+        "bry-toggle-group type must be one of single, multiple.",
+        "bry-toggle-group items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, more, close, arrowRight, chevronRight, chevronDown, chevronUp."
       ],
       "empties": [
         "bry-button needs a label.",
@@ -1279,7 +2472,23 @@
         null,
         "bry-board-column needs a title.",
         "bry-markdown needs a text.",
-        "bry-diff needs a files."
+        "bry-diff needs a files.",
+        "bry-button-group needs a label.",
+        "bry-combobox needs a options.",
+        "bry-command needs a items.",
+        "bry-context-menu needs a items.",
+        "bry-data-table needs a columns.",
+        "bry-field needs a label.",
+        "bry-input-otp needs a label.",
+        "bry-menubar needs a menus.",
+        "bry-native-select needs a options.",
+        "bry-section-menu needs a sections.",
+        "bry-pagination needs a page.",
+        "bry-questionnaire needs a questions.",
+        "bry-radio-group needs a options.",
+        "bry-slider needs a label.",
+        "bry-toggle needs a label.",
+        "bry-toggle-group needs a items."
       ]
     },
     "compare-versions": [
