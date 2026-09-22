@@ -49,12 +49,16 @@ export {
   dataProblems,
   labelOf,
   manifestExtensionsSchema,
+  MAX_APP_SECRETS,
+  MAX_SECRET_CHARS,
+  SECRET_NAME,
   storedExtensionsSchema,
   type AppManifestWithData,
   type CollectionSpec,
   type DataProblem,
   type DataProblemCode,
   type ManifestExtensions,
+  type SecretSpec,
 } from './schema.ts';
 
 export { DOCUMENT_LIMITS } from './document-limits.ts';

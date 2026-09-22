@@ -73,6 +73,11 @@ const CORPUS: unknown[] = [
   withFolder({ nested: [{ create: { tool: 'list_issues' } }] }),
   withFolder({ create: { tool: 'create_sprint', titleField: 'Name!' } }),
   withFolder({ refreshSeconds: 5 }),
+  // ADR-A24: secrets are names, asked for with the secrets grant.
+  { ...ISSUES_MANIFEST, secrets: [{ name: 'api_key', label: 'API key', required: true }, { name: 'board_token', label: 'Board token', scope: 'instance' }], grants: { ...ISSUES_MANIFEST.grants, host: ['secrets'] } },
+  { ...ISSUES_MANIFEST, secrets: [{ name: 'api_key', label: 'API key' }] },
+  { ...ISSUES_MANIFEST, secrets: [{ name: 'api_key', label: 'A' }, { name: 'api_key', label: 'B' }], grants: { ...ISSUES_MANIFEST.grants, host: ['secrets'] } },
+  { ...ISSUES_MANIFEST, secrets: [{ name: 'API-KEY', label: 'A', scope: 'workspace' }], grants: { ...ISSUES_MANIFEST.grants, host: ['*'] } },
 ];
 
 describe('the example manifests', () => {
@@ -164,6 +169,10 @@ describe('validateManifest', () => {
     expect(codesOf(CORPUS[13])).toEqual(['data_search_not_text', 'data_search_unknown_field']);
     expect(codesOf(CORPUS[14])).toEqual(['data_label_taken']);
     expect(codesOf(CORPUS[15])).toEqual(['data_collection_name_format', 'data_label_format']);
+    expect(codesOf(CORPUS[26])).toEqual([]);
+    expect(codesOf(CORPUS[27])).toEqual(['grant_secrets_missing']);
+    expect(codesOf(CORPUS[28])).toEqual(['secret_name_taken']);
+    expect(codesOf(CORPUS[29])).toEqual(['manifest_invalid', 'manifest_invalid']);
   });
 
   test('lets a folder nest four levels and make rows, and names what goes wrong (ADR-A21)', () => {

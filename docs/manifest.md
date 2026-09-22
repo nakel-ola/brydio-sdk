@@ -81,6 +81,7 @@ two screens, collection grants, tool grants, and host grants.
 | `tools` | `{ generated?, custom? }` | no | Generated collection tools and custom server-side handlers. |
 | `screens` | a record of `{ entry }` values | no | The screen names and their compiled `.js` or `.mjs` entries inside the bundle. |
 | `grants` | `{ tools?, collections?, host? }` | no | Everything the app asks a workspace to let it read, call, or open. |
+| `secrets` | a list of at most 20 `{ name, label, description?, required?, scope? }` | no | The secrets the app’s handlers read. Names only: a value is entered in the app’s settings, never shipped. |
 | `migrations` | an ordered list of versioned migration steps | no | How existing records move when a later version changes a collection schema. |
 | `sdk` | semver text | no | Written by `brydio build`. Do not add or edit it in `.brydio/app.json`. |
 
@@ -152,6 +153,21 @@ a `description`, a built `handler` path, and optional `input`, `write`, and
 A custom tool that writes must set `write: true`, which makes Brydio ask the
 person before it runs.
 
+## Secrets
+
+`secrets` names what the app’s handlers need and must never ship: an API
+key, a signing secret. Each has a lower-case `name`, a `label` for the
+app’s settings, an optional `description`, `required`, and a `scope`:
+`install` (the default) is one value for the whole install, `instance` is
+one value per instance. An app may declare at most 20, each at most
+8,192 characters long.
+
+An administrator sets, replaces or clears a value in the app’s settings,
+and it is never shown again. Only the app’s own handlers read one, with
+`secrets.get(name)`, and a handler may store one it obtained itself with
+`secrets.set(name, value)`. A screen never can, and no other app can. An
+app that declares secrets must ask for the `secrets` host grant.
+
 ## Grants
 
 `grants.tools` names generated or custom tools, a collection noun, or `*`.
@@ -161,7 +177,10 @@ person before it runs.
 - `message`
 - `members`
 - `projects`
+- `files`
+- `chats`
 - `model`
+- `secrets`
 
 A named connection grant is `connection:<name>`. `*` never grants a
 connection. A collection the app keeps must appear in `grants.collections`,
