@@ -88,7 +88,8 @@ function elementPage(name: ElementName, basePath: string): string {
 
 export function captureExample(name: ElementName) {
   const example = structuredClone(EXAMPLES[name]);
-  if (name === 'bry-dialog') {
+  // ADR-A23 (catalogue-a): the other modals are captured open too.
+  if (name === 'bry-dialog' || name === 'bry-alert-dialog' || name === 'bry-drawer' || name === 'bry-sheet') {
     const dialog = example.nodes.find(node => node.id === example.root);
     if (dialog) dialog.props.open = true;
   }

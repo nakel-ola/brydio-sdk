@@ -1281,3 +1281,88 @@ describe('file grid (A6-F06-S01)', () => {
     expect(tiles().map(tile => tile.getAttribute('data-file'))).toEqual(['f2']);
   });
 });
+
+// ADR-A23 (catalogue-a)
+describe('the shadcn elements, drawn (ADR-A23)', () => {
+  const heard: { name: string; detail: unknown }[] = [];
+
+  for (const name of ['change', 'select', 'open', 'close', 'action', 'remove', 'retry']) {
+    document.body.addEventListener(name, event => heard.push({ name, detail: (event as CustomEvent).detail }));
+  }
+
+  test('every one draws something of its own, rather than falling back to its children', async () => {
+    const drawn = [
+      `<bry-accordion sections='[{"id":"a","title":"First"}]'><bry-text text="x"></bry-text></bry-accordion>`,
+      `<bry-alert title="Sync is on" tone="success"></bry-alert>`,
+      `<bry-aspect-ratio ratio="4:3"></bry-aspect-ratio>`,
+      `<bry-attachment name="Brief.docx" kind="document" bytes="48200" pressable removable></bry-attachment>`,
+      `<bry-breadcrumb items='[{"id":"a","label":"All"},{"id":"b","label":"Here"}]'></bry-breadcrumb>`,
+      `<bry-bubble text="Hello" from="self"></bry-bubble>`,
+      `<bry-carousel label="Shots"><bry-text text="1"></bry-text><bry-text text="2"></bry-text></bry-carousel>`,
+      `<bry-chart kind="bar" label="Issues" categories='["W1","W2"]' series='[{"name":"Opened","values":[3,4]}]'></bry-chart>`,
+      `<bry-collapsible title="Details"></bry-collapsible>`,
+      `<bry-kbd text="mod+k"></bry-kbd>`,
+      `<bry-marker text="Today"></bry-marker>`,
+      `<bry-message name="Ada Lovelace" meta="09:41"></bry-message>`,
+      `<bry-message-scroller label="Thread" empty="Say hello."></bry-message-scroller>`,
+      `<bry-popover title="Snooze"><bry-button label="Snooze"></bry-button></bry-popover>`,
+      `<bry-hover-card><bry-button label="Ada"></bry-button></bry-hover-card>`,
+      `<bry-tooltip text="Archive"><bry-button label="Archive"></bry-button></bry-tooltip>`,
+      `<bry-progress label="Import" value="60"></bry-progress>`,
+      `<bry-scroll-area label="Activity"></bry-scroll-area>`,
+      `<bry-separator></bry-separator>`,
+      `<bry-spinner label="Syncing"></bry-spinner>`,
+      `<bry-tabs tabs='[{"id":"a","label":"A"},{"id":"b","label":"B"}]'></bry-tabs>`,
+      `<bry-item title="Email" variant="outline"></bry-item>`,
+    ];
+
+    for (const markup of drawn) {
+      await page(markup);
+
+      const element = document.body.firstElementChild!;
+
+      expect({ markup, drawn: (element.shadowRoot?.children.length ?? 0) > 0 && element.shadowRoot!.innerHTML.replace(/<!--[^]*?-->/g, '').trim() !== '<slot></slot>' }).toEqual({
+        markup,
+        drawn: true,
+      });
+    }
+  });
+
+  test('a chart draws each series in the chart colours, and folds a pie into five slices and Other', async () => {
+    await page(`<bry-chart kind="bar" label="Issues" categories='["W1","W2"]' series='[{"name":"Opened","values":[3,4]},{"name":"Closed","values":[1,2]}]'></bry-chart>`);
+
+    const bars = Array.from(shadowOf('bry-chart').querySelectorAll('rect'), rect => rect.getAttribute('fill'));
+
+    expect(new Set(bars)).toEqual(new Set(['var(--chart-1)', 'var(--chart-2)']));
+    expect(shadowOf('bry-chart').querySelector('.legend')!.textContent!.replace(/\s+/g, '')).toBe('OpenedClosed');
+
+    await page(`<bry-chart kind="pie" label="By label" categories='["a","b","c","d","e","f","g"]' series='[{"name":"n","values":[7,6,5,4,3,2,1]}]'></bry-chart>`);
+    expect(shadowOf('bry-chart').querySelector('.legend')!.textContent!.replace(/\s+/g, '')).toBe('abcdeOther');
+  });
+
+  test('tabs and an accordion show the chosen child and say what was chosen', async () => {
+    await page(`<bry-tabs tabs='[{"id":"a","label":"A"},{"id":"b","label":"B"}]'><bry-text text="one"></bry-text><bry-text text="two"></bry-text></bry-tabs>`);
+    heard.length = 0;
+
+    (shadowOf('bry-tabs').querySelector('[data-tab="b"]') as HTMLButtonElement).click();
+    await settle();
+
+    expect(heard).toEqual([{ name: 'change', detail: { id: 'b' } }]);
+    expect(shadowOf('bry-tabs').querySelector('#panel-b')!.hasAttribute('hidden')).toBe(false);
+
+    await page(`<bry-accordion sections='[{"id":"a","title":"First"},{"id":"b","title":"Second"}]'><bry-text text="1"></bry-text><bry-text text="2"></bry-text></bry-accordion>`);
+    heard.length = 0;
+
+    (shadowOf('bry-accordion').querySelector('[data-section="b"] button') as HTMLButtonElement).click();
+    await settle();
+
+    expect(heard).toEqual([{ name: 'change', detail: { expanded: ['b'] } }]);
+  });
+
+  test('a modal shares the one dialog slot with bry-dialog', async () => {
+    await page(`<bry-dialog open title="First"></bry-dialog><bry-sheet open title="Second"></bry-sheet>`);
+
+    expect(heard.some(one => one.name === 'close' && (one.detail as { refused?: string } | undefined)?.refused?.includes('already open'))).toBe(true);
+    expect(shadowOf('bry-sheet').querySelector('dialog')).toBeNull();
+  });
+});

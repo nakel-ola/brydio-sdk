@@ -1,5 +1,5 @@
 /// <reference lib="dom" />
-import { LitElement, css, html, nothing, unsafeCSS, type CSSResult, type PropertyDeclaration, type TemplateResult } from 'lit';
+import { LitElement, css, html, nothing, svg, unsafeCSS, type CSSResult, type PropertyDeclaration, type TemplateResult } from 'lit';
 
 /**
  * The one file that imports Lit (A6-F06-S02).
@@ -10,7 +10,7 @@ import { LitElement, css, html, nothing, unsafeCSS, type CSSResult, type Propert
  * imports it.
  */
 
-export { css, html, nothing, unsafeCSS };
+export { css, html, nothing, svg, unsafeCSS };
 export type { CSSResult, PropertyDeclaration, TemplateResult };
 
 export abstract class BryElement extends LitElement {

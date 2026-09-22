@@ -17,6 +17,10 @@ import './draw/virtual-list.ts';
 import './draw/diff.ts';
 import './draw/table.ts';
 import './draw/file-grid.ts';
+// ADR-A23 (catalogue-a)
+import './draw/a23-content.ts';
+import './draw/a23-layout.ts';
+import './draw/a23-overlays.ts';
 import { defineCatalogue } from './define.ts';
 
 export { BryElement } from './base.ts';
