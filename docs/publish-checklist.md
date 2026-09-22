@@ -65,6 +65,7 @@ first.
 | `custom_name_taken` | `tools.custom`: <name> is already a tool this app has: give the custom tool another name, or switch generated tools off. | yes | publish | Rename the custom tool. |
 | `custom_collection_unknown` | `tools.custom`: <name> works on <collection>, which the app does not keep. | yes | publish | Name a collection in `data`, or leave `collection` out. |
 | `custom_input_invalid` | `tools.custom`: <name>'s input <field>: not a field type. | yes | publish | Write the input in the field-type grammar. |
+| `secret_name_taken` | `secrets`: The secret <name> is declared twice; keep one. | yes | publish | Declare each secret once. |
 | `data_search_unknown_field` | `<collection>` searches `<field>`, which is not one of its fields. | yes | publish | Search only declared fields. |
 | `data_search_not_text` | `<collection>.<field>` cannot be searched: only text fields can. | yes | publish | Search only text fields. |
 | `manifest_sdk_overwritten` (warning, from `brydio build`) | The manifest says "sdk": `<value>`, which brydio build writes itself. The build says `<version>`; take the line out of the manifest. | build | no | Delete `sdk` from the manifest. |
@@ -205,7 +206,8 @@ the assistant rather than a screen.
 | `grant_collection_missing` | app.json: "grants.collections": `<collection>` is kept but not asked for: add it to grants.collections. | yes | publish | Add the collection, or `*`, to `grants.collections`. |
 | `grant_tool_missing` | "`<tool>`" is called here but not asked for: add it, or its collection `<collection>`, to grants.tools. | yes | runtime | Add the tool or its collection to `grants.tools`. |
 | `grant_host_missing` | navigate is called here but not asked for: add "navigate" to grants.host. | yes | runtime | Add `navigate` to `grants.host`. |
-| `grant_unknown` | app.json asks for "`<grant>`", which Brydio does not grant. An app may ask for navigate, message, members, projects or connection:<name>. | yes | publish | Ask only for `navigate`, `message`, `members`, `projects` or `connection:<name>`. |
+| `grant_unknown` | app.json asks for "`<grant>`", which Brydio does not grant. An app may ask for navigate, message, members, projects, files, chats, model, secrets or connection:<name>. | yes | publish | Ask only for `navigate`, `message`, `members`, `projects`, `files`, `chats`, `model`, `secrets` or `connection:<name>`. |
+| `grant_secrets_missing` | `grants.host`: The app declares secrets but does not ask to read them: add "secrets" to grants.host. | yes | publish | Add `secrets` to `grants.host`. |
 | `grant_tool_unknown` (warning) | grants.tools asks for "`<name>`", which is neither one of this app's tools nor one of its collections. | yes | no | Remove the name, or fix its spelling. |
 | `grant_collection_unknown` (warning) | grants.collections asks for "`<name>`", which this app does not keep. | yes | no | Remove the name. |
 | `grant_host_unused` (warning) | grants.host asks for "`<grant>`", which no screen uses. Ask only for what the app does. | yes | no | Remove the grant, or use it. |

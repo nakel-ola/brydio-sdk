@@ -10,7 +10,7 @@
 import { BUNDLE_MANIFEST } from './bundle.ts';
 
 /** The host grants with a name of their own. A connection's is `connection:<name>`. */
-export const HOST_CAPABILITIES = ['navigate', 'message', 'members', 'projects', 'model'] as const;
+export const HOST_CAPABILITIES = ['navigate', 'message', 'members', 'projects', 'files', 'chats', 'model', 'secrets'] as const;
 
 /** The older name for `HOST_CAPABILITIES`, kept for what already imports it. */
 export const KNOWN_HOST_GRANTS: readonly string[] = HOST_CAPABILITIES;

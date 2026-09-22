@@ -115,6 +115,34 @@ const toolsSchema = z.object({
   custom: z.array(customToolSchema).max(MAX_CUSTOM_TOOLS).optional(),
 });
 
+/** Most secrets one app may declare (ADR-A24). */
+export const MAX_APP_SECRETS = 20;
+
+/** The longest value one secret may hold, in characters. */
+export const MAX_SECRET_CHARS = 8 * 1024;
+
+/** A secret's name, as a handler asks for it: `api_key`. */
+export const SECRET_NAME = /^[a-z][a-z0-9_]{0,59}$/;
+
+/**
+ * A secret the app needs (ADR-A24): named here, never valued here. The value
+ * is entered in the app's settings by an administrator, or stored by the
+ * app's own handler with `secrets.set`, and only that app's handlers can read
+ * it, with `secrets.get`. A screen never can.
+ *
+ * `install` (the default) is one value for the whole install; `instance` is
+ * one per instance.
+ */
+const secretSchema = z.object({
+  name: z.string().regex(SECRET_NAME, 'A secret name is lower case letters, digits and underscores, starting with a letter.'),
+  label: z.string().min(1).max(60),
+  description: z.string().max(300).optional(),
+  required: z.boolean().optional(),
+  scope: z.enum(['install', 'instance']).optional(),
+});
+
+export type SecretSpec = z.infer<typeof secretSchema>;
+
 const grantsSchema = z.object({
   tools: z.array(z.string().max(100)).max(200).optional(),
   collections: z.array(z.string().max(100)).max(FIELD_LIMITS.collections + 1).optional(),
@@ -127,6 +155,8 @@ const extensionShape = {
   tools: toolsSchema.optional(),
   screens: z.record(z.string(), screenSchema).optional(),
   grants: grantsSchema.optional(),
+  /** The secrets its handlers read (ADR-A24): names only, never values. */
+  secrets: z.array(secretSchema).max(MAX_APP_SECRETS).optional(),
   /**
    * How records move when the schema changes between versions (A3-F07).
    * Checked against the previous version when a version is published, and
@@ -166,7 +196,9 @@ export type DataProblemCode =
   | 'custom_name_taken'
   | 'custom_collection_unknown'
   | 'custom_input_invalid'
-  | 'placement_screen_unknown';
+  | 'placement_screen_unknown'
+  | 'secret_name_taken'
+  | 'grant_secrets_missing';
 
 type Additions = z.infer<z.ZodObject<typeof extensionShape>>;
 
@@ -322,6 +354,7 @@ export function dataProblems(additions: Additions, options: { grants?: boolean }
   }
 
   problems.push(...customToolProblems(additions, options));
+  problems.push(...secretProblems(additions, options));
 
   const screens = new Set(Object.keys(additions.screens ?? {}));
 
@@ -411,6 +444,39 @@ function customToolProblems(additions: Additions, options: { grants?: boolean })
   return problems;
 }
 
+/**
+ * Each secret declared once, and asked for (ADR-A24): an app that declares
+ * secrets without the `secrets` host grant could never read one.
+ */
+function secretProblems(additions: Additions, options: { grants?: boolean }): DataProblem[] {
+  const problems: DataProblem[] = [];
+  const secrets = additions.secrets ?? [];
+  const seen = new Set<string>();
+
+  for (const secret of secrets) {
+    if (seen.has(secret.name)) {
+      problems.push({
+        code: 'secret_name_taken',
+        field: secret.name,
+        message: `The secret ${secret.name} is declared twice; keep one.`,
+      });
+    }
+
+    seen.add(secret.name);
+  }
+
+  const host = additions.grants?.host ?? [];
+
+  if (options.grants !== false && secrets.length && !host.includes('secrets') && !host.includes('*')) {
+    problems.push({
+      code: 'grant_secrets_missing',
+      message: 'The app declares secrets but does not ask to read them: add "secrets" to grants.host.',
+    });
+  }
+
+  return problems;
+}
+
 const refuse = (additions: Additions, ctx: z.RefinementCtx, options: { grants?: boolean } = {}) => {
   for (const problem of dataProblems(additions, options)) {
     ctx.addIssue({
@@ -418,6 +484,10 @@ const refuse = (additions: Additions, ctx: z.RefinementCtx, options: { grants?: 
       message: problem.message,
       path: problem.code === 'grant_tool_missing'
         ? ['grants', 'tools']
+        : problem.code === 'grant_secrets_missing'
+        ? ['grants', 'host']
+        : problem.code === 'secret_name_taken'
+        ? ['secrets']
         : problem.code.startsWith('grant_')
         ? ['grants', 'collections']
         : problem.code.startsWith('custom_')
