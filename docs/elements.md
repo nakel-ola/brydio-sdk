@@ -14,7 +14,7 @@ A setting the element does not declare is refused, as is a value outside
 what it takes; `brydio validate` catches both before you publish, with the
 codes in [the publish checklist](publish-checklist.md).
 
-There are 28 elements.
+There are 46 elements.
 
 - [`bry-stack`](#bry-stack)
 - [`bry-heading`](#bry-heading)
@@ -44,6 +44,24 @@ There are 28 elements.
 - [`bry-markdown`](#bry-markdown)
 - [`bry-diff`](#bry-diff)
 - [`bry-file-grid`](#bry-file-grid)
+- [`bry-button-group`](#bry-button-group)
+- [`bry-calendar`](#bry-calendar)
+- [`bry-combobox`](#bry-combobox)
+- [`bry-command`](#bry-command)
+- [`bry-context-menu`](#bry-context-menu)
+- [`bry-data-table`](#bry-data-table)
+- [`bry-field`](#bry-field)
+- [`bry-input-group`](#bry-input-group)
+- [`bry-input-otp`](#bry-input-otp)
+- [`bry-menubar`](#bry-menubar)
+- [`bry-native-select`](#bry-native-select)
+- [`bry-section-menu`](#bry-section-menu)
+- [`bry-pagination`](#bry-pagination)
+- [`bry-questionnaire`](#bry-questionnaire)
+- [`bry-radio-group`](#bry-radio-group)
+- [`bry-slider`](#bry-slider)
+- [`bry-toggle`](#bry-toggle)
+- [`bry-toggle-group`](#bry-toggle-group)
 
 ## `bry-stack`
 
@@ -427,3 +445,274 @@ Holds nothing: it is drawn from its settings alone.
 | `empty` | text, at most 200 characters | no |
 
 Tells the app: `open`, `select`, `menu`, `range`.
+
+## `bry-button-group`
+
+Holds other elements or text.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `label` | text, at most 200 characters | yes |
+| `orientation` | `horizontal`, `vertical` | no |
+
+Tells the app nothing.
+
+## `bry-calendar`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `mode` | `single`, `multiple`, `range` | no |
+| `values` | a list of at most 366: text, at most 10 characters | no |
+| `month` | text, at most 10 characters | no |
+| `min` | text, at most 10 characters | no |
+| `max` | text, at most 10 characters | no |
+| `label` | text, at most 200 characters | no |
+| `disabled` | `true` or `false` | no |
+| `error` | text, at most 200 characters | no |
+
+Tells the app: `change`.
+
+## `bry-combobox`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `value` | text, at most 200 characters | no |
+| `options` | at most 500 `{ value, label }` choices | yes |
+| `placeholder` | text, at most 200 characters | no |
+| `search` | text, at most 200 characters | no |
+| `empty` | text, at most 200 characters | no |
+| `label` | text, at most 200 characters | no |
+| `size` | `sm`, `md` | no |
+| `disabled` | `true` or `false` | no |
+| `error` | text, at most 200 characters | no |
+
+Tells the app: `change`.
+
+## `bry-command`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `items` | a list of at most 200: a record of `id`, `label`, `group`, `icon`, `hint`, `disabled` (needs `id`, `label`) | yes |
+| `placeholder` | text, at most 200 characters | no |
+| `label` | text, at most 200 characters | no |
+| `loading` | `true` or `false` | no |
+| `empty` | text, at most 200 characters | no |
+
+Tells the app: `select`, `change`.
+
+## `bry-context-menu`
+
+Holds other elements or text.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `items` | a list of at most 20: a record of `id`, `label`, `icon`, `tone`, `separator`, `disabled` (needs `id`, `label`) | yes |
+
+Tells the app: `select`.
+
+## `bry-data-table`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `columns` | a list of at most 12: a record of `key`, `heading`, `align`, `sortable`, `hideable` (needs `key`, `heading`) | yes |
+| `rows` | a list of at most 500: a record of `id`, `cells` (needs `id`, `cells`) | no |
+| `sort` | a record of `key`, `direction` (needs `key`, `direction`) | no |
+| `filter` | text, at most 200 characters | no |
+| `placeholder` | text, at most 200 characters | no |
+| `page` | a whole number from 1 to 500 | no |
+| `perPage` | a whole number from 1 to 100 | no |
+| `hidden` | a list of at most 12: text, at most 128 characters | no |
+| `selectable` | `true` or `false` | no |
+| `selected` | a list of at most 500: text, at most 128 characters | no |
+| `label` | text, at most 200 characters | no |
+| `loading` | `true` or `false` | no |
+| `empty` | text, at most 200 characters | no |
+
+Tells the app: `sort`, `filter`, `page`, `columns`, `select`.
+
+## `bry-field`
+
+Holds other elements or text.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `label` | text, at most 200 characters | yes |
+| `description` | text, at most 4,000 characters | no |
+| `error` | text, at most 200 characters | no |
+| `required` | `true` or `false` | no |
+| `orientation` | `vertical`, `horizontal` | no |
+
+Tells the app nothing.
+
+## `bry-input-group`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `value` | text, at most 1,000 characters | no |
+| `placeholder` | text, at most 200 characters | no |
+| `label` | text, at most 200 characters | no |
+| `kind` | `text`, `email`, `url`, `search` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash` | no |
+| `prefix` | text, at most 24 characters | no |
+| `suffix` | text, at most 24 characters | no |
+| `action` | text, at most 200 characters | no |
+| `actionIcon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash` | no |
+| `maxLength` | a whole number from 1 to 1000 | no |
+| `disabled` | `true` or `false` | no |
+| `error` | text, at most 200 characters | no |
+
+Tells the app: `change`, `submit`, `action`.
+
+## `bry-input-otp`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `value` | text, at most 8 characters | no |
+| `length` | a whole number from 4 to 8 | no |
+| `pattern` | `digits`, `alphanumeric` | no |
+| `label` | text, at most 200 characters | yes |
+| `disabled` | `true` or `false` | no |
+| `error` | text, at most 200 characters | no |
+
+Tells the app: `change`, `complete`.
+
+## `bry-menubar`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `menus` | a list of at most 8: a record of `id`, `label`, `items` (needs `id`, `label`, `items`) | yes |
+| `label` | text, at most 200 characters | yes |
+
+Tells the app: `select`.
+
+## `bry-native-select`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `value` | text, at most 200 characters | no |
+| `options` | at most 100 `{ value, label }` choices | yes |
+| `placeholder` | text, at most 200 characters | no |
+| `label` | text, at most 200 characters | no |
+| `size` | `sm`, `md` | no |
+| `disabled` | `true` or `false` | no |
+| `error` | text, at most 200 characters | no |
+
+Tells the app: `change`.
+
+## `bry-section-menu`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `sections` | a list of at most 8: a record of `id`, `label`, `entries`, `disabled` (needs `id`, `label`) | yes |
+| `current` | text, at most 128 characters | no |
+| `label` | text, at most 200 characters | yes |
+
+Tells the app: `select`.
+
+## `bry-pagination`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `page` | a whole number from 1 to 100000 | yes |
+| `count` | a whole number from 1 to 100000 | yes |
+| `label` | text, at most 200 characters | no |
+| `disabled` | `true` or `false` | no |
+
+Tells the app: `page`.
+
+## `bry-questionnaire`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `title` | text, at most 200 characters | no |
+| `questions` | a list of at most 50: a record of `id`, `kind`, `prompt`, `description`, `choices`, `required`, `scale`, `placeholder` (needs `id`, `kind`, `prompt`) | yes |
+| `action` | text, at most 200 characters | no |
+| `working` | `true` or `false` | no |
+| `error` | text, at most 200 characters | no |
+
+Tells the app: `answer`, `step`, `submit`.
+
+## `bry-radio-group`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `value` | text, at most 200 characters | no |
+| `options` | at most 20 `{ value, label }` choices | yes |
+| `label` | text, at most 200 characters | yes |
+| `orientation` | `vertical`, `horizontal` | no |
+| `disabled` | `true` or `false` | no |
+| `error` | text, at most 200 characters | no |
+
+Tells the app: `change`.
+
+## `bry-slider`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `value` | a whole number from -1000000 to 1000000 | no |
+| `min` | a whole number from -1000000 to 1000000 | no |
+| `max` | a whole number from -1000000 to 1000000 | no |
+| `step` | a whole number from 1 to 1000000 | no |
+| `label` | text, at most 200 characters | yes |
+| `disabled` | `true` or `false` | no |
+| `error` | text, at most 200 characters | no |
+
+Tells the app: `change`, `commit`.
+
+## `bry-toggle`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `pressed` | `true` or `false` | no |
+| `label` | text, at most 200 characters | yes |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `hideLabel` | `true` or `false` | no |
+| `variant` | `default`, `outline` | no |
+| `size` | `sm`, `md` | no |
+| `disabled` | `true` or `false` | no |
+
+Tells the app: `change`.
+
+## `bry-toggle-group`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `type` | `single`, `multiple` | no |
+| `items` | a list of at most 12: a record of `value`, `label`, `icon`, `hideLabel`, `disabled` (needs `value`, `label`) | yes |
+| `values` | a list of at most 12: text, at most 128 characters | no |
+| `label` | text, at most 200 characters | yes |
+| `variant` | `default`, `outline` | no |
+| `size` | `sm`, `md` | no |
+| `disabled` | `true` or `false` | no |
+
+Tells the app: `change`.
