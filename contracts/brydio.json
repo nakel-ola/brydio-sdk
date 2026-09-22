@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "d16f17afdc68f9755f57a464a6fcc155ede43704",
+    "commit": "602414cb8d72182fdb84378989e35e370489557b",
     "dirty": false
   },
   "contracts": {
@@ -6876,6 +6876,10 @@
         ]
       }
     },
-    "tree-store-source": "59a1f97141e066ad4fe5bc9c277b7610699151ba50440f09aa8b1ee01c23c789"
+    "tree-store-source": "59a1f97141e066ad4fe5bc9c277b7610699151ba50440f09aa8b1ee01c23c789",
+    "developer-key-scan": {
+      "code": "developer_key_in_bundle",
+      "message": "That package contains a Brydio developer API key. A key belongs on your own server, never in an app: revoke it in Settings › Developer, and call Brydio’s model from a handler with the model grant instead."
+    }
   }
 }

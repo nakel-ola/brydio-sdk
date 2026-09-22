@@ -152,6 +152,11 @@ export function importRefusal(file: string, specifier: string): string | null {
       : null;
   }
 
+  // A developer API key's client (ADR-A22): for the developer's own server, never an app, which gets no Brydio credential (ADR-A24).
+  if (specifier === '@brydio/api/ai' || specifier.startsWith('@brydio/api/ai/')) {
+    return `import "${specifier}": that client takes a developer API key, which never goes in an app. A handler asks Brydio's model through its model grant instead.`;
+  }
+
   if (ALLOWED_PACKAGES.test(specifier)) return null;
 
   if (specifier.startsWith('/') || /^[A-Za-z]:[\\/]/.test(specifier) || /^[a-z][a-z0-9+.-]*:/i.test(specifier)) {

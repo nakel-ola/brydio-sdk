@@ -76,7 +76,15 @@ export {
   type SchemaChange,
 } from './migrations.ts';
 
-export { SECRET_MESSAGE, findSecrets, secretsInJson, type SecretFound } from './secrets.ts';
+export {
+  DEVELOPER_KEY_MESSAGE,
+  SECRET_MESSAGE,
+  developerKeyIn,
+  findSecrets,
+  holdsDeveloperKey,
+  secretsInJson,
+  type SecretFound,
+} from './secrets.ts';
 
 export { compareVersions, sdkRefusal, type SdkSupport } from './sdk.ts';
 

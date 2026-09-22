@@ -98,3 +98,30 @@ export function findSecrets(files: ReadonlyMap<string, Uint8Array>, root = ''): 
 
   return found;
 }
+
+/**
+ * The server's sentence for `developer_key_in_bundle` (ADR-A22), word for
+ * word: `DEVELOPER_KEY_IN_BUNDLE` in Brydio's `app-publish.service.ts`.
+ */
+export const DEVELOPER_KEY_MESSAGE =
+  'That package contains a Brydio developer API key. A key belongs on your own server, never in an app: revoke it in Settings › Developer, and call Brydio’s model from a handler with the model grant instead.';
+
+/** A developer API key's exact shape, anywhere in a text. */
+const DEVELOPER_KEY = /bry_live_[0-9a-f]{12}_[A-Za-z0-9_-]{43}/;
+
+/** Whether a text holds a Brydio developer API key. */
+export const holdsDeveloperKey = (text: string): boolean => DEVELOPER_KEY.test(text);
+
+/**
+ * The first file holding a developer API key, by path, as Brydio's publish
+ * route finds it (`developerKeyIn`). Unlike the declaration scan, every file
+ * is read, scripts included: the key's shape is exact enough that a match is
+ * a key, not a guess, and no part of an app may hold one (ADR-A24).
+ */
+export function developerKeyIn(files: ReadonlyMap<string, Uint8Array>): string | null {
+  for (const [path, bytes] of files) {
+    if (holdsDeveloperKey(new TextDecoder('latin1').decode(bytes))) return path;
+  }
+
+  return null;
+}
