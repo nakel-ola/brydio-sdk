@@ -21,6 +21,14 @@ export {
   type StopReason,
   type ToolCall,
 } from './host.ts';
+export {
+  SECRET_PLACEHOLDER,
+  fakeHandlerClient,
+  runHandler,
+  type FakeHandlerOptions,
+  type HandlerCall,
+  type HandlerRun,
+} from './handler.ts';
 export { workerPrelude } from './prelude.ts';
 export { FixtureStore, refusal, type Fixtures, type StoreChange, type StoredDocument, type ToolHandler, type ToolResultShape } from './tools.ts';
 export { MAX_NODES, MAX_REFUSALS, TreeStore, type Op, type Outcome, type Refusal, type TreeNode, type WireNode } from './tree-store.ts';
