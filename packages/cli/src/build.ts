@@ -3,6 +3,7 @@ import {
   BUNDLE_MAX_BYTES,
   bundleBytes,
   bundleHash,
+  brandPathsOf,
   bundleProblem,
   collectionsOf,
   sizeOf,
@@ -201,6 +202,14 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
       path: 'sdk',
       message: `The manifest says "sdk": ${JSON.stringify(project.raw.sdk)}, which brydio build writes itself. The build says ${sdk}; take the line out of the manifest.`,
     });
+  }
+
+  // The logo and icon travel in the bundle, where the manifest says they are
+  // (ADR-A20). One that is missing is `brydio validate`'s to name.
+  for (const path of brandPathsOf(project.raw).values()) {
+    const at = join(project.root, path);
+
+    if (existsSync(at) && statSync(at).isFile()) files.set(path, readFileSync(at));
   }
 
   files.set(BUNDLE_MANIFEST, new TextEncoder().encode(`${JSON.stringify({ ...project.raw, sdk }, null, 2)}\n`));

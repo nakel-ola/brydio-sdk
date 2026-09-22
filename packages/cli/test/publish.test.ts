@@ -7,6 +7,7 @@ import { createHash, createPrivateKey, createPublicKey, verify } from 'node:cryp
 import { BUNDLE_MANIFEST } from '@brydio/manifest';
 
 import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
+import { BRAND, OWNED } from '../../../test-support/owner-rules.ts';
 import { build, publish, sdkVersionFor, signingMessage, writeKeyFile, zipFiles, type PublishOptions } from '../src/index.ts';
 
 const SERVER_PUBLISH = 'apps/api/src/apps/publishing/app-publish.service.ts';
@@ -21,7 +22,8 @@ function app(files: Record<string, string>): string {
 
   made.push(root);
 
-  for (const [path, content] of Object.entries(files)) {
+  // A logo, an icon and a server beside whatever the test is about.
+  for (const [path, content] of Object.entries({ ...OWNED, ...files })) {
     mkdirSync(dirname(join(root, path)), { recursive: true });
     writeFileSync(join(root, path), content);
   }
@@ -31,7 +33,7 @@ function app(files: Record<string, string>): string {
 
 const tiny = () =>
   app({
-    '.brydio/app.json': JSON.stringify({ name: 'tiny', version: '1.0.0', screens: { home: { entry: 'screens/home.js' } } }),
+    '.brydio/app.json': JSON.stringify({ name: 'tiny', version: '1.0.0', ...BRAND, screens: { home: { entry: 'screens/home.js' } } }),
     'src/screens/home.ts': 'export const home = 1;\n',
   });
 
@@ -152,7 +154,7 @@ describe('a schema change against the version Brydio has (A5-F03-S02)', () => {
     ...(migrations ? { migrations } : {}),
   });
   const V1 = manifest('0.1.0', { title: 'string' });
-  const tracker = (next: object) => app({ '.brydio/app.json': JSON.stringify(next), 'src/screens/home.ts': 'export const home = 1;\n' });
+  const tracker = (next: object) => app({ '.brydio/app.json': JSON.stringify({ ...BRAND, ...next }), 'src/screens/home.ts': 'export const home = 1;\n' });
 
   test('refuses before uploading a version whose schema changed with no migration step, naming the field', async () => {
     const root = tracker(manifest('0.2.0', { title: 'string', due: 'date?' }));
@@ -291,7 +293,7 @@ describe('brydio publish', () => {
 
   test('uploads nothing when the app does not build or validate', async () => {
     const root = app({
-      '.brydio/app.json': JSON.stringify({ name: 'tiny', version: '1.0.0', screens: { home: { entry: 'screens/home.js' } } }),
+      '.brydio/app.json': JSON.stringify({ name: 'tiny', version: '1.0.0', ...BRAND, screens: { home: { entry: 'screens/home.js' } } }),
       'src/screens/home.tsx': 'export const Home = () => <bry-stack style={{}} />;\n',
     });
     const route = server(201, () => ({}));

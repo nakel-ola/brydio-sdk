@@ -67,7 +67,8 @@ two screens, collection grants, tool grants, and host grants.
 | `license` | text, at most 64 characters | no | The licence identifier or name for this app. |
 | `keywords` | a list of at most 20 strings | no | Words used to find the app in the directory. |
 | `links` | `{ privacy?, terms?, support? }` | no | Public policy and support links shown with the app. |
-| `icon` | text | no | The app icon reference used by Brydio. |
+| `logo` | `{ color, mono }`, two `./` paths | no | Required to publish. The app’s logo in colour and in one colour: PNG, JPEG, WebP or SVG, 48 to 1024 pixels tall, up to four times as wide, at most 512 KB. The one-colour one is a PNG with transparency or an SVG in one colour or `currentColor`. |
+| `icon` | `{ color, mono }`, two `./` paths | no | Required to publish. The app’s square icon in colour, for tiles, and in one colour, which the sidebar tints. 48 to 1024 pixels across. A single path is still read for older versions, but is not enough to publish. |
 | `brandColor` | text | no | The legacy light-theme brand colour. |
 | `brandColorDark` | text | no | The legacy dark-theme brand colour. |
 | `defaultPrompts` | a list of at most 3 strings | no | Prompts Brydio may offer when the app is installed. |

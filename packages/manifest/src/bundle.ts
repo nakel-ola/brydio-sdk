@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 
+import { brandPathsOf } from './requirements.ts';
+
 /**
  * What a bundle may hold, and the fingerprint its code is served under
  * (contracts §11, A7-F02).
@@ -39,9 +41,36 @@ export function isBundlePath(path: string): boolean {
 /** Whether a path is a script a bundle can hold. */
 export const isScriptPath = (path: string): boolean => isBundlePath(path) && SCRIPT.test(path);
 
-/** The files the store keeps and the fingerprint covers: every one but the root manifest. */
+/**
+ * The logo and icon files the bundle's manifest names (ADR-A20), by path: the
+ * one kind of file beside code a bundle may hold, and only at those paths.
+ * Brydio keeps them with the version, never as code, so they are not in the
+ * fingerprint.
+ */
+export function brandOf(files: BundleFiles): BundleFiles {
+  const named = new Set(brandPathsOf(manifestIn(files)).values());
+
+  return new Map([...files].filter(([path]) => named.has(path)));
+}
+
+/** The bundle's manifest, read leniently: anything unreadable names no files. */
+function manifestIn(files: BundleFiles): unknown {
+  const bytes = files.get(BUNDLE_MANIFEST);
+
+  if (!bytes) return null;
+
+  try {
+    return JSON.parse(new TextDecoder().decode(bytes)) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+/** The files the store keeps and the fingerprint covers: every one but the root manifest and its brand images. */
 export function codeOf(files: BundleFiles): BundleFiles {
-  return new Map([...files].filter(([path]) => path !== BUNDLE_MANIFEST));
+  const brand = brandOf(files);
+
+  return new Map([...files].filter(([path]) => path !== BUNDLE_MANIFEST && !brand.has(path)));
 }
 
 const sha256 = (bytes: Uint8Array | string): string => createHash('sha256').update(bytes).digest('hex');
@@ -81,12 +110,14 @@ export interface BundleProblem {
  * and words: every path first, then the manifest, then the code, then the size.
  */
 export function bundleProblem(files: BundleFiles): BundleProblem | null {
+  const brand = brandOf(files);
+
   for (const path of files.keys()) {
     if (!isBundlePath(path)) {
       return { code: 'bundle_path_invalid', message: `"${JSON.stringify(path).slice(1, -1)}" is not a path a bundle can hold.`, file: path };
     }
 
-    if (path !== BUNDLE_MANIFEST && !SCRIPT.test(path)) {
+    if (path !== BUNDLE_MANIFEST && !brand.has(path) && !SCRIPT.test(path)) {
       return {
         code: 'bundle_file_not_code',
         message: `"${path}" is not a script. A bundle holds only .js files and ${BUNDLE_MANIFEST}.`,

@@ -5,18 +5,19 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
+import { BRAND, BRAND_PATHS, OWNED } from '../../../test-support/owner-rules.ts';
 import { build, main, sdkVersionFor, validate } from '../src/index.ts';
 
 const template = join(import.meta.dir, '..', '..', '..', 'templates', 'preact');
 const made: string[] = [];
 
-/** A throwaway app folder with these files in it. */
+/** A throwaway app folder with these files in it, and a logo, an icon and a server beside them. */
 function app(files: Record<string, string>): string {
   const root = mkdtempSync(join(tmpdir(), 'brydio-cli-'));
 
   made.push(root);
 
-  for (const [path, content] of Object.entries(files)) {
+  for (const [path, content] of Object.entries({ ...OWNED, ...files })) {
     mkdirSync(dirname(join(root, path)), { recursive: true });
     writeFileSync(join(root, path), content);
   }
@@ -25,7 +26,7 @@ function app(files: Record<string, string>): string {
 }
 
 const manifest = (extra: Record<string, unknown> = {}) =>
-  JSON.stringify({ name: 'tiny', version: '1.0.0', screens: { home: { entry: 'screens/home.js' } }, ...extra });
+  JSON.stringify({ name: 'tiny', version: '1.0.0', ...BRAND, screens: { home: { entry: 'screens/home.js' } }, ...extra });
 
 const codes = (problems: { code: string }[]) => problems.map(problem => problem.code);
 const sha = (bytes: Uint8Array | string) => createHash('sha256').update(bytes).digest('hex');
@@ -39,7 +40,7 @@ describe('brydio build', () => {
     const result = await build(template);
 
     expect(result.problems).toEqual([]);
-    expect([...result.files.keys()].sort()).toEqual(['app.json', 'screens/home.js']);
+    expect([...result.files.keys()].sort()).toEqual(['app.json', ...BRAND_PATHS, 'screens/home.js']);
 
     const code = readFileSync(join(template, 'dist/screens/home.js'), 'utf8');
 
@@ -87,7 +88,7 @@ describe('brydio build', () => {
     const result = await build(root);
 
     expect(result.problems).toEqual([]);
-    expect([...result.files.keys()].sort()).toEqual(['app.json', 'screens/home.mjs']);
+    expect([...result.files.keys()].sort()).toEqual(['app.json', ...BRAND_PATHS, 'screens/home.mjs']);
     expect(validate(root)).toEqual({ ok: true, problems: [] });
   });
 
