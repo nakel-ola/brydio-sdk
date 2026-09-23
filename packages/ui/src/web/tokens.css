@@ -257,14 +257,19 @@
   --composer-tray: var(--n-100);
 
   /* ---- Charts ---------------------------------------------------------
-     Six categorical hues at near-constant lightness, so no series reads as
-     more important than another. Hues are spread ≥45° apart. */
+     Six categorical hues in a fixed order, never cycled. Each neighbour
+     stays apart for red-, green- and blue-blind readers (ΔE ≥ 8) and for
+     everyone else (ΔE ≥ 15), and each clears 3:1 on the canvas; checked
+     with the dataviz palette validator, both themes. Green and red are
+     not here: they mean good and bad, and a series is neither. Teal is
+     only the brand's, so the second slot is not a second teal. Orange,
+     blue and magenta have no ramp of their own; they exist for charts. */
   --chart-1: var(--brand-600);
-  --chart-2: var(--teal-500);
-  --chart-3: var(--violet-500);
-  --chart-4: var(--amber-500);
-  --chart-5: var(--green-500);
-  --chart-6: var(--red-500);
+  --chart-2: oklch(0.671 0.175 40.6);
+  --chart-3: oklch(0.575 0.163 255.5);
+  --chart-4: var(--amber-600);
+  --chart-5: oklch(0.622 0.171 0.8);
+  --chart-6: var(--violet-500);
   --chart-grid: var(--line-faint);
   --chart-axis: var(--fg-faint);
 
@@ -433,12 +438,14 @@
   --composer-line: var(--n-800);
   --composer-tray: var(--n-925);
 
-  --chart-1: var(--brand-500);
-  --chart-2: var(--teal-400);
-  --chart-3: var(--violet-400);
-  --chart-4: var(--amber-400);
-  --chart-5: var(--green-400);
-  --chart-6: var(--red-400);
+  /* The same six hues stepped for the dark canvas, not lightened: a
+     lighter step drifts out of the band where the six read as equals. */
+  --chart-1: var(--brand-600);
+  --chart-2: oklch(0.622 0.173 40.1);
+  --chart-3: oklch(0.622 0.161 255.1);
+  --chart-4: oklch(0.670 0.143 73.2);
+  --chart-5: oklch(0.622 0.171 0.8);
+  --chart-6: var(--violet-500);
   --chart-grid: var(--line);
   --chart-axis: var(--fg-faint);
 
