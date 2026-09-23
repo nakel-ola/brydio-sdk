@@ -22,7 +22,7 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
-## Unreleased
+## 0.1.0-alpha.7
 
 - **`@brydio/api/ai` calls Brydio's AI from your own server** with a
   developer API key (`BRYDIO_API_KEY`, made in Brydio's Settings ›

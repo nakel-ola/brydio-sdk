@@ -1,6 +1,6 @@
 {
   "name": "@brydio/create-app",
-  "version": "0.1.0-alpha.6",
+  "version": "0.1.0-alpha.7",
   "description": "Create a working Brydio app from the packaged Preact or plain template.",
   "license": "MIT",
   "author": "Brydio Inc.",
@@ -23,6 +23,6 @@
     "tsconfig.base.json"
   ],
   "dependencies": {
-    "@brydio/cli": "0.1.0-alpha.6"
+    "@brydio/cli": "0.1.0-alpha.7"
   }
 }

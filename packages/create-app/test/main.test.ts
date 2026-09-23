@@ -25,7 +25,7 @@ const options = (into: string, out: string[]) => ({
   into,
   out: (line: string) => void out.push(line),
   assets: SDK_ROOT,
-  version: '0.1.0-alpha.6',
+  version: '0.1.0-alpha.7',
   install: false as const,
 });
 
@@ -46,7 +46,7 @@ describe('@brydio/create-app', () => {
       screens: { home: { entry: 'screens/home.js' } },
       data: { items: expect.any(Object) },
     });
-    expect(pkg.dependencies['@brydio/app']).toBe('0.1.0-alpha.6');
+    expect(pkg.dependencies['@brydio/app']).toBe('0.1.0-alpha.7');
     expect(pkg.overrides).toBeUndefined();
     expect(JSON.stringify(pkg)).not.toContain('file:');
     expect(lines.join('\n')).toContain('Made my-app from the preact template');
