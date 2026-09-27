@@ -22,6 +22,15 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.8
+
+- **App placements have stable keys.** A manifest placement may declare a
+  `key`, letting one screen provide several distinct project or workspace
+  surfaces such as Plan's List, Sprint, and Sprint folder. Brydio returns the
+  resolved key with every offer and stores it on the placement.
+- **Older manifests keep working.** When a placement omits `key`, Brydio and
+  the SDK derive the existing `kind:screen` identity.
+
 ## 0.1.0-alpha.7
 
 - **`@brydio/api/ai` calls Brydio's AI from your own server** with a
