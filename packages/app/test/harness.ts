@@ -6,6 +6,7 @@ export const CONTEXT: HostContext = {
   locale: 'en-GB',
   placement: { id: 'pl_1', kind: 'project-tab', projectId: 'pr_1' },
   instance: { id: 'in_1', name: 'Issues', scope: 'workspace' },
+  route: { path: '/' },
   size: { width: 960, height: 640 },
 };
 

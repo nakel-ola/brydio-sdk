@@ -104,6 +104,7 @@ Holds other elements or text.
 | `align` | `start`, `center`, `end`, `stretch` | no |
 | `justify` | `start`, `center`, `end`, `between` | no |
 | `wrap` | `true` or `false` | no |
+| `variant` | `default`, `page`, `toolbar`, `scroll`, `section`, `section-header`, `filter-bar` | no |
 
 Tells the app nothing.
 
@@ -267,8 +268,12 @@ Holds other elements or text.
 | `pressable` | `true` or `false` | no |
 | `selected` | `true` or `false` | no |
 | `loading` | `true` or `false` | no |
+| `variant` | `default`, `work` | no |
+| `identifier` | text, at most 200 characters | no |
+| `selectable` | `true` or `false` | no |
+| `checked` | `true` or `false` | no |
 
-Tells the app: `press`.
+Tells the app: `press`, `toggle`.
 
 ## `bry-empty-state`
 
@@ -279,6 +284,8 @@ Holds nothing: it is drawn from its settings alone.
 | `title` | text, at most 200 characters | yes |
 | `text` | text, at most 4,000 characters | no |
 | `action` | text, at most 200 characters | no |
+| `variant` | `default`, `plain` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
 
 Tells the app: `action`.
 

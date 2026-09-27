@@ -22,6 +22,15 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.9
+
+- **App screens can own nested pages.** Read `context.route.path` and call
+  `navigate({ kind: 'route', path: '/issues/123/details' })` to move within the
+  current placement with normal browser and desktop history.
+- **Full-page work surfaces have first-class catalogue variants.** Page,
+  toolbar, scrolling section, work-row, and plain empty-state presentations
+  let apps reproduce dense native project tools without a centered wrapper.
+
 ## 0.1.0-alpha.8
 
 - **App placements have stable keys.** A manifest placement may declare a

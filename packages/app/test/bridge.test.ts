@@ -214,21 +214,25 @@ describe('asking the host to open something, and toasts', () => {
 
     const chat = bridge.navigate({ kind: 'chat', id: 'ch_1' });
     const missing = bridge.navigate({ kind: 'item', id: 'issue_9' });
+    const details = bridge.navigate({ kind: 'route', path: '/plan/plan_1/details' });
 
     bridge.toast('Saved', 'success');
 
     expect(take()).toEqual([
       { jsonrpc: '2.0', id: '1', method: 'ui/navigate', params: { to: { kind: 'chat', id: 'ch_1' } } },
       { jsonrpc: '2.0', id: '2', method: 'ui/navigate', params: { to: { kind: 'item', id: 'issue_9' } } },
+      { jsonrpc: '2.0', id: '3', method: 'ui/navigate', params: { to: { kind: 'route', path: '/plan/plan_1/details' } } },
       { jsonrpc: '2.0', method: 'ui/toast', params: { text: 'Saved', tone: 'success' } },
     ]);
 
     hostSays('ui/error', { id: '2', error: { code: -32000, message: 'There is no such issue.' } });
     hostSays('ui/result', { id: '1', result: { opened: true } });
+    hostSays('ui/result', { id: '3', result: { opened: true } });
     // A second answer to the same call changes nothing.
     hostSays('ui/error', { id: '1', error: { code: -32000, message: 'late' } });
 
     expect(await chat).toEqual({ opened: true });
+    expect(await details).toEqual({ opened: true });
 
     const refused = (await missing.catch(error => error)) as HostError;
 

@@ -83,13 +83,13 @@ function runtimeShape(node: RemoteNode): unknown {
 }
 
 describe('the fake host’s receiver', () => {
-  test('is Brydio’s tree-store.ts, line for line apart from the catalogue import and the clock', async () => {
+  test('is Brydio’s tree-store.ts, line for line apart from the catalogue import and immediate scheduling', async () => {
     const body = (source: string) => source.slice(source.indexOf('export class TreeStore'));
     const digest = (text: string) => createHash('sha256').update(text).digest('hex');
     const ours = readFileSync(join(import.meta.dir, '..', 'src', 'tree-store.ts'), 'utf8');
     const theirs = await brydioAnswers('tree-store-source', [HOST_STORE], () => digest(body(readFileSync(inBrydio(HOST_STORE), 'utf8'))));
 
-    expect(digest(body(ours).replace(/ = now\b/, ' = nextFrame').replace('(ELEMENTS[node.type] as { children: boolean }).children', 'ELEMENTS[node.type].children'))).toBe(theirs);
+    expect(digest(body(ours).replace(/ = now\b/, ' = afterPatch').replace('(ELEMENTS[node.type] as { children: boolean }).children', 'ELEMENTS[node.type].children'))).toBe(theirs);
   });
 
   test('applies what the runtime sends and ends with the runtime’s tree, over a thousand random changes', async () => {

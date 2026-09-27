@@ -188,6 +188,14 @@ describe('the first drawings (A6-F06-S01)', () => {
     expect(row.style.getPropertyValue('--bry-justify')).toBe('space-between');
     expect((document.querySelector('#odd') as HTMLElement).style.getPropertyValue('--bry-gap')).toBe('0');
   });
+
+  test('a page stack names the full-canvas layout the host applies', async () => {
+    await page(`<bry-stack variant="page"><bry-stack variant="toolbar"></bry-stack><bry-stack variant="scroll"></bry-stack></bry-stack>`);
+
+    expect((document.querySelector('bry-stack') as HTMLElement).dataset.variant).toBe('page');
+    expect((document.querySelectorAll('bry-stack')[1] as HTMLElement).dataset.variant).toBe('toolbar');
+    expect((document.querySelectorAll('bry-stack')[2] as HTMLElement).dataset.variant).toBe('scroll');
+  });
 });
 
 describe('the layout drawings (A6-F06-S01)', () => {
@@ -229,6 +237,25 @@ describe('the layout drawings (A6-F06-S01)', () => {
     expect(presses).toEqual(['bry-list-row', 'bry-button']);
   });
 
+  test('a work row shows its identifier and reports checkbox changes separately from opening it', async () => {
+    await page(`<bry-list-row variant="work" identifier="ENG-42" title="Fix login" selectable pressable></bry-list-row>`);
+
+    const heard: { name: string; detail: unknown }[] = [];
+    document.body.addEventListener('press', event => heard.push({ name: 'press', detail: (event as CustomEvent).detail }));
+    document.body.addEventListener('toggle', event => heard.push({ name: 'toggle', detail: (event as CustomEvent).detail }));
+
+    const root = shadowOf('bry-list-row');
+    const checkbox = root.querySelector('input')!;
+
+    expect(root.querySelector('.identifier')!.textContent).toBe('ENG-42');
+    checkbox.click();
+    root.querySelector('.row')!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    expect(heard).toEqual([
+      { name: 'toggle', detail: { checked: true } },
+      { name: 'press', detail: null },
+    ]);
+  });
+
   test('an empty state says what to do and raises action from its one button', async () => {
     await page(`<bry-empty-state title="No issues yet" text="Make one to start." action="New issue"></bry-empty-state>`);
 
@@ -241,6 +268,16 @@ describe('the layout drawings (A6-F06-S01)', () => {
     expect(Array.from(root.querySelectorAll('p')).map(p => p.textContent)).toEqual(['No issues yet', 'Make one to start.']);
     root.querySelector('button')!.click();
     expect(actions).toEqual(['bry-empty-state']);
+  });
+
+  test('a plain empty state keeps the page open and shows its named illustration', async () => {
+    await page(`<bry-empty-state variant="plain" icon="tasks" title="No issues yet" text="Add work when you are ready."></bry-empty-state>`);
+
+    const root = shadowOf('bry-empty-state');
+
+    expect(root.querySelector('.empty')!.classList.contains('plain')).toBe(true);
+    expect(root.querySelector('.plain-icon')!.getAttribute('aria-hidden')).toBe('true');
+    expect(Array.from(root.querySelectorAll('p')).map(one => one.textContent)).toEqual(['No issues yet', 'Add work when you are ready.']);
   });
 
   test('a skeleton draws as many shapes as asked, and says it is loading', async () => {

@@ -78,6 +78,90 @@
   --brand-900: oklch(0.3257 0.0578 184.17); /* #003e38 */
   --brand-950: oklch(0.2340 0.0418 184.17); /* #002420 */
 
+
+  /* Accent colours a person may choose instead of teal (`tasks/chat-parity`
+     CP16-F02). Each keeps teal's lightness at every step, so every pairing
+     `check:contrast` gates for teal is gated for these too; chroma is as much
+     as the sRGB gamut holds at that lightness, up to half again teal's. */
+  /* Teal again under its accent name, for the swatch once another accent
+     has taken over the brand ramp. */
+  --accent-teal-50: oklch(0.9800 0.0053 184.17);
+  --accent-teal-100: oklch(0.9602 0.0118 184.17);
+  --accent-teal-200: oklch(0.9247 0.0242 184.17);
+  --accent-teal-300: oklch(0.8662 0.0449 184.17);
+  --accent-teal-400: oklch(0.7639 0.0757 184.17);
+  --accent-teal-500: oklch(0.6814 0.0981 184.17);
+  --accent-teal-600: oklch(0.6049 0.1070 184.17);
+  --accent-teal-700: oklch(0.5027 0.0890 184.17);
+  --accent-teal-800: oklch(0.4098 0.0726 184.17);
+  --accent-teal-900: oklch(0.3257 0.0578 184.17);
+  --accent-teal-950: oklch(0.2340 0.0418 184.17);
+  --accent-blue-50: oklch(0.9800 0.0080 255); /* #f5f9fe */
+  --accent-blue-100: oklch(0.9602 0.0177 255); /* #eaf3fe */
+  --accent-blue-200: oklch(0.9247 0.0363 255); /* #d6e8ff */
+  --accent-blue-300: oklch(0.8662 0.0654 255); /* #b7d6fe */
+  --accent-blue-400: oklch(0.7639 0.1136 255); /* #80b5f9 */
+  --accent-blue-500: oklch(0.6814 0.1472 255); /* #559af1 */
+  --accent-blue-600: oklch(0.6049 0.1605 255); /* #3482df */
+  --accent-blue-700: oklch(0.5027 0.1335 255); /* #2664ae */
+  --accent-blue-800: oklch(0.4098 0.1089 255); /* #1a4a84 */
+  --accent-blue-900: oklch(0.3257 0.0867 255); /* #10345f */
+  --accent-blue-950: oklch(0.2340 0.0627 255); /* #061e3a */
+  --accent-green-50: oklch(0.9800 0.0080 150); /* #f5faf6 */
+  --accent-green-100: oklch(0.9602 0.0177 150); /* #eaf5ec */
+  --accent-green-200: oklch(0.9247 0.0363 150); /* #d6edda */
+  --accent-green-300: oklch(0.8662 0.0674 150); /* #b4e0bc */
+  --accent-green-400: oklch(0.7639 0.1136 150); /* #7bc78c */
+  --accent-green-500: oklch(0.6814 0.1472 150); /* #48b166 */
+  --accent-green-600: oklch(0.6049 0.1605 150); /* #159b49 */
+  --accent-green-700: oklch(0.5027 0.1335 150); /* #0e7837 */
+  --accent-green-800: oklch(0.4098 0.1089 150); /* #075a28 */
+  --accent-green-900: oklch(0.3257 0.0867 150); /* #04401a */
+  --accent-green-950: oklch(0.2340 0.0627 150); /* #01260c */
+  --accent-yellow-50: oklch(0.9800 0.0080 85); /* #fbf8f3 */
+  --accent-yellow-100: oklch(0.9602 0.0177 85); /* #f7f1e5 */
+  --accent-yellow-200: oklch(0.9247 0.0363 85); /* #f1e5cb */
+  --accent-yellow-300: oklch(0.8662 0.0674 85); /* #e7d0a1 */
+  --accent-yellow-400: oklch(0.7639 0.1136 85); /* #d3ac57 */
+  --accent-yellow-500: oklch(0.6814 0.1391 85); /* #c09003 */
+  --accent-yellow-600: oklch(0.6049 0.1225 85); /* #a37b06 */
+  --accent-yellow-700: oklch(0.5027 0.1015 85); /* #7e5e04 */
+  --accent-yellow-800: oklch(0.4098 0.0829 85); /* #5f4602 */
+  --accent-yellow-900: oklch(0.3257 0.0667 85); /* #443100 */
+  --accent-yellow-950: oklch(0.2340 0.0467 85); /* #281c01 */
+  --accent-pink-50: oklch(0.9800 0.0080 355); /* #fdf6f9 */
+  --accent-pink-100: oklch(0.9602 0.0177 355); /* #fcedf2 */
+  --accent-pink-200: oklch(0.9247 0.0363 355); /* #fbdde7 */
+  --accent-pink-300: oklch(0.8662 0.0674 355); /* #f8c1d5 */
+  --accent-pink-400: oklch(0.7639 0.1136 355); /* #eb93b6 */
+  --accent-pink-500: oklch(0.6814 0.1472 355); /* #dd6e9d */
+  --accent-pink-600: oklch(0.6049 0.1605 355); /* #c85186 */
+  --accent-pink-700: oklch(0.5027 0.1335 355); /* #9c3d68 */
+  --accent-pink-800: oklch(0.4098 0.1089 355); /* #752c4d */
+  --accent-pink-900: oklch(0.3257 0.0867 355); /* #551e36 */
+  --accent-pink-950: oklch(0.2340 0.0627 355); /* #330f1f */
+  --accent-orange-50: oklch(0.9800 0.0080 50); /* #fdf7f4 */
+  --accent-orange-100: oklch(0.9602 0.0177 50); /* #fcefe8 */
+  --accent-orange-200: oklch(0.9247 0.0363 50); /* #fbe0d1 */
+  --accent-orange-300: oklch(0.8662 0.0674 50); /* #f8c7ac */
+  --accent-orange-400: oklch(0.7639 0.1136 50); /* #ec9c6f */
+  --accent-orange-500: oklch(0.6814 0.1472 50); /* #df7a3a */
+  --accent-orange-600: oklch(0.6049 0.1585 50); /* #c95f04 */
+  --accent-orange-700: oklch(0.5027 0.1315 50); /* #9d4803 */
+  --accent-orange-800: oklch(0.4098 0.1069 50); /* #763502 */
+  --accent-orange-900: oklch(0.3257 0.0847 50); /* #552401 */
+  --accent-orange-950: oklch(0.2340 0.0607 50); /* #341301 */
+  --accent-purple-50: oklch(0.9800 0.0080 300); /* #f9f7fd */
+  --accent-purple-100: oklch(0.9602 0.0177 300); /* #f3effc */
+  --accent-purple-200: oklch(0.9247 0.0363 300); /* #e9e1fb */
+  --accent-purple-300: oklch(0.8662 0.0674 300); /* #d9caf9 */
+  --accent-purple-400: oklch(0.7639 0.1136 300); /* #bda2f0 */
+  --accent-purple-500: oklch(0.6814 0.1472 300); /* #a781e5 */
+  --accent-purple-600: oklch(0.6049 0.1605 300); /* #9267d2 */
+  --accent-purple-700: oklch(0.5027 0.1335 300); /* #714fa4 */
+  --accent-purple-800: oklch(0.4098 0.1089 300); /* #543a7c */
+  --accent-purple-900: oklch(0.3257 0.0867 300); /* #3c2859 */
+  --accent-purple-950: oklch(0.2340 0.0627 300); /* #231637 */
   /* Status hues sit far apart so they never read as neighbours. */
   --green-50: oklch(0.976 0.015 157); /* #effaf3 */
   --green-100: oklch(0.95 0.035 157); /* #dcf6e5 */
@@ -255,6 +339,14 @@
   --composer-bg: var(--n-0);
   --composer-line: var(--n-250);
   --composer-tray: var(--n-100);
+  /* The chat composer: one quiet grey card with a faint halo
+     round it, and white pills sitting on it. No tray. */
+  --composer-card: var(--n-50);
+  --composer-card-line: var(--n-150);
+  --composer-halo: color-mix(in oklab, var(--n-950) 2.5%, transparent);
+  --composer-pill: var(--n-0);
+  --composer-pill-line: var(--n-150);
+  --composer-send-idle: var(--n-200);
 
   /* ---- Charts ---------------------------------------------------------
      Six categorical hues in a fixed order, never cycled. Each neighbour
@@ -273,6 +365,25 @@
   --chart-grid: var(--line-faint);
   --chart-axis: var(--fg-faint);
 
+  /* ---- Code -----------------------------------------------------------
+     Syntax colours for code in answers, on `--bg-sunken`. Every one clears
+     4.5:1 there (`check:contrast`), and each kind keeps its hue in both
+     themes: keywords violet, strings green, numbers red, functions the
+     brand's, types amber, comments soft ink. Added and removed lines are
+     green and red, the one place those mean what they always mean. */
+  --code-fg: var(--fg);
+  --code-comment: var(--fg-soft);
+  --code-keyword: var(--violet-600);
+  --code-string: var(--green-700);
+  --code-constant: var(--red-700);
+  --code-function: var(--brand-700);
+  --code-type: var(--amber-700);
+  --code-punctuation: var(--fg);
+  --code-inserted: var(--green-700);
+  --code-inserted-bg: var(--green-100);
+  --code-deleted: var(--red-700);
+  --code-deleted-bg: var(--red-100);
+
   /* ---- Elevation -------------------------------------------------------
      Theme-dependent, so it lives inside the parity-checked range. Shadows
      are tinted with the neutral hue rather than pure black — untinted black
@@ -288,6 +399,9 @@
   --shadow-modal: 0 2px 6px oklch(0.2 0.02 264 / 0.08), 0 24px 64px oklch(0.2 0.02 264 / 0.24);
   --shadow-brand:
     0 1px 2px oklch(0.3 0.055 184.17 / 0.2), 0 4px 12px oklch(0.6049 0.107 184.17 / 0.22);
+  /* The new composer's card and its pills: wide and soft, never a hard edge. */
+  --shadow-composer: 0 1px 2px oklch(0.2 0.02 264 / 0.04), 0 10px 30px oklch(0.2 0.02 264 / 0.07);
+  --shadow-pill: 0 1px 2px oklch(0.2 0.02 264 / 0.06), 0 2px 6px oklch(0.2 0.02 264 / 0.04);
 
   /* ======================================================================
      Tier 3: geometry and motion — theme-independent
@@ -328,6 +442,10 @@
   --thread-max-w: 46rem;
   --composer-max-w: 46rem;
   --prose-max-w: 38rem;
+  /* Between turns of a chat, and the height of a quiet list row. Density
+     (appearance.css) tightens both. */
+  --thread-gap: 1.5rem; /* 24 */
+  --list-row-h: 3rem; /* 48 */
 
   /* Air. Chrome is dense; the canvas is not. These two tokens are what let
      an empty state breathe without loosening the toolbars. */
@@ -437,6 +555,12 @@
   --composer-bg: var(--n-850);
   --composer-line: var(--n-800);
   --composer-tray: var(--n-925);
+  --composer-card: var(--n-900);
+  --composer-card-line: var(--n-850);
+  --composer-halo: color-mix(in oklab, var(--n-0) 3%, transparent);
+  --composer-pill: var(--n-850);
+  --composer-pill-line: var(--n-800);
+  --composer-send-idle: var(--n-800);
 
   /* The same six hues stepped for the dark canvas, not lightened: a
      lighter step drifts out of the band where the six read as equals. */
@@ -449,6 +573,20 @@
   --chart-grid: var(--line);
   --chart-axis: var(--fg-faint);
 
+  /* Code, stepped up for the dark sunken fill. */
+  --code-fg: var(--fg);
+  --code-comment: var(--fg-muted);
+  --code-keyword: var(--violet-400);
+  --code-string: var(--green-300);
+  --code-constant: var(--red-300);
+  --code-function: var(--brand-300);
+  --code-type: var(--amber-300);
+  --code-punctuation: var(--fg);
+  --code-inserted: var(--green-300);
+  --code-inserted-bg: var(--green-900);
+  --code-deleted: var(--red-300);
+  --code-deleted-bg: var(--red-900);
+
   /* On dark, depth reads from a hairline top highlight more than from blur —
      a wide soft blur over a dark ground just turns to mud. */
   --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.4);
@@ -458,6 +596,8 @@
   --shadow-pop: 0 14px 36px oklch(0 0 0 / 0.6), inset 0 1px 0 oklch(1 0 0 / 0.05);
   --shadow-modal: 0 28px 72px oklch(0 0 0 / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.06);
   --shadow-brand: 0 1px 2px oklch(0 0 0 / 0.4), 0 6px 18px oklch(0.6049 0.107 184.17 / 0.4);
+  --shadow-composer: 0 12px 32px oklch(0 0 0 / 0.45), inset 0 1px 0 oklch(1 0 0 / 0.04);
+  --shadow-pill: 0 1px 2px oklch(0 0 0 / 0.4), inset 0 1px 0 oklch(1 0 0 / 0.04);
 }
 
 /* ==========================================================================
@@ -472,11 +612,14 @@
   --composer-pad: 0.75rem;
   --field-radius: var(--radius-md); /* 10 */
   --field-px: 0.625rem;
-  --menu-radius: var(--radius-lg); /* 12 */
+  --menu-radius: var(--radius-xl); /* 16 — popups read softer than the controls that open them */
+  --dialog-radius: var(--radius-2xl); /* 20 — dialogs and sheets that float over the page */
   --menu-pad: 0.3125rem;
-  --menu-item-radius: var(--radius-sm); /* 8 — 12 minus the 5px menu pad, near enough */
+  --menu-item-radius: var(--radius-md); /* 10 — 16 minus the 5px menu pad, near enough */
   --bubble-radius: var(--radius-2xl); /* 20 */
   --rail-item-radius: var(--radius-md); /* 10 */
+  --card-radius: var(--radius-2xl); /* 20 — Home cards and the new chat page's row */
+  --card-menu-radius: var(--radius-xl); /* 16 — the menus those cards open */
 }
 
 /* ==========================================================================

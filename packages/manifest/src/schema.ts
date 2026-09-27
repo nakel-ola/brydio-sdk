@@ -90,7 +90,7 @@ export function effectivePlacementKey(one: {
 
 const placementSchema = z.object({
   key: z.string().regex(PLACEMENT_KEY).optional(),
-  kind: z.enum(['project-tab', 'project-sidebar', 'workspace-sidebar']),
+  kind: z.enum(['project-tab', 'project-sidebar', 'workspace-sidebar', 'home']),
   screen: z.string().min(1).max(FIELD_LIMITS.nameChars),
   label: z.string().min(1).max(60).optional(),
   icon: z.string().max(60).optional(),

@@ -93,7 +93,7 @@ export type Op =
 
 // --- Where the screen is ----------------------------------------------------
 
-export type PlacementKind = 'project-tab' | 'project-sidebar' | 'workspace-sidebar';
+export type PlacementKind = 'project-tab' | 'project-sidebar' | 'workspace-sidebar' | 'home';
 export type InstanceScope = 'workspace' | 'project' | 'personal';
 
 /** Everything the host tells a screen about where it is running. Nothing about the person. */
@@ -102,6 +102,8 @@ export interface HostContext {
   locale: string;
   placement: { id: string; kind: PlacementKind; projectId?: string; settings?: Record<string, string> };
   instance: { id: string; name: string; scope: InstanceScope };
+  /** The app-local page open inside this placement, always rooted at `/`. */
+  route: { path: string };
   selection?: unknown;
   size: { width: number; height: number };
 }
@@ -187,10 +189,14 @@ export interface ProjectName {
 }
 
 /**
- * What `ui/navigate` opens: a chat, a project's file, a project's page (Brydio `24d7144`, one the person can open)
- * or one of the app's own items. `{ kind: 'item', id: null }` closes the open item and returns to the screen (Brydio's G14).
+ * What `ui/navigate` opens: a nested page inside this app placement; a chat;
+ * a project's file or page; or one of the app's own items. `{ kind: 'item', id: null }`
+ * closes the open item and returns to the screen (Brydio's G14).
  */
-export type NavigateTarget = { kind: 'chat' | 'file' | 'item' | 'project'; id: string } | { kind: 'item'; id: null };
+export type NavigateTarget =
+  | { kind: 'chat' | 'file' | 'item' | 'project'; id: string }
+  | { kind: 'item'; id: null }
+  | { kind: 'route'; path: string };
 
 export type ToastTone = 'info' | 'success' | 'danger';
 

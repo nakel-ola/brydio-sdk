@@ -68,6 +68,10 @@ export interface EventDetails {
  * `action` names the button. Looked up first, by element.
  */
 export interface ElementEventDetails {
+  'bry-list-row': {
+    /** Whether the work row's selection box is checked now. */
+    toggle: { checked: boolean };
+  };
   'bry-table': {
     /** The column whose heading was pressed, and the direction it asks for. */
     sort: { key: string; direction: 'asc' | 'desc' };

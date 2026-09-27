@@ -394,7 +394,7 @@ export class TreeStore {
     }
   }
 
-  /** One notification per frame, however many patches arrived in it. */
+  /** One notification per task, however many changes were applied in it. */
   private changed(): void {
     this.version += 1;
 

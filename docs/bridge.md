@@ -105,7 +105,7 @@ A connection path is relative. `GET` and `HEAD` are reads. `POST`, `PUT`,
 | `data/list` | app to Brydio | `{ collection, filter?, sort?, limit?, cursor? }` plus the envelope id | `data/result` with one page, or `data/error`. |
 | `data/subscribe` | app to Brydio | `DataWatchParams`: collection, plus the envelope id | `data/result` starts the watch; changes arrive as `data/changed`. |
 | `data/unsubscribe` | app to Brydio | `DataWatchParams`: collection, plus the envelope id | `data/result` after the host stops that watch. |
-| `ui/navigate` | app to Brydio | `UiNavigateParams`: a chat, file, project, or app item target | `ui/result` with `{ opened }`, or `ui/error`. |
+| `ui/navigate` | app to Brydio | `UiNavigateParams`: an app-local route, chat, file, project, or app item target | `ui/result` with `{ opened }`, or `ui/error`. |
 | `ui/toast` | app to Brydio | `UiToastParams`: text and optional tone | No reply. Brydio shows the sentence in its own toast. |
 | `host/members` | app to Brydio | `{ ids? }` plus the envelope id | `host/result` with visible member names, or `host/error`. |
 | `host/projects` | app to Brydio | `{ ids }` plus the envelope id | `host/result` with visible project names, or `host/error`. |
@@ -113,7 +113,7 @@ A connection path is relative. `GET` and `HEAD` are reads. `POST`, `PUT`,
 | `tree/ack` | app to Brydio | `{ node, name }` after the event handler starts | No reply. It lets Brydio clear the event budget. |
 | `dev/updated` | app to Brydio | `DevUpdatedParams`: build number | No reply. The development host keeps the worker. |
 | `dev/restart` | app to Brydio | `DevUpdatedParams`: build number and reason | No reply. The development host replaces the worker. |
-| `host/context` | Brydio to app | `HostContext`: theme, locale, placement, instance, selection and size | Resolves `connect()` the first time and notifies context subscribers later. |
+| `host/context` | Brydio to app | `HostContext`: theme, locale, placement, instance, app-local route, selection and size | Resolves `connect()` the first time and notifies context subscribers later. |
 | `tree/event` | Brydio to app | `TreeEventParams`: node id, event name and optional detail | Runs the element handler. An ack-capable worker sends `tree/ack`. |
 | `tree/refused` | Brydio to app | `TreeRefusedParams`: operation, optional node and reason | Notifies refusal listeners. The third refusal stops the app. |
 | `tools/result` | Brydio to app | `ToolsResultParams`: call id and `ToolResult` | Resolves `tools.result`; `tools.call` rejects if `isError` is true. |

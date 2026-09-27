@@ -213,6 +213,7 @@ export const CATALOGUE = {
       align: { kind: 'enum', values: ['start', 'center', 'end', 'stretch'] },
       justify: { kind: 'enum', values: ['start', 'center', 'end', 'between'] },
       wrap: { kind: 'boolean' },
+      variant: { kind: 'enum', values: ['default', 'page', 'toolbar', 'scroll', 'section', 'section-header', 'filter-bar'] },
     },
     events: [],
     children: true,
@@ -369,8 +370,12 @@ export const CATALOGUE = {
       pressable: { kind: 'boolean' },
       selected: { kind: 'boolean' },
       loading: { kind: 'boolean' },
+      variant: { kind: 'enum', values: ['default', 'work'] },
+      identifier: { kind: 'text', max: LABEL_MAX },
+      selectable: { kind: 'boolean' },
+      checked: { kind: 'boolean' },
     },
-    events: ['press'],
+    events: ['press', 'toggle'],
     children: true,
   },
   'bry-empty-state': {
@@ -379,6 +384,8 @@ export const CATALOGUE = {
       title: { kind: 'text', max: LABEL_MAX },
       text: { kind: 'text', max: PARAGRAPH_MAX },
       action: { kind: 'text', max: LABEL_MAX },
+      variant: { kind: 'enum', values: ['default', 'plain'] },
+      icon: { kind: 'enum', values: BUTTON_ICONS },
     },
     required: ['title'],
     events: ['action'],
@@ -1404,4 +1411,3 @@ export type ElementName = keyof Catalogue;
 
 /** The element names, in the catalogue's order. */
 export const ELEMENT_NAMES = Object.keys(CATALOGUE) as ElementName[];
-

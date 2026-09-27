@@ -66,7 +66,7 @@ const PROTOCOL_DOCS: Record<WorkerMethod | HostMethod, ProtocolDoc> = {
     result: '`data/result` after the host stops that watch.',
   },
   'ui/navigate': {
-    payload: '`UiNavigateParams`: a chat, file, project, or app item target',
+    payload: '`UiNavigateParams`: an app-local route, chat, file, project, or app item target',
     result: '`ui/result` with `{ opened }`, or `ui/error`.',
   },
   'ui/toast': {
@@ -98,7 +98,7 @@ const PROTOCOL_DOCS: Record<WorkerMethod | HostMethod, ProtocolDoc> = {
     result: 'No reply. The development host replaces the worker.',
   },
   'host/context': {
-    payload: '`HostContext`: theme, locale, placement, instance, selection and size',
+    payload: '`HostContext`: theme, locale, placement, instance, app-local route, selection and size',
     result: 'Resolves `connect()` the first time and notifies context subscribers later.',
   },
   'tree/event': {

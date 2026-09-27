@@ -160,6 +160,46 @@ drawAs(
     const meta = str(element.meta);
     const press = () => element.emit('press');
 
+    if (element.variant === 'work') {
+      const identifier = str(element.identifier);
+      const checked = element.checked === true;
+
+      return html`<div
+        class="row work ${checked ? 'selected' : ''} ${pressable ? 'pressable' : ''}"
+        role=${pressable ? 'button' : nothing}
+        tabindex=${pressable ? '0' : nothing}
+        @click=${pressable
+          ? (event: Event) => {
+              for (const target of event.composedPath()) {
+                if (target === element) return press();
+                if (target instanceof Element && target.matches(INTERACTIVE)) return;
+              }
+            }
+          : nothing}
+        @keydown=${pressable
+          ? (event: KeyboardEvent) => {
+              if (event.composedPath()[0] !== event.currentTarget) return;
+              if (event.key !== 'Enter' && event.key !== ' ') return;
+              event.preventDefault();
+              press();
+            }
+          : nothing}
+      >
+        ${element.selectable === true
+          ? html`<input
+              type="checkbox"
+              aria-label=${`Select ${identifier || str(element.title)}`}
+              .checked=${checked}
+              @change=${(event: Event) => element.emit('toggle', { checked: (event.currentTarget as HTMLInputElement).checked })}
+            />`
+          : nothing}
+        ${identifier ? html`<span class="identifier type-caption">${identifier}</span>` : nothing}
+        <p class="type-ui work-title truncate">${str(element.title)}</p>
+        <slot></slot>
+        ${meta ? html`<p class="type-caption meta">${meta}</p>` : nothing}
+      </div>`;
+    }
+
     return html`<div
       class="row ${selected ? 'selected' : ''} ${pressable ? 'pressable' : ''}"
       role=${pressable ? 'button' : nothing}
@@ -208,6 +248,28 @@ drawAs(
         border-radius: var(--radius-lg);
         padding: 0.5rem 0.75rem;
       }
+      .work {
+        min-height: 2.75rem;
+        gap: 0.875rem;
+        border-bottom: 1px solid var(--line);
+        border-radius: 0;
+        padding: 0.5rem 0.875rem;
+      }
+      .work input {
+        width: 0.875rem;
+        height: 0.875rem;
+        flex-shrink: 0;
+      }
+      .identifier {
+        width: 4rem;
+        flex-shrink: 0;
+        color: var(--fg-muted);
+        font-variant-numeric: tabular-nums;
+      }
+      .work-title {
+        min-width: 0;
+        flex: 1;
+      }
       .selected {
         background: var(--layer-selected);
       }
@@ -242,6 +304,15 @@ drawAs(
     const text = str(element.text);
     const action = str(element.action);
 
+    if (element.variant === 'plain') {
+      return html`<div class="empty plain">
+        ${element.icon ? html`<div class="plain-icon" aria-hidden="true">${str(element.icon).slice(0, 1).toUpperCase()}</div>` : nothing}
+        <p class="title">${str(element.title)}</p>
+        ${text ? html`<p class="line">${text}</p>` : nothing}
+        ${action ? html`<div class="action"><button type="button" @click=${() => element.emit('action')}>${action}</button></div>` : nothing}
+      </div>`;
+    }
+
     return html`<div class="empty">
       <p class="title">${str(element.title)}</p>
       ${text ? html`<p class="line">${text}</p>` : nothing}
@@ -259,6 +330,29 @@ drawAs(
         border-radius: var(--radius-xl);
         padding: 2.5rem 1.5rem;
         text-align: center;
+      }
+      .plain {
+        display: flex;
+        min-height: 18rem;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        padding: 3rem 1.5rem;
+      }
+      .plain-icon {
+        display: flex;
+        width: 4rem;
+        height: 4rem;
+        margin-bottom: 1rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-xl);
+        background: var(--bg-fill);
+        color: var(--fg-muted);
+        font-size: 1.25rem;
+        font-weight: 600;
       }
       p {
         margin: 0 auto;

@@ -3,12 +3,14 @@ import { HostError, host, mount, navigate, text } from '@brydio/app';
 // A screen that asks Brydio to open things, and says what came of each.
 void mount(async root => {
   const said = async (to: Parameters<typeof navigate>[0]) => {
+    const destination = to.kind === 'route' ? to.path : (to.id ?? 'closed');
+
     try {
       const { opened } = await navigate(to);
 
-      root.append(text({ text: `${to.kind} ${to.id ?? 'closed'}: ${opened ? 'opened' : 'not opened'}` }));
+      root.append(text({ text: `${to.kind} ${destination}: ${opened ? 'opened' : 'not opened'}` }));
     } catch (error) {
-      root.append(text({ text: `${to.kind} ${to.id}: ${error instanceof HostError ? error.message : String(error)}` }));
+      root.append(text({ text: `${to.kind} ${destination}: ${error instanceof HostError ? error.message : String(error)}` }));
     }
   };
 

@@ -25,6 +25,7 @@ drawAs(
     element.style.setProperty('--bry-align', align ?? 'normal');
     element.style.setProperty('--bry-justify', justify ?? 'normal');
     element.style.setProperty('--bry-wrap', element.wrap === true ? 'wrap' : 'nowrap');
+    element.dataset.variant = str(element.variant) || 'default';
 
     return html`<slot></slot>`;
   },
@@ -38,6 +39,41 @@ drawAs(
         align-items: var(--bry-align, normal);
         justify-content: var(--bry-justify, normal);
         flex-wrap: var(--bry-wrap, nowrap);
+      }
+      :host([data-variant='page']) {
+        height: 100%;
+        min-height: 0;
+        flex: 1;
+        overflow: hidden;
+      }
+      :host([data-variant='toolbar']) {
+        height: 2.75rem;
+        flex-shrink: 0;
+        padding-inline: 1rem;
+        border-bottom: 1px solid var(--line);
+      }
+      :host([data-variant='scroll']) {
+        min-height: 0;
+        flex: 1;
+        overflow: auto;
+      }
+      :host([data-variant='section']) {
+        gap: 0;
+      }
+      :host([data-variant='section-header']) {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        min-height: 2.25rem;
+        flex-shrink: 0;
+        padding-inline: 0.875rem;
+        border-bottom: 1px solid var(--line);
+        background: var(--bg-canvas);
+      }
+      :host([data-variant='filter-bar']) {
+        flex-shrink: 0;
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid var(--line);
       }
     `,
   ],
