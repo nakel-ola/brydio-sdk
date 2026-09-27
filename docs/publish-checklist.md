@@ -41,6 +41,7 @@ first.
 | `manifest_missing` | There is no manifest. Put one at .brydio/app.json. | yes | publish, as `bundle_manifest_missing` | Add `.brydio/app.json`. |
 | `manifest_not_json` | app.json is not valid JSON. (`validate` adds where the parser stopped.) | yes | publish, as `manifest_invalid` | Fix the JSON. |
 | `manifest_invalid` | The schema's sentence for the field at `<path>`. For example, the name must be lowercase letters, digits and dashes; the version must look like 1.2.0; "Custom tools are not available yet." | yes | publish | Change the field the path names. |
+| `placement_key_taken` | Two placements use the key "`<key>`"; each independently addable placement needs its own key. | yes | publish | Give each placement a distinct key, or omit it when that placement kind opens only one screen. |
 | `placement_screen_unknown` | A `<kind>` placement opens "`<screen>`", which is not one of the app's screens. | yes | publish | Declare the screen under `screens`, or point the placement at one that is declared. |
 | `placement_children_too_deep` | The "`<screen>`" folder nests `<n>` levels deep; a sidebar folder may nest at most 4. | yes | publish | Declare at most three levels under `children.nested`. |
 | `placement_create_tool_unknown` | The "`<screen>`" folder creates with `<tool>`, which is not one of the app's tools. | yes | publish | Name a generated `create_…` tool or one of `tools.custom` in `children.create.tool`. |
