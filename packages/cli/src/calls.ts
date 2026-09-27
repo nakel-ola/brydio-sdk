@@ -54,6 +54,7 @@ export function callsOf(file: string, text: string): ScreenCall[] {
   const objects = new Map<string, Readonly<Record<string, Target>>>();
   const listHooks = new Set<string>();
   const navigates = new Set<string>();
+  const apiObjects = new Set<string>();
   const nameHooks = new Map<string, 'members' | 'projects' | 'message'>();
 
   for (const statement of source.statements) {
@@ -71,6 +72,7 @@ export function callsOf(file: string, text: string): ScreenCall[] {
       if (IMPORTED[from]?.[imported]) objects.set(local, IMPORTED[from][imported]!);
       if (from === '@brydio/app/preact' && imported === 'useList') listHooks.add(local);
       if (from === '@brydio/app' && imported === 'navigate') navigates.add(local);
+      if (from === '@brydio/api' && imported === 'api') apiObjects.add(local);
       if (from === '@brydio/app/ask' && imported === 'askAbout') nameHooks.set(local, 'message');
       if (from === '@brydio/app/preact' && (imported === 'useMembers' || imported === 'useProjects')) nameHooks.set(local, imported === 'useMembers' ? 'members' : 'projects');
     }
@@ -102,8 +104,12 @@ export function callsOf(file: string, text: string): ScreenCall[] {
         const method = callee.name.text;
         const object = unwrap(callee.expression);
         const target = ts.isIdentifier(object) ? objects.get(object.text)?.[method] : undefined;
+        const apiArea = ts.isPropertyAccessExpression(object) && ts.isIdentifier(unwrap(object.expression)) && apiObjects.has((unwrap(object.expression) as ts.Identifier).text)
+          ? object.name.text
+          : undefined;
 
         if (target) named(target, first, callee);
+        else if (apiArea === 'projects' || apiArea === 'files' || apiArea === 'chats') add('host', apiArea, callee);
         else if (METHODS[method]) named(METHODS[method], first, callee);
         else if (method === 'navigate') add('host', 'navigate', callee, false);
         else if (method === 'members' || method === 'projects') add('host', method, callee, false);

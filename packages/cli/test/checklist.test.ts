@@ -176,6 +176,19 @@ describe('what the screens call, against the grants', () => {
     expect(screen("import { useMembers } from '@brydio/app/preact';\nuseMembers(ids);", { tools: ['*'], collections: ['*'], host: ['members'] })).toEqual([]);
   });
 
+  test('finds project, file, and chat calls through the typed API', () => {
+    const source = "import { api as brydio } from '@brydio/api';\nbrydio.files.list(project);\nbrydio.projects.get(project);\nbrydio.chats.list({ projectId: project });";
+
+    expect(callsOf('a.tsx', source).map(call => [call.kind, call.name, call.sure])).toEqual([
+      ['host', 'files', true],
+      ['host', 'projects', true],
+      ['host', 'chats', true],
+    ]);
+    expect(screen(source, { tools: ['*'], collections: ['*'], host: [] }).map(one => one.code)).toEqual([
+      'grant_host_missing', 'grant_host_missing', 'grant_host_missing',
+    ]);
+  });
+
   test('knows an app’s own custom tools, which it once called unknown in its own manifest', () => {
     // A custom tool (A3-F08) is one of the app's tools. Leaving them out made
     // `validate` refuse the screen that called one and warn that granting it
