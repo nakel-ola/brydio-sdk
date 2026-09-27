@@ -241,8 +241,8 @@ describe('the layout drawings (A6-F06-S01)', () => {
     await page(`<bry-list-row variant="work" identifier="ENG-42" title="Fix login" selectable pressable></bry-list-row>`);
 
     const heard: { name: string; detail: unknown }[] = [];
-    document.body.addEventListener('press', event => heard.push({ name: 'press', detail: (event as CustomEvent).detail }));
-    document.body.addEventListener('toggle', event => heard.push({ name: 'toggle', detail: (event as CustomEvent).detail }));
+    document.body.addEventListener('press', event => heard.push({ name: 'press', detail: event instanceof CustomEvent ? event.detail : null }));
+    document.body.addEventListener('toggle', event => heard.push({ name: 'toggle', detail: event instanceof CustomEvent ? event.detail : null }));
 
     const root = shadowOf('bry-list-row');
     const checkbox = root.querySelector('input')!;
