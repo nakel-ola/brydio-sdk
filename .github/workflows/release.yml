@@ -71,7 +71,12 @@ jobs:
         run: bun run check-types
 
       - name: Tests
-        run: bun test
+        run: |
+          # Happy DOM owns process globals while its browser tests run. Keep
+          # that one file in its own process so Bun's worker globals cannot
+          # race it on Linux.
+          bun test packages/ui/test/web.test.ts
+          bun test --path-ignore-patterns='packages/ui/test/web.test.ts'
 
       # Compiles each package into release/<name>/ and refuses without a licence.
       - name: Build the packages as they are published
