@@ -34,6 +34,7 @@ export interface HostContext {
   locale: string;
   placement: { id: string; kind: string; projectId?: string; settings?: Record<string, string> };
   instance: { id: string; name: string; scope: string };
+  route: { path: string };
   selection?: unknown;
   size: { width: number; height: number };
 }
@@ -44,6 +45,7 @@ export const DEFAULT_CONTEXT: HostContext = {
   locale: 'en-GB',
   placement: { id: 'placement_1', kind: 'project-tab', projectId: 'project_1' },
   instance: { id: 'instance_1', name: 'Issues', scope: 'workspace' },
+  route: { path: '/' },
   size: { width: 960, height: 640 },
 };
 
@@ -87,10 +89,9 @@ export interface FakeHostOptions {
 }
 
 /** What a screen may ask Brydio to open. */
-export interface NavigateTo {
-  kind: 'chat' | 'file' | 'item' | 'project';
-  id: string;
-}
+export type NavigateTo =
+  | { kind: 'chat' | 'file' | 'item' | 'project'; id: string }
+  | { kind: 'route'; path: string };
 
 /** One `@brydio/api` call a screen sent to the pretend host. */
 export interface ApiCall {
@@ -109,6 +110,30 @@ export function hostRefusal(refusal: HostRefusal, tool: string, read = false): s
   if (refusal === 'blocked') return `${tool} is switched off for this workspace.`;
 
   return read ? 'This app is reading too often. Try again in a minute.' : 'This app is calling too often. Try again in a minute.';
+}
+
+/** A safe, canonical path that stays inside the app's current placement. */
+function appRoute(value: unknown): string | null {
+  if (typeof value !== 'string' || value.length > 512 || !value.startsWith('/') || value.startsWith('//')) return null;
+  if (value.includes('\\') || value.includes('?') || value.includes('#')) return null;
+  if ([...value].some(character => character.charCodeAt(0) <= 31 || character.charCodeAt(0) === 127)) return null;
+
+  const parts = value.split('/').filter(Boolean);
+
+  try {
+    if (
+      parts.some(part => {
+        const decoded = decodeURIComponent(part);
+
+        return decoded === '.' || decoded === '..' || decoded.includes('/') || decoded.includes('\\');
+      })
+    )
+      return null;
+  } catch {
+    return null;
+  }
+
+  return parts.length ? `/${parts.join('/')}` : '/';
 }
 
 /** A call the screen made, and what became of it. */
@@ -780,16 +805,21 @@ export class FakeHost {
    * id (`ui/result { opened }` or `ui/error`), a notice when it hasn't.
    */
   async #navigate(id: string | number | undefined, to: unknown): Promise<void> {
-    const target = to as { kind?: unknown; id?: unknown } | null;
+    const target = to as { kind?: unknown; id?: unknown; path?: unknown } | null;
     const fail = (error: { code: number; message: string }) => {
       if (id !== undefined) this.#send({ jsonrpc: '2.0', method: 'ui/error', params: { id, error } });
     };
 
+    const route = target?.kind === 'route' ? appRoute(target.path) : null;
     // `{ kind: 'item', id: null }` goes back from an item to the screen, without asking (G14).
     const closing = target?.kind === 'item' && target.id === null;
 
-    if (!target || (target.kind !== 'chat' && target.kind !== 'file' && target.kind !== 'item' && target.kind !== 'project') || (!closing && (typeof target.id !== 'string' || !target.id))) {
-      fail({ code: -32602, message: 'An app can open a chat, a file, a project or one of its own items, by id.' });
+    if (
+      !target ||
+      (target.kind !== 'route' && target.kind !== 'chat' && target.kind !== 'file' && target.kind !== 'item' && target.kind !== 'project') ||
+      (target.kind === 'route' ? route === null : !closing && (typeof target.id !== 'string' || !target.id))
+    ) {
+      fail({ code: -32602, message: 'An app can open one of its own routes, or a chat, file, project or item by id.' });
 
       return;
     }
@@ -802,7 +832,10 @@ export class FakeHost {
       return;
     }
 
-    const asked: NavigateTo = { kind: target.kind, id: target.id as string };
+    const asked: NavigateTo =
+      target.kind === 'route'
+        ? { kind: 'route', path: route! }
+        : { kind: target.kind as 'chat' | 'file' | 'item' | 'project', id: target.id as string };
 
     this.#busy += 1;
 
@@ -813,6 +846,7 @@ export class FakeHost {
       if (id !== undefined) this.#send({ jsonrpc: '2.0', method: 'ui/result', params: { id, result: { opened: true } } });
 
       // As Brydio's screen does, after answering: an item the app opened becomes its selection.
+      if (asked.kind === 'route') this.setContext({ route: { path: asked.path } });
       if (asked.kind === 'item') this.setContext({ selection: { kind: 'item', id: asked.id } });
     } catch (error) {
       const message = (error instanceof Error ? error.message : 'That didn’t work.').slice(0, 300);

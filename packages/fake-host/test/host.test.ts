@@ -167,14 +167,19 @@ describe('where a screen runs', () => {
     host = FakeHost.start({
       entry: screen('where'),
       manifest,
-      context: { placement: { id: 'p', kind: 'sidebar' }, instance: { id: 'i', name: 'Plain', scope: 'project' }, selection: { id: 'note_1' } },
+      context: {
+        placement: { id: 'p', kind: 'sidebar' },
+        instance: { id: 'i', name: 'Plain', scope: 'project' },
+        route: { path: '/plan' },
+        selection: { id: 'note_1' },
+      },
     });
 
     await host.mounted();
-    await host.waitFor(() => host!.byText('sidebar in project, light, selected {"id":"note_1"}'), { what: 'the context' });
+    await host.waitFor(() => host!.byText('sidebar in project, light, route /plan, selected {"id":"note_1"}'), { what: 'the context' });
 
-    host.setContext({ theme: 'dark', selection: null });
-    await host.waitFor(() => host!.byText('sidebar in project, dark, selected null'), { what: 'the change' });
+    host.setContext({ theme: 'dark', route: { path: '/plan/plan_1/details' }, selection: null });
+    await host.waitFor(() => host!.byText('sidebar in project, dark, route /plan/plan_1/details, selected null'), { what: 'the change' });
   });
 
   test('refuses sample records the store would refuse', () => {
@@ -247,13 +252,14 @@ test('a screen asking to open something hears whether it opened, in the host’s
     entry: screen('opens'),
     manifest,
     navigate: to => {
-      if (to.id === 'note_gone') throw new Error('There is no such note.');
-      if (to.id === 'proj_hidden') throw new Error('There is no such project.');
+      if (to.kind !== 'route' && to.id === 'note_gone') throw new Error('There is no such note.');
+      if (to.kind !== 'route' && to.id === 'proj_hidden') throw new Error('There is no such project.');
     },
   });
 
   await host.mounted();
-  await host.waitFor(() => host!.byText('selected nothing'), { what: 'the item to be closed' });
+  await host.waitFor(() => host!.byText('item closed: opened'), { what: 'the item to be closed' });
+  await host.idle();
 
   expect(host.findAll(node => node.type === 'bry-text').map(node => node.props.text)).toEqual([
     'Opening',
@@ -262,7 +268,10 @@ test('a screen asking to open something hears whether it opened, in the host’s
     // A project's page, which the host opens only when the person can (Brydio `24d7144`).
     'project proj_1: opened',
     'project proj_hidden: There is no such project.',
-    'url https://example.com: An app can open a chat, a file, a project or one of its own items, by id.',
+    'route /plan//plan_1/details/: opened',
+    'selected nothing',
+    'route //example.com: An app can open one of its own routes, or a chat, file, project or item by id.',
+    'url https://example.com: An app can open one of its own routes, or a chat, file, project or item by id.',
     'item note_a: opened',
     // Opening one of the app's own items makes it the screen's selection, as Brydio's screen does.
     'selected {"kind":"item","id":"note_a"}',
@@ -275,6 +284,7 @@ test('a screen asking to open something hears whether it opened, in the host’s
     { kind: 'item', id: 'note_gone', opened: false, error: 'There is no such note.' },
     { kind: 'project', id: 'proj_1', opened: true },
     { kind: 'project', id: 'proj_hidden', opened: false, error: 'There is no such project.' },
+    { kind: 'route', path: '/plan/plan_1/details', opened: true },
     { kind: 'item', id: 'note_a', opened: true },
   ]);
 });

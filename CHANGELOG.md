@@ -22,6 +22,12 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.10
+
+- **FakeHost now models nested pages completely.** Tests receive
+  `context.route`, route navigation is validated like Brydio, and successful
+  navigation updates the test host context without restarting the screen.
+
 ## 0.1.0-alpha.9
 
 - **App screens can own nested pages.** Read `context.route.path` and call
