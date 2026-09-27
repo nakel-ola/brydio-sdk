@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { Blob } from 'node:buffer';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -73,7 +72,8 @@ function app(grants: object = {}): string {
 function run(entry: string) {
   const tree = new TreeStore();
   const said: { jsonrpc?: string; method: string; params: any }[] = [];
-  const worker = new Worker(URL.createObjectURL(new Blob([`import(${JSON.stringify(entry)});`], { type: 'text/javascript' })), {
+  const source = `import(${JSON.stringify(entry)});`;
+  const worker = new Worker(`data:text/javascript;charset=utf-8,${encodeURIComponent(source)}`, {
     type: 'module',
   });
 
