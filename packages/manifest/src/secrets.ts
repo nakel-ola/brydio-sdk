@@ -44,9 +44,14 @@ const isRealValue = (value: unknown): boolean => {
   return true;
 };
 
-function walk(node: unknown, at: string, found: SecretFound[]): void {
+function walk(
+  node: unknown,
+  at: string,
+  found: SecretFound[],
+  publicValue: (path: string) => boolean = () => false,
+): void {
   if (Array.isArray(node)) {
-    node.forEach((one, index) => walk(one, `${at}[${index}]`, found));
+    node.forEach((one, index) => walk(one, `${at}[${index}]`, found, publicValue));
 
     return;
   }
@@ -56,13 +61,13 @@ function walk(node: unknown, at: string, found: SecretFound[]): void {
   for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
     const path = at ? `${at}.${key}` : key;
 
-    if (VALUE_KEYS.has(key) && isRealValue(value)) {
+    if (VALUE_KEYS.has(key) && isRealValue(value) && !publicValue(path)) {
       // Never quoted back: a report that repeated the secret would copy it somewhere else.
       found.push({ code: 'secret_in_bundle', message: SECRET_MESSAGE, path });
       continue;
     }
 
-    walk(value, path, found);
+    walk(value, path, found, publicValue);
   }
 }
 
@@ -74,7 +79,7 @@ function walk(node: unknown, at: string, found: SecretFound[]): void {
 export function secretsInJson(document: unknown, at: string): SecretFound[] {
   const found: SecretFound[] = [];
 
-  walk(document, at, found);
+  walk(document, at, found, path => /(?:^|\.)placements\[\d+\]\.key$/.test(path));
 
   return found;
 }

@@ -155,6 +155,15 @@ describe('the secret scan', () => {
     expect(JSON.stringify(findSecrets(CASES[1]!))).not.toContain('abc123');
   });
 
+  test('does not mistake a placement identity for a credential', () => {
+    expect(
+      secretsInJson(
+        { placements: [{ key: 'sprint-folder', kind: 'project-sidebar', screen: 'sprint' }] },
+        'app.json',
+      ),
+    ).toEqual([]);
+  });
+
   test('finds what Brydio’s secret-scan.ts finds, in its words', async () => {
     const manifest = { name: 'x', grants: { host: ['navigate'] }, settings: [{ token: 'live-abc' }, { password: '<yours>' }] };
     const server = await brydioAnswers('secret-scan', [SERVER_SECRETS, SERVER_CODES], async () => {
