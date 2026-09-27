@@ -39,8 +39,9 @@ import { zipFiles } from './zip.ts';
  * with no such route is from before the check: the upload goes ahead, and the
  * command says the version was not checked.
  *
- * Sign-in is a token in `BRYDIO_TOKEN`, sent as a bearer token: the same
- * Clerk session token the web app sends. The address is `BRYDIO_API_URL`.
+ * Authorization is a key from Brydio Settings > Developer in
+ * `BRYDIO_TOKEN`, sent as a bearer token. It needs the `apps:publish` scope.
+ * The address is `BRYDIO_API_URL`.
  *
  * With `--key` (or `BRYDIO_SIGNING_KEY`, a path to the same file), the
  * version is signed here before it goes up (A7-F05-S03): the app, the
@@ -60,7 +61,7 @@ export const LATEST_PATH = (appKey: string) => `/api/v1/apps/publish/${encodeURI
 export interface PublishOptions {
   /** Brydio's API, like `https://api.brydio.app`. `BRYDIO_API_URL` unless given. */
   apiUrl?: string;
-  /** The session token. `BRYDIO_TOKEN` unless given. */
+  /** A Settings > Developer key with apps:publish. `BRYDIO_TOKEN` unless given. */
   token?: string;
   out?: (line: string) => void;
   /** For tests: the request, made some other way. */
@@ -139,7 +140,7 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
   }
 
   if (!token) {
-    out(`Set ${TOKEN_ENV} to a Brydio session token. The version is published as the account it belongs to.`);
+    out(`Set ${TOKEN_ENV} to a key from Brydio Settings > Developer with Publish apps permission.`);
 
     return 2;
   }
@@ -389,7 +390,7 @@ function turnedAway(status: number, apiUrl: string, body: Record<string, unknown
       return 'Apps are not on for your workspace, so nothing can be published to it.';
     case 401:
     case 403:
-      return `Brydio did not accept the token in ${TOKEN_ENV}. Sign in again and use a fresh one.`;
+      return `Brydio did not accept the token in ${TOKEN_ENV}. Make a new key in Brydio Settings > Developer with Publish apps permission.`;
     case 404:
       // No route at all: a Brydio from before A5-F04, or one with Apps switched off whole.
       return `${apiUrl} has no publish route. That Brydio is older than publishing, or has Apps switched off.`;
@@ -397,4 +398,3 @@ function turnedAway(status: number, apiUrl: string, body: Record<string, unknown
       return `Brydio answered ${status}: ${typeof body?.message === 'string' ? body.message : 'something went wrong.'}`;
   }
 }
-

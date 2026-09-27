@@ -15,7 +15,7 @@ import { API_URL_ENV, TOKEN_ENV } from './publish.ts';
  * cross-origin`), because a sandboxed frame's origin is opaque and a module
  * import from it is a cross-origin request.
  *
- * Signed in (`BRYDIO_API_URL` and `BRYDIO_TOKEN`, as `publish` is), it puts
+ * Authorized (`BRYDIO_API_URL` and a scoped `BRYDIO_TOKEN`, as `publish` is), it puts
  * the app on a project you own as a development tab that loads from here.
  * The first run asks which project and remembers it in `.brydio/dev.json`.
  * Every good build tells Brydio, and the open tab starts the app again with
@@ -36,7 +36,7 @@ export interface DevOptions {
   brydio?: string;
   /** Brydio's API. `BRYDIO_API_URL` unless given. */
   apiUrl?: string;
-  /** The session token. `BRYDIO_TOKEN` unless given. */
+  /** A Settings > Developer key with apps:develop. `BRYDIO_TOKEN` unless given. */
   token?: string;
   /** The project to show the tab on, over what `.brydio/dev.json` remembers. */
   projectId?: string;
@@ -203,7 +203,7 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
     if (options.projectId) return options.projectId;
     if (remembered.projectId && remembered.apiUrl === apiUrl) return remembered.projectId;
 
-    const listed = await call('GET', '/api/v1/projects');
+    const listed = await call('GET', `${DEV_PATH}/projects`);
 
     if (listed.status !== 200) throw new DevRefused(turnedAway(listed, apiUrl));
 
@@ -358,7 +358,8 @@ function messageOf(answer: Answer): string {
 
 /** What to tell the person when Brydio said no, in its words where it gave some. */
 function turnedAway(answer: Answer, apiUrl: string): string {
-  if (answer.status === 401) return `${apiUrl} did not accept ${TOKEN_ENV}. Sign in again and use a fresh token.`;
+  if (answer.status === 401)
+    return `${apiUrl} did not accept ${TOKEN_ENV}. Make a new key in Brydio Settings > Developer and give it the Develop apps permission.`;
   if (answer.status === 423) return "Apps aren't switched on for this workspace. An administrator can turn them on.";
 
   return messageOf(answer);

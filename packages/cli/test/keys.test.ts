@@ -102,6 +102,24 @@ const approverFile = (home: string, over: Partial<KeyFile> = {}): string => {
 };
 
 describe('brydio keys create', () => {
+  test('uses the scoped publishing identity route', () => {
+    expect(PUBLISHERS_PATH).toBe('/api/v1/apps/publishing/publishers');
+  });
+
+  test('asks for a Developer Settings key with Publish apps permission', async () => {
+    const missing = await run(['create'], server(), {
+      home: folder(),
+      token: '',
+    });
+
+    expect(missing).toMatchObject({
+      code: 2,
+      text: expect.stringContaining(
+        'Brydio Settings > Developer with Publish apps permission'
+      ),
+    });
+  });
+
   test('makes the pair here, registers the public half alone, and keeps the private one in a file only this account can read', async () => {
     const home = folder();
     const route = server();

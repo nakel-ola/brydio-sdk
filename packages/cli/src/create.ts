@@ -134,7 +134,7 @@ export async function create(name: string, options: CreateOptions = {}): Promise
       '',
       `cd ${name}`,
       'bun run test      the tests, against the fake host',
-      'bun run dev       a tab in your own project (set BRYDIO_API_URL and BRYDIO_TOKEN first)',
+      'bun run dev       a tab in your own project (set BRYDIO_API_URL and a Developer Settings BRYDIO_TOKEN first)',
       '',
     ].join('\n'),
   );

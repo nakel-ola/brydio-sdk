@@ -20,7 +20,7 @@ const HELP = `brydio — build and check a Brydio app
                              Build, then run the app's *.test.ts against the build
                              with @brydio/fake-host
   brydio publish [folder]    Build, validate, and upload the bundle to Brydio as a new version
-                             signed in with BRYDIO_TOKEN, to BRYDIO_API_URL
+                             authorized with BRYDIO_TOKEN, to BRYDIO_API_URL
                              --api <url>    the API's address, instead of BRYDIO_API_URL
                              --key <file>   sign this version with a key from brydio keys
                                             create, instead of BRYDIO_SIGNING_KEY
@@ -41,7 +41,7 @@ const HELP = `brydio — build and check a Brydio app
                              --api <url>    the API's address, instead of BRYDIO_API_URL
   brydio dev [folder]        Build, serve dist/ on localhost, show it as a tab in a project, and build again on change
                              --project <id> the project (asked once, then kept in .brydio/dev.json)
-                             --api <url>    Brydio's API (BRYDIO_API_URL); signs in with BRYDIO_TOKEN
+                             --api <url>    Brydio's API (BRYDIO_API_URL); uses BRYDIO_TOKEN
                              --port <n>     the port (5174)
                              --brydio <dir> Brydio's checkout, for the printed load command
 

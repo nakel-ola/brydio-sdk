@@ -49,7 +49,7 @@ interface Call {
 function brydio(answers: Record<string, (body: any) => [number, unknown]> = {}) {
   const calls: Call[] = [];
   const defaults: Record<string, (body: any) => [number, unknown]> = {
-    'GET /api/v1/projects': () => [200, [{ id: 'p_1', name: 'Launch' }, { id: 'p_2', name: 'Bugs' }]],
+    'GET /api/v1/apps/development/projects': () => [200, [{ id: 'p_1', name: 'Launch' }, { id: 'p_2', name: 'Bugs' }]],
     'POST /api/v1/apps/development': body => [201, { id: 'dev_1', instanceId: 'i_1', placementId: 'pl_1', projectId: body.projectId, build: 0 }],
     'POST /api/v1/apps/development/dev_1/heartbeat': body => [200, { build: body.build ?? 0 }],
     'DELETE /api/v1/apps/development/dev_1': () => [204, null],
@@ -99,7 +99,7 @@ describe('brydio dev, signed in', () => {
     const { session, lines } = await run(root, server);
 
     expect(server.calls.map(call => `${call.method} ${call.path}`)).toEqual([
-      'GET /api/v1/projects',
+      'GET /api/v1/apps/development/projects',
       'POST /api/v1/apps/development',
     ]);
 
@@ -204,6 +204,18 @@ describe('brydio dev, signed in', () => {
     });
 
     await expect(run(tiny(), off, { projectId: 'p_1' })).rejects.toThrow(/Apps aren't switched on/);
+  });
+
+  test('explains that BRYDIO_TOKEN comes from Developer settings when it is refused', async () => {
+    const refused = brydio({
+      'POST /api/v1/apps/development': () => [401, { message: 'That API key is not valid.' }],
+    });
+
+    await expect(run(tiny(), refused, { projectId: 'p_1' })).rejects.toThrow(
+      new DevRefused(
+        'http://brydio.test did not accept BRYDIO_TOKEN. Make a new key in Brydio Settings > Developer and give it the Develop apps permission.'
+      )
+    );
   });
 });
 

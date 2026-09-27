@@ -27,7 +27,7 @@ import { API_URL_ENV, TOKEN_ENV } from './api.ts';
 export const SIGNING_KEY_ENV = 'BRYDIO_SIGNING_KEY';
 /** Where key files are kept, unless `--out` says otherwise. */
 export const KEYS_HOME_ENV = 'BRYDIO_KEYS_HOME';
-export const PUBLISHERS_PATH = '/api/v1/apps/publisher-accounts/mine';
+export const PUBLISHERS_PATH = '/api/v1/apps/publishing/publishers';
 export const KEYS_PATH = (publisherId: string) => `/api/v1/apps/publisher-accounts/${encodeURIComponent(publisherId)}/keys`;
 export const KEY_APPROVAL_VERSION = 'brydio-key-v1';
 
@@ -270,7 +270,7 @@ async function caller(options: KeysOptions): Promise<Caller> {
 
   if (!apiUrl || !/^https?:\/\//.test(apiUrl)) throw new KeysRefused(`Set ${API_URL_ENV} to your Brydio's API address, like http://localhost:4000.`);
 
-  if (!token) throw new KeysRefused(`Set ${TOKEN_ENV} to a Brydio session token. Keys are added as the account it belongs to.`);
+  if (!token) throw new KeysRefused(`Set ${TOKEN_ENV} to a key from Brydio Settings > Developer with Publish apps permission.`);
 
   const request = options.fetch ?? fetch;
   const send = async <T>(path: string, init: RequestInit): Promise<T> => {
@@ -291,7 +291,7 @@ async function caller(options: KeysOptions): Promise<Caller> {
 
     const said = typeof body?.message === 'string' ? body.message : Array.isArray(body?.message) ? body.message.join(' ') : '';
 
-    if (answer.status === 401) throw new KeysRefused(`Brydio did not accept the token in ${TOKEN_ENV}. Sign in again and use a fresh one.`);
+    if (answer.status === 401) throw new KeysRefused(`Brydio did not accept the token in ${TOKEN_ENV}. Make a new key in Brydio Settings > Developer with Publish apps permission.`);
 
     if (answer.status === 404 && !said) throw new KeysRefused(`${apiUrl} has no signing keys route. That Brydio is older than signing.`);
 

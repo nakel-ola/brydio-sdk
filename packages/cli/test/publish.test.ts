@@ -270,8 +270,12 @@ describe('brydio publish', () => {
   test('explains a Brydio with no publish route, Apps off, and a token it did not take', async () => {
     expect((await run(tiny(), server(404, () => ({ statusCode: 404 })))).text).toContain('has no publish route');
     expect((await run(tiny(), server(423, () => ({ statusCode: 423 })))).text).toContain('Apps are not on');
-    expect((await run(tiny(), server(401, () => ({ statusCode: 401 })))).text).toContain('did not accept the token in BRYDIO_TOKEN');
-    expect((await run(tiny(), server(403, () => ({ statusCode: 403 })))).text).toContain('did not accept the token in BRYDIO_TOKEN');
+    expect((await run(tiny(), server(401, () => ({ statusCode: 401 })))).text).toContain(
+      'Make a new key in Brydio Settings > Developer with Publish apps permission',
+    );
+    expect((await run(tiny(), server(403, () => ({ statusCode: 403 })))).text).toContain(
+      'Make a new key in Brydio Settings > Developer with Publish apps permission',
+    );
   });
 
   test('says what Brydio said when a signed-in account may not publish the app, not that the token is bad', async () => {
