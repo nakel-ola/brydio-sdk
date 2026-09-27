@@ -77,7 +77,19 @@ const folderLevelSchema = z.object({
   create: folderCreateSchema.optional(),
 });
 
+/** A stable identity for one independently addable placement offering. */
+export const PLACEMENT_KEY = /^[a-z][a-z0-9-]{0,39}$/;
+
+export function effectivePlacementKey(one: {
+  key?: string;
+  kind: string;
+  screen: string;
+}): string {
+  return one.key ?? `${one.kind}:${one.screen}`;
+}
+
 const placementSchema = z.object({
+  key: z.string().regex(PLACEMENT_KEY).optional(),
   kind: z.enum(['project-tab', 'project-sidebar', 'workspace-sidebar']),
   screen: z.string().min(1).max(FIELD_LIMITS.nameChars),
   label: z.string().min(1).max(60).optional(),
@@ -244,6 +256,7 @@ export type DataProblemCode =
   | 'custom_name_taken'
   | 'custom_collection_unknown'
   | 'custom_input_invalid'
+  | 'placement_key_taken'
   | 'placement_screen_unknown'
   | 'placement_children_too_deep'
   | 'placement_create_tool_unknown'
@@ -408,8 +421,20 @@ export function dataProblems(additions: Additions, options: { grants?: boolean }
   problems.push(...secretProblems(additions, options));
 
   const screens = new Set(Object.keys(additions.screens ?? {}));
+  const placementKeys = new Set<string>();
 
   for (const placement of additions.placements ?? []) {
+    const key = effectivePlacementKey(placement);
+
+    if (placementKeys.has(key)) {
+      problems.push({
+        code: 'placement_key_taken',
+        message: `Two placements use the key "${key}"; each independently addable placement needs its own key.`,
+      });
+    } else {
+      placementKeys.add(key);
+    }
+
     if (!screens.has(placement.screen)) {
       problems.push({
         code: 'placement_screen_unknown',

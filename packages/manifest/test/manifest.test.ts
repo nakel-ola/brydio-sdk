@@ -9,6 +9,7 @@ import {
   bundleHash,
   bundleProblem,
   collectionsOf,
+  effectivePlacementKey,
   generatedToolsOf,
   parseFieldType,
   compareVersions,
@@ -92,6 +93,29 @@ describe('the example manifests', () => {
 });
 
 describe('the Issues manifest', () => {
+  test('keeps distinct placement keys and derives one for a legacy placement', () => {
+    const parsed = appManifestSchema.parse({
+      ...ISSUES_MANIFEST,
+      placements: [
+        { key: 'list', kind: 'project-tab', screen: 'board' },
+        { key: 'sprint', kind: 'project-tab', screen: 'board' },
+      ],
+    });
+
+    expect(parsed.placements?.map(one => one.key)).toEqual(['list', 'sprint']);
+    expect(effectivePlacementKey({ kind: 'project-tab', screen: 'board' })).toBe('project-tab:board');
+  });
+
+  test('refuses duplicate effective placement keys', () => {
+    expect(codesOf({
+      ...ISSUES_MANIFEST,
+      placements: [
+        { key: 'list', kind: 'project-tab', screen: 'board' },
+        { key: 'list', kind: 'project-sidebar', screen: 'board' },
+      ],
+    })).toContain('placement_key_taken');
+  });
+
   test('parses whole, as the server’s fixture does', () => {
     const parsed = appManifestSchema.parse(ISSUES_MANIFEST);
 
