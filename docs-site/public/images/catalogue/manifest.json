@@ -485,8 +485,8 @@
   "bry-spinner": {
     "light": "bry-spinner-light.png",
     "dark": "bry-spinner-dark.png",
-    "lightHash": "ebe547ac33497e5f06f6bd9bfb7816a76439caea33f6f1b447cb75efb56da77e",
-    "darkHash": "c9f33eb91897df34d2a6bb9a1b8fde5c780928f00a03c26420f3181450f9a8a1",
+    "lightHash": "4a38dfdeb6e8c5ccaafe08ed01de42fd384cea173165c139bf4f2626e3be88db",
+    "darkHash": "e227a5b9849f4f07fac411c55b919da1a6ec3a7499f7cbf1e384d567f4627f2b",
     "sourceHash": "4eba40b3d892151e59e81bcc0b344c5f7c2202bf90f3f1a5922b2838ceb49313"
   },
   "bry-tabs": {

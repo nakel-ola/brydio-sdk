@@ -259,7 +259,7 @@ var CATALOGUE = {
       wrap: { kind: "boolean" },
       variant: {
         kind: "enum",
-        values: ["default", "page", "toolbar", "scroll", "section", "section-header", "filter-bar", "page-body", "action-bar"]
+        values: ["default", "page", "toolbar", "scroll", "section", "section-header", "filter-bar", "page-body", "action-bar", "inset"]
       }
     },
     events: [],
