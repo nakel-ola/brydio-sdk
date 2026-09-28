@@ -1,5 +1,5 @@
 /// <reference lib="dom" />
-import { css, html, nothing, type TemplateResult } from '../base.ts';
+import { css, html, nothing, svg, type TemplateResult } from '../base.ts';
 import { BUTTON_ICONS, ENTITY_STATUSES, MARKS, PRIORITIES, STATE_GROUPS } from '../../catalogue.ts';
 import { drawAs, settingOf } from '../define.ts';
 import { keptOf, type El } from './catalogue-b-shared.ts';
@@ -53,6 +53,20 @@ const as = (element: unknown) => element as El;
 
 // ---------------------------------------------------------------------------
 
+/** A completion ring: grey under half, brand past it, warning past everything, as the host draws it. */
+function progressRing(value: number, size: number) {
+  const stroke = 2;
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const dash = (Math.min(100, Math.max(0, value)) / 100) * circ;
+  const ink = value > 100 ? 'var(--warn-fg)' : value > 50 ? 'var(--brand-fg)' : 'var(--fg-muted)';
+
+  return svg`<svg width=${size} height=${size} viewBox=${`0 0 ${size} ${size}`} style="transform: rotate(-90deg)" aria-hidden="true">
+    <circle cx=${size / 2} cy=${size / 2} r=${r} fill="none" stroke="currentColor" stroke-opacity="0.15" stroke-width=${stroke}></circle>
+    <circle cx=${size / 2} cy=${size / 2} r=${r} fill="none" stroke=${ink} stroke-width=${stroke} stroke-dasharray=${`${dash} ${circ}`} stroke-linecap="round"></circle>
+  </svg>`;
+}
+
 drawAs(
   'bry-glyph',
   element => {
@@ -60,9 +74,11 @@ drawAs(
     const size = element.size === 'md' ? 'md' : 'sm';
     const label = str(element.label);
     const mark =
-      element.kind === 'priority'
-        ? priorityMark(pick(PRIORITIES, element.priority) ?? 'none', tone, size)
-        : stateMark(pick(STATE_GROUPS, element.group) ?? 'unstarted', tone, size);
+      element.kind === 'progress'
+        ? progressRing(typeof element.value === 'number' ? element.value : 0, size === 'md' ? 16 : 14)
+        : element.kind === 'priority'
+          ? priorityMark(pick(PRIORITIES, element.priority) ?? 'none', tone, size)
+          : stateMark(pick(STATE_GROUPS, element.group) ?? 'unstarted', tone, size);
 
     // With a label it is a picture a screen reader names; without, decoration.
     return html`<span class="glyph" role=${label ? 'img' : nothing} aria-label=${label || nothing} aria-hidden=${label ? nothing : 'true'}>${mark}</span>`;

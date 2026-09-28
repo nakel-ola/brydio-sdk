@@ -181,6 +181,7 @@ drawAs(
         maxlength=${typeof element.maxLength === 'number' ? element.maxLength : nothing}
         ?required=${element.required === true}
         ?disabled=${element.disabled === true}
+        ?autofocus=${element.autofocus === true}
         aria-invalid=${invalid ? 'true' : nothing}
         aria-describedby=${invalid ? 'error' : nothing}
         @input=${(event: Event) => {
@@ -189,7 +190,13 @@ drawAs(
           set(value);
           element.emit('change', { value });
         }}
+        @blur=${(event: Event) => element.emit('blur', { value: (event.currentTarget as HTMLInputElement).value })}
         @keydown=${(event: KeyboardEvent) => {
+          if (event.key === 'Escape') {
+            element.emit('cancel');
+
+            return;
+          }
           if (event.key !== 'Enter' || event.isComposing) return;
           event.preventDefault();
           element.emit('submit', { value: (event.currentTarget as HTMLInputElement).value });

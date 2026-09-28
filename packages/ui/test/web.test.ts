@@ -2141,7 +2141,7 @@ describe('the issue tracker drawings', () => {
     await settle();
     const sort = heard('#s', 'sort');
     const hide = heard('#s', 'hide');
-    const all = heard('#s', 'selectAll');
+    const all = heard('#s', 'all');
     const row = heard('#r', 'expand');
     const group = heard('#g', 'toggle');
 

@@ -405,9 +405,12 @@ export const CATALOGUE = {
       error: { kind: 'text', max: LABEL_MAX },
       // `bare` has no box, for a composer's title: `size="lg"` sets it as one.
       variant: { kind: 'enum', values: ['default', 'bare'] },
+      // Takes the focus when it first appears.
+      autofocus: { kind: 'boolean' },
       size: { kind: 'enum', values: SIZES },
     },
-    events: ['change', 'submit'],
+    // `blur` with `{ value }` when the person leaves the field; `cancel` on Escape.
+    events: ['change', 'submit', 'blur', 'cancel'],
     children: false,
   },
   'bry-textarea': {
@@ -507,6 +510,10 @@ export const CATALOGUE = {
       density: { kind: 'enum', values: ['default', 'compact'] },
       menu: { kind: 'list', max: ROW_MENU_ITEMS, of: MENU_ITEM },
       removable: { kind: 'boolean' },
+      // A work row for something finished: its title greyed.
+      muted: { kind: 'boolean' },
+      // A work row's first child sits before the identifier.
+      lead: { kind: 'boolean' },
     },
     events: ['press', 'toggle', 'select', 'remove'],
     children: true,
@@ -1562,7 +1569,9 @@ export const CATALOGUE = {
     // own colour. `label` is what a screen reader hears; without one the mark
     // is decoration.
     props: {
-      kind: { kind: 'enum', values: ['state', 'priority'] },
+      // `progress` draws a completion ring filled to `value` (0 to 100).
+      kind: { kind: 'enum', values: ['state', 'priority', 'progress'] },
+      value: { kind: 'int', min: 0, max: 100 },
       group: { kind: 'enum', values: STATE_GROUPS },
       priority: { kind: 'enum', values: PRIORITIES },
       tone: { kind: 'enum', values: TONES },
@@ -1937,7 +1946,7 @@ export const CATALOGUE = {
   'bry-spreadsheet': {
     // A table whose cells are live elements. A heading's menu raises `sort`
     // with `{ key, direction }` and `hide` with `{ key }`; with
-    // `selectable`, the corner box raises `selectAll` with `{ checked }`.
+    // `selectable`, the corner box raises `all` with `{ checked }`.
     // Its children are `bry-spreadsheet-group`s and `bry-spreadsheet-row`s.
     props: {
       label: { kind: 'text', max: LABEL_MAX },
@@ -1969,7 +1978,7 @@ export const CATALOGUE = {
       empty: { kind: 'text', max: LABEL_MAX },
     },
     required: ['columns'],
-    events: ['sort', 'hide', 'selectAll'],
+    events: ['sort', 'hide', 'all'],
     children: true,
   },
   'bry-spreadsheet-row': {

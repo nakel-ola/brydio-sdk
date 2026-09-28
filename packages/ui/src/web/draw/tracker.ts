@@ -1555,7 +1555,7 @@ drawAs(
                   aria-label="Select all"
                   .checked=${total > 0 && selected === total}
                   .indeterminate=${selected > 0 && selected < total}
-                  @change=${(event: Event) => host.emit('selectAll', { checked: (event.currentTarget as HTMLInputElement).checked })}
+                  @change=${(event: Event) => host.emit('all', { checked: (event.currentTarget as HTMLInputElement).checked })}
                 />
               </div>`
             : nothing}

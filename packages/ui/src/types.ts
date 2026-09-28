@@ -68,6 +68,14 @@ export interface EventDetails {
  * `action` names the button. Looked up first, by element.
  */
 export interface ElementEventDetails {
+  'bry-input': {
+    change: { value: string };
+    submit: { value: string };
+    /** The person left the field: what it held. */
+    blur: { value: string };
+    /** Escape. */
+    cancel: undefined;
+  };
   'bry-list-row': {
     /** Whether the work row's selection box is checked now. */
     toggle: { checked: boolean };
@@ -330,7 +338,7 @@ export interface ElementEventDetails {
     /** A heading's menu asked to hide its column. */
     hide: { key: string };
     /** The corner box: every row chosen, or none. */
-    selectAll: { checked: boolean };
+    all: { checked: boolean };
   };
   'bry-spreadsheet-row': {
     /** Whether the row's box is ticked now. */

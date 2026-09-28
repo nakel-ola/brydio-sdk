@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "d65777feffc546db9b0cd3e528d9c105f90131b4",
+    "commit": "2f9f61ab3d2b078b42451f50a526cf60e5dcb7db",
     "dirty": true
   },
   "contracts": {
@@ -325,6 +325,9 @@
                 "bare"
               ]
             },
+            "autofocus": {
+              "kind": "boolean"
+            },
             "size": {
               "kind": "enum",
               "values": [
@@ -336,7 +339,9 @@
           },
           "events": [
             "change",
-            "submit"
+            "submit",
+            "blur",
+            "cancel"
           ],
           "children": false
         },
@@ -681,6 +686,12 @@
               }
             },
             "removable": {
+              "kind": "boolean"
+            },
+            "muted": {
+              "kind": "boolean"
+            },
+            "lead": {
               "kind": "boolean"
             }
           },
@@ -3991,8 +4002,14 @@
               "kind": "enum",
               "values": [
                 "state",
-                "priority"
+                "priority",
+                "progress"
               ]
+            },
+            "value": {
+              "kind": "int",
+              "min": 0,
+              "max": 100
             },
             "group": {
               "kind": "enum",
@@ -5688,7 +5705,7 @@
           "events": [
             "sort",
             "hide",
-            "selectAll"
+            "all"
           ],
           "children": true
         },

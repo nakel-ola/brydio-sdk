@@ -199,9 +199,10 @@ Holds nothing: it is drawn from its settings alone.
 | `disabled` | `true` or `false` | no |
 | `error` | text, at most 200 characters | no |
 | `variant` | `default`, `bare` | no |
+| `autofocus` | `true` or `false` | no |
 | `size` | `sm`, `md`, `lg` | no |
 
-Tells the app: `change`, `submit`.
+Tells the app: `change`, `submit`, `blur`, `cancel`.
 
 ## `bry-textarea`
 
@@ -301,6 +302,8 @@ Holds other elements or text.
 | `density` | `default`, `compact` | no |
 | `menu` | a list of at most 60: a record of `id`, `label`, `icon`, `tone`, `separator`, `disabled`, `checked`, `parent` (needs `id`, `label`) | no |
 | `removable` | `true` or `false` | no |
+| `muted` | `true` or `false` | no |
+| `lead` | `true` or `false` | no |
 
 Tells the app: `press`, `toggle`, `select`, `remove`.
 
@@ -1118,7 +1121,8 @@ Holds nothing: it is drawn from its settings alone.
 
 | Setting | Takes | Needed |
 |---|---|---|
-| `kind` | `state`, `priority` | yes |
+| `kind` | `state`, `priority`, `progress` | yes |
+| `value` | a whole number from 0 to 100 | no |
 | `group` | `backlog`, `unstarted`, `started`, `completed`, `cancelled` | no |
 | `priority` | `urgent`, `high`, `medium`, `low`, `none` | no |
 | `tone` | `neutral`, `brand`, `success`, `warn`, `danger` | no |
@@ -1352,7 +1356,7 @@ Holds other elements or text.
 | `loading` | `true` or `false` | no |
 | `empty` | text, at most 200 characters | no |
 
-Tells the app: `sort`, `hide`, `selectAll`.
+Tells the app: `sort`, `hide`, `all`.
 
 ## `bry-spreadsheet-row`
 

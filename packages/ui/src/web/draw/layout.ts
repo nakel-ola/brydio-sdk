@@ -145,6 +145,15 @@ drawAs(
   ],
 );
 
+/** A work row's first child, moved before the identifier: the light DOM can't be reordered, so it is slotted. */
+function leadSlot(element: HTMLElement) {
+  const first = element.firstElementChild;
+
+  if (first && !first.getAttribute('slot')) first.setAttribute('slot', 'lead');
+
+  return html`<slot name="lead"></slot>`;
+}
+
 /** What takes a press of its own inside a pressable row. */
 const INTERACTIVE =
   "button, a, input, textarea, select, [role='menuitem'], [role='option'], [role='combobox'], bry-button, bry-input, bry-textarea, bry-select, bry-checkbox, bry-switch, bry-menu, bry-property, bry-filter-menu";
@@ -239,8 +248,9 @@ drawAs(
               @change=${(event: Event) => element.emit('toggle', { checked: (event.currentTarget as HTMLInputElement).checked })}
             />`
           : nothing}
+        ${element.lead === true ? leadSlot(element) : nothing}
         ${identifier ? html`<span class="identifier mono">${identifier}</span>` : nothing}
-        <p class="type-ui work-title truncate">${title}</p>
+        <p class="type-ui work-title truncate ${element.muted === true ? 'muted' : ''}">${title}</p>
         <div class="chips"><slot></slot></div>
         ${meta ? html`<p class="type-caption meta">${meta}</p>` : nothing}
         ${rowMenu(element as unknown as El, element.menu, `Options for ${identifier || title}`)}
@@ -413,6 +423,10 @@ drawAs(
       .work-title {
         min-width: 0;
         flex: 1;
+      }
+      .work-title.muted {
+        color: var(--fg-muted);
+        text-decoration: line-through;
       }
       .selected {
         background: var(--layer-selected);
