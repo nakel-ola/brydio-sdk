@@ -22,6 +22,10 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.18
+
+- `useMembers` / `useProjects` ask again (after 2, 4, 8 and 16 seconds) when Brydio refuses a name lookup, for instance at its read limit. Before, a name refused once stayed blank until the screen reopened.
+
 ## 0.1.0-alpha.17
 
 - `copy(text | { route })`: put text, or a full link to one of the app's own pages, on the clipboard (bridge `ui/copy`). Resolves with whether it was copied.
