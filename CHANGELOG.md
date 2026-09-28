@@ -22,6 +22,15 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.17
+
+- `copy(text | { route })`: put text, or a full link to one of the app's own pages, on the clipboard (bridge `ui/copy`). Resolves with whether it was copied.
+- `download(name, text, type?)`: hand the person a text file to save — CSV, plain text, Markdown or JSON, up to 5 MB (bridge `ui/download`).
+- `navigate({ kind: 'route', path, newTab: true })` opens one of the app's pages in a Brydio tab of its own.
+- `bry-list-row` and `bry-work-card` `press` now carry `{ shift, mod }` when Shift or ⌘/Ctrl was held (nothing otherwise), for "Shift-click does the other".
+- `bry-split` fills the stack it sits in.
+- FakeHost records `copied` and `downloads`, and keeps its route when a page opens in a new tab.
+
 ## 0.1.0-alpha.16
 
 - `bry-property` members: a single assignee is named beside their face (except `display="icon"` and `"dot"`), as in Multica's property rows.
