@@ -22,6 +22,11 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.22
+
+- `bry-input` `submit` carries `shift: true` when Shift+Enter was pressed.
+- Brydio no longer lets a late echo of what was typed undo the keys pressed since (fast typing in a field an app keeps in sync).
+
 ## 0.1.0-alpha.21
 
 - Label colours: a `hue` enum (Multica's ten: gray, red, orange, yellow, green, teal, blue, indigo, purple, pink) on `bry-badge`, `bry-board-column`, `bry-property` options, `bry-work-card` labels, `bry-filter-menu` options and `bry-filter-chip` marks. `hue` wins over `tone`.
