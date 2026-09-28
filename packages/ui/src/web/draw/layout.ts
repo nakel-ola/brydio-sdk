@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 import { css, html, nothing } from '../base.ts';
 import { drawAs } from '../define.ts';
-import { icon, PLAN, rowMenu } from './plan-shared.ts';
+import { heldKeys, icon, PLAN, rowMenu } from './plan-shared.ts';
 import { FOCUS, pick, space, str, TYPE } from './tokens.ts';
 import type { El } from './catalogue-b-shared.ts';
 
@@ -169,11 +169,11 @@ drawAs(
     const selected = element.selected === true;
     const description = str(element.description);
     const meta = str(element.meta);
-    const press = () => element.emit('press');
+    const press = (event?: Event) => element.emit('press', event ? heldKeys(event) : undefined);
 
     const pressedOn = (event: Event) => {
       for (const target of event.composedPath()) {
-        if (target === element) return press();
+        if (target === element) return press(event);
         if (target instanceof Element && target.matches(INTERACTIVE)) return;
       }
     };
@@ -181,7 +181,7 @@ drawAs(
       if (event.composedPath()[0] !== event.currentTarget) return;
       if (event.key !== 'Enter' && event.key !== ' ') return;
       event.preventDefault();
-      press();
+      press(event);
     };
 
     if (element.variant === 'stacked') {
@@ -226,7 +226,7 @@ drawAs(
         @click=${pressable
           ? (event: Event) => {
               for (const target of event.composedPath()) {
-                if (target === element) return press();
+                if (target === element) return press(event);
                 if (target instanceof Element && target.matches(INTERACTIVE)) return;
               }
             }
@@ -236,7 +236,7 @@ drawAs(
               if (event.composedPath()[0] !== event.currentTarget) return;
               if (event.key !== 'Enter' && event.key !== ' ') return;
               event.preventDefault();
-              press();
+              press(event);
             }
           : nothing}
       >
@@ -278,7 +278,7 @@ drawAs(
       @click=${pressable
         ? (event: Event) => {
             for (const target of event.composedPath()) {
-              if (target === element) return press();
+              if (target === element) return press(event);
               if (target instanceof Element && target.matches(INTERACTIVE)) return;
             }
           }
@@ -288,7 +288,7 @@ drawAs(
             if (event.composedPath()[0] !== event.currentTarget) return;
             if (event.key !== 'Enter' && event.key !== ' ') return;
             event.preventDefault();
-            press();
+            press(event);
           }
         : nothing}
     >

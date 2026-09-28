@@ -15,6 +15,8 @@ import {
   type NavigateTarget,
   type RpcError,
   type RpcMessage,
+  type CopyTarget,
+  type DownloadType,
   type ToastAction,
   type ToastTone,
   type ToolResult,
@@ -403,6 +405,26 @@ export class Bridge {
     if (refused) throw refused;
 
     return this.request('ui/navigate', { to }).then(result => ({ opened: (result as { opened?: unknown } | undefined)?.opened === true }));
+  }
+
+  /**
+   * Puts text on the clipboard, or a link to one of the app's own routes
+   * (`{ route: '/issues/iss_1' }`), which Brydio writes out in full. Resolves
+   * with whether the clipboard took it; rejects with a `HostError` for more
+   * than 10,000 characters or a route that isn't the app's.
+   */
+  copy(what: CopyTarget): Promise<boolean> {
+    return this.request('ui/copy', typeof what === 'string' ? { text: what } : { route: what.route }).then(
+      result => (result as { copied?: unknown } | undefined)?.copied === true,
+    );
+  }
+
+  /**
+   * Hands the person a file the app made, to save ("Export CSV"): a name, its
+   * text (up to 5 MB) and a plain kind (CSV, text, Markdown or JSON).
+   */
+  download(name: string, text: string, type: DownloadType = 'text/plain'): Promise<void> {
+    return this.request('ui/download', { name, text, type }).then(() => undefined);
   }
 
   /**

@@ -91,7 +91,7 @@ export interface FakeHostOptions {
 /** What a screen may ask Brydio to open. */
 export type NavigateTo =
   | { kind: 'chat' | 'file' | 'item' | 'project'; id: string }
-  | { kind: 'route'; path: string };
+  | { kind: 'route'; path: string; newTab?: boolean };
 
 /** One `@brydio/api` call a screen sent to the pretend host. */
 export interface ApiCall {
@@ -182,6 +182,10 @@ export class FakeHost {
   /** Every call made through `@brydio/api`, in order. */
   readonly apiCalls: ApiCall[] = [];
   readonly refusals: Refusal[] = [];
+  /** What the screen put on the clipboard: text, or a link to one of its routes. */
+  readonly copied: ({ text: string } | { route: string })[] = [];
+  /** Files the screen handed the person to save. */
+  readonly downloads: { name: string; text: string; type: string }[] = [];
   readonly toasts: { text: string; tone: 'info' | 'success' | 'danger'; action?: { label: string; route: string } }[] = [];
   /** Each names request the screen made: which kind, and the ids. */
   readonly namesAsked: { kind: 'members' | 'projects'; ids: string[] }[] = [];
@@ -587,6 +591,45 @@ export class FakeHost {
 
         this.#ask(message.id, params);
         break;
+      case 'ui/copy':
+      case 'ui/download': {
+        if (!this.app) break;
+
+        const answer = (result: Record<string, unknown> | null) => {
+          if (message.id === undefined) return;
+          if (result) this.#send({ jsonrpc: '2.0', method: 'ui/result', params: { id: message.id, result } });
+          else this.#send({ jsonrpc: '2.0', method: 'ui/error', params: { id: message.id, error: { code: -32602, message: said } } });
+        };
+        let said = '';
+
+        if (message.method === 'ui/copy') {
+          const route = params.route === undefined ? null : appRoute(params.route);
+          const text = typeof params.text === 'string' ? params.text : '';
+
+          if (params.route !== undefined ? route === null : !text || text.length > 10_000) {
+            said = 'An app can copy up to 10000 characters of text, or a link to one of its own routes.';
+            answer(null);
+            break;
+          }
+
+          this.copied.push(route !== null ? { route } : { text });
+          answer({ copied: true });
+        } else {
+          const types = ['text/csv', 'text/plain', 'text/markdown', 'application/json'];
+          const name = typeof params.name === 'string' ? params.name.replace(/[^\w .()-]+/g, '-').replace(/^[.\s-]+/, '').trim().slice(0, 100) : '';
+          const type = params.type === undefined ? 'text/plain' : String(params.type);
+
+          if (!name || !types.includes(type) || typeof params.text !== 'string' || params.text.length > 5 * 1024 * 1024) {
+            said = `An app can hand over a named text file up to 5 MB, as ${types.join(', ')}.`;
+            answer(null);
+            break;
+          }
+
+          this.downloads.push({ name, text: params.text, type });
+          answer({ saved: true });
+        }
+        break;
+      }
       case 'ui/navigate':
         if (!this.app) break;
 
@@ -841,7 +884,7 @@ export class FakeHost {
 
     const asked: NavigateTo =
       target.kind === 'route'
-        ? { kind: 'route', path: route! }
+        ? { kind: 'route', path: route!, ...((target as { newTab?: unknown }).newTab === true ? { newTab: true } : {}) }
         : { kind: target.kind as 'chat' | 'file' | 'item' | 'project', id: target.id as string };
 
     this.#busy += 1;
@@ -853,7 +896,8 @@ export class FakeHost {
       if (id !== undefined) this.#send({ jsonrpc: '2.0', method: 'ui/result', params: { id, result: { opened: true } } });
 
       // As Brydio's screen does, after answering: an item the app opened becomes its selection.
-      if (asked.kind === 'route') this.setContext({ route: { path: asked.path } });
+      // A page opened in a new tab is another tab's: this screen stays where it is.
+      if (asked.kind === 'route' && !asked.newTab) this.setContext({ route: { path: asked.path } });
       if (asked.kind === 'item') this.setContext({ selection: { kind: 'item', id: asked.id } });
     } catch (error) {
       const message = (error instanceof Error ? error.message : 'That didn’t work.').slice(0, 300);

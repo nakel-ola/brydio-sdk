@@ -413,6 +413,14 @@ const INTERACTIVE =
   "button, a, input, textarea, select, [role='menuitem'], [role='menuitemcheckbox'], [role='option'], [role='combobox'], [role='checkbox'], [role='switch'], bry-button, bry-input, bry-textarea, bry-select, bry-checkbox, bry-switch, bry-menu, bry-property, bry-filter-menu";
 
 /** Whether a press was on `host` itself, not on a control within it. */
+/** The keys held on a press, or nothing when none were: Shift, and ⌘ or Ctrl. */
+export function heldKeys(event: Event): { shift: boolean; mod: boolean } | undefined {
+  const keys = event as Partial<MouseEvent>;
+  const mod = keys.metaKey === true || keys.ctrlKey === true;
+
+  return keys.shiftKey === true || mod ? { shift: keys.shiftKey === true, mod } : undefined;
+}
+
 export function pressedItself(event: Event, host: HTMLElement): boolean {
   for (const target of event.composedPath()) {
     if (target === host) return true;

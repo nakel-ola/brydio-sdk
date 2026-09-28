@@ -51,6 +51,12 @@ export type ElementProps<E extends ElementName> = Simplify<
 /** The events an element raises, by name. */
 export type ElementEvent<E extends ElementName> = Catalogue[E]['events'][number] & string;
 
+/** The keys held on a press: Shift, and ⌘ or Ctrl. */
+export interface HeldKeys {
+  shift: boolean;
+  mod: boolean;
+}
+
 /** What each event carries. `press` carries nothing; a field's `change` and `submit` carry its text. */
 export interface EventDetails {
   press: undefined;
@@ -77,6 +83,8 @@ export interface ElementEventDetails {
     cancel: undefined;
   };
   'bry-list-row': {
+    /** Pressed: the keys held, when any were (Shift-click opens the other way). */
+    press: HeldKeys | undefined;
     /** Whether the work row's selection box is checked now. */
     toggle: { checked: boolean };
     /** The id of the item chosen from the row's own menu. */
@@ -278,6 +286,8 @@ export interface ElementEventDetails {
     cancel: undefined;
   };
   'bry-work-card': {
+    /** Pressed: the keys held, when any were (Shift-click opens the other way). */
+    press: HeldKeys | undefined;
     /** The id of the item chosen from the card's menu. */
     select: { id: string };
   };

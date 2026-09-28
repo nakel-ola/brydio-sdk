@@ -1,5 +1,5 @@
 import { defaultBridge, type Bridge } from './bridge.ts';
-import type { AppDocument, DataChange, HostContext, ListQuery, ListResult, NavigateTarget, ToastAction, ToastTone, ToolResult } from './protocol.ts';
+import type { AppDocument, CopyTarget, DownloadType, DataChange, HostContext, ListQuery, ListResult, NavigateTarget, ToastAction, ToastTone, ToolResult } from './protocol.ts';
 import { createRoot, type RemoteRoot, type RootOptions } from './tree.ts';
 
 /**
@@ -87,6 +87,23 @@ export function navigate(to: NavigateTarget): Promise<{ opened: boolean }> {
  */
 export function toast(text: string, tone?: ToastTone, action?: ToastAction): void {
   defaultBridge().toast(text, tone, action);
+}
+
+/**
+ * Puts text on the clipboard, or a link to one of the app's own pages:
+ * `copy('TQ-2')`, `copy({ route: '/issues/iss_1' })`. Resolves with whether
+ * the clipboard took it.
+ */
+export function copy(what: CopyTarget): Promise<boolean> {
+  return defaultBridge().copy(what);
+}
+
+/**
+ * Hands the person a file the app made, to save: `download('issues.csv',
+ * csv, 'text/csv')`. Text only, up to 5 MB, as CSV, text, Markdown or JSON.
+ */
+export function download(name: string, text: string, type?: DownloadType): Promise<void> {
+  return defaultBridge().download(name, text, type);
 }
 
 /** Called when the host stops the screen, before the worker ends. */

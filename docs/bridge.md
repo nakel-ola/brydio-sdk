@@ -60,6 +60,18 @@ needs `navigate` in `grants.host`.
 
 Shows one Brydio toast in the `info`, `success`, or `danger` tone. Text is cut at 200 characters.
 
+### `copy(what)`
+
+Puts text (up to 10,000 characters) on the clipboard, or `{ route }`: a full link to one of
+the app's own pages, which Brydio writes out. Resolves with whether the clipboard took it.
+
+### `download(name, text, type)`
+
+Hands the person a text file to save: CSV, plain text, Markdown or JSON, up to 5 MB.
+Resolves once Brydio has handed it over.
+
+A route opened with `navigate({ kind: 'route', path, newTab: true })` opens in a Brydio tab of its own.
+
 ### `mount(build, options)`
 
 Connects, gives the plain builder a remote root and `HostContext`, and sends
@@ -110,6 +122,8 @@ A connection path is relative. `GET` and `HEAD` are reads. `POST`, `PUT`,
 | `host/members` | app to Brydio | `{ ids? }` plus the envelope id | `host/result` with visible member names, or `host/error`. |
 | `host/projects` | app to Brydio | `{ ids }` plus the envelope id | `host/result` with visible project names, or `host/error`. |
 | `ui/message` | app to Brydio | `{ text, target? }` plus the envelope id | `ui/result` after Brydio opens or appends to a chat, or `ui/error`. |
+| `ui/copy` | app to Brydio | `{ text }` (up to 10,000 characters) or `{ route }`, one of the app's own routes | `ui/result` `{ copied }` once the clipboard took it or not, or `ui/error`. |
+| `ui/download` | app to Brydio | `{ name, text, type }`: a text file up to 5 MB, as CSV, plain text, Markdown or JSON | `ui/result` `{ saved: true }` once Brydio handed it to the person, or `ui/error`. |
 | `tree/ack` | app to Brydio | `{ node, name }` after the event handler starts | No reply. It lets Brydio clear the event budget. |
 | `dev/updated` | app to Brydio | `DevUpdatedParams`: build number | No reply. The development host keeps the worker. |
 | `dev/restart` | app to Brydio | `DevUpdatedParams`: build number and reason | No reply. The development host replaces the worker. |

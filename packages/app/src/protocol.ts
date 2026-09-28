@@ -196,8 +196,13 @@ export interface ProjectName {
 export type NavigateTarget =
   | { kind: 'chat' | 'file' | 'item' | 'project'; id: string }
   | { kind: 'item'; id: null }
-  | { kind: 'route'; path: string };
+  /** One of the app's own pages; `newTab` opens it in a Brydio tab of its own. */
+  | { kind: 'route'; path: string; newTab?: boolean };
 
+/** What `copy` puts on the clipboard: text, or a link to one of the app's own routes. */
+export type CopyTarget = string | { route: string };
+/** The kinds of file an app may hand the person to save: plain data only. */
+export type DownloadType = 'text/csv' | 'text/plain' | 'text/markdown' | 'application/json';
 export type ToastTone = 'info' | 'success' | 'danger';
 
 // --- Worker → host ------------------------------------------------------------
@@ -315,6 +320,8 @@ export const WORKER_METHODS = [
   'host/members',
   'host/projects',
   'ui/message',
+  'ui/copy',
+  'ui/download',
   'tree/ack',
   'dev/updated',
   'dev/restart',

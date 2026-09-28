@@ -18,6 +18,7 @@ import {
   PLAN,
   popOf,
   popupKeys,
+  heldKeys,
   pressedItself,
   pressKey,
   PRIORITY_LABEL,
@@ -616,7 +617,7 @@ drawAs(
       class="card"
       aria-label=${[identifier, title].filter(Boolean).join(': ')}
       @click=${(event: Event) => {
-        if (pressedItself(event, host)) host.emit('press');
+        if (pressedItself(event, host)) host.emit('press', heldKeys(event));
       }}
     >
       <div class="top">

@@ -112,7 +112,9 @@ drawAs(
     css`
       :host {
         display: block;
+        flex: 1 1 auto;
         min-width: 0;
+        min-height: 0;
         container-type: inline-size;
       }
       .split {
