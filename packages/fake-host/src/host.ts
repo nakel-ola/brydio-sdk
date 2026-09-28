@@ -182,7 +182,7 @@ export class FakeHost {
   /** Every call made through `@brydio/api`, in order. */
   readonly apiCalls: ApiCall[] = [];
   readonly refusals: Refusal[] = [];
-  readonly toasts: { text: string; tone: 'info' | 'success' | 'danger' }[] = [];
+  readonly toasts: { text: string; tone: 'info' | 'success' | 'danger'; action?: { label: string; route: string } }[] = [];
   /** Each names request the screen made: which kind, and the ids. */
   readonly namesAsked: { kind: 'members' | 'projects'; ids: string[] }[] = [];
   /** Chats the screen asked Brydio to draft about a record, in order (never sent: the person sends them). */
@@ -560,7 +560,14 @@ export class FakeHost {
         const text = typeof params.text === 'string' ? params.text.slice(0, MAX_TOAST) : '';
         const tone = params.tone === 'success' || params.tone === 'danger' ? params.tone : 'info';
 
-        if (this.app && text) this.toasts.push({ text, tone });
+        const raw = params.action as { label?: unknown; route?: unknown } | undefined;
+        // As Brydio: only a page of the app's own, with a short label.
+        const action =
+          raw && typeof raw.label === 'string' && raw.label.trim() && typeof raw.route === 'string' && /^\/[^\s]{0,199}$/.test(raw.route) && !raw.route.startsWith('//')
+            ? { label: raw.label.trim().slice(0, 40), route: raw.route }
+            : undefined;
+
+        if (this.app && text) this.toasts.push(action ? { text, tone, action } : { text, tone });
         break;
       }
       case 'tree/ack':

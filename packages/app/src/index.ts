@@ -1,5 +1,5 @@
 import { defaultBridge, type Bridge } from './bridge.ts';
-import type { AppDocument, DataChange, HostContext, ListQuery, ListResult, NavigateTarget, ToastTone, ToolResult } from './protocol.ts';
+import type { AppDocument, DataChange, HostContext, ListQuery, ListResult, NavigateTarget, ToastAction, ToastTone, ToolResult } from './protocol.ts';
 import { createRoot, type RemoteRoot, type RootOptions } from './tree.ts';
 
 /**
@@ -80,9 +80,13 @@ export function navigate(to: NavigateTarget): Promise<{ opened: boolean }> {
   return defaultBridge().navigate(to);
 }
 
-/** A short message in Brydio's own toast. */
-export function toast(text: string, tone?: ToastTone): void {
-  defaultBridge().toast(text, tone);
+/**
+ * A short message in Brydio's own toast. `action` adds a button that opens
+ * one of the app's own pages: `toast('Created', 'success', { label: 'View
+ * issue', route: '/issues/iss_1' })`.
+ */
+export function toast(text: string, tone?: ToastTone, action?: ToastAction): void {
+  defaultBridge().toast(text, tone, action);
 }
 
 /** Called when the host stops the screen, before the worker ends. */

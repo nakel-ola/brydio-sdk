@@ -259,9 +259,17 @@ export interface UiNavigateParams {
   to: NavigateTarget;
 }
 
+/** A button in a toast that opens one of the app's own pages: "View issue" → `/issues/iss_1`. */
+export interface ToastAction {
+  label: string;
+  /** An app route, rooted at `/`. Anything else is dropped by the host. */
+  route: string;
+}
+
 export interface UiToastParams {
   text: string;
   tone?: ToastTone;
+  action?: ToastAction;
 }
 
 /** `data/subscribe` and `data/unsubscribe`: the envelope's `id` is the call's, answered `data/result` or `data/error`. */

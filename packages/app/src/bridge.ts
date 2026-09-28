@@ -15,6 +15,7 @@ import {
   type NavigateTarget,
   type RpcError,
   type RpcMessage,
+  type ToastAction,
   type ToastTone,
   type ToolResult,
   type TreeEventParams,
@@ -421,9 +422,12 @@ export class Bridge {
     });
   }
 
-  /** A sentence in Brydio's toast. The host cuts it at 200 characters. */
-  toast(text: string, tone?: ToastTone): void {
-    this.notify('ui/toast', tone ? { text, tone } : { text });
+  /**
+   * A sentence in Brydio's toast. The host cuts it at 200 characters. An
+   * `action` is a button in the toast that opens one of the app's own pages.
+   */
+  toast(text: string, tone?: ToastTone, action?: ToastAction): void {
+    this.notify('ui/toast', { text, ...(tone ? { tone } : {}), ...(action ? { action } : {}) });
   }
 
   /**

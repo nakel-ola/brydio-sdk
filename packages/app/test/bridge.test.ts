@@ -217,12 +217,14 @@ describe('asking the host to open something, and toasts', () => {
     const details = bridge.navigate({ kind: 'route', path: '/plan/plan_1/details' });
 
     bridge.toast('Saved', 'success');
+    bridge.toast('Created', 'success', { label: 'View issue', route: '/issues/iss_1' });
 
     expect(take()).toEqual([
       { jsonrpc: '2.0', id: '1', method: 'ui/navigate', params: { to: { kind: 'chat', id: 'ch_1' } } },
       { jsonrpc: '2.0', id: '2', method: 'ui/navigate', params: { to: { kind: 'item', id: 'issue_9' } } },
       { jsonrpc: '2.0', id: '3', method: 'ui/navigate', params: { to: { kind: 'route', path: '/plan/plan_1/details' } } },
       { jsonrpc: '2.0', method: 'ui/toast', params: { text: 'Saved', tone: 'success' } },
+      { jsonrpc: '2.0', method: 'ui/toast', params: { text: 'Created', tone: 'success', action: { label: 'View issue', route: '/issues/iss_1' } } },
     ]);
 
     hostSays('ui/error', { id: '2', error: { code: -32000, message: 'There is no such issue.' } });
