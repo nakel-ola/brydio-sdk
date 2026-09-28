@@ -22,6 +22,24 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.11
+
+- **Planning and issue-tracker elements.** New `bry-glyph`, `bry-property`,
+  `bry-quick-add`, `bry-work-card`, `bry-page-header`, `bry-entity-row`,
+  `bry-filter-menu`, `bry-filter-chip`, `bry-peek`, `bry-spreadsheet` (with
+  `-row` and `-group`), `bry-rich-text`, `bry-board-lane`, `bry-gantt`,
+  `bry-timeline` (with `-item`), `bry-comment`, `bry-reactions`,
+  `bry-property-list` (with `-row`) and `bry-keys`.
+- **Richer existing elements.** A `compose` dialog; bare inputs and
+  textareas; menus with a heading, ticked items and submenus (`parent`);
+  list, lanes and plan boards; stacked and work list rows with their own
+  menus; `page-body` and `action-bar` stacks; count badges; about forty new
+  icon names.
+- **Toasts can open a page.** `toast(text, tone, { label, route })` adds a
+  button that opens one of the app's own pages.
+- **`brydio dev` shows an app where its manifest places it**: the project's
+  and the workspace's sidebars, not only a project tab.
+
 ## 0.1.0-alpha.10
 
 - **FakeHost now models nested pages completely.** Tests receive
