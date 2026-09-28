@@ -22,6 +22,12 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.19
+
+- `bry-markdown` `quote` (a label, "Add to comment"): selecting text offers that button; pressing it raises `quote` with `{ text }` (up to 4,000 characters), as Multica's annotations do. Mermaid blocks draw as diagrams, in Brydio's sealed frame.
+- `bry-comment` actions gain `quote` ("Quote reply").
+- `bry-rich-text` writes and reads GFM tables, code blocks coloured by language, and `$$…$$` maths; markdown pasted as plain text becomes what it describes.
+
 ## 0.1.0-alpha.18
 
 - `useMembers` / `useProjects` ask again (after 2, 4, 8 and 16 seconds) when Brydio refuses a name lookup, for instance at its read limit. Before, a name refused once stayed blank until the screen reopened.
