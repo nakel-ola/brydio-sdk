@@ -22,6 +22,15 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.12
+
+- **`bry-spreadsheet` raises `all`**, not `selectAll`: an app's `onSelectAll`
+  handler never heard the camel-cased name. Every event name is now lower case.
+- `bry-input` raises `blur` and `cancel` (Escape) and can `autofocus`.
+- `bry-list-row` work rows take a `lead` child before the identifier and can
+  be `muted`; `bry-glyph kind="progress"` draws a completion ring.
+- A `compose` dialog shows its `description` as a hint beside its actions.
+
 ## 0.1.0-alpha.11
 
 - **Planning and issue-tracker elements.** New `bry-glyph`, `bry-property`,
