@@ -22,6 +22,14 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.21
+
+- Label colours: a `hue` enum (Multica's ten: gray, red, orange, yellow, green, teal, blue, indigo, purple, pink) on `bry-badge`, `bry-board-column`, `bry-property` options, `bry-work-card` labels, `bry-filter-menu` options and `bry-filter-chip` marks. `hue` wins over `tone`.
+- `bry-avatar` `memberId`: Brydio draws the member's card (name, role, email) on hover or focus; faces on comments, timelines, cards and member properties do the same.
+- `bry-rich-text` `attachments` (Brydio uploads attached, dropped or pasted files into its own file store and writes `![name](url)` or `!file[name](url)`), `mentionAll` (offers `@all`) and `references` (`#` offers `{ value, label }`, writing the value).
+- `bry-markdown` `references` (`{ text, route }`: whole-word identifiers become links raising `open` with `{ route }`), `find` / `findIndex` (every match marked, the current one scrolled into view; `find` raises `{ count }`), and file cards with Download.
+- Handlers: `caller.role` ('owner' | 'admin' | 'member'). Screens: `HostContext.role` (optional). FakeHost's caller defaults to `owner`.
+
 ## 0.1.0-alpha.20
 
 - `bry-board-column` `checkable` / `checked` / `mixed`: a list group's select-all box, raising `check` with `{ checked }`.
