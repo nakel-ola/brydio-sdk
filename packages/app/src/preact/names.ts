@@ -11,6 +11,10 @@ import type { MemberName, ProjectName } from '../protocol.ts';
 
 type Kind = 'members' | 'projects';
 
+/** How often, and how soon, a refused ask for names is tried again. */
+export const RETRIES = 4;
+export const RETRY_MS = 2_000;
+
 const known = new WeakMap<Bridge, Record<Kind, Map<string, MemberName | ProjectName | null>>>();
 
 function cacheOf(bridge: Bridge) {
@@ -26,6 +30,8 @@ function useNames<T extends MemberName | ProjectName>(bridge: Bridge, kind: Kind
   const key = wanted.join('\n');
   const cache = cacheOf(bridge)[kind];
   const [, redraw] = useState(0);
+  // Bumped after a refused ask (Brydio's read limit, say), so the names are asked again.
+  const [attempt, again] = useState(0);
 
   // A layout effect, so the names are asked as soon as the tree is committed: a worker's effects wait.
   useLayoutEffect(() => {
@@ -44,11 +50,13 @@ function useNames<T extends MemberName | ProjectName>(bridge: Bridge, kind: Kind
         redraw(count => count + 1);
       },
       () => {
-        // Refused or failed: forget the ids, so a later render may ask again.
+        // Refused or failed: forget the ids and ask again a little later,
+        // a few times, so a name refused once doesn't stay blank for good.
         for (const id of missing) if (cache.get(id) === null) cache.delete(id);
+        if (attempt < RETRIES) setTimeout(() => again(count => count + 1), RETRY_MS * 2 ** attempt);
       },
     );
-  }, [bridge, kind, key]);
+  }, [bridge, kind, key, attempt]);
 
   const names = new Map<string, T>();
 

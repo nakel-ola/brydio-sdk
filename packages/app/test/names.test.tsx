@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { GrantError, HostError, TeardownError, type TreeMountParams, type TreePatchParams } from '../src/index.ts';
 import { render, useMembers, useProjects } from '../src/preact/index.ts';
+import { RETRY_MS } from '../src/preact/names.ts';
 import { harness, settle } from './harness.ts';
 
 describe('names for the ids a screen holds (G12, host/members and host/projects)', () => {
@@ -77,5 +78,38 @@ describe('names for the ids a screen holds (G12, host/members and host/projects)
     await settle();
 
     expect(sent.filter(one => one.method === 'host/members').map(one => (one.params as { ids: string[] }).ids)).toEqual([['user_ada', 'user_gone'], ['user_cy']]);
+  });
+
+  test('asks again a little later when Brydio refuses, so a name refused once still arrives', async () => {
+    const { root, connect, sent, hostSays } = harness({ app: { grants: { host: ['projects'] } } });
+
+    function Title() {
+      const projects = useProjects(['project_web']);
+
+      return <bry-text text={projects.get('project_web')?.name ?? '…'} />;
+    }
+
+    render(<Title />, root);
+    await connect();
+    await settle();
+
+    const first = sent.filter(one => one.method === 'host/projects');
+
+    expect(first).toHaveLength(1);
+    hostSays('host/error', { id: first[0]!.id, error: { code: 429, message: 'Too many reads.' } });
+    await settle();
+    await new Promise(done => setTimeout(done, RETRY_MS + 100));
+    await settle();
+
+    const asked = sent.filter(one => one.method === 'host/projects');
+
+    expect(asked).toHaveLength(2);
+    hostSays('host/result', { id: asked[1]!.id, result: { projects: [{ id: 'project_web', name: 'Website' }] } });
+    await settle();
+    await settle();
+
+    const ops = sent.filter(one => one.method === 'tree/patch').flatMap(one => (one.params as TreePatchParams).ops);
+
+    expect(ops.some(op => op.op === 'props' && (op as { props: { text?: string } }).props.text === 'Website')).toBe(true);
   });
 });
