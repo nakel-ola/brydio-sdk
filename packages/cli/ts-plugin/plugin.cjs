@@ -104,7 +104,7 @@ var TABLE_ROWS = 500;
 var KEY_MAX = 128;
 var VIRTUAL_ROWS = 1e6;
 var DIALOG_ACTIONS = 3;
-var MENU_ITEMS = 20;
+var MENU_ITEMS = 60;
 var MENU_ICONS = [
   "add",
   "archive",
@@ -123,7 +123,45 @@ var MENU_ICONS = [
   "search",
   "settings",
   "tasks",
-  "trash"
+  "trash",
+  "account",
+  "activity",
+  "attach",
+  "bell",
+  "boardLayout",
+  "box",
+  "branch",
+  "calendarRange",
+  "channel",
+  "chart",
+  "cycle",
+  "download",
+  "externalLink",
+  "flag",
+  "ganttLayout",
+  "history",
+  "home",
+  "inbox",
+  "layers",
+  "link",
+  "listLayout",
+  "lock",
+  "maximise",
+  "panelRight",
+  "pause",
+  "play",
+  "progress",
+  "project",
+  "relation",
+  "sliders",
+  "tableLayout",
+  "tag",
+  "target",
+  "temporary",
+  "userAdd",
+  "status",
+  "filter",
+  "stateReview"
 ];
 var BUTTON_ICONS = [...MENU_ICONS, "more", "close", "arrowRight", "chevronRight", "chevronDown", "chevronUp"];
 var BOARD_CARDS = 1e5;
@@ -150,7 +188,7 @@ var QUESTION_CHOICES = 20;
 var RADIO_MAX = 20;
 var SLIDER_LIMIT = 1e6;
 var TOGGLE_GROUP_ITEMS = 12;
-var MENU_ITEM = {
+var ACTION_ITEM = {
   kind: "shape",
   fields: {
     id: { kind: "text", max: KEY_MAX },
@@ -159,6 +197,15 @@ var MENU_ITEM = {
     tone: { kind: "enum", values: ["default", "danger"] },
     separator: { kind: "boolean" },
     disabled: { kind: "boolean" }
+  },
+  required: ["id", "label"]
+};
+var MENU_ITEM = {
+  kind: "shape",
+  fields: {
+    ...ACTION_ITEM.fields,
+    checked: { kind: "boolean" },
+    parent: { kind: "text", max: KEY_MAX }
   },
   required: ["id", "label"]
 };
@@ -171,6 +218,37 @@ var CHART_SERIES = 6;
 var CHART_VALUE = 1000000000000;
 var KBD_MAX = 40;
 var TABS_MAX = 12;
+var STATE_GROUPS = ["backlog", "unstarted", "started", "completed", "cancelled"];
+var PRIORITIES = ["urgent", "high", "medium", "low", "none"];
+var MARKS = [...STATE_GROUPS, "review", "blocked", "urgent", "high", "medium", "low", "none", "person", "dot"];
+var ENTITY_STATUSES = [
+  "draft",
+  "upcoming",
+  "active",
+  "completed",
+  "cancelled",
+  "backlog",
+  "planned",
+  "started",
+  "paused",
+  "pending",
+  "accepted",
+  "declined",
+  "snoozed",
+  "duplicate"
+];
+var ROW_MENU_ITEMS = 60;
+var PROPERTY_OPTIONS = 200;
+var FILTER_OPTIONS = 200;
+var ISO_TIME = 40;
+var GANTT_ZOOMS = ["day", "week", "month"];
+var GANTT_ROWS = 500;
+var ACTIVITY_MARKS = ["status", "priority", "assignee", "date", "title", "description", "duplicate", "created", "comment"];
+var COMMENT_ACTIONS = ["reply", "edit", "resolve", "copy", "copyLink", "subIssue", "delete"];
+var EMOJI_MAX = 16;
+var SPREADSHEET_COLUMNS = 16;
+var RICH_TEXT_MAX = 50000;
+var KEY_NAME = 24;
 var CATALOGUE = {
   "bry-stack": {
     props: {
@@ -179,7 +257,10 @@ var CATALOGUE = {
       align: { kind: "enum", values: ["start", "center", "end", "stretch"] },
       justify: { kind: "enum", values: ["start", "center", "end", "between"] },
       wrap: { kind: "boolean" },
-      variant: { kind: "enum", values: ["default", "page", "toolbar", "scroll", "section", "section-header", "filter-bar"] }
+      variant: {
+        kind: "enum",
+        values: ["default", "page", "toolbar", "scroll", "section", "section-header", "filter-bar", "page-body", "action-bar"]
+      }
     },
     events: [],
     children: true
@@ -238,7 +319,9 @@ var CATALOGUE = {
       maxLength: { kind: "int", min: 1, max: INPUT_MAX },
       required: { kind: "boolean" },
       disabled: { kind: "boolean" },
-      error: { kind: "text", max: LABEL_MAX }
+      error: { kind: "text", max: LABEL_MAX },
+      variant: { kind: "enum", values: ["default", "bare"] },
+      size: { kind: "enum", values: SIZES }
     },
     events: ["change", "submit"],
     children: false
@@ -251,9 +334,10 @@ var CATALOGUE = {
       maxLength: { kind: "int", min: 1, max: PARAGRAPH_MAX },
       required: { kind: "boolean" },
       disabled: { kind: "boolean" },
-      error: { kind: "text", max: LABEL_MAX }
+      error: { kind: "text", max: LABEL_MAX },
+      variant: { kind: "enum", values: ["default", "bare"] }
     },
-    events: ["change"],
+    events: ["change", "submit"],
     children: false
   },
   "bry-select": {
@@ -291,7 +375,8 @@ var CATALOGUE = {
   "bry-badge": {
     props: {
       text: { kind: "text", max: LABEL_MAX },
-      tone: { kind: "enum", values: TONES }
+      tone: { kind: "enum", values: TONES },
+      variant: { kind: "enum", values: ["default", "count"] }
     },
     required: ["text"],
     events: [],
@@ -314,12 +399,15 @@ var CATALOGUE = {
       pressable: { kind: "boolean" },
       selected: { kind: "boolean" },
       loading: { kind: "boolean" },
-      variant: { kind: "enum", values: ["default", "work"] },
+      variant: { kind: "enum", values: ["default", "work", "stacked"] },
       identifier: { kind: "text", max: LABEL_MAX },
       selectable: { kind: "boolean" },
-      checked: { kind: "boolean" }
+      checked: { kind: "boolean" },
+      density: { kind: "enum", values: ["default", "compact"] },
+      menu: { kind: "list", max: ROW_MENU_ITEMS, of: MENU_ITEM },
+      removable: { kind: "boolean" }
     },
-    events: ["press", "toggle"],
+    events: ["press", "toggle", "select", "remove"],
     children: true
   },
   "bry-empty-state": {
@@ -419,30 +507,21 @@ var CATALOGUE = {
           required: ["id", "label"]
         }
       },
-      cancel: { kind: "text", max: LABEL_MAX }
+      cancel: { kind: "text", max: LABEL_MAX },
+      variant: { kind: "enum", values: ["default", "compose"] },
+      crumbs: { kind: "list", max: 3, of: { kind: "text", max: LABEL_MAX } },
+      expanded: { kind: "boolean" },
+      toggle: { kind: "text", max: LABEL_MAX },
+      toggled: { kind: "boolean" }
     },
     required: ["title"],
-    events: ["action", "close"],
+    events: ["action", "close", "expand", "toggle"],
     children: true
   },
   "bry-menu": {
     props: {
-      items: {
-        kind: "list",
-        max: MENU_ITEMS,
-        of: {
-          kind: "shape",
-          fields: {
-            id: { kind: "text", max: KEY_MAX },
-            label: { kind: "text", max: LABEL_MAX },
-            icon: { kind: "enum", values: MENU_ICONS },
-            tone: { kind: "enum", values: ["default", "danger"] },
-            separator: { kind: "boolean" },
-            disabled: { kind: "boolean" }
-          },
-          required: ["id", "label"]
-        }
-      }
+      items: { kind: "list", max: MENU_ITEMS, of: MENU_ITEM },
+      heading: { kind: "text", max: LABEL_MAX }
     },
     required: ["items"],
     events: ["select"],
@@ -495,6 +574,9 @@ var CATALOGUE = {
     props: {
       label: { kind: "text", max: LABEL_MAX },
       cardSize: { kind: "enum", values: ["sm", "md", "lg"] },
+      layout: { kind: "enum", values: ["columns", "list", "lanes"] },
+      laneColumns: { kind: "int", min: 1, max: 12 },
+      variant: { kind: "enum", values: ["default", "plan"] },
       settled: { kind: "text", max: KEY_MAX },
       loading: { kind: "boolean" },
       empty: { kind: "text", max: LABEL_MAX }
@@ -509,10 +591,19 @@ var CATALOGUE = {
       limit: { kind: "int", min: 1, max: BOARD_CARDS },
       start: { kind: "int", min: 0, max: BOARD_CARDS },
       loading: { kind: "boolean" },
-      empty: { kind: "text", max: LABEL_MAX }
+      empty: { kind: "text", max: LABEL_MAX },
+      glyph: { kind: "enum", values: STATE_GROUPS },
+      tone: { kind: "enum", values: TONES },
+      collapsible: { kind: "boolean" },
+      collapsed: { kind: "boolean" },
+      addable: { kind: "boolean" },
+      addLabel: { kind: "text", max: LABEL_MAX },
+      adding: { kind: "boolean" },
+      busy: { kind: "boolean" },
+      menu: { kind: "list", max: ROW_MENU_ITEMS, of: MENU_ITEM }
     },
     required: ["title"],
-    events: ["range"],
+    events: ["range", "toggle", "add", "submit", "cancel", "select"],
     children: true
   },
   "bry-markdown": {
@@ -769,7 +860,7 @@ var CATALOGUE = {
           fields: {
             id: { kind: "text", max: KEY_MAX },
             label: { kind: "text", max: LABEL_MAX },
-            items: { kind: "list", max: MENU_ITEMS, of: MENU_ITEM }
+            items: { kind: "list", max: MENU_ITEMS, of: ACTION_ITEM }
           },
           required: ["id", "label", "items"]
         }
@@ -1217,6 +1308,464 @@ var CATALOGUE = {
     required: ["text"],
     events: [],
     children: true
+  },
+  "bry-glyph": {
+    props: {
+      kind: { kind: "enum", values: ["state", "priority"] },
+      group: { kind: "enum", values: STATE_GROUPS },
+      priority: { kind: "enum", values: PRIORITIES },
+      tone: { kind: "enum", values: TONES },
+      size: { kind: "enum", values: ["sm", "md"] },
+      label: { kind: "text", max: LABEL_MAX }
+    },
+    required: ["kind"],
+    events: [],
+    children: false
+  },
+  "bry-property": {
+    props: {
+      kind: { kind: "enum", values: ["state", "priority", "members", "labels", "date", "choice"] },
+      display: { kind: "enum", values: ["badge", "icon", "dot", "pill", "button"] },
+      label: { kind: "text", max: LABEL_MAX },
+      value: { kind: "text", max: KEY_MAX },
+      values: { kind: "list", max: PROPERTY_OPTIONS, of: { kind: "text", max: KEY_MAX } },
+      options: {
+        kind: "list",
+        max: PROPERTY_OPTIONS,
+        of: {
+          kind: "shape",
+          fields: {
+            value: { kind: "text", max: KEY_MAX },
+            label: { kind: "text", max: LABEL_MAX },
+            tone: { kind: "enum", values: TONES },
+            group: { kind: "enum", values: STATE_GROUPS },
+            mark: { kind: "enum", values: MARKS }
+          },
+          required: ["value", "label"]
+        }
+      },
+      placeholder: { kind: "text", max: LABEL_MAX },
+      max: { kind: "int", min: 1, max: 5 },
+      clearable: { kind: "boolean" },
+      due: { kind: "boolean" },
+      disabled: { kind: "boolean" }
+    },
+    required: ["kind", "label"],
+    events: ["change"],
+    children: false
+  },
+  "bry-quick-add": {
+    props: {
+      trigger: { kind: "text", max: LABEL_MAX },
+      placeholder: { kind: "text", max: LABEL_MAX },
+      hint: { kind: "text", max: LABEL_MAX },
+      open: { kind: "boolean" },
+      busy: { kind: "boolean" },
+      value: { kind: "text", max: LABEL_MAX },
+      variant: { kind: "enum", values: ["row", "card", "link"] }
+    },
+    required: ["trigger"],
+    events: ["open", "submit", "cancel"],
+    children: false
+  },
+  "bry-work-card": {
+    props: {
+      title: { kind: "text", max: LABEL_MAX },
+      identifier: { kind: "text", max: LABEL_MAX },
+      priority: { kind: "enum", values: PRIORITIES },
+      description: { kind: "text", max: LABEL_MAX },
+      project: { kind: "text", max: LABEL_MAX },
+      labels: {
+        kind: "list",
+        max: 12,
+        of: { kind: "shape", fields: { label: { kind: "text", max: LABEL_MAX }, tone: { kind: "enum", values: TONES } }, required: ["label"] }
+      },
+      assignees: {
+        kind: "list",
+        max: 20,
+        of: { kind: "shape", fields: { id: { kind: "text", max: KEY_MAX }, name: { kind: "text", max: LABEL_MAX } }, required: ["id", "name"] }
+      },
+      due: { kind: "text", max: ISO_DATE },
+      updated: { kind: "text", max: ISO_TIME },
+      progress: {
+        kind: "shape",
+        fields: { done: { kind: "int", min: 0, max: 1e4 }, total: { kind: "int", min: 0, max: 1e4 } },
+        required: ["done", "total"]
+      },
+      lead: { kind: "boolean" },
+      menu: { kind: "list", max: ROW_MENU_ITEMS, of: MENU_ITEM },
+      loading: { kind: "boolean" }
+    },
+    required: ["title"],
+    events: ["press", "select"],
+    children: true
+  },
+  "bry-page-header": {
+    props: {
+      title: { kind: "text", max: LABEL_MAX },
+      icon: { kind: "enum", values: BUTTON_ICONS },
+      subtitle: { kind: "text", max: LABEL_MAX },
+      back: { kind: "boolean" },
+      count: { kind: "int", min: 0, max: 1e6 },
+      crumbs: {
+        kind: "list",
+        max: 4,
+        of: {
+          kind: "shape",
+          fields: { id: { kind: "text", max: KEY_MAX }, label: { kind: "text", max: LABEL_MAX }, icon: { kind: "enum", values: BUTTON_ICONS }, initial: { kind: "boolean" } },
+          required: ["id", "label"]
+        }
+      },
+      badges: {
+        kind: "list",
+        max: 3,
+        of: { kind: "shape", fields: { text: { kind: "text", max: LABEL_MAX }, tone: { kind: "enum", values: TONES } }, required: ["text"] }
+      },
+      tabs: {
+        kind: "list",
+        max: 12,
+        of: {
+          kind: "shape",
+          fields: {
+            id: { kind: "text", max: KEY_MAX },
+            label: { kind: "text", max: LABEL_MAX },
+            icon: { kind: "enum", values: BUTTON_ICONS },
+            count: { kind: "int", min: 0, max: 1e6 }
+          },
+          required: ["id", "label"]
+        }
+      },
+      tab: { kind: "text", max: KEY_MAX },
+      size: { kind: "enum", values: ["sm", "md"] }
+    },
+    required: ["title"],
+    events: ["back", "crumb", "tab"],
+    children: true
+  },
+  "bry-entity-row": {
+    props: {
+      title: { kind: "text", max: LABEL_MAX },
+      description: { kind: "text", max: LABEL_MAX },
+      meta: { kind: "text", max: LABEL_MAX },
+      dateRange: { kind: "text", max: LABEL_MAX },
+      leading: { kind: "enum", values: ["status", "ring", "tile", "none"] },
+      status: { kind: "enum", values: ENTITY_STATUSES },
+      statusLabel: { kind: "text", max: LABEL_MAX },
+      tone: { kind: "enum", values: TONES },
+      icon: { kind: "enum", values: BUTTON_ICONS },
+      ring: { kind: "int", min: 0, max: 100 },
+      metrics: {
+        kind: "list",
+        max: 4,
+        of: {
+          kind: "shape",
+          fields: { label: { kind: "text", max: LABEL_MAX }, value: { kind: "text", max: LABEL_MAX }, ring: { kind: "int", min: 0, max: 100 } },
+          required: ["label", "value"]
+        }
+      },
+      menu: { kind: "list", max: ROW_MENU_ITEMS, of: MENU_ITEM },
+      rail: { kind: "shape", fields: { month: { kind: "text", max: LABEL_MAX }, day: { kind: "text", max: LABEL_MAX }, active: { kind: "boolean" } }, required: [] },
+      highlighted: { kind: "boolean" },
+      selected: { kind: "boolean" },
+      pressable: { kind: "boolean" },
+      expandable: { kind: "boolean" },
+      expanded: { kind: "boolean" },
+      loading: { kind: "boolean" }
+    },
+    required: ["title"],
+    events: ["press", "select", "toggle"],
+    children: true
+  },
+  "bry-filter-menu": {
+    props: {
+      label: { kind: "text", max: LABEL_MAX },
+      facets: {
+        kind: "list",
+        max: 8,
+        of: {
+          kind: "shape",
+          fields: {
+            id: { kind: "text", max: KEY_MAX },
+            label: { kind: "text", max: LABEL_MAX },
+            icon: { kind: "enum", values: BUTTON_ICONS },
+            kind: { kind: "enum", values: ["options", "dates"] },
+            search: { kind: "boolean" },
+            options: {
+              kind: "list",
+              max: FILTER_OPTIONS,
+              of: {
+                kind: "shape",
+                fields: {
+                  value: { kind: "text", max: KEY_MAX },
+                  label: { kind: "text", max: LABEL_MAX },
+                  mark: { kind: "enum", values: MARKS },
+                  tone: { kind: "enum", values: TONES },
+                  count: { kind: "int", min: 0, max: 1e6 }
+                },
+                required: ["value", "label"]
+              }
+            }
+          },
+          required: ["id", "label"]
+        }
+      },
+      values: {
+        kind: "list",
+        max: 8,
+        of: {
+          kind: "shape",
+          fields: { facet: { kind: "text", max: KEY_MAX }, values: { kind: "list", max: FILTER_OPTIONS, of: { kind: "text", max: KEY_MAX } } },
+          required: ["facet"]
+        }
+      }
+    },
+    required: ["facets"],
+    events: ["change", "reset"],
+    children: false
+  },
+  "bry-gantt": {
+    props: {
+      start: { kind: "text", max: ISO_DATE },
+      zoom: { kind: "enum", values: GANTT_ZOOMS },
+      rows: {
+        kind: "list",
+        max: GANTT_ROWS,
+        of: {
+          kind: "shape",
+          fields: {
+            id: { kind: "text", max: KEY_MAX },
+            title: { kind: "text", max: LABEL_MAX },
+            identifier: { kind: "text", max: LABEL_MAX },
+            mark: { kind: "enum", values: MARKS },
+            tone: { kind: "enum", values: TONES },
+            priority: { kind: "enum", values: PRIORITIES },
+            assignee: { kind: "text", max: LABEL_MAX },
+            start: { kind: "text", max: ISO_DATE },
+            end: { kind: "text", max: ISO_DATE }
+          },
+          required: ["id", "title"]
+        }
+      },
+      showCompleted: { kind: "boolean" },
+      empty: { kind: "text", max: LABEL_MAX },
+      loading: { kind: "boolean" }
+    },
+    events: ["press", "navigate", "zoom", "completed"],
+    children: false
+  },
+  "bry-timeline": {
+    props: {
+      collapsedLabel: { kind: "text", max: LABEL_MAX },
+      folded: { kind: "boolean" },
+      empty: { kind: "text", max: LABEL_MAX },
+      loading: { kind: "boolean" }
+    },
+    events: ["expand"],
+    children: true
+  },
+  "bry-timeline-item": {
+    props: {
+      actor: { kind: "text", max: LABEL_MAX },
+      actorId: { kind: "text", max: KEY_MAX },
+      text: { kind: "text", max: LABEL_MAX },
+      mark: { kind: "enum", values: ACTIVITY_MARKS },
+      tone: { kind: "enum", values: TONES },
+      time: { kind: "text", max: ISO_TIME },
+      count: { kind: "int", min: 1, max: 9999 }
+    },
+    required: ["text"],
+    events: [],
+    children: false
+  },
+  "bry-comment": {
+    props: {
+      author: { kind: "text", max: LABEL_MAX },
+      authorId: { kind: "text", max: KEY_MAX },
+      time: { kind: "text", max: ISO_TIME },
+      edited: { kind: "boolean" },
+      deleted: { kind: "boolean" },
+      resolved: { kind: "boolean" },
+      resolution: { kind: "boolean" },
+      depth: { kind: "int", min: 0, max: 1 },
+      collapsed: { kind: "boolean" },
+      replies: { kind: "int", min: 0, max: 9999 },
+      repliers: {
+        kind: "list",
+        max: 12,
+        of: { kind: "shape", fields: { id: { kind: "text", max: KEY_MAX }, name: { kind: "text", max: LABEL_MAX } }, required: ["id", "name"] }
+      },
+      actions: { kind: "list", max: COMMENT_ACTIONS.length, of: { kind: "enum", values: COMMENT_ACTIONS } },
+      highlighted: { kind: "boolean" },
+      loading: { kind: "boolean" }
+    },
+    events: ["action", "toggle"],
+    children: true
+  },
+  "bry-reactions": {
+    props: {
+      items: {
+        kind: "list",
+        max: 24,
+        of: {
+          kind: "shape",
+          fields: { emoji: { kind: "text", max: EMOJI_MAX }, count: { kind: "int", min: 0, max: 99999 }, mine: { kind: "boolean" } },
+          required: ["emoji"]
+        }
+      },
+      choices: { kind: "list", max: 48, of: { kind: "text", max: EMOJI_MAX } },
+      disabled: { kind: "boolean" }
+    },
+    events: ["toggle"],
+    children: false
+  },
+  "bry-peek": {
+    props: {
+      open: { kind: "boolean" },
+      label: { kind: "text", max: LABEL_MAX },
+      position: { kind: "text", max: LABEL_MAX },
+      previous: { kind: "boolean" },
+      next: { kind: "boolean" }
+    },
+    required: ["label"],
+    events: ["previous", "next", "expand", "close"],
+    children: true
+  },
+  "bry-spreadsheet": {
+    props: {
+      label: { kind: "text", max: LABEL_MAX },
+      columns: {
+        kind: "list",
+        max: SPREADSHEET_COLUMNS,
+        of: {
+          kind: "shape",
+          fields: {
+            key: { kind: "text", max: KEY_MAX },
+            heading: { kind: "text", max: LABEL_MAX },
+            width: { kind: "enum", values: ["sm", "md", "lg", "fill"] },
+            pinned: { kind: "boolean" },
+            sortable: { kind: "boolean" },
+            hideable: { kind: "boolean" }
+          },
+          required: ["key", "heading"]
+        }
+      },
+      sort: {
+        kind: "shape",
+        fields: { key: { kind: "text", max: KEY_MAX }, direction: { kind: "enum", values: ["asc", "desc"] } },
+        required: ["key", "direction"]
+      },
+      selectable: { kind: "boolean" },
+      selected: { kind: "int", min: 0, max: 1e5 },
+      total: { kind: "int", min: 0, max: 1e5 },
+      loading: { kind: "boolean" },
+      empty: { kind: "text", max: LABEL_MAX }
+    },
+    required: ["columns"],
+    events: ["sort", "hide", "selectAll"],
+    children: true
+  },
+  "bry-spreadsheet-row": {
+    props: {
+      label: { kind: "text", max: LABEL_MAX },
+      checked: { kind: "boolean" },
+      depth: { kind: "int", min: 0, max: 4 },
+      expandable: { kind: "boolean" },
+      expanded: { kind: "boolean" },
+      loading: { kind: "boolean" }
+    },
+    events: ["toggle", "expand"],
+    children: true
+  },
+  "bry-spreadsheet-group": {
+    props: {
+      label: { kind: "text", max: LABEL_MAX },
+      mark: { kind: "enum", values: MARKS },
+      tone: { kind: "enum", values: ["neutral", "brand", "success", "warn", "danger"] },
+      count: { kind: "int", min: 0, max: 1e5 },
+      collapsed: { kind: "boolean" }
+    },
+    required: ["label"],
+    events: ["toggle"],
+    children: false
+  },
+  "bry-rich-text": {
+    props: {
+      value: { kind: "text", max: RICH_TEXT_MAX },
+      placeholder: { kind: "text", max: LABEL_MAX },
+      label: { kind: "text", max: LABEL_MAX },
+      variant: { kind: "enum", values: ["document", "comment", "bare"] },
+      mentions: {
+        kind: "list",
+        max: 200,
+        of: { kind: "shape", fields: { value: { kind: "text", max: KEY_MAX }, label: { kind: "text", max: LABEL_MAX } }, required: ["value", "label"] }
+      },
+      disabled: { kind: "boolean" },
+      autofocus: { kind: "boolean" },
+      error: { kind: "text", max: LABEL_MAX }
+    },
+    events: ["change", "blur", "submit"],
+    children: false
+  },
+  "bry-board-lane": {
+    props: {
+      title: { kind: "text", max: LABEL_MAX },
+      mark: { kind: "enum", values: MARKS },
+      tone: { kind: "enum", values: TONES },
+      count: { kind: "int", min: 0, max: BOARD_CARDS },
+      collapsible: { kind: "boolean" },
+      collapsed: { kind: "boolean" },
+      openable: { kind: "boolean" },
+      openLabel: { kind: "text", max: LABEL_MAX }
+    },
+    required: ["title"],
+    events: ["toggle", "open"],
+    children: false
+  },
+  "bry-property-list": {
+    props: {
+      title: { kind: "text", max: LABEL_MAX },
+      collapsible: { kind: "boolean" },
+      collapsed: { kind: "boolean" }
+    },
+    events: ["toggle"],
+    children: true
+  },
+  "bry-property-row": {
+    props: {
+      label: { kind: "text", max: LABEL_MAX },
+      icon: { kind: "enum", values: BUTTON_ICONS },
+      readonly: { kind: "boolean" }
+    },
+    required: ["label"],
+    events: [],
+    children: true
+  },
+  "bry-keys": {
+    props: {
+      bindings: {
+        kind: "list",
+        max: 20,
+        of: { kind: "shape", fields: { key: { kind: "text", max: KEY_NAME }, label: { kind: "text", max: LABEL_MAX } }, required: ["key", "label"] }
+      }
+    },
+    required: ["bindings"],
+    events: ["press"],
+    children: false
+  },
+  "bry-filter-chip": {
+    props: {
+      label: { kind: "text", max: LABEL_MAX },
+      icon: { kind: "enum", values: BUTTON_ICONS },
+      text: { kind: "text", max: LABEL_MAX },
+      marks: {
+        kind: "list",
+        max: 4,
+        of: { kind: "shape", fields: { mark: { kind: "enum", values: MARKS }, tone: { kind: "enum", values: TONES }, name: { kind: "text", max: LABEL_MAX } }, required: ["mark"] }
+      }
+    },
+    required: ["label"],
+    events: ["press", "remove"],
+    children: false
   }
 };
 var ELEMENT_NAMES = Object.keys(CATALOGUE);

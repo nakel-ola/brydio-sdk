@@ -1,7 +1,9 @@
 /// <reference lib="dom" />
 import { css, html, nothing } from '../base.ts';
 import { drawAs } from '../define.ts';
+import { icon, PLAN, rowMenu } from './plan-shared.ts';
 import { FOCUS, pick, space, str, TYPE } from './tokens.ts';
+import type { El } from './catalogue-b-shared.ts';
 
 /**
  * Avatar, label, list row, empty state, skeleton and grid, as Brydio's React
@@ -145,7 +147,7 @@ drawAs(
 
 /** What takes a press of its own inside a pressable row. */
 const INTERACTIVE =
-  "button, a, input, textarea, select, [role='menuitem'], [role='option'], [role='combobox'], bry-button, bry-input, bry-textarea, bry-select, bry-checkbox, bry-switch, bry-menu";
+  "button, a, input, textarea, select, [role='menuitem'], [role='option'], [role='combobox'], bry-button, bry-input, bry-textarea, bry-select, bry-checkbox, bry-switch, bry-menu, bry-property, bry-filter-menu";
 
 drawAs(
   'bry-list-row',
@@ -160,14 +162,58 @@ drawAs(
     const meta = str(element.meta);
     const press = () => element.emit('press');
 
-    if (element.variant === 'work') {
+    const pressedOn = (event: Event) => {
+      for (const target of event.composedPath()) {
+        if (target === element) return press();
+        if (target instanceof Element && target.matches(INTERACTIVE)) return;
+      }
+    };
+    const pressKey = (event: KeyboardEvent) => {
+      if (event.composedPath()[0] !== event.currentTarget) return;
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      press();
+    };
+
+    if (element.variant === 'stacked') {
+      // A two-line work row: identifier and title above, the description and
+      // the children (a state mark, a due date) under them, `meta` at the end.
       const identifier = str(element.identifier);
-      const checked = element.checked === true;
+      const title = str(element.title);
 
       return html`<div
-        class="row work ${checked ? 'selected' : ''} ${pressable ? 'pressable' : ''}"
+        class="stacked ${pressable ? 'pressable' : ''}"
         role=${pressable ? 'button' : nothing}
         tabindex=${pressable ? '0' : nothing}
+        aria-label=${pressable ? [identifier, title].filter(Boolean).join(' ') : nothing}
+        @click=${pressable ? pressedOn : nothing}
+        @keydown=${pressable ? pressKey : nothing}
+      >
+        <div class="text">
+          <div class="stacked-top">
+            ${identifier ? html`<span class="identifier mono">${identifier}</span>` : nothing}
+            <p class="stacked-title truncate">${title}</p>
+          </div>
+          <div class="stacked-under">
+            ${description ? html`<span class="truncate">${description}</span>` : nothing}
+            <slot></slot>
+          </div>
+        </div>
+        ${meta ? html`<p class="type-caption meta">${meta}</p>` : nothing}
+      </div>`;
+    }
+
+    if (element.variant === 'work') {
+      const identifier = str(element.identifier);
+      const title = str(element.title);
+      const checked = element.checked === true;
+      const compact = element.density === 'compact';
+
+      return html`<div
+        class="row work ${compact ? 'compact' : ''} ${checked ? 'selected' : ''} ${pressable ? 'pressable' : ''}"
+        role=${pressable ? 'button' : nothing}
+        tabindex=${pressable ? '0' : nothing}
+        aria-label=${pressable ? [identifier, title].filter(Boolean).join(' ') : nothing}
         @click=${pressable
           ? (event: Event) => {
               for (const target of event.composedPath()) {
@@ -193,10 +239,24 @@ drawAs(
               @change=${(event: Event) => element.emit('toggle', { checked: (event.currentTarget as HTMLInputElement).checked })}
             />`
           : nothing}
-        ${identifier ? html`<span class="identifier type-caption">${identifier}</span>` : nothing}
-        <p class="type-ui work-title truncate">${str(element.title)}</p>
-        <slot></slot>
+        ${identifier ? html`<span class="identifier mono">${identifier}</span>` : nothing}
+        <p class="type-ui work-title truncate">${title}</p>
+        <div class="chips"><slot></slot></div>
         ${meta ? html`<p class="type-caption meta">${meta}</p>` : nothing}
+        ${rowMenu(element as unknown as El, element.menu, `Options for ${identifier || title}`)}
+        ${element.removable === true
+          ? html`<button
+              type="button"
+              class="remove"
+              aria-label=${`Remove ${identifier || title}`}
+              @click=${(event: Event) => {
+                event.stopPropagation();
+                element.emit('remove');
+              }}
+            >
+              ${icon('close', 12)}
+            </button>`
+          : nothing}
       </div>`;
     }
 
@@ -235,6 +295,7 @@ drawAs(
     FOCUS,
     PULSE,
     SKELETON_STYLES,
+    PLAN,
     css`
       :host {
         display: block;
@@ -255,16 +316,99 @@ drawAs(
         border-radius: 0;
         padding: 0.5rem 0.875rem;
       }
+      .work.compact {
+        min-height: 2rem;
+        gap: 0.5rem;
+        border-bottom: 0;
+        border-radius: var(--radius-md);
+        padding: 0.375rem 0.5rem;
+      }
+      .work:not(.selected):hover {
+        background: var(--layer-hover);
+      }
       .work input {
         width: 0.875rem;
         height: 0.875rem;
         flex-shrink: 0;
+        opacity: 0.4;
+        accent-color: var(--brand);
+        transition: opacity var(--dur-fast);
+      }
+      .work:hover input,
+      .work input:checked,
+      .work input:focus-visible {
+        opacity: 1;
       }
       .identifier {
-        width: 4rem;
         flex-shrink: 0;
+        font-size: 0.75rem;
         color: var(--fg-muted);
         font-variant-numeric: tabular-nums;
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      .chips {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        gap: 0.25rem;
+      }
+      .remove {
+        display: inline-flex;
+        width: 1.25rem;
+        height: 1.25rem;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: var(--radius-md);
+        background: transparent;
+        color: var(--fg-muted);
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity var(--dur-fast);
+      }
+      .work:hover .remove,
+      .remove:focus-visible {
+        opacity: 1;
+      }
+      .remove:hover {
+        background: var(--layer-hover);
+        color: var(--fg);
+      }
+      .stacked {
+        display: flex;
+        min-width: 0;
+        align-items: flex-start;
+        gap: 0.75rem;
+        border-bottom: 1px solid var(--line);
+        padding: 0.75rem 1rem;
+      }
+      :host(:last-child) .stacked {
+        border-bottom: 0;
+      }
+      .stacked-top {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .stacked-title {
+        margin: 0;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--fg);
+      }
+      .stacked-under {
+        display: flex;
+        min-width: 0;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.25rem 0.5rem;
+        margin-top: 0.25rem;
+        font-size: 0.75rem;
+        color: var(--fg-muted);
       }
       .work-title {
         min-width: 0;

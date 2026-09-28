@@ -112,6 +112,45 @@ const FIELD = css`
   [aria-invalid='true']:focus-visible {
     box-shadow: 0 0 0 3px var(--danger-soft);
   }
+  input.bare,
+  textarea.bare {
+    height: auto;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+  }
+  input.bare:focus-visible,
+  textarea.bare:focus-visible {
+    box-shadow: none;
+  }
+  input.bare.sm {
+    font-size: 0.875rem;
+  }
+  input.bare.md {
+    font-size: 1rem;
+  }
+  input.bare.lg {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  textarea.bare {
+    min-height: 0;
+    flex: 1;
+    resize: none;
+    font-size: 0.875rem;
+  }
+  :host([data-bare]) {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+  }
+  :host([data-bare]) .field {
+    min-height: 0;
+    flex: 1;
+  }
 `;
 
 const error = (element: Element) => {
@@ -128,9 +167,13 @@ drawAs(
     const { draft, set } = draftOf(element as Element, str(element.value));
     const invalid = Boolean(str(element.error));
     const kind = (KINDS as readonly unknown[]).includes(element.kind) ? (element.kind as string) : 'text';
+    // `bare` has no box, for a composer's title: `size="lg"` sets it as one.
+    const bare = element.variant === 'bare';
+    const size = element.size === 'lg' ? 'lg' : element.size === 'sm' ? 'sm' : 'md';
 
     return html`<div class="field">
       <input
+        class=${bare ? `bare ${size}` : nothing}
         type=${kind}
         .value=${draft}
         placeholder=${str(element.placeholder) || nothing}
@@ -164,8 +207,14 @@ drawAs(
     const { draft, set } = draftOf(element as Element, str(element.value));
     const invalid = Boolean(str(element.error));
 
+    // `bare` has no box and grows to fill its place, for a composer's body.
+    const bare = element.variant === 'bare';
+
+    (element as HTMLElement).toggleAttribute('data-bare', bare);
+
     return html`<div class="field">
       <textarea
+        class=${bare ? 'bare' : nothing}
         .value=${draft}
         placeholder=${str(element.placeholder) || nothing}
         aria-label=${nameOf(element as Element) ?? nothing}
@@ -179,6 +228,12 @@ drawAs(
 
           set(value);
           element.emit('change', { value });
+        }}
+        @keydown=${(event: KeyboardEvent) => {
+          // Mod+Enter saves from the body; Enter alone starts a new line.
+          if (event.key !== 'Enter' || !(event.metaKey || event.ctrlKey) || event.isComposing) return;
+          event.preventDefault();
+          element.emit('submit', { value: (event.currentTarget as HTMLTextAreaElement).value });
         }}
       ></textarea>
       ${error(element as Element)}

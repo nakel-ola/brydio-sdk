@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "2e83f61cef02ec26dc64c695c33731f234b11664",
+    "commit": "d65777feffc546db9b0cd3e528d9c105f90131b4",
     "dirty": true
   },
   "contracts": {
@@ -68,7 +68,9 @@
                 "scroll",
                 "section",
                 "section-header",
-                "filter-bar"
+                "filter-bar",
+                "page-body",
+                "action-bar"
               ]
             }
           },
@@ -192,6 +194,44 @@
                 "settings",
                 "tasks",
                 "trash",
+                "account",
+                "activity",
+                "attach",
+                "bell",
+                "boardLayout",
+                "box",
+                "branch",
+                "calendarRange",
+                "channel",
+                "chart",
+                "cycle",
+                "download",
+                "externalLink",
+                "flag",
+                "ganttLayout",
+                "history",
+                "home",
+                "inbox",
+                "layers",
+                "link",
+                "listLayout",
+                "lock",
+                "maximise",
+                "panelRight",
+                "pause",
+                "play",
+                "progress",
+                "project",
+                "relation",
+                "sliders",
+                "tableLayout",
+                "tag",
+                "target",
+                "temporary",
+                "userAdd",
+                "status",
+                "filter",
+                "stateReview",
                 "more",
                 "close",
                 "arrowRight",
@@ -277,6 +317,21 @@
             "error": {
               "kind": "text",
               "max": 200
+            },
+            "variant": {
+              "kind": "enum",
+              "values": [
+                "default",
+                "bare"
+              ]
+            },
+            "size": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md",
+                "lg"
+              ]
             }
           },
           "events": [
@@ -313,10 +368,18 @@
             "error": {
               "kind": "text",
               "max": 200
+            },
+            "variant": {
+              "kind": "enum",
+              "values": [
+                "default",
+                "bare"
+              ]
             }
           },
           "events": [
-            "change"
+            "change",
+            "submit"
           ],
           "children": false
         },
@@ -431,6 +494,13 @@
                 "warn",
                 "danger"
               ]
+            },
+            "variant": {
+              "kind": "enum",
+              "values": [
+                "default",
+                "count"
+              ]
             }
           },
           "required": [
@@ -487,7 +557,8 @@
               "kind": "enum",
               "values": [
                 "default",
-                "work"
+                "work",
+                "stacked"
               ]
             },
             "identifier": {
@@ -499,11 +570,125 @@
             },
             "checked": {
               "kind": "boolean"
+            },
+            "density": {
+              "kind": "enum",
+              "values": [
+                "default",
+                "compact"
+              ]
+            },
+            "menu": {
+              "kind": "list",
+              "max": 60,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "icon": {
+                    "kind": "enum",
+                    "values": [
+                      "add",
+                      "archive",
+                      "calendar",
+                      "check",
+                      "copy",
+                      "dismiss",
+                      "docs",
+                      "info",
+                      "mail",
+                      "members",
+                      "notes",
+                      "pin",
+                      "rename",
+                      "retry",
+                      "search",
+                      "settings",
+                      "tasks",
+                      "trash",
+                      "account",
+                      "activity",
+                      "attach",
+                      "bell",
+                      "boardLayout",
+                      "box",
+                      "branch",
+                      "calendarRange",
+                      "channel",
+                      "chart",
+                      "cycle",
+                      "download",
+                      "externalLink",
+                      "flag",
+                      "ganttLayout",
+                      "history",
+                      "home",
+                      "inbox",
+                      "layers",
+                      "link",
+                      "listLayout",
+                      "lock",
+                      "maximise",
+                      "panelRight",
+                      "pause",
+                      "play",
+                      "progress",
+                      "project",
+                      "relation",
+                      "sliders",
+                      "tableLayout",
+                      "tag",
+                      "target",
+                      "temporary",
+                      "userAdd",
+                      "status",
+                      "filter",
+                      "stateReview"
+                    ]
+                  },
+                  "tone": {
+                    "kind": "enum",
+                    "values": [
+                      "default",
+                      "danger"
+                    ]
+                  },
+                  "separator": {
+                    "kind": "boolean"
+                  },
+                  "disabled": {
+                    "kind": "boolean"
+                  },
+                  "checked": {
+                    "kind": "boolean"
+                  },
+                  "parent": {
+                    "kind": "text",
+                    "max": 128
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            },
+            "removable": {
+              "kind": "boolean"
             }
           },
           "events": [
             "press",
-            "toggle"
+            "toggle",
+            "select",
+            "remove"
           ],
           "children": true
         },
@@ -549,6 +734,44 @@
                 "settings",
                 "tasks",
                 "trash",
+                "account",
+                "activity",
+                "attach",
+                "bell",
+                "boardLayout",
+                "box",
+                "branch",
+                "calendarRange",
+                "channel",
+                "chart",
+                "cycle",
+                "download",
+                "externalLink",
+                "flag",
+                "ganttLayout",
+                "history",
+                "home",
+                "inbox",
+                "layers",
+                "link",
+                "listLayout",
+                "lock",
+                "maximise",
+                "panelRight",
+                "pause",
+                "play",
+                "progress",
+                "project",
+                "relation",
+                "sliders",
+                "tableLayout",
+                "tag",
+                "target",
+                "temporary",
+                "userAdd",
+                "status",
+                "filter",
+                "stateReview",
                 "more",
                 "close",
                 "arrowRight",
@@ -788,6 +1011,31 @@
             "cancel": {
               "kind": "text",
               "max": 200
+            },
+            "variant": {
+              "kind": "enum",
+              "values": [
+                "default",
+                "compose"
+              ]
+            },
+            "crumbs": {
+              "kind": "list",
+              "max": 3,
+              "of": {
+                "kind": "text",
+                "max": 200
+              }
+            },
+            "expanded": {
+              "kind": "boolean"
+            },
+            "toggle": {
+              "kind": "text",
+              "max": 200
+            },
+            "toggled": {
+              "kind": "boolean"
             }
           },
           "required": [
@@ -795,7 +1043,9 @@
           ],
           "events": [
             "action",
-            "close"
+            "close",
+            "expand",
+            "toggle"
           ],
           "children": true
         },
@@ -803,7 +1053,7 @@
           "props": {
             "items": {
               "kind": "list",
-              "max": 20,
+              "max": 60,
               "of": {
                 "kind": "shape",
                 "fields": {
@@ -835,7 +1085,45 @@
                       "search",
                       "settings",
                       "tasks",
-                      "trash"
+                      "trash",
+                      "account",
+                      "activity",
+                      "attach",
+                      "bell",
+                      "boardLayout",
+                      "box",
+                      "branch",
+                      "calendarRange",
+                      "channel",
+                      "chart",
+                      "cycle",
+                      "download",
+                      "externalLink",
+                      "flag",
+                      "ganttLayout",
+                      "history",
+                      "home",
+                      "inbox",
+                      "layers",
+                      "link",
+                      "listLayout",
+                      "lock",
+                      "maximise",
+                      "panelRight",
+                      "pause",
+                      "play",
+                      "progress",
+                      "project",
+                      "relation",
+                      "sliders",
+                      "tableLayout",
+                      "tag",
+                      "target",
+                      "temporary",
+                      "userAdd",
+                      "status",
+                      "filter",
+                      "stateReview"
                     ]
                   },
                   "tone": {
@@ -850,6 +1138,13 @@
                   },
                   "disabled": {
                     "kind": "boolean"
+                  },
+                  "checked": {
+                    "kind": "boolean"
+                  },
+                  "parent": {
+                    "kind": "text",
+                    "max": 128
                   }
                 },
                 "required": [
@@ -857,6 +1152,10 @@
                   "label"
                 ]
               }
+            },
+            "heading": {
+              "kind": "text",
+              "max": 200
             }
           },
           "required": [
@@ -981,6 +1280,26 @@
                 "lg"
               ]
             },
+            "layout": {
+              "kind": "enum",
+              "values": [
+                "columns",
+                "list",
+                "lanes"
+              ]
+            },
+            "laneColumns": {
+              "kind": "int",
+              "min": 1,
+              "max": 12
+            },
+            "variant": {
+              "kind": "enum",
+              "values": [
+                "default",
+                "plan"
+              ]
+            },
             "settled": {
               "kind": "text",
               "max": 128
@@ -1025,13 +1344,159 @@
             "empty": {
               "kind": "text",
               "max": 200
+            },
+            "glyph": {
+              "kind": "enum",
+              "values": [
+                "backlog",
+                "unstarted",
+                "started",
+                "completed",
+                "cancelled"
+              ]
+            },
+            "tone": {
+              "kind": "enum",
+              "values": [
+                "neutral",
+                "brand",
+                "success",
+                "warn",
+                "danger"
+              ]
+            },
+            "collapsible": {
+              "kind": "boolean"
+            },
+            "collapsed": {
+              "kind": "boolean"
+            },
+            "addable": {
+              "kind": "boolean"
+            },
+            "addLabel": {
+              "kind": "text",
+              "max": 200
+            },
+            "adding": {
+              "kind": "boolean"
+            },
+            "busy": {
+              "kind": "boolean"
+            },
+            "menu": {
+              "kind": "list",
+              "max": 60,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "icon": {
+                    "kind": "enum",
+                    "values": [
+                      "add",
+                      "archive",
+                      "calendar",
+                      "check",
+                      "copy",
+                      "dismiss",
+                      "docs",
+                      "info",
+                      "mail",
+                      "members",
+                      "notes",
+                      "pin",
+                      "rename",
+                      "retry",
+                      "search",
+                      "settings",
+                      "tasks",
+                      "trash",
+                      "account",
+                      "activity",
+                      "attach",
+                      "bell",
+                      "boardLayout",
+                      "box",
+                      "branch",
+                      "calendarRange",
+                      "channel",
+                      "chart",
+                      "cycle",
+                      "download",
+                      "externalLink",
+                      "flag",
+                      "ganttLayout",
+                      "history",
+                      "home",
+                      "inbox",
+                      "layers",
+                      "link",
+                      "listLayout",
+                      "lock",
+                      "maximise",
+                      "panelRight",
+                      "pause",
+                      "play",
+                      "progress",
+                      "project",
+                      "relation",
+                      "sliders",
+                      "tableLayout",
+                      "tag",
+                      "target",
+                      "temporary",
+                      "userAdd",
+                      "status",
+                      "filter",
+                      "stateReview"
+                    ]
+                  },
+                  "tone": {
+                    "kind": "enum",
+                    "values": [
+                      "default",
+                      "danger"
+                    ]
+                  },
+                  "separator": {
+                    "kind": "boolean"
+                  },
+                  "disabled": {
+                    "kind": "boolean"
+                  },
+                  "checked": {
+                    "kind": "boolean"
+                  },
+                  "parent": {
+                    "kind": "text",
+                    "max": 128
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
             }
           },
           "required": [
             "title"
           ],
           "events": [
-            "range"
+            "range",
+            "toggle",
+            "add",
+            "submit",
+            "cancel",
+            "select"
           ],
           "children": true
         },
@@ -1227,7 +1692,45 @@
                       "search",
                       "settings",
                       "tasks",
-                      "trash"
+                      "trash",
+                      "account",
+                      "activity",
+                      "attach",
+                      "bell",
+                      "boardLayout",
+                      "box",
+                      "branch",
+                      "calendarRange",
+                      "channel",
+                      "chart",
+                      "cycle",
+                      "download",
+                      "externalLink",
+                      "flag",
+                      "ganttLayout",
+                      "history",
+                      "home",
+                      "inbox",
+                      "layers",
+                      "link",
+                      "listLayout",
+                      "lock",
+                      "maximise",
+                      "panelRight",
+                      "pause",
+                      "play",
+                      "progress",
+                      "project",
+                      "relation",
+                      "sliders",
+                      "tableLayout",
+                      "tag",
+                      "target",
+                      "temporary",
+                      "userAdd",
+                      "status",
+                      "filter",
+                      "stateReview"
                     ]
                   },
                   "tone": {
@@ -1419,7 +1922,45 @@
                       "search",
                       "settings",
                       "tasks",
-                      "trash"
+                      "trash",
+                      "account",
+                      "activity",
+                      "attach",
+                      "bell",
+                      "boardLayout",
+                      "box",
+                      "branch",
+                      "calendarRange",
+                      "channel",
+                      "chart",
+                      "cycle",
+                      "download",
+                      "externalLink",
+                      "flag",
+                      "ganttLayout",
+                      "history",
+                      "home",
+                      "inbox",
+                      "layers",
+                      "link",
+                      "listLayout",
+                      "lock",
+                      "maximise",
+                      "panelRight",
+                      "pause",
+                      "play",
+                      "progress",
+                      "project",
+                      "relation",
+                      "sliders",
+                      "tableLayout",
+                      "tag",
+                      "target",
+                      "temporary",
+                      "userAdd",
+                      "status",
+                      "filter",
+                      "stateReview"
                     ]
                   },
                   "hint": {
@@ -1465,7 +2006,7 @@
           "props": {
             "items": {
               "kind": "list",
-              "max": 20,
+              "max": 60,
               "of": {
                 "kind": "shape",
                 "fields": {
@@ -1497,7 +2038,45 @@
                       "search",
                       "settings",
                       "tasks",
-                      "trash"
+                      "trash",
+                      "account",
+                      "activity",
+                      "attach",
+                      "bell",
+                      "boardLayout",
+                      "box",
+                      "branch",
+                      "calendarRange",
+                      "channel",
+                      "chart",
+                      "cycle",
+                      "download",
+                      "externalLink",
+                      "flag",
+                      "ganttLayout",
+                      "history",
+                      "home",
+                      "inbox",
+                      "layers",
+                      "link",
+                      "listLayout",
+                      "lock",
+                      "maximise",
+                      "panelRight",
+                      "pause",
+                      "play",
+                      "progress",
+                      "project",
+                      "relation",
+                      "sliders",
+                      "tableLayout",
+                      "tag",
+                      "target",
+                      "temporary",
+                      "userAdd",
+                      "status",
+                      "filter",
+                      "stateReview"
                     ]
                   },
                   "tone": {
@@ -1512,6 +2091,13 @@
                   },
                   "disabled": {
                     "kind": "boolean"
+                  },
+                  "checked": {
+                    "kind": "boolean"
+                  },
+                  "parent": {
+                    "kind": "text",
+                    "max": 128
                   }
                 },
                 "required": [
@@ -1745,7 +2331,45 @@
                 "search",
                 "settings",
                 "tasks",
-                "trash"
+                "trash",
+                "account",
+                "activity",
+                "attach",
+                "bell",
+                "boardLayout",
+                "box",
+                "branch",
+                "calendarRange",
+                "channel",
+                "chart",
+                "cycle",
+                "download",
+                "externalLink",
+                "flag",
+                "ganttLayout",
+                "history",
+                "home",
+                "inbox",
+                "layers",
+                "link",
+                "listLayout",
+                "lock",
+                "maximise",
+                "panelRight",
+                "pause",
+                "play",
+                "progress",
+                "project",
+                "relation",
+                "sliders",
+                "tableLayout",
+                "tag",
+                "target",
+                "temporary",
+                "userAdd",
+                "status",
+                "filter",
+                "stateReview"
               ]
             },
             "prefix": {
@@ -1780,7 +2404,45 @@
                 "search",
                 "settings",
                 "tasks",
-                "trash"
+                "trash",
+                "account",
+                "activity",
+                "attach",
+                "bell",
+                "boardLayout",
+                "box",
+                "branch",
+                "calendarRange",
+                "channel",
+                "chart",
+                "cycle",
+                "download",
+                "externalLink",
+                "flag",
+                "ganttLayout",
+                "history",
+                "home",
+                "inbox",
+                "layers",
+                "link",
+                "listLayout",
+                "lock",
+                "maximise",
+                "panelRight",
+                "pause",
+                "play",
+                "progress",
+                "project",
+                "relation",
+                "sliders",
+                "tableLayout",
+                "tag",
+                "target",
+                "temporary",
+                "userAdd",
+                "status",
+                "filter",
+                "stateReview"
               ]
             },
             "maxLength": {
@@ -1860,7 +2522,7 @@
                   },
                   "items": {
                     "kind": "list",
-                    "max": 20,
+                    "max": 60,
                     "of": {
                       "kind": "shape",
                       "fields": {
@@ -1892,7 +2554,45 @@
                             "search",
                             "settings",
                             "tasks",
-                            "trash"
+                            "trash",
+                            "account",
+                            "activity",
+                            "attach",
+                            "bell",
+                            "boardLayout",
+                            "box",
+                            "branch",
+                            "calendarRange",
+                            "channel",
+                            "chart",
+                            "cycle",
+                            "download",
+                            "externalLink",
+                            "flag",
+                            "ganttLayout",
+                            "history",
+                            "home",
+                            "inbox",
+                            "layers",
+                            "link",
+                            "listLayout",
+                            "lock",
+                            "maximise",
+                            "panelRight",
+                            "pause",
+                            "play",
+                            "progress",
+                            "project",
+                            "relation",
+                            "sliders",
+                            "tableLayout",
+                            "tag",
+                            "target",
+                            "temporary",
+                            "userAdd",
+                            "status",
+                            "filter",
+                            "stateReview"
                           ]
                         },
                         "tone": {
@@ -2286,6 +2986,44 @@
                 "settings",
                 "tasks",
                 "trash",
+                "account",
+                "activity",
+                "attach",
+                "bell",
+                "boardLayout",
+                "box",
+                "branch",
+                "calendarRange",
+                "channel",
+                "chart",
+                "cycle",
+                "download",
+                "externalLink",
+                "flag",
+                "ganttLayout",
+                "history",
+                "home",
+                "inbox",
+                "layers",
+                "link",
+                "listLayout",
+                "lock",
+                "maximise",
+                "panelRight",
+                "pause",
+                "play",
+                "progress",
+                "project",
+                "relation",
+                "sliders",
+                "tableLayout",
+                "tag",
+                "target",
+                "temporary",
+                "userAdd",
+                "status",
+                "filter",
+                "stateReview",
                 "more",
                 "close",
                 "arrowRight",
@@ -2367,6 +3105,44 @@
                       "settings",
                       "tasks",
                       "trash",
+                      "account",
+                      "activity",
+                      "attach",
+                      "bell",
+                      "boardLayout",
+                      "box",
+                      "branch",
+                      "calendarRange",
+                      "channel",
+                      "chart",
+                      "cycle",
+                      "download",
+                      "externalLink",
+                      "flag",
+                      "ganttLayout",
+                      "history",
+                      "home",
+                      "inbox",
+                      "layers",
+                      "link",
+                      "listLayout",
+                      "lock",
+                      "maximise",
+                      "panelRight",
+                      "pause",
+                      "play",
+                      "progress",
+                      "project",
+                      "relation",
+                      "sliders",
+                      "tableLayout",
+                      "tag",
+                      "target",
+                      "temporary",
+                      "userAdd",
+                      "status",
+                      "filter",
+                      "stateReview",
                       "more",
                       "close",
                       "arrowRight",
@@ -2846,7 +3622,45 @@
                 "search",
                 "settings",
                 "tasks",
-                "trash"
+                "trash",
+                "account",
+                "activity",
+                "attach",
+                "bell",
+                "boardLayout",
+                "box",
+                "branch",
+                "calendarRange",
+                "channel",
+                "chart",
+                "cycle",
+                "download",
+                "externalLink",
+                "flag",
+                "ganttLayout",
+                "history",
+                "home",
+                "inbox",
+                "layers",
+                "link",
+                "listLayout",
+                "lock",
+                "maximise",
+                "panelRight",
+                "pause",
+                "play",
+                "progress",
+                "project",
+                "relation",
+                "sliders",
+                "tableLayout",
+                "tag",
+                "target",
+                "temporary",
+                "userAdd",
+                "status",
+                "filter",
+                "stateReview"
               ]
             },
             "variant": {
@@ -3170,6 +3984,2184 @@
           ],
           "events": [],
           "children": true
+        },
+        "bry-glyph": {
+          "props": {
+            "kind": {
+              "kind": "enum",
+              "values": [
+                "state",
+                "priority"
+              ]
+            },
+            "group": {
+              "kind": "enum",
+              "values": [
+                "backlog",
+                "unstarted",
+                "started",
+                "completed",
+                "cancelled"
+              ]
+            },
+            "priority": {
+              "kind": "enum",
+              "values": [
+                "urgent",
+                "high",
+                "medium",
+                "low",
+                "none"
+              ]
+            },
+            "tone": {
+              "kind": "enum",
+              "values": [
+                "neutral",
+                "brand",
+                "success",
+                "warn",
+                "danger"
+              ]
+            },
+            "size": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md"
+              ]
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "events": [],
+          "children": false
+        },
+        "bry-property": {
+          "props": {
+            "kind": {
+              "kind": "enum",
+              "values": [
+                "state",
+                "priority",
+                "members",
+                "labels",
+                "date",
+                "choice"
+              ]
+            },
+            "display": {
+              "kind": "enum",
+              "values": [
+                "badge",
+                "icon",
+                "dot",
+                "pill",
+                "button"
+              ]
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "value": {
+              "kind": "text",
+              "max": 128
+            },
+            "values": {
+              "kind": "list",
+              "max": 200,
+              "of": {
+                "kind": "text",
+                "max": 128
+              }
+            },
+            "options": {
+              "kind": "list",
+              "max": 200,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "value": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "tone": {
+                    "kind": "enum",
+                    "values": [
+                      "neutral",
+                      "brand",
+                      "success",
+                      "warn",
+                      "danger"
+                    ]
+                  },
+                  "group": {
+                    "kind": "enum",
+                    "values": [
+                      "backlog",
+                      "unstarted",
+                      "started",
+                      "completed",
+                      "cancelled"
+                    ]
+                  },
+                  "mark": {
+                    "kind": "enum",
+                    "values": [
+                      "backlog",
+                      "unstarted",
+                      "started",
+                      "completed",
+                      "cancelled",
+                      "review",
+                      "blocked",
+                      "urgent",
+                      "high",
+                      "medium",
+                      "low",
+                      "none",
+                      "person",
+                      "dot"
+                    ]
+                  }
+                },
+                "required": [
+                  "value",
+                  "label"
+                ]
+              }
+            },
+            "placeholder": {
+              "kind": "text",
+              "max": 200
+            },
+            "max": {
+              "kind": "int",
+              "min": 1,
+              "max": 5
+            },
+            "clearable": {
+              "kind": "boolean"
+            },
+            "due": {
+              "kind": "boolean"
+            },
+            "disabled": {
+              "kind": "boolean"
+            }
+          },
+          "required": [
+            "kind",
+            "label"
+          ],
+          "events": [
+            "change"
+          ],
+          "children": false
+        },
+        "bry-quick-add": {
+          "props": {
+            "trigger": {
+              "kind": "text",
+              "max": 200
+            },
+            "placeholder": {
+              "kind": "text",
+              "max": 200
+            },
+            "hint": {
+              "kind": "text",
+              "max": 200
+            },
+            "open": {
+              "kind": "boolean"
+            },
+            "busy": {
+              "kind": "boolean"
+            },
+            "value": {
+              "kind": "text",
+              "max": 200
+            },
+            "variant": {
+              "kind": "enum",
+              "values": [
+                "row",
+                "card",
+                "link"
+              ]
+            }
+          },
+          "required": [
+            "trigger"
+          ],
+          "events": [
+            "open",
+            "submit",
+            "cancel"
+          ],
+          "children": false
+        },
+        "bry-work-card": {
+          "props": {
+            "title": {
+              "kind": "text",
+              "max": 200
+            },
+            "identifier": {
+              "kind": "text",
+              "max": 200
+            },
+            "priority": {
+              "kind": "enum",
+              "values": [
+                "urgent",
+                "high",
+                "medium",
+                "low",
+                "none"
+              ]
+            },
+            "description": {
+              "kind": "text",
+              "max": 200
+            },
+            "project": {
+              "kind": "text",
+              "max": 200
+            },
+            "labels": {
+              "kind": "list",
+              "max": 12,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "tone": {
+                    "kind": "enum",
+                    "values": [
+                      "neutral",
+                      "brand",
+                      "success",
+                      "warn",
+                      "danger"
+                    ]
+                  }
+                },
+                "required": [
+                  "label"
+                ]
+              }
+            },
+            "assignees": {
+              "kind": "list",
+              "max": 20,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "name": {
+                    "kind": "text",
+                    "max": 200
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ]
+              }
+            },
+            "due": {
+              "kind": "text",
+              "max": 10
+            },
+            "updated": {
+              "kind": "text",
+              "max": 40
+            },
+            "progress": {
+              "kind": "shape",
+              "fields": {
+                "done": {
+                  "kind": "int",
+                  "min": 0,
+                  "max": 10000
+                },
+                "total": {
+                  "kind": "int",
+                  "min": 0,
+                  "max": 10000
+                }
+              },
+              "required": [
+                "done",
+                "total"
+              ]
+            },
+            "lead": {
+              "kind": "boolean"
+            },
+            "menu": {
+              "kind": "list",
+              "max": 60,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "icon": {
+                    "kind": "enum",
+                    "values": [
+                      "add",
+                      "archive",
+                      "calendar",
+                      "check",
+                      "copy",
+                      "dismiss",
+                      "docs",
+                      "info",
+                      "mail",
+                      "members",
+                      "notes",
+                      "pin",
+                      "rename",
+                      "retry",
+                      "search",
+                      "settings",
+                      "tasks",
+                      "trash",
+                      "account",
+                      "activity",
+                      "attach",
+                      "bell",
+                      "boardLayout",
+                      "box",
+                      "branch",
+                      "calendarRange",
+                      "channel",
+                      "chart",
+                      "cycle",
+                      "download",
+                      "externalLink",
+                      "flag",
+                      "ganttLayout",
+                      "history",
+                      "home",
+                      "inbox",
+                      "layers",
+                      "link",
+                      "listLayout",
+                      "lock",
+                      "maximise",
+                      "panelRight",
+                      "pause",
+                      "play",
+                      "progress",
+                      "project",
+                      "relation",
+                      "sliders",
+                      "tableLayout",
+                      "tag",
+                      "target",
+                      "temporary",
+                      "userAdd",
+                      "status",
+                      "filter",
+                      "stateReview"
+                    ]
+                  },
+                  "tone": {
+                    "kind": "enum",
+                    "values": [
+                      "default",
+                      "danger"
+                    ]
+                  },
+                  "separator": {
+                    "kind": "boolean"
+                  },
+                  "disabled": {
+                    "kind": "boolean"
+                  },
+                  "checked": {
+                    "kind": "boolean"
+                  },
+                  "parent": {
+                    "kind": "text",
+                    "max": 128
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            },
+            "loading": {
+              "kind": "boolean"
+            }
+          },
+          "required": [
+            "title"
+          ],
+          "events": [
+            "press",
+            "select"
+          ],
+          "children": true
+        },
+        "bry-page-header": {
+          "props": {
+            "title": {
+              "kind": "text",
+              "max": 200
+            },
+            "icon": {
+              "kind": "enum",
+              "values": [
+                "add",
+                "archive",
+                "calendar",
+                "check",
+                "copy",
+                "dismiss",
+                "docs",
+                "info",
+                "mail",
+                "members",
+                "notes",
+                "pin",
+                "rename",
+                "retry",
+                "search",
+                "settings",
+                "tasks",
+                "trash",
+                "account",
+                "activity",
+                "attach",
+                "bell",
+                "boardLayout",
+                "box",
+                "branch",
+                "calendarRange",
+                "channel",
+                "chart",
+                "cycle",
+                "download",
+                "externalLink",
+                "flag",
+                "ganttLayout",
+                "history",
+                "home",
+                "inbox",
+                "layers",
+                "link",
+                "listLayout",
+                "lock",
+                "maximise",
+                "panelRight",
+                "pause",
+                "play",
+                "progress",
+                "project",
+                "relation",
+                "sliders",
+                "tableLayout",
+                "tag",
+                "target",
+                "temporary",
+                "userAdd",
+                "status",
+                "filter",
+                "stateReview",
+                "more",
+                "close",
+                "arrowRight",
+                "chevronRight",
+                "chevronDown",
+                "chevronUp"
+              ]
+            },
+            "subtitle": {
+              "kind": "text",
+              "max": 200
+            },
+            "back": {
+              "kind": "boolean"
+            },
+            "count": {
+              "kind": "int",
+              "min": 0,
+              "max": 1000000
+            },
+            "crumbs": {
+              "kind": "list",
+              "max": 4,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "icon": {
+                    "kind": "enum",
+                    "values": [
+                      "add",
+                      "archive",
+                      "calendar",
+                      "check",
+                      "copy",
+                      "dismiss",
+                      "docs",
+                      "info",
+                      "mail",
+                      "members",
+                      "notes",
+                      "pin",
+                      "rename",
+                      "retry",
+                      "search",
+                      "settings",
+                      "tasks",
+                      "trash",
+                      "account",
+                      "activity",
+                      "attach",
+                      "bell",
+                      "boardLayout",
+                      "box",
+                      "branch",
+                      "calendarRange",
+                      "channel",
+                      "chart",
+                      "cycle",
+                      "download",
+                      "externalLink",
+                      "flag",
+                      "ganttLayout",
+                      "history",
+                      "home",
+                      "inbox",
+                      "layers",
+                      "link",
+                      "listLayout",
+                      "lock",
+                      "maximise",
+                      "panelRight",
+                      "pause",
+                      "play",
+                      "progress",
+                      "project",
+                      "relation",
+                      "sliders",
+                      "tableLayout",
+                      "tag",
+                      "target",
+                      "temporary",
+                      "userAdd",
+                      "status",
+                      "filter",
+                      "stateReview",
+                      "more",
+                      "close",
+                      "arrowRight",
+                      "chevronRight",
+                      "chevronDown",
+                      "chevronUp"
+                    ]
+                  },
+                  "initial": {
+                    "kind": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            },
+            "badges": {
+              "kind": "list",
+              "max": 3,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "text": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "tone": {
+                    "kind": "enum",
+                    "values": [
+                      "neutral",
+                      "brand",
+                      "success",
+                      "warn",
+                      "danger"
+                    ]
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              }
+            },
+            "tabs": {
+              "kind": "list",
+              "max": 12,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "icon": {
+                    "kind": "enum",
+                    "values": [
+                      "add",
+                      "archive",
+                      "calendar",
+                      "check",
+                      "copy",
+                      "dismiss",
+                      "docs",
+                      "info",
+                      "mail",
+                      "members",
+                      "notes",
+                      "pin",
+                      "rename",
+                      "retry",
+                      "search",
+                      "settings",
+                      "tasks",
+                      "trash",
+                      "account",
+                      "activity",
+                      "attach",
+                      "bell",
+                      "boardLayout",
+                      "box",
+                      "branch",
+                      "calendarRange",
+                      "channel",
+                      "chart",
+                      "cycle",
+                      "download",
+                      "externalLink",
+                      "flag",
+                      "ganttLayout",
+                      "history",
+                      "home",
+                      "inbox",
+                      "layers",
+                      "link",
+                      "listLayout",
+                      "lock",
+                      "maximise",
+                      "panelRight",
+                      "pause",
+                      "play",
+                      "progress",
+                      "project",
+                      "relation",
+                      "sliders",
+                      "tableLayout",
+                      "tag",
+                      "target",
+                      "temporary",
+                      "userAdd",
+                      "status",
+                      "filter",
+                      "stateReview",
+                      "more",
+                      "close",
+                      "arrowRight",
+                      "chevronRight",
+                      "chevronDown",
+                      "chevronUp"
+                    ]
+                  },
+                  "count": {
+                    "kind": "int",
+                    "min": 0,
+                    "max": 1000000
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            },
+            "tab": {
+              "kind": "text",
+              "max": 128
+            },
+            "size": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md"
+              ]
+            }
+          },
+          "required": [
+            "title"
+          ],
+          "events": [
+            "back",
+            "crumb",
+            "tab"
+          ],
+          "children": true
+        },
+        "bry-entity-row": {
+          "props": {
+            "title": {
+              "kind": "text",
+              "max": 200
+            },
+            "description": {
+              "kind": "text",
+              "max": 200
+            },
+            "meta": {
+              "kind": "text",
+              "max": 200
+            },
+            "dateRange": {
+              "kind": "text",
+              "max": 200
+            },
+            "leading": {
+              "kind": "enum",
+              "values": [
+                "status",
+                "ring",
+                "tile",
+                "none"
+              ]
+            },
+            "status": {
+              "kind": "enum",
+              "values": [
+                "draft",
+                "upcoming",
+                "active",
+                "completed",
+                "cancelled",
+                "backlog",
+                "planned",
+                "started",
+                "paused",
+                "pending",
+                "accepted",
+                "declined",
+                "snoozed",
+                "duplicate"
+              ]
+            },
+            "statusLabel": {
+              "kind": "text",
+              "max": 200
+            },
+            "tone": {
+              "kind": "enum",
+              "values": [
+                "neutral",
+                "brand",
+                "success",
+                "warn",
+                "danger"
+              ]
+            },
+            "icon": {
+              "kind": "enum",
+              "values": [
+                "add",
+                "archive",
+                "calendar",
+                "check",
+                "copy",
+                "dismiss",
+                "docs",
+                "info",
+                "mail",
+                "members",
+                "notes",
+                "pin",
+                "rename",
+                "retry",
+                "search",
+                "settings",
+                "tasks",
+                "trash",
+                "account",
+                "activity",
+                "attach",
+                "bell",
+                "boardLayout",
+                "box",
+                "branch",
+                "calendarRange",
+                "channel",
+                "chart",
+                "cycle",
+                "download",
+                "externalLink",
+                "flag",
+                "ganttLayout",
+                "history",
+                "home",
+                "inbox",
+                "layers",
+                "link",
+                "listLayout",
+                "lock",
+                "maximise",
+                "panelRight",
+                "pause",
+                "play",
+                "progress",
+                "project",
+                "relation",
+                "sliders",
+                "tableLayout",
+                "tag",
+                "target",
+                "temporary",
+                "userAdd",
+                "status",
+                "filter",
+                "stateReview",
+                "more",
+                "close",
+                "arrowRight",
+                "chevronRight",
+                "chevronDown",
+                "chevronUp"
+              ]
+            },
+            "ring": {
+              "kind": "int",
+              "min": 0,
+              "max": 100
+            },
+            "metrics": {
+              "kind": "list",
+              "max": 4,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "value": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "ring": {
+                    "kind": "int",
+                    "min": 0,
+                    "max": 100
+                  }
+                },
+                "required": [
+                  "label",
+                  "value"
+                ]
+              }
+            },
+            "menu": {
+              "kind": "list",
+              "max": 60,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "icon": {
+                    "kind": "enum",
+                    "values": [
+                      "add",
+                      "archive",
+                      "calendar",
+                      "check",
+                      "copy",
+                      "dismiss",
+                      "docs",
+                      "info",
+                      "mail",
+                      "members",
+                      "notes",
+                      "pin",
+                      "rename",
+                      "retry",
+                      "search",
+                      "settings",
+                      "tasks",
+                      "trash",
+                      "account",
+                      "activity",
+                      "attach",
+                      "bell",
+                      "boardLayout",
+                      "box",
+                      "branch",
+                      "calendarRange",
+                      "channel",
+                      "chart",
+                      "cycle",
+                      "download",
+                      "externalLink",
+                      "flag",
+                      "ganttLayout",
+                      "history",
+                      "home",
+                      "inbox",
+                      "layers",
+                      "link",
+                      "listLayout",
+                      "lock",
+                      "maximise",
+                      "panelRight",
+                      "pause",
+                      "play",
+                      "progress",
+                      "project",
+                      "relation",
+                      "sliders",
+                      "tableLayout",
+                      "tag",
+                      "target",
+                      "temporary",
+                      "userAdd",
+                      "status",
+                      "filter",
+                      "stateReview"
+                    ]
+                  },
+                  "tone": {
+                    "kind": "enum",
+                    "values": [
+                      "default",
+                      "danger"
+                    ]
+                  },
+                  "separator": {
+                    "kind": "boolean"
+                  },
+                  "disabled": {
+                    "kind": "boolean"
+                  },
+                  "checked": {
+                    "kind": "boolean"
+                  },
+                  "parent": {
+                    "kind": "text",
+                    "max": 128
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            },
+            "rail": {
+              "kind": "shape",
+              "fields": {
+                "month": {
+                  "kind": "text",
+                  "max": 200
+                },
+                "day": {
+                  "kind": "text",
+                  "max": 200
+                },
+                "active": {
+                  "kind": "boolean"
+                }
+              },
+              "required": []
+            },
+            "highlighted": {
+              "kind": "boolean"
+            },
+            "selected": {
+              "kind": "boolean"
+            },
+            "pressable": {
+              "kind": "boolean"
+            },
+            "expandable": {
+              "kind": "boolean"
+            },
+            "expanded": {
+              "kind": "boolean"
+            },
+            "loading": {
+              "kind": "boolean"
+            }
+          },
+          "required": [
+            "title"
+          ],
+          "events": [
+            "press",
+            "select",
+            "toggle"
+          ],
+          "children": true
+        },
+        "bry-filter-menu": {
+          "props": {
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "facets": {
+              "kind": "list",
+              "max": 8,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "icon": {
+                    "kind": "enum",
+                    "values": [
+                      "add",
+                      "archive",
+                      "calendar",
+                      "check",
+                      "copy",
+                      "dismiss",
+                      "docs",
+                      "info",
+                      "mail",
+                      "members",
+                      "notes",
+                      "pin",
+                      "rename",
+                      "retry",
+                      "search",
+                      "settings",
+                      "tasks",
+                      "trash",
+                      "account",
+                      "activity",
+                      "attach",
+                      "bell",
+                      "boardLayout",
+                      "box",
+                      "branch",
+                      "calendarRange",
+                      "channel",
+                      "chart",
+                      "cycle",
+                      "download",
+                      "externalLink",
+                      "flag",
+                      "ganttLayout",
+                      "history",
+                      "home",
+                      "inbox",
+                      "layers",
+                      "link",
+                      "listLayout",
+                      "lock",
+                      "maximise",
+                      "panelRight",
+                      "pause",
+                      "play",
+                      "progress",
+                      "project",
+                      "relation",
+                      "sliders",
+                      "tableLayout",
+                      "tag",
+                      "target",
+                      "temporary",
+                      "userAdd",
+                      "status",
+                      "filter",
+                      "stateReview",
+                      "more",
+                      "close",
+                      "arrowRight",
+                      "chevronRight",
+                      "chevronDown",
+                      "chevronUp"
+                    ]
+                  },
+                  "kind": {
+                    "kind": "enum",
+                    "values": [
+                      "options",
+                      "dates"
+                    ]
+                  },
+                  "search": {
+                    "kind": "boolean"
+                  },
+                  "options": {
+                    "kind": "list",
+                    "max": 200,
+                    "of": {
+                      "kind": "shape",
+                      "fields": {
+                        "value": {
+                          "kind": "text",
+                          "max": 128
+                        },
+                        "label": {
+                          "kind": "text",
+                          "max": 200
+                        },
+                        "mark": {
+                          "kind": "enum",
+                          "values": [
+                            "backlog",
+                            "unstarted",
+                            "started",
+                            "completed",
+                            "cancelled",
+                            "review",
+                            "blocked",
+                            "urgent",
+                            "high",
+                            "medium",
+                            "low",
+                            "none",
+                            "person",
+                            "dot"
+                          ]
+                        },
+                        "tone": {
+                          "kind": "enum",
+                          "values": [
+                            "neutral",
+                            "brand",
+                            "success",
+                            "warn",
+                            "danger"
+                          ]
+                        },
+                        "count": {
+                          "kind": "int",
+                          "min": 0,
+                          "max": 1000000
+                        }
+                      },
+                      "required": [
+                        "value",
+                        "label"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            },
+            "values": {
+              "kind": "list",
+              "max": 8,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "facet": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "values": {
+                    "kind": "list",
+                    "max": 200,
+                    "of": {
+                      "kind": "text",
+                      "max": 128
+                    }
+                  }
+                },
+                "required": [
+                  "facet"
+                ]
+              }
+            }
+          },
+          "required": [
+            "facets"
+          ],
+          "events": [
+            "change",
+            "reset"
+          ],
+          "children": false
+        },
+        "bry-gantt": {
+          "props": {
+            "start": {
+              "kind": "text",
+              "max": 10
+            },
+            "zoom": {
+              "kind": "enum",
+              "values": [
+                "day",
+                "week",
+                "month"
+              ]
+            },
+            "rows": {
+              "kind": "list",
+              "max": 500,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "title": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "identifier": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "mark": {
+                    "kind": "enum",
+                    "values": [
+                      "backlog",
+                      "unstarted",
+                      "started",
+                      "completed",
+                      "cancelled",
+                      "review",
+                      "blocked",
+                      "urgent",
+                      "high",
+                      "medium",
+                      "low",
+                      "none",
+                      "person",
+                      "dot"
+                    ]
+                  },
+                  "tone": {
+                    "kind": "enum",
+                    "values": [
+                      "neutral",
+                      "brand",
+                      "success",
+                      "warn",
+                      "danger"
+                    ]
+                  },
+                  "priority": {
+                    "kind": "enum",
+                    "values": [
+                      "urgent",
+                      "high",
+                      "medium",
+                      "low",
+                      "none"
+                    ]
+                  },
+                  "assignee": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "start": {
+                    "kind": "text",
+                    "max": 10
+                  },
+                  "end": {
+                    "kind": "text",
+                    "max": 10
+                  }
+                },
+                "required": [
+                  "id",
+                  "title"
+                ]
+              }
+            },
+            "showCompleted": {
+              "kind": "boolean"
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            },
+            "loading": {
+              "kind": "boolean"
+            }
+          },
+          "events": [
+            "press",
+            "navigate",
+            "zoom",
+            "completed"
+          ],
+          "children": false
+        },
+        "bry-timeline": {
+          "props": {
+            "collapsedLabel": {
+              "kind": "text",
+              "max": 200
+            },
+            "folded": {
+              "kind": "boolean"
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            },
+            "loading": {
+              "kind": "boolean"
+            }
+          },
+          "events": [
+            "expand"
+          ],
+          "children": true
+        },
+        "bry-timeline-item": {
+          "props": {
+            "actor": {
+              "kind": "text",
+              "max": 200
+            },
+            "actorId": {
+              "kind": "text",
+              "max": 128
+            },
+            "text": {
+              "kind": "text",
+              "max": 200
+            },
+            "mark": {
+              "kind": "enum",
+              "values": [
+                "status",
+                "priority",
+                "assignee",
+                "date",
+                "title",
+                "description",
+                "duplicate",
+                "created",
+                "comment"
+              ]
+            },
+            "tone": {
+              "kind": "enum",
+              "values": [
+                "neutral",
+                "brand",
+                "success",
+                "warn",
+                "danger"
+              ]
+            },
+            "time": {
+              "kind": "text",
+              "max": 40
+            },
+            "count": {
+              "kind": "int",
+              "min": 1,
+              "max": 9999
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "events": [],
+          "children": false
+        },
+        "bry-comment": {
+          "props": {
+            "author": {
+              "kind": "text",
+              "max": 200
+            },
+            "authorId": {
+              "kind": "text",
+              "max": 128
+            },
+            "time": {
+              "kind": "text",
+              "max": 40
+            },
+            "edited": {
+              "kind": "boolean"
+            },
+            "deleted": {
+              "kind": "boolean"
+            },
+            "resolved": {
+              "kind": "boolean"
+            },
+            "resolution": {
+              "kind": "boolean"
+            },
+            "depth": {
+              "kind": "int",
+              "min": 0,
+              "max": 1
+            },
+            "collapsed": {
+              "kind": "boolean"
+            },
+            "replies": {
+              "kind": "int",
+              "min": 0,
+              "max": 9999
+            },
+            "repliers": {
+              "kind": "list",
+              "max": 12,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "name": {
+                    "kind": "text",
+                    "max": 200
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ]
+              }
+            },
+            "actions": {
+              "kind": "list",
+              "max": 7,
+              "of": {
+                "kind": "enum",
+                "values": [
+                  "reply",
+                  "edit",
+                  "resolve",
+                  "copy",
+                  "copyLink",
+                  "subIssue",
+                  "delete"
+                ]
+              }
+            },
+            "highlighted": {
+              "kind": "boolean"
+            },
+            "loading": {
+              "kind": "boolean"
+            }
+          },
+          "events": [
+            "action",
+            "toggle"
+          ],
+          "children": true
+        },
+        "bry-reactions": {
+          "props": {
+            "items": {
+              "kind": "list",
+              "max": 24,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "emoji": {
+                    "kind": "text",
+                    "max": 16
+                  },
+                  "count": {
+                    "kind": "int",
+                    "min": 0,
+                    "max": 99999
+                  },
+                  "mine": {
+                    "kind": "boolean"
+                  }
+                },
+                "required": [
+                  "emoji"
+                ]
+              }
+            },
+            "choices": {
+              "kind": "list",
+              "max": 48,
+              "of": {
+                "kind": "text",
+                "max": 16
+              }
+            },
+            "disabled": {
+              "kind": "boolean"
+            }
+          },
+          "events": [
+            "toggle"
+          ],
+          "children": false
+        },
+        "bry-peek": {
+          "props": {
+            "open": {
+              "kind": "boolean"
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "position": {
+              "kind": "text",
+              "max": 200
+            },
+            "previous": {
+              "kind": "boolean"
+            },
+            "next": {
+              "kind": "boolean"
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "events": [
+            "previous",
+            "next",
+            "expand",
+            "close"
+          ],
+          "children": true
+        },
+        "bry-spreadsheet": {
+          "props": {
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "columns": {
+              "kind": "list",
+              "max": 16,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "key": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "heading": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "width": {
+                    "kind": "enum",
+                    "values": [
+                      "sm",
+                      "md",
+                      "lg",
+                      "fill"
+                    ]
+                  },
+                  "pinned": {
+                    "kind": "boolean"
+                  },
+                  "sortable": {
+                    "kind": "boolean"
+                  },
+                  "hideable": {
+                    "kind": "boolean"
+                  }
+                },
+                "required": [
+                  "key",
+                  "heading"
+                ]
+              }
+            },
+            "sort": {
+              "kind": "shape",
+              "fields": {
+                "key": {
+                  "kind": "text",
+                  "max": 128
+                },
+                "direction": {
+                  "kind": "enum",
+                  "values": [
+                    "asc",
+                    "desc"
+                  ]
+                }
+              },
+              "required": [
+                "key",
+                "direction"
+              ]
+            },
+            "selectable": {
+              "kind": "boolean"
+            },
+            "selected": {
+              "kind": "int",
+              "min": 0,
+              "max": 100000
+            },
+            "total": {
+              "kind": "int",
+              "min": 0,
+              "max": 100000
+            },
+            "loading": {
+              "kind": "boolean"
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "columns"
+          ],
+          "events": [
+            "sort",
+            "hide",
+            "selectAll"
+          ],
+          "children": true
+        },
+        "bry-spreadsheet-row": {
+          "props": {
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "checked": {
+              "kind": "boolean"
+            },
+            "depth": {
+              "kind": "int",
+              "min": 0,
+              "max": 4
+            },
+            "expandable": {
+              "kind": "boolean"
+            },
+            "expanded": {
+              "kind": "boolean"
+            },
+            "loading": {
+              "kind": "boolean"
+            }
+          },
+          "events": [
+            "toggle",
+            "expand"
+          ],
+          "children": true
+        },
+        "bry-spreadsheet-group": {
+          "props": {
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "mark": {
+              "kind": "enum",
+              "values": [
+                "backlog",
+                "unstarted",
+                "started",
+                "completed",
+                "cancelled",
+                "review",
+                "blocked",
+                "urgent",
+                "high",
+                "medium",
+                "low",
+                "none",
+                "person",
+                "dot"
+              ]
+            },
+            "tone": {
+              "kind": "enum",
+              "values": [
+                "neutral",
+                "brand",
+                "success",
+                "warn",
+                "danger"
+              ]
+            },
+            "count": {
+              "kind": "int",
+              "min": 0,
+              "max": 100000
+            },
+            "collapsed": {
+              "kind": "boolean"
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "events": [
+            "toggle"
+          ],
+          "children": false
+        },
+        "bry-rich-text": {
+          "props": {
+            "value": {
+              "kind": "text",
+              "max": 50000
+            },
+            "placeholder": {
+              "kind": "text",
+              "max": 200
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "variant": {
+              "kind": "enum",
+              "values": [
+                "document",
+                "comment",
+                "bare"
+              ]
+            },
+            "mentions": {
+              "kind": "list",
+              "max": 200,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "value": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  }
+                },
+                "required": [
+                  "value",
+                  "label"
+                ]
+              }
+            },
+            "disabled": {
+              "kind": "boolean"
+            },
+            "autofocus": {
+              "kind": "boolean"
+            },
+            "error": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "events": [
+            "change",
+            "blur",
+            "submit"
+          ],
+          "children": false
+        },
+        "bry-board-lane": {
+          "props": {
+            "title": {
+              "kind": "text",
+              "max": 200
+            },
+            "mark": {
+              "kind": "enum",
+              "values": [
+                "backlog",
+                "unstarted",
+                "started",
+                "completed",
+                "cancelled",
+                "review",
+                "blocked",
+                "urgent",
+                "high",
+                "medium",
+                "low",
+                "none",
+                "person",
+                "dot"
+              ]
+            },
+            "tone": {
+              "kind": "enum",
+              "values": [
+                "neutral",
+                "brand",
+                "success",
+                "warn",
+                "danger"
+              ]
+            },
+            "count": {
+              "kind": "int",
+              "min": 0,
+              "max": 100000
+            },
+            "collapsible": {
+              "kind": "boolean"
+            },
+            "collapsed": {
+              "kind": "boolean"
+            },
+            "openable": {
+              "kind": "boolean"
+            },
+            "openLabel": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "title"
+          ],
+          "events": [
+            "toggle",
+            "open"
+          ],
+          "children": false
+        },
+        "bry-property-list": {
+          "props": {
+            "title": {
+              "kind": "text",
+              "max": 200
+            },
+            "collapsible": {
+              "kind": "boolean"
+            },
+            "collapsed": {
+              "kind": "boolean"
+            }
+          },
+          "events": [
+            "toggle"
+          ],
+          "children": true
+        },
+        "bry-property-row": {
+          "props": {
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "icon": {
+              "kind": "enum",
+              "values": [
+                "add",
+                "archive",
+                "calendar",
+                "check",
+                "copy",
+                "dismiss",
+                "docs",
+                "info",
+                "mail",
+                "members",
+                "notes",
+                "pin",
+                "rename",
+                "retry",
+                "search",
+                "settings",
+                "tasks",
+                "trash",
+                "account",
+                "activity",
+                "attach",
+                "bell",
+                "boardLayout",
+                "box",
+                "branch",
+                "calendarRange",
+                "channel",
+                "chart",
+                "cycle",
+                "download",
+                "externalLink",
+                "flag",
+                "ganttLayout",
+                "history",
+                "home",
+                "inbox",
+                "layers",
+                "link",
+                "listLayout",
+                "lock",
+                "maximise",
+                "panelRight",
+                "pause",
+                "play",
+                "progress",
+                "project",
+                "relation",
+                "sliders",
+                "tableLayout",
+                "tag",
+                "target",
+                "temporary",
+                "userAdd",
+                "status",
+                "filter",
+                "stateReview",
+                "more",
+                "close",
+                "arrowRight",
+                "chevronRight",
+                "chevronDown",
+                "chevronUp"
+              ]
+            },
+            "readonly": {
+              "kind": "boolean"
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "events": [],
+          "children": true
+        },
+        "bry-keys": {
+          "props": {
+            "bindings": {
+              "kind": "list",
+              "max": 20,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "key": {
+                    "kind": "text",
+                    "max": 24
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  }
+                },
+                "required": [
+                  "key",
+                  "label"
+                ]
+              }
+            }
+          },
+          "required": [
+            "bindings"
+          ],
+          "events": [
+            "press"
+          ],
+          "children": false
+        },
+        "bry-filter-chip": {
+          "props": {
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "icon": {
+              "kind": "enum",
+              "values": [
+                "add",
+                "archive",
+                "calendar",
+                "check",
+                "copy",
+                "dismiss",
+                "docs",
+                "info",
+                "mail",
+                "members",
+                "notes",
+                "pin",
+                "rename",
+                "retry",
+                "search",
+                "settings",
+                "tasks",
+                "trash",
+                "account",
+                "activity",
+                "attach",
+                "bell",
+                "boardLayout",
+                "box",
+                "branch",
+                "calendarRange",
+                "channel",
+                "chart",
+                "cycle",
+                "download",
+                "externalLink",
+                "flag",
+                "ganttLayout",
+                "history",
+                "home",
+                "inbox",
+                "layers",
+                "link",
+                "listLayout",
+                "lock",
+                "maximise",
+                "panelRight",
+                "pause",
+                "play",
+                "progress",
+                "project",
+                "relation",
+                "sliders",
+                "tableLayout",
+                "tag",
+                "target",
+                "temporary",
+                "userAdd",
+                "status",
+                "filter",
+                "stateReview",
+                "more",
+                "close",
+                "arrowRight",
+                "chevronRight",
+                "chevronDown",
+                "chevronUp"
+              ]
+            },
+            "text": {
+              "kind": "text",
+              "max": 200
+            },
+            "marks": {
+              "kind": "list",
+              "max": 4,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "mark": {
+                    "kind": "enum",
+                    "values": [
+                      "backlog",
+                      "unstarted",
+                      "started",
+                      "completed",
+                      "cancelled",
+                      "review",
+                      "blocked",
+                      "urgent",
+                      "high",
+                      "medium",
+                      "low",
+                      "none",
+                      "person",
+                      "dot"
+                    ]
+                  },
+                  "tone": {
+                    "kind": "enum",
+                    "values": [
+                      "neutral",
+                      "brand",
+                      "success",
+                      "warn",
+                      "danger"
+                    ]
+                  },
+                  "name": {
+                    "kind": "text",
+                    "max": 200
+                  }
+                },
+                "required": [
+                  "mark"
+                ]
+              }
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "events": [
+            "press",
+            "remove"
+          ],
+          "children": false
         }
       },
       "textNode": "#text"
@@ -3212,7 +6204,7 @@
         "bry-dialog actions must be a list of at most 3.",
         "bry-dialog actions[0].tone must be one of default, primary, danger.",
         "bry-dialog description must be text of at most 4000 characters.",
-        "bry-menu items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash.",
+        "bry-menu items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview.",
         "bry-menu items[0].separator must be true or false.",
         "bry-date value must be text of at most 10 characters.",
         "bry-split ratio must be a whole number from 20 to 80.",
@@ -3223,7 +6215,7 @@
         "bry-board settled must be text of at most 128 characters.",
         "bry-board-column limit must be a whole number from 1 to 100000.",
         "bry-board-column count must be a whole number from 0 to 100000.",
-        "bry-button icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, more, close, arrowRight, chevronRight, chevronDown, chevronUp.",
+        "bry-button icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview, more, close, arrowRight, chevronRight, chevronDown, chevronUp.",
         "bry-button hideLabel must be true or false.",
         "bry-heading level must be a whole number from 1 to 4.",
         "bry-heading variant must be one of title, heading, subheading, label.",
@@ -3241,7 +6233,7 @@
         "bry-calendar values[0] must be text of at most 10 characters.",
         "bry-calendar values must be a list of at most 366.",
         "bry-combobox options must be a list of at most 500 choices, each with a value and a label of at most 200 characters (and optionally a member id as avatar), and no value twice.",
-        "bry-command items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash.",
+        "bry-command items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview.",
         "bry-command items[0].hint must be text of at most 40 characters.",
         "bry-context-menu items[0] has no field called \"href\".",
         "bry-data-table perPage must be a whole number from 1 to 100.",
@@ -3250,7 +6242,7 @@
         "bry-data-table columns[0].hideable must be true or false.",
         "bry-field orientation must be one of vertical, horizontal.",
         "bry-input-group prefix must be text of at most 24 characters.",
-        "bry-input-group actionIcon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash.",
+        "bry-input-group actionIcon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview.",
         "bry-input-otp length must be a whole number from 4 to 8.",
         "bry-input-otp pattern must be one of digits, alphanumeric.",
         "bry-menubar menus[0] needs a items.",
@@ -3264,7 +6256,7 @@
         "bry-slider step must be a whole number from 1 to 1000000.",
         "bry-toggle pressed must be true or false.",
         "bry-toggle-group type must be one of single, multiple.",
-        "bry-toggle-group items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, more, close, arrowRight, chevronRight, chevronDown, chevronUp."
+        "bry-toggle-group items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview, more, close, arrowRight, chevronRight, chevronDown, chevronUp."
       ],
       "empties": [
         "bry-button needs a label.",

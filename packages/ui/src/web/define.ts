@@ -92,6 +92,70 @@ export function drawAs(name: ElementName, draw: Draw, styles: CSSResult[] = []):
   DRAW[name] = { draw, styles };
 }
 
+/**
+ * Setting names Lit's own element already uses for its lifecycle:
+ * `bry-work-card`'s `updated` is one. A setting declared the ordinary way
+ * would put its value where Lit calls a method, and stop the element drawing.
+ */
+const LIFECYCLE = new Set([
+  'update',
+  'updated',
+  'render',
+  'firstUpdated',
+  'willUpdate',
+  'shouldUpdate',
+  'requestUpdate',
+  'performUpdate',
+  'scheduleUpdate',
+  'getUpdateComplete',
+  'updateComplete',
+  'hasUpdated',
+  'isUpdatePending',
+  'createRenderRoot',
+  'renderRoot',
+  'renderOptions',
+  'connectedCallback',
+  'disconnectedCallback',
+  'attributeChangedCallback',
+  'emit',
+]);
+
+/** The values of settings named like a lifecycle member, kept beside the element. */
+const shadowed = new WeakMap<object, Record<string, unknown>>();
+
+/**
+ * A setting's value. The same as `element[name]`, except for a setting named
+ * like one of Lit's lifecycle members, whose property stays Lit's: its value
+ * is set through the property or the attribute as usual, and read here.
+ */
+export function settingOf(element: object, name: string): unknown {
+  return LIFECYCLE.has(name) ? shadowed.get(element)?.[name] : (element as Record<string, unknown>)[name];
+}
+
+/**
+ * Declares a setting whose name Lit's lifecycle takes: setting it stores the
+ * value and draws again; reading it still answers Lit's own member.
+ */
+function lifecycleSetting(made: typeof BryElement, setting: string, options: PropertyDeclaration): void {
+  const own = (made.prototype as unknown as Record<string, unknown>)[setting];
+
+  made.setting(setting, { ...options, noAccessor: true });
+  Object.defineProperty(made.prototype, setting, {
+    configurable: true,
+    get() {
+      return own;
+    },
+    set(this: BryElement, value: unknown) {
+      const values = shadowed.get(this) ?? {};
+      const old = values[setting];
+
+      values[setting] = value;
+      shadowed.set(this, values);
+      this.requestUpdate(setting, old);
+    },
+  });
+}
+
 function classFor(name: ElementName): CatalogueElementClass {
   const spec = CATALOGUE[name] as ElementSpec;
 
@@ -111,7 +175,8 @@ function classFor(name: ElementName): CatalogueElementClass {
   };
 
   for (const [setting, propSpec] of Object.entries(spec.props)) {
-    made.setting(setting, declarationOf(setting, propSpec));
+    if (LIFECYCLE.has(setting)) lifecycleSetting(made, setting, declarationOf(setting, propSpec));
+    else made.setting(setting, declarationOf(setting, propSpec));
   }
 
   return made;

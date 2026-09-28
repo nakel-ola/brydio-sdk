@@ -103,7 +103,7 @@ describe('the elements added after Phase 0', () => {
     expect(found('<bry-grid columns="7" />')).toEqual([[1, 'prop_value_invalid']]);
     expect(codes('<bry-select value="a" />')).toEqual(['prop_required']);
     expect(codes('<bry-badge text="x" tone="muted" onPress={go} />')).toEqual(['prop_value_invalid', 'event_unknown']);
-    expect(codes('<bry-textarea onSubmit={go} />')).toEqual(['event_unknown']);
+    expect(codes('<bry-select options={o} onSubmit={go} />')).toEqual(['event_unknown']);
     expect(codes('<bry-avatar name="Ada" src="https://x/a.png" />')).toEqual(['prop_unknown']);
     expect(codes('<bry-empty-state title="x">more</bry-empty-state>')).toEqual(['children_not_allowed']);
     expect(codes("import { listRow, skeleton } from '@brydio/app';\nlistRow({ tone: 'x' });\nskeleton({ count: 20 });", 'a.ts')).toEqual([

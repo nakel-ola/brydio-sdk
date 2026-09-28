@@ -2,7 +2,8 @@
 import { css, html, nothing, type TemplateResult } from '../base.ts';
 import { drawAs } from '../define.ts';
 import { FIELD_B, focusIn, keptOf, listOf, QUIET, rtlOf, type El } from './catalogue-b-shared.ts';
-import { nextActive } from './overlays.ts';
+import { nextActive } from './keyboard.ts';
+import { focusActive, menuItemsOf, menuRows, PLAN, popOf, treeChoice, treeKeys, treeRows } from './plan-shared.ts';
 import { FOCUS, str, TYPE } from './tokens.ts';
 
 /**
@@ -255,22 +256,41 @@ drawAs(
 drawAs(
   'bry-context-menu',
   element => {
-    const items = listOf<Item>(element.items);
-    const state = keptOf(element, () => ({ open: false, active: -1, x: 0, y: 0 }));
+    const host = element as El;
+    const pop = popOf(host, 'context');
+    const rows = treeRows(menuItemsOf(element.items), pop.view);
+    const state = keptOf(element, () => ({ x: 0, y: 0 }));
     const shut = () => {
-      state.open = false;
-      state.active = -1;
-      element.requestUpdate();
+      pop.open = false;
+      pop.active = -1;
+      pop.view = '';
+      host.requestUpdate();
       queueMicrotask(() => (element.querySelector('button, [tabindex], bry-button, bry-card') as HTMLElement | null)?.focus());
     };
+    const choose = (index: number) => {
+      const next = treeChoice(rows, index);
+
+      if (!next) return;
+      if ('view' in next) {
+        // Into a submenu, or back out of one.
+        pop.view = next.view;
+        pop.active = next.active;
+        host.requestUpdate();
+        return focusActive(host);
+      }
+      element.emit('select', { id: next.id });
+      shut();
+    };
     const open = (x: number, y: number) => {
-      state.open = true;
-      state.active = items.findIndex(item => item.disabled !== true);
+      pop.open = true;
+      pop.view = '';
+      pop.active = rows.findIndex(item => item.disabled !== true);
       state.x = x;
       state.y = y;
-      element.requestUpdate();
-      focusIn(element as El, '[data-active]');
+      host.requestUpdate();
+      focusActive(host);
     };
+    const keys = treeKeys(host, pop, rows, choose, shut);
 
     return html`<div
       class="anchor"
@@ -281,56 +301,27 @@ drawAs(
         open(event.clientX - box.left, event.clientY - box.top);
       }}
       @keydown=${(event: KeyboardEvent) => {
-        if (!state.open) {
+        if (!pop.open) {
           if (event.key !== 'ContextMenu' && !(event.key === 'F10' && event.shiftKey)) return;
           event.preventDefault();
           open(0, 0);
 
           return;
         }
-
-        const answer = nextActive(event.key, items, state.active, '');
-
-        if (answer === null) return;
-
-        event.preventDefault();
-        if (answer === 'close') return shut();
-        if (answer === 'choose') {
-          const item = items[state.active];
-
-          if (item && item.disabled !== true) element.emit('select', { id: item.id });
-
-          return shut();
-        }
-
-        state.active = answer.active;
-        element.requestUpdate();
-        focusIn(element as El, '[data-active]');
+        keys(event);
       }}
       @focusout=${(event: FocusEvent) => {
-        if (state.open && !element.shadowRoot?.contains(event.relatedTarget as Node) && !element.contains(event.relatedTarget as Node)) {
-          state.open = false;
-          element.requestUpdate();
+        if (pop.open && !element.shadowRoot?.contains(event.relatedTarget as Node) && !element.contains(event.relatedTarget as Node)) {
+          pop.open = false;
+          pop.view = '';
+          host.requestUpdate();
         }
       }}
     >
       <slot></slot>
-      ${state.open
-        ? html`<div class="popup" role="menu" style="inset-inline-start: ${state.x}px; top: ${state.y}px">
-            ${menuItems(
-              items,
-              state.active,
-              item => {
-                if (item.disabled === true) return;
-                element.emit('select', { id: item.id });
-                shut();
-              },
-              at => {
-                if (state.active === at) return;
-                state.active = at;
-                element.requestUpdate();
-              },
-            )}
+      ${pop.open
+        ? html`<div class="popup" role="menu" style="inset-inline-start: ${state.x}px; inset-inline-end: auto; top: ${state.y}px; margin-top: 0">
+            ${menuRows(host, pop, rows, choose)}
           </div>`
         : nothing}
     </div>`;
@@ -338,6 +329,7 @@ drawAs(
   [
     FOCUS,
     MENU_LOOK,
+    PLAN,
     css`
       :host {
         display: block;

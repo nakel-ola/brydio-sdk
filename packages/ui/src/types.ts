@@ -71,6 +71,10 @@ export interface ElementEventDetails {
   'bry-list-row': {
     /** Whether the work row's selection box is checked now. */
     toggle: { checked: boolean };
+    /** The id of the item chosen from the row's own menu. */
+    select: { id: string };
+    /** The row's cross was pressed. */
+    remove: undefined;
   };
   'bry-table': {
     /** The column whose heading was pressed, and the direction it asks for. */
@@ -89,6 +93,10 @@ export interface ElementEventDetails {
     action: { id: string };
     /** Nothing when the person closed it; `{ refused }` when another dialog was already open. */
     close: { refused: string } | undefined;
+    /** A composer's expand button: whether it asks to be larger now. */
+    expand: { expanded: boolean };
+    /** A composer's footer switch ("Create another"): whether it is on now. */
+    toggle: { checked: boolean };
   };
   'bry-menu': {
     /** The id of the item chosen. */
@@ -112,6 +120,16 @@ export interface ElementEventDetails {
   'bry-board-column': {
     /** The cards now wanted, `end` excluded: the ones to send, from `start`. */
     range: { start: number; end: number };
+    /** The header was pressed: whether it asks to be folded away now. */
+    toggle: { collapsed: boolean };
+    /** The "+" or the add line was pressed. */
+    add: undefined;
+    /** Enter in the add line: what it holds. */
+    submit: { value: string };
+    /** Escape in the add line. */
+    cancel: undefined;
+    /** The id of the item chosen from the column's own menu. */
+    select: { id: string };
   };
   'bry-diff': {
     /** A file listed without its `patch` was opened: send it. `file` is its path. */
@@ -237,6 +255,120 @@ export interface ElementEventDetails {
   'bry-tabs': {
     /** The id of the tab chosen. */
     change: { id: string };
+  };
+  // Plan fidelity
+  'bry-property': {
+    /** The value chosen, or, for `members` and `labels`, every value chosen now. Empty when cleared. */
+    change: { value: string } | { values: string[] };
+  };
+  'bry-quick-add': {
+    /** The closed row was pressed: answer with `open`. */
+    open: undefined;
+    /** Enter in the input: what it holds. */
+    submit: { value: string };
+    /** Escape in the input. */
+    cancel: undefined;
+  };
+  'bry-work-card': {
+    /** The id of the item chosen from the card's menu. */
+    select: { id: string };
+  };
+  'bry-page-header': {
+    /** The back arrow was pressed. */
+    back: undefined;
+    /** The id of the crumb pressed. */
+    crumb: { id: string };
+    /** The id of the tab chosen. */
+    tab: { id: string };
+  };
+  'bry-entity-row': {
+    /** The id of the item chosen from the row's menu. */
+    select: { id: string };
+    /** The chevron was pressed: whether it asks to be expanded now. */
+    toggle: { expanded: boolean };
+  };
+  'bry-filter-menu': {
+    /** A facet's options were ticked or unticked: the facet's whole new list. */
+    change: { facet: string; values: string[] };
+    /** "Reset all filters" was chosen. */
+    reset: undefined;
+  };
+  'bry-gantt': {
+    /** A row or its bar was pressed. */
+    press: { id: string };
+    /** Previous, Today or Next: the first day to show now, an ISO date. */
+    navigate: { start: string };
+    /** The zoom chosen. */
+    zoom: { zoom: 'day' | 'week' | 'month' };
+    /** Whether "Show completed" is on now. */
+    completed: { checked: boolean };
+  };
+  'bry-timeline': {
+    /** The folded line was pressed: send the block again, unfolded. */
+    expand: undefined;
+  };
+  'bry-comment': {
+    /** The action chosen. */
+    action: { id: 'reply' | 'edit' | 'resolve' | 'copy' | 'copyLink' | 'subIssue' | 'delete' };
+    /** Whether the thread's replies are asked to be folded now. */
+    toggle: { collapsed: boolean };
+  };
+  'bry-reactions': {
+    /** The emoji pressed or chosen: add the person's reaction, or take it away. */
+    toggle: { emoji: string };
+  };
+  'bry-peek': {
+    previous: undefined;
+    next: undefined;
+    /** Open the item's full page. */
+    expand: undefined;
+    close: undefined;
+  };
+  'bry-spreadsheet': {
+    /** A heading's menu asked for this order. */
+    sort: { key: string; direction: 'asc' | 'desc' };
+    /** A heading's menu asked to hide its column. */
+    hide: { key: string };
+    /** The corner box: every row chosen, or none. */
+    selectAll: { checked: boolean };
+  };
+  'bry-spreadsheet-row': {
+    /** Whether the row's box is ticked now. */
+    toggle: { checked: boolean };
+    /** Whether the row asks to show its sub-rows now. */
+    expand: { expanded: boolean };
+  };
+  'bry-spreadsheet-group': {
+    /** Whether the group asks to be folded now. */
+    toggle: { collapsed: boolean };
+  };
+  'bry-rich-text': {
+    /** The markdown, as the person types. */
+    change: { value: string };
+    /** The markdown, when the person leaves the editor. */
+    blur: { value: string };
+    /** The markdown, on Mod+Enter. */
+    submit: { value: string };
+  };
+  'bry-board-lane': {
+    /** Whether the lane asks to be folded now. */
+    toggle: { collapsed: boolean };
+    /** The lane's link was pressed. */
+    open: undefined;
+  };
+  'bry-property-list': {
+    /** Whether the section asks to be folded now. */
+    toggle: { collapsed: boolean };
+  };
+  'bry-keys': {
+    /** The binding pressed, as its `key` names it. */
+    press: { key: string };
+  };
+  'bry-filter-chip': {
+    /** The chip was pressed, to change the filter. */
+    press: undefined;
+    /** Its cross was pressed. */
+    remove: undefined;
   };
 }
 

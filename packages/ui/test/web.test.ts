@@ -1791,3 +1791,453 @@ describe('the shadcn elements, drawn (ADR-A23)', () => {
     expect(shadowOf('bry-sheet').querySelector('dialog')).toBeNull();
   });
 });
+
+describe('the Plan fidelity drawings', () => {
+  /** The details of the element's own event, not the native ones of the controls inside it. */
+  const heard = (selector: string, name: string) => {
+    const got: unknown[] = [];
+
+    document.querySelector(selector)!.addEventListener(name, event => {
+      if (event instanceof CustomEvent) got.push(event.detail);
+    });
+
+    return got;
+  };
+  const attr = (value: unknown) => JSON.stringify(value).replace(/"/g, '&quot;');
+  const key = (target: Element, name: string, extra: KeyboardEventInit = {}) =>
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: name, bubbles: true, composed: true, cancelable: true, ...extra }));
+  const click = (selector: string, inside: string) => (shadowOf(selector).querySelector(inside) as HTMLElement).click();
+  const MENU = attr([{ id: 'open', label: 'Open', icon: 'externalLink' }, { id: 'delete', label: 'Delete', tone: 'danger', icon: 'trash', separator: true }]);
+
+  test('draws every icon a button or a menu item may name', async () => {
+    const { drawsIcon } = await import('../src/web/draw/plan-shared.ts');
+    const { BUTTON_ICONS } = await import('../src/catalogue.ts');
+
+    expect(BUTTON_ICONS.filter(name => !drawsIcon(name))).toEqual([]);
+  });
+
+  test('a glyph is a named picture with a label, and decoration without one', async () => {
+    await page(`<bry-glyph id="a" kind="state" group="completed" label="Done"></bry-glyph><bry-glyph id="b" kind="priority" priority="high"></bry-glyph>`);
+
+    expect(shadowOf('#a').querySelector('[role="img"]')!.getAttribute('aria-label')).toBe('Done');
+    expect(shadowOf('#a').querySelector('[data-mark="completed"]')).not.toBeNull();
+    expect(shadowOf('#b').querySelector('.glyph')!.getAttribute('aria-hidden')).toBe('true');
+    expect(shadowOf('#b').querySelector('[data-mark="high"]')).not.toBeNull();
+  });
+
+  test('a property opens its picker and says what was chosen, one value or the whole list', async () => {
+    await page(`<bry-property id="p" kind="priority" label="Priority" value="low"></bry-property>`);
+    const chosen = heard('#p', 'change');
+
+    expect(shadowOf('#p').querySelector('.chip')!.getAttribute('aria-label')).toBe('Priority: Low');
+    click('#p', '.chip');
+    await settle();
+    click('#p', '[data-value="urgent"]');
+    await settle();
+    expect(chosen).toEqual([{ value: 'urgent' }]);
+    expect(shadowOf('#p').querySelector('[role="listbox"]')).toBeNull();
+
+    const people = attr([{ value: 'u1', label: 'Ada Lovelace' }, { value: 'u2', label: 'Alan Turing' }]);
+
+    await page(`<bry-property id="m" kind="members" label="Assignees" values='["u1"]' options="${people}"></bry-property>`);
+    const ticked = heard('#m', 'change');
+
+    click('#m', '.chip');
+    await settle();
+    click('#m', '[data-value="u2"]');
+    expect(ticked).toEqual([{ values: ['u1', 'u2'] }]);
+
+    await page(`<bry-property id="d" kind="date" label="Due" value="2026-01-02" disabled></bry-property>`);
+    expect(shadowOf('#d').querySelector('button')).toBeNull();
+    expect(shadowOf('#d').querySelector('[role="img"]')!.getAttribute('aria-label')).toMatch(/^Due: /);
+  });
+
+  test('a quick add opens, submits what was typed and cancels with Escape', async () => {
+    await page(`<bry-quick-add id="q" trigger="New work item"></bry-quick-add>`);
+    const opened = heard('#q', 'open');
+
+    click('#q', 'button');
+    expect(opened).toEqual([null]);
+
+    await page(`<bry-quick-add id="q" trigger="New work item" open></bry-quick-add>`);
+    const submitted = heard('#q', 'submit');
+    const cancelled = heard('#q', 'cancel');
+    const input = shadowOf('#q').querySelector('input')!;
+
+    input.value = '  Fix the door ';
+    input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    key(input, 'Enter');
+    key(input, 'Escape');
+    expect(submitted).toEqual([{ value: 'Fix the door' }]);
+    expect(cancelled).toEqual([null]);
+  });
+
+  test('a work card presses, and its own menu raises select without pressing the card', async () => {
+    await page(`<bry-work-card id="c" title="Fix the door" identifier="PLN-1" priority="urgent" menu="${MENU}" labels='[{"label":"Bug","tone":"danger"}]'></bry-work-card>`);
+    const pressed = heard('#c', 'press');
+    const selected = heard('#c', 'select');
+
+    click('#c', '.card');
+    expect(pressed).toHaveLength(1);
+
+    click('#c', '.trigger');
+    await settle();
+    expect(shadowOf('#c').querySelector('[data-item="open"] [data-icon="externalLink"]')).not.toBeNull();
+    click('#c', '[data-item="delete"]');
+    expect(selected).toEqual([{ id: 'delete' }]);
+    expect(pressed).toHaveLength(1);
+  });
+
+  test('a page header raises back, crumb and tab with their ids', async () => {
+    await page(
+      `<bry-page-header id="h" title="Issues" back count="4" crumbs='[{"id":"p","label":"Plan","initial":true}]' tabs='[{"id":"list","label":"List"},{"id":"board","label":"Board"}]' tab="list"></bry-page-header>`,
+    );
+    const back = heard('#h', 'back');
+    const crumb = heard('#h', 'crumb');
+    const tab = heard('#h', 'tab');
+
+    click('#h', '[aria-label="Back"]');
+    click('#h', '.crumb');
+    click('#h', '[data-tab="board"]');
+    expect(back).toEqual([null]);
+    expect(crumb).toEqual([{ id: 'p' }]);
+    expect(tab).toEqual([{ id: 'board' }]);
+    expect(shadowOf('#h').querySelector('[data-tab="list"]')!.getAttribute('aria-current')).toBe('page');
+  });
+
+  test('an entity row asks to expand, and shows its children while expanded', async () => {
+    await page(`<bry-entity-row id="e" title="Sprint 4" status="active" status-label="Active" expandable pressable><bry-text text="inside"></bry-text></bry-entity-row>`);
+    const toggled = heard('#e', 'toggle');
+    const pressed = heard('#e', 'press');
+
+    expect(shadowOf('#e').querySelector('slot')).toBeNull();
+    click('#e', '.expand');
+    expect(toggled).toEqual([{ expanded: true }]);
+    expect(pressed).toHaveLength(0);
+
+    await page(`<bry-entity-row id="e" title="Sprint 4" expandable expanded leading="ring" ring="42"><bry-text text="inside"></bry-text></bry-entity-row>`);
+    expect(shadowOf('#e').querySelector('slot')).not.toBeNull();
+    expect(shadowOf('#e').querySelector('.ring')!.getAttribute('aria-label')).toBe('42%');
+  });
+
+  test('a filter menu opens a facet and ticks an option into the facet’s whole list', async () => {
+    const facets = attr([{ id: 'state', label: 'Status', icon: 'status', options: [{ value: 'todo', label: 'Todo', mark: 'unstarted' }, { value: 'done', label: 'Done', mark: 'completed' }] }]);
+
+    await page(`<bry-filter-menu id="f" facets="${facets}" values='[{"facet":"state","values":["todo"]}]'></bry-filter-menu>`);
+    const changed = heard('#f', 'change');
+
+    expect(shadowOf('#f').querySelector('.trigger-button')!.textContent!.trim()).toBe('1 filter');
+    click('#f', '.trigger-button');
+    await settle();
+    click('#f', '[data-facet="state"]');
+    await settle();
+    expect(shadowOf('#f').querySelector('[data-option="todo"]')!.getAttribute('aria-checked')).toBe('true');
+    click('#f', '[data-option="done"]');
+    expect(changed).toEqual([{ facet: 'state', values: ['todo', 'done'] }]);
+
+    // Back at the top, anything ticked offers "Reset all filters".
+    const reset = heard('#f', 'reset');
+
+    click('#f', '.back');
+    await settle();
+    click('#f', '.plain');
+    expect(reset).toEqual([null]);
+  });
+
+  test('a work list row has its own menu and a cross that raises remove; a stacked row draws two lines', async () => {
+    await page(`<bry-list-row id="r" variant="work" density="compact" title="Fix" identifier="PLN-2" removable menu="${MENU}"></bry-list-row>`);
+    const removed = heard('#r', 'remove');
+    const selected = heard('#r', 'select');
+
+    click('#r', '.remove');
+    click('#r', '.trigger');
+    await settle();
+    click('#r', '[data-item="open"]');
+    expect(removed).toEqual([null]);
+    expect(selected).toEqual([{ id: 'open' }]);
+
+    await page(`<bry-list-row id="s" variant="stacked" title="Fix" identifier="PLN-2" description="In Plan" meta="2d"></bry-list-row>`);
+    expect(shadowOf('#s').querySelector('.stacked-title')!.textContent).toBe('Fix');
+    expect(shadowOf('#s').querySelector('.stacked-under')!.textContent).toContain('In Plan');
+  });
+
+  test('a plan board’s column folds, adds and submits from its add line', async () => {
+    await page(
+      `<bry-board variant="plan"><bry-board-column id="todo" title="Todo" glyph="unstarted" collapsible addable add-label="New work item"></bry-board-column></bry-board>`,
+    );
+    await settle();
+    const toggled = heard('#todo', 'toggle');
+    const added = heard('#todo', 'add');
+
+    click('#todo', '[aria-label="Hide Todo"]');
+    click('#todo', '[aria-label="Add to Todo"]');
+    click('#todo', '.quick-add');
+    expect(toggled).toEqual([{ collapsed: true }]);
+    expect(added).toEqual([null, null]);
+    expect(shadowOf('#todo').querySelector('[data-mark="unstarted"]')).not.toBeNull();
+
+    await page(`<bry-board variant="plan"><bry-board-column id="todo" title="Todo" addable adding></bry-board-column></bry-board>`);
+    await settle();
+    const submitted = heard('#todo', 'submit');
+    const input = shadowOf('#todo').querySelector('.quick-add input') as HTMLInputElement;
+
+    input.value = 'Paint it';
+    key(input, 'Enter');
+    expect(submitted).toEqual([{ value: 'Paint it' }]);
+  });
+
+  test('a compose dialog asks to expand, toggles, and raises its primary action on Mod+Enter', async () => {
+    await page(
+      `<bry-dialog id="c" open variant="compose" title="New work item" crumbs='["Plan","New work item"]' toggle="Create another" actions='[{"id":"create","label":"Create","tone":"primary"}]'></bry-dialog>`,
+    );
+    const expand = heard('#c', 'expand');
+    const toggle = heard('#c', 'toggle');
+    const action = heard('#c', 'action');
+    const box = shadowOf('#c').querySelector('dialog')!;
+
+    expect(box.getAttribute('data-variant')).toBe('compose');
+    expect(shadowOf('#c').querySelector('[data-action="cancel"]')).toBeNull();
+    click('#c', '[aria-label="Make larger"]');
+    click('#c', '[role="switch"]');
+    key(box, 'Enter', { metaKey: true });
+    expect(expand).toEqual([{ expanded: true }]);
+    expect(toggle).toEqual([{ checked: true }]);
+    expect(action).toEqual([{ id: 'create' }]);
+
+    click('#c', '[data-action="close"]');
+    await settle();
+    expect(shadowOf('#c').querySelector('dialog')).toBeNull();
+  });
+
+  test('a textarea submits on Mod+Enter, and a menu shows its heading and ticks', async () => {
+    await page(`<bry-textarea id="t" variant="bare" value="Body"></bry-textarea>`);
+    const submitted = heard('#t', 'submit');
+    const area = shadowOf('#t').querySelector('textarea')!;
+
+    key(area, 'Enter');
+    key(area, 'Enter', { ctrlKey: true });
+    expect(submitted).toEqual([{ value: 'Body' }]);
+
+    await page(`<bry-menu id="m" heading="View" items='[{"id":"list","label":"List","icon":"listLayout","checked":true}]'><bry-button label="View"></bry-button></bry-menu>`);
+    key(shadowOf('#m').querySelector('.anchor')!, 'ArrowDown');
+    await settle();
+    expect(shadowOf('#m').querySelector('.heading')!.textContent).toBe('View');
+    expect(shadowOf('#m').querySelector('[data-item="list"] [aria-label="Chosen"]')).not.toBeNull();
+    expect(shadowOf('#m').querySelector('[data-item="list"] [data-icon="listLayout"]')).not.toBeNull();
+  });
+});
+
+describe('the issue tracker drawings', () => {
+  const heard = (selector: string, name: string) => {
+    const got: unknown[] = [];
+
+    document.querySelector(selector)!.addEventListener(name, event => {
+      if (event instanceof CustomEvent) got.push(event.detail);
+    });
+
+    return got;
+  };
+  const attr = (value: unknown) => JSON.stringify(value).replace(/"/g, '&quot;');
+  const key = (target: EventTarget, name: string, extra: KeyboardEventInit = {}) =>
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: name, bubbles: true, composed: true, cancelable: true, ...extra }));
+  const click = (selector: string, inside: string) => (shadowOf(selector).querySelector(inside) as HTMLElement).click();
+
+  test('a work card named with `updated` still draws, and says how long ago', async () => {
+    const hour = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+
+    await page(`<bry-work-card id="w" title="Fix" identifier="PLN-1" priority="high" updated="${hour}" progress='{"done":1,"total":4}' project="Plan"></bry-work-card>`);
+    expect(shadowOf('#w').querySelector('.ago')!.textContent).toBe('2h ago');
+    expect(shadowOf('#w').querySelector('.progress')!.textContent).toContain('1/4');
+    expect(typeof (document.querySelector('#w') as unknown as { updated: unknown }).updated).toBe('function');
+  });
+
+  test('a gantt chart zooms, navigates, switches completed and presses a row', async () => {
+    const rows = attr([
+      { id: 'a', title: 'Design', start: '2026-09-01', end: '2026-09-10' },
+      { id: 'b', title: 'Ship', end: '2026-09-12' },
+      { id: 'c', title: 'Later' },
+      { id: 'd', title: 'Oops', start: '2026-09-10', end: '2026-09-01' },
+    ]);
+
+    await page(`<bry-gantt id="g" zoom="day" start="2026-09-01" rows="${rows}"></bry-gantt>`);
+    const zoom = heard('#g', 'zoom');
+    const navigate = heard('#g', 'navigate');
+    const completed = heard('#g', 'completed');
+    const pressed = heard('#g', 'press');
+    const root = shadowOf('#g');
+
+    expect(root.querySelector('[data-row="a"] [data-bar="range"]')).not.toBeNull();
+    expect(root.querySelector('[data-row="b"] [data-bar="marker"]')).not.toBeNull();
+    expect(root.querySelector('[data-row="c"] [data-bar="placeholder"]')).not.toBeNull();
+    expect(root.querySelector('[data-row="d"] [data-bar]')!.getAttribute('data-tone')).toBe('warn');
+
+    (root.querySelectorAll('.zoom')[2] as HTMLElement).click();
+    click('#g', '[aria-label="Next"]');
+    click('#g', '[role="switch"]');
+    click('#g', '[data-row="a"] .pane');
+    expect(zoom).toEqual([{ zoom: 'month' }]);
+    expect(navigate).toEqual([{ start: '2026-09-08' }]);
+    expect(completed).toEqual([{ checked: true }]);
+    expect(pressed).toEqual([{ id: 'a' }]);
+  });
+
+  test('a timeline folds into one line that asks to expand', async () => {
+    await page(`<bry-timeline id="t" folded><bry-timeline-item text="changed status" mark="status"></bry-timeline-item><bry-timeline-item text="x"></bry-timeline-item></bry-timeline>`);
+    const expand = heard('#t', 'expand');
+
+    expect(shadowOf('#t').querySelector('.fold')!.textContent!.trim()).toBe('2 activities');
+    click('#t', '.fold');
+    expect(expand).toEqual([null]);
+  });
+
+  test('a comment raises its actions from the hover buttons and the menu, and folds its replies', async () => {
+    await page(`<bry-comment id="c" author="Ada" replies="2" actions='["delete","reply","resolve"]'><bry-text text="Looks good"></bry-text></bry-comment>`);
+    const action = heard('#c', 'action');
+    const toggle = heard('#c', 'toggle');
+
+    click('#c', '[aria-label="Reply"]');
+    click('#c', '.more-actions');
+    await settle();
+    expect(Array.from(shadowOf('#c').querySelectorAll('[data-item]'), one => one.getAttribute('data-item'))).toEqual(['reply', 'resolve', 'delete']);
+    click('#c', '[data-item="resolve"]');
+    click('#c', '[aria-label="Collapse replies"]');
+    expect(action).toEqual([{ id: 'reply' }, { id: 'resolve' }]);
+    expect(toggle).toEqual([{ collapsed: true }]);
+  });
+
+  test('reactions toggle an emoji from a chip or the picker', async () => {
+    await page(`<bry-reactions id="r" items='[{"emoji":"👍","count":2,"mine":true}]'></bry-reactions>`);
+    const toggled = heard('#r', 'toggle');
+
+    click('#r', '.chip');
+    click('#r', '.add');
+    await settle();
+    click('#r', '[aria-label="🚀"]');
+    expect(toggled).toEqual([{ emoji: '👍' }, { emoji: '🚀' }]);
+  });
+
+  test('a peek steps with J and K, and closes with Escape', async () => {
+    await page(`<bry-peek id="p" open label="PLN-1" previous next position="3 / 12"><bry-text text="Body"></bry-text></bry-peek>`);
+    const previous = heard('#p', 'previous');
+    const next = heard('#p', 'next');
+    const close = heard('#p', 'close');
+
+    key(document.body, 'j');
+    key(document.body, 'k');
+    key(document.body, 'Escape');
+    click('#p', '[aria-label="Open full page"]');
+    expect(next).toEqual([null]);
+    expect(previous).toEqual([null]);
+    expect(close).toEqual([null]);
+    expect(shadowOf('#p').querySelector('.position')!.textContent).toBe('3 / 12');
+  });
+
+  test('a spreadsheet sorts, hides and selects, and its rows lay their cells under the columns', async () => {
+    const columns = attr([{ key: 'title', heading: 'Title', sortable: true, hideable: true }, { key: 'state', heading: 'State' }]);
+
+    await page(
+      `<bry-spreadsheet id="s" selectable selected="1" total="2" columns="${columns}"><bry-spreadsheet-group id="g" label="Todo" count="2"></bry-spreadsheet-group><bry-spreadsheet-row id="r" label="Fix" expandable><bry-text text="Fix"></bry-text><bry-text text="Todo"></bry-text></bry-spreadsheet-row></bry-spreadsheet>`,
+    );
+    await settle();
+    const sort = heard('#s', 'sort');
+    const hide = heard('#s', 'hide');
+    const all = heard('#s', 'selectAll');
+    const row = heard('#r', 'expand');
+    const group = heard('#g', 'toggle');
+
+    click('#s', '[data-column="title"]');
+    await settle();
+    click('#s', '[data-item="desc"]');
+    click('#s', '[data-column="title"]');
+    await settle();
+    click('#s', '[data-item="hide"]');
+    click('#s', '[aria-label="Select all"]');
+    click('#r', '.expand');
+    click('#g', 'button');
+    expect(sort).toEqual([{ key: 'title', direction: 'desc' }]);
+    expect(hide).toEqual([{ key: 'title' }]);
+    expect(all).toEqual([{ checked: true }]);
+    expect(row).toEqual([{ expanded: true }]);
+    expect(group).toEqual([{ collapsed: true }]);
+    expect(shadowOf('#r').querySelectorAll('slot[name^="cell-"]')).toHaveLength(2);
+    expect(document.querySelector('#r')!.children[1]!.getAttribute('slot')).toBe('cell-1');
+  });
+
+  test('rich text speaks markdown: a tool wraps the selection, Mod+Enter submits, @ offers people', async () => {
+    const { applyTool, mentionAt } = await import('../src/web/draw/tracker.ts');
+
+    expect(applyTool('fix it', 4, 6, { wrap: '**' }).text).toBe('fix **it**');
+    expect(applyTool('a\nb', 0, 3, { line: (index: number) => `${index + 1}. ` }).text).toBe('1. a\n2. b');
+    expect(mentionAt('hi @Ad', 6)).toEqual({ from: 3, query: 'Ad' });
+
+    await page(`<bry-rich-text id="e" value="Body" mentions='[{"value":"u1","label":"Ada Lovelace"}]'></bry-rich-text>`);
+    const submitted = heard('#e', 'submit');
+    const changed = heard('#e', 'change');
+    const area = shadowOf('#e').querySelector('textarea')!;
+
+    key(area, 'Enter', { metaKey: true });
+    expect(submitted).toEqual([{ value: 'Body' }]);
+
+    area.value = 'Hi @Ad';
+    area.setSelectionRange(6, 6);
+    area.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    await settle();
+    (shadowOf('#e').querySelector('[data-value="u1"]') as HTMLElement).click();
+    expect(changed.at(-1)).toEqual({ value: 'Hi @Ada Lovelace' });
+  });
+
+  test('a swimlane board lays its lanes across, and a lane folds and opens', async () => {
+    await page(
+      `<bry-board id="b" layout="lanes" lane-columns="2"><bry-board-lane id="l" title="Ada" mark="person" count="3" collapsible openable open-label="Open parent"></bry-board-lane><bry-board-column id="c1" title="Todo"></bry-board-column><bry-board-column id="c2" title="Done"></bry-board-column></bry-board>`,
+    );
+    const toggle = heard('#l', 'toggle');
+    const open = heard('#l', 'open');
+
+    expect(document.querySelector('#b')!.getAttribute('data-layout')).toBe('lanes');
+    click('#l', '.head');
+    click('#l', '.open-link');
+    expect(toggle).toEqual([{ collapsed: true }]);
+    expect(open).toEqual([null]);
+  });
+
+  test('a property list folds, a filter chip presses and removes, and keys answer their bindings', async () => {
+    await page(`<bry-property-list id="pl" title="Properties" collapsible><bry-property-row label="State" icon="status"><bry-text text="Todo"></bry-text></bry-property-row></bry-property-list>`);
+    const folded = heard('#pl', 'toggle');
+
+    click('#pl', '.button');
+    expect(folded).toEqual([{ collapsed: true }]);
+
+    await page(`<bry-filter-chip id="fc" label="Status" icon="status" text="2 statuses" marks='[{"mark":"started"}]'></bry-filter-chip>`);
+    const pressed = heard('#fc', 'press');
+    const removed = heard('#fc', 'remove');
+
+    click('#fc', '.press');
+    click('#fc', '.remove');
+    expect(pressed).toEqual([null]);
+    expect(removed).toEqual([null]);
+
+    await page(`<bry-keys id="k" bindings='[{"key":"c","label":"New issue"},{"key":"mod+k","label":"Taken"}]'></bry-keys><input id="field" />`);
+    const keys = heard('#k', 'press');
+
+    key(document.body, 'c');
+    key(document.querySelector('#field')!, 'c');
+    key(document.body, 'k', { metaKey: true });
+    expect(keys).toEqual([{ key: 'c' }]);
+  });
+
+  test('a menu opens a submenu from an item that is a parent, and chooses inside it', async () => {
+    const items = attr([{ id: 'status', label: 'Status', icon: 'status' }, { id: 'todo', label: 'Todo', parent: 'status', checked: true }, { id: 'delete', label: 'Delete', tone: 'danger' }]);
+
+    await page(`<bry-menu id="m" items="${items}"><bry-button label="More"></bry-button></bry-menu>`);
+    const selected = heard('#m', 'select');
+
+    key(shadowOf('#m').querySelector('.anchor')!, 'ArrowDown');
+    await settle();
+    expect(shadowOf('#m').querySelector('[data-item="todo"]')).toBeNull();
+    click('#m', '[data-item="status"]');
+    await settle();
+    expect(shadowOf('#m').querySelector('[data-back="status"]')).not.toBeNull();
+    click('#m', '[data-item="todo"]');
+    expect(selected).toEqual([{ id: 'todo' }]);
+  });
+});

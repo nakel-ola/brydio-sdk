@@ -2,7 +2,7 @@
 import { css, html, nothing } from '../base.ts';
 import { drawAs } from '../define.ts';
 import { draftOf, errorOf, FIELD_B, focusIn, keptOf, listOf, nameOf, QUIET, rtlOf, type El } from './catalogue-b-shared.ts';
-import { nextActive } from './overlays.ts';
+import { nextActive } from './keyboard.ts';
 import { FOCUS, pick, str, TYPE } from './tokens.ts';
 
 /**

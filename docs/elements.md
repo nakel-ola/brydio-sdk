@@ -18,7 +18,7 @@ A toast is not an element: it is said, not placed. A screen shows one with
 `toast(text, tone)` from `@brydio/app`, which Brydio draws in its own
 toaster; see [the bridge](bridge.md).
 
-There are 72 elements.
+There are 94 elements.
 
 - [`bry-stack`](#bry-stack)
 - [`bry-heading`](#bry-heading)
@@ -92,6 +92,28 @@ There are 72 elements.
 - [`bry-spinner`](#bry-spinner)
 - [`bry-tabs`](#bry-tabs)
 - [`bry-tooltip`](#bry-tooltip)
+- [`bry-glyph`](#bry-glyph)
+- [`bry-property`](#bry-property)
+- [`bry-quick-add`](#bry-quick-add)
+- [`bry-work-card`](#bry-work-card)
+- [`bry-page-header`](#bry-page-header)
+- [`bry-entity-row`](#bry-entity-row)
+- [`bry-filter-menu`](#bry-filter-menu)
+- [`bry-gantt`](#bry-gantt)
+- [`bry-timeline`](#bry-timeline)
+- [`bry-timeline-item`](#bry-timeline-item)
+- [`bry-comment`](#bry-comment)
+- [`bry-reactions`](#bry-reactions)
+- [`bry-peek`](#bry-peek)
+- [`bry-spreadsheet`](#bry-spreadsheet)
+- [`bry-spreadsheet-row`](#bry-spreadsheet-row)
+- [`bry-spreadsheet-group`](#bry-spreadsheet-group)
+- [`bry-rich-text`](#bry-rich-text)
+- [`bry-board-lane`](#bry-board-lane)
+- [`bry-property-list`](#bry-property-list)
+- [`bry-property-row`](#bry-property-row)
+- [`bry-keys`](#bry-keys)
+- [`bry-filter-chip`](#bry-filter-chip)
 
 ## `bry-stack`
 
@@ -104,7 +126,7 @@ Holds other elements or text.
 | `align` | `start`, `center`, `end`, `stretch` | no |
 | `justify` | `start`, `center`, `end`, `between` | no |
 | `wrap` | `true` or `false` | no |
-| `variant` | `default`, `page`, `toolbar`, `scroll`, `section`, `section-header`, `filter-bar` | no |
+| `variant` | `default`, `page`, `toolbar`, `scroll`, `section`, `section-header`, `filter-bar`, `page-body`, `action-bar` | no |
 
 Tells the app nothing.
 
@@ -144,7 +166,7 @@ Holds nothing: it is drawn from its settings alone.
 | `size` | `sm`, `md` | no |
 | `disabled` | `true` or `false` | no |
 | `working` | `true` or `false` | no |
-| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
 | `hideLabel` | `true` or `false` | no |
 
 Tells the app: `press`.
@@ -176,6 +198,8 @@ Holds nothing: it is drawn from its settings alone.
 | `required` | `true` or `false` | no |
 | `disabled` | `true` or `false` | no |
 | `error` | text, at most 200 characters | no |
+| `variant` | `default`, `bare` | no |
+| `size` | `sm`, `md`, `lg` | no |
 
 Tells the app: `change`, `submit`.
 
@@ -192,8 +216,9 @@ Holds nothing: it is drawn from its settings alone.
 | `required` | `true` or `false` | no |
 | `disabled` | `true` or `false` | no |
 | `error` | text, at most 200 characters | no |
+| `variant` | `default`, `bare` | no |
 
-Tells the app: `change`.
+Tells the app: `change`, `submit`.
 
 ## `bry-select`
 
@@ -242,6 +267,7 @@ Holds nothing: it is drawn from its settings alone.
 |---|---|---|
 | `text` | text, at most 200 characters | yes |
 | `tone` | `neutral`, `brand`, `success`, `warn`, `danger` | no |
+| `variant` | `default`, `count` | no |
 
 Tells the app nothing.
 
@@ -268,12 +294,15 @@ Holds other elements or text.
 | `pressable` | `true` or `false` | no |
 | `selected` | `true` or `false` | no |
 | `loading` | `true` or `false` | no |
-| `variant` | `default`, `work` | no |
+| `variant` | `default`, `work`, `stacked` | no |
 | `identifier` | text, at most 200 characters | no |
 | `selectable` | `true` or `false` | no |
 | `checked` | `true` or `false` | no |
+| `density` | `default`, `compact` | no |
+| `menu` | a list of at most 60: a record of `id`, `label`, `icon`, `tone`, `separator`, `disabled`, `checked`, `parent` (needs `id`, `label`) | no |
+| `removable` | `true` or `false` | no |
 
-Tells the app: `press`, `toggle`.
+Tells the app: `press`, `toggle`, `select`, `remove`.
 
 ## `bry-empty-state`
 
@@ -285,7 +314,7 @@ Holds nothing: it is drawn from its settings alone.
 | `text` | text, at most 4,000 characters | no |
 | `action` | text, at most 200 characters | no |
 | `variant` | `default`, `plain` | no |
-| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
 
 Tells the app: `action`.
 
@@ -345,8 +374,13 @@ Holds other elements or text.
 | `description` | text, at most 4,000 characters | no |
 | `actions` | a list of at most 3: a record of `id`, `label`, `tone`, `disabled` (needs `id`, `label`) | no |
 | `cancel` | text, at most 200 characters | no |
+| `variant` | `default`, `compose` | no |
+| `crumbs` | a list of at most 3: text, at most 200 characters | no |
+| `expanded` | `true` or `false` | no |
+| `toggle` | text, at most 200 characters | no |
+| `toggled` | `true` or `false` | no |
 
-Tells the app: `action`, `close`.
+Tells the app: `action`, `close`, `expand`, `toggle`.
 
 ## `bry-menu`
 
@@ -354,7 +388,8 @@ Holds other elements or text.
 
 | Setting | Takes | Needed |
 |---|---|---|
-| `items` | a list of at most 20: a record of `id`, `label`, `icon`, `tone`, `separator`, `disabled` (needs `id`, `label`) | yes |
+| `items` | a list of at most 60: a record of `id`, `label`, `icon`, `tone`, `separator`, `disabled`, `checked`, `parent` (needs `id`, `label`) | yes |
+| `heading` | text, at most 200 characters | no |
 
 Tells the app: `select`.
 
@@ -419,6 +454,9 @@ Holds other elements or text.
 |---|---|---|
 | `label` | text, at most 200 characters | no |
 | `cardSize` | `sm`, `md`, `lg` | no |
+| `layout` | `columns`, `list`, `lanes` | no |
+| `laneColumns` | a whole number from 1 to 12 | no |
+| `variant` | `default`, `plan` | no |
 | `settled` | text, at most 128 characters | no |
 | `loading` | `true` or `false` | no |
 | `empty` | text, at most 200 characters | no |
@@ -437,8 +475,17 @@ Holds other elements or text.
 | `start` | a whole number from 0 to 100000 | no |
 | `loading` | `true` or `false` | no |
 | `empty` | text, at most 200 characters | no |
+| `glyph` | `backlog`, `unstarted`, `started`, `completed`, `cancelled` | no |
+| `tone` | `neutral`, `brand`, `success`, `warn`, `danger` | no |
+| `collapsible` | `true` or `false` | no |
+| `collapsed` | `true` or `false` | no |
+| `addable` | `true` or `false` | no |
+| `addLabel` | text, at most 200 characters | no |
+| `adding` | `true` or `false` | no |
+| `busy` | `true` or `false` | no |
+| `menu` | a list of at most 60: a record of `id`, `label`, `icon`, `tone`, `separator`, `disabled`, `checked`, `parent` (needs `id`, `label`) | no |
 
-Tells the app: `range`.
+Tells the app: `range`, `toggle`, `add`, `submit`, `cancel`, `select`.
 
 ## `bry-markdown`
 
@@ -549,7 +596,7 @@ Holds other elements or text.
 
 | Setting | Takes | Needed |
 |---|---|---|
-| `items` | a list of at most 20: a record of `id`, `label`, `icon`, `tone`, `separator`, `disabled` (needs `id`, `label`) | yes |
+| `items` | a list of at most 60: a record of `id`, `label`, `icon`, `tone`, `separator`, `disabled`, `checked`, `parent` (needs `id`, `label`) | yes |
 
 Tells the app: `select`.
 
@@ -599,11 +646,11 @@ Holds nothing: it is drawn from its settings alone.
 | `placeholder` | text, at most 200 characters | no |
 | `label` | text, at most 200 characters | no |
 | `kind` | `text`, `email`, `url`, `search` | no |
-| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview` | no |
 | `prefix` | text, at most 24 characters | no |
 | `suffix` | text, at most 24 characters | no |
 | `action` | text, at most 200 characters | no |
-| `actionIcon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash` | no |
+| `actionIcon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview` | no |
 | `maxLength` | a whole number from 1 to 1000 | no |
 | `disabled` | `true` or `false` | no |
 | `error` | text, at most 200 characters | no |
@@ -730,7 +777,7 @@ Holds nothing: it is drawn from its settings alone.
 |---|---|---|
 | `pressed` | `true` or `false` | no |
 | `label` | text, at most 200 characters | yes |
-| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
 | `hideLabel` | `true` or `false` | no |
 | `variant` | `default`, `outline` | no |
 | `size` | `sm`, `md` | no |
@@ -917,7 +964,7 @@ Holds other elements or text.
 |---|---|---|
 | `title` | text, at most 200 characters | no |
 | `description` | text, at most 200 characters | no |
-| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview` | no |
 | `variant` | `default`, `outline`, `muted` | no |
 | `size` | `sm`, `md` | no |
 | `pressable` | `true` or `false` | no |
@@ -1064,3 +1111,355 @@ Holds other elements or text.
 | `side` | `top`, `bottom` | no |
 
 Tells the app nothing.
+
+## `bry-glyph`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `kind` | `state`, `priority` | yes |
+| `group` | `backlog`, `unstarted`, `started`, `completed`, `cancelled` | no |
+| `priority` | `urgent`, `high`, `medium`, `low`, `none` | no |
+| `tone` | `neutral`, `brand`, `success`, `warn`, `danger` | no |
+| `size` | `sm`, `md` | no |
+| `label` | text, at most 200 characters | no |
+
+Tells the app nothing.
+
+## `bry-property`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `kind` | `state`, `priority`, `members`, `labels`, `date`, `choice` | yes |
+| `display` | `badge`, `icon`, `dot`, `pill`, `button` | no |
+| `label` | text, at most 200 characters | yes |
+| `value` | text, at most 128 characters | no |
+| `values` | a list of at most 200: text, at most 128 characters | no |
+| `options` | a list of at most 200: a record of `value`, `label`, `tone`, `group`, `mark` (needs `value`, `label`) | no |
+| `placeholder` | text, at most 200 characters | no |
+| `max` | a whole number from 1 to 5 | no |
+| `clearable` | `true` or `false` | no |
+| `due` | `true` or `false` | no |
+| `disabled` | `true` or `false` | no |
+
+Tells the app: `change`.
+
+## `bry-quick-add`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `trigger` | text, at most 200 characters | yes |
+| `placeholder` | text, at most 200 characters | no |
+| `hint` | text, at most 200 characters | no |
+| `open` | `true` or `false` | no |
+| `busy` | `true` or `false` | no |
+| `value` | text, at most 200 characters | no |
+| `variant` | `row`, `card`, `link` | no |
+
+Tells the app: `open`, `submit`, `cancel`.
+
+## `bry-work-card`
+
+Holds other elements or text.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `title` | text, at most 200 characters | yes |
+| `identifier` | text, at most 200 characters | no |
+| `priority` | `urgent`, `high`, `medium`, `low`, `none` | no |
+| `description` | text, at most 200 characters | no |
+| `project` | text, at most 200 characters | no |
+| `labels` | a list of at most 12: a record of `label`, `tone` (needs `label`) | no |
+| `assignees` | a list of at most 20: a record of `id`, `name` (needs `id`, `name`) | no |
+| `due` | text, at most 10 characters | no |
+| `updated` | text, at most 40 characters | no |
+| `progress` | a record of `done`, `total` (needs `done`, `total`) | no |
+| `lead` | `true` or `false` | no |
+| `menu` | a list of at most 60: a record of `id`, `label`, `icon`, `tone`, `separator`, `disabled`, `checked`, `parent` (needs `id`, `label`) | no |
+| `loading` | `true` or `false` | no |
+
+Tells the app: `press`, `select`.
+
+## `bry-page-header`
+
+Holds other elements or text.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `title` | text, at most 200 characters | yes |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `subtitle` | text, at most 200 characters | no |
+| `back` | `true` or `false` | no |
+| `count` | a whole number from 0 to 1000000 | no |
+| `crumbs` | a list of at most 4: a record of `id`, `label`, `icon`, `initial` (needs `id`, `label`) | no |
+| `badges` | a list of at most 3: a record of `text`, `tone` (needs `text`) | no |
+| `tabs` | a list of at most 12: a record of `id`, `label`, `icon`, `count` (needs `id`, `label`) | no |
+| `tab` | text, at most 128 characters | no |
+| `size` | `sm`, `md` | no |
+
+Tells the app: `back`, `crumb`, `tab`.
+
+## `bry-entity-row`
+
+Holds other elements or text.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `title` | text, at most 200 characters | yes |
+| `description` | text, at most 200 characters | no |
+| `meta` | text, at most 200 characters | no |
+| `dateRange` | text, at most 200 characters | no |
+| `leading` | `status`, `ring`, `tile`, `none` | no |
+| `status` | `draft`, `upcoming`, `active`, `completed`, `cancelled`, `backlog`, `planned`, `started`, `paused`, `pending`, `accepted`, `declined`, `snoozed`, `duplicate` | no |
+| `statusLabel` | text, at most 200 characters | no |
+| `tone` | `neutral`, `brand`, `success`, `warn`, `danger` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `ring` | a whole number from 0 to 100 | no |
+| `metrics` | a list of at most 4: a record of `label`, `value`, `ring` (needs `label`, `value`) | no |
+| `menu` | a list of at most 60: a record of `id`, `label`, `icon`, `tone`, `separator`, `disabled`, `checked`, `parent` (needs `id`, `label`) | no |
+| `rail` | a record of `month`, `day`, `active` | no |
+| `highlighted` | `true` or `false` | no |
+| `selected` | `true` or `false` | no |
+| `pressable` | `true` or `false` | no |
+| `expandable` | `true` or `false` | no |
+| `expanded` | `true` or `false` | no |
+| `loading` | `true` or `false` | no |
+
+Tells the app: `press`, `select`, `toggle`.
+
+## `bry-filter-menu`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `label` | text, at most 200 characters | no |
+| `facets` | a list of at most 8: a record of `id`, `label`, `icon`, `kind`, `search`, `options` (needs `id`, `label`) | yes |
+| `values` | a list of at most 8: a record of `facet`, `values` (needs `facet`) | no |
+
+Tells the app: `change`, `reset`.
+
+## `bry-gantt`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `start` | text, at most 10 characters | no |
+| `zoom` | `day`, `week`, `month` | no |
+| `rows` | a list of at most 500: a record of `id`, `title`, `identifier`, `mark`, `tone`, `priority`, `assignee`, `start`, `end` (needs `id`, `title`) | no |
+| `showCompleted` | `true` or `false` | no |
+| `empty` | text, at most 200 characters | no |
+| `loading` | `true` or `false` | no |
+
+Tells the app: `press`, `navigate`, `zoom`, `completed`.
+
+## `bry-timeline`
+
+Holds other elements or text.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `collapsedLabel` | text, at most 200 characters | no |
+| `folded` | `true` or `false` | no |
+| `empty` | text, at most 200 characters | no |
+| `loading` | `true` or `false` | no |
+
+Tells the app: `expand`.
+
+## `bry-timeline-item`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `actor` | text, at most 200 characters | no |
+| `actorId` | text, at most 128 characters | no |
+| `text` | text, at most 200 characters | yes |
+| `mark` | `status`, `priority`, `assignee`, `date`, `title`, `description`, `duplicate`, `created`, `comment` | no |
+| `tone` | `neutral`, `brand`, `success`, `warn`, `danger` | no |
+| `time` | text, at most 40 characters | no |
+| `count` | a whole number from 1 to 9999 | no |
+
+Tells the app nothing.
+
+## `bry-comment`
+
+Holds other elements or text.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `author` | text, at most 200 characters | no |
+| `authorId` | text, at most 128 characters | no |
+| `time` | text, at most 40 characters | no |
+| `edited` | `true` or `false` | no |
+| `deleted` | `true` or `false` | no |
+| `resolved` | `true` or `false` | no |
+| `resolution` | `true` or `false` | no |
+| `depth` | a whole number from 0 to 1 | no |
+| `collapsed` | `true` or `false` | no |
+| `replies` | a whole number from 0 to 9999 | no |
+| `repliers` | a list of at most 12: a record of `id`, `name` (needs `id`, `name`) | no |
+| `actions` | a list of at most 7: `reply`, `edit`, `resolve`, `copy`, `copyLink`, `subIssue`, `delete` | no |
+| `highlighted` | `true` or `false` | no |
+| `loading` | `true` or `false` | no |
+
+Tells the app: `action`, `toggle`.
+
+## `bry-reactions`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `items` | a list of at most 24: a record of `emoji`, `count`, `mine` (needs `emoji`) | no |
+| `choices` | a list of at most 48: text, at most 16 characters | no |
+| `disabled` | `true` or `false` | no |
+
+Tells the app: `toggle`.
+
+## `bry-peek`
+
+Holds other elements or text.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `open` | `true` or `false` | no |
+| `label` | text, at most 200 characters | yes |
+| `position` | text, at most 200 characters | no |
+| `previous` | `true` or `false` | no |
+| `next` | `true` or `false` | no |
+
+Tells the app: `previous`, `next`, `expand`, `close`.
+
+## `bry-spreadsheet`
+
+Holds other elements or text.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `label` | text, at most 200 characters | no |
+| `columns` | a list of at most 16: a record of `key`, `heading`, `width`, `pinned`, `sortable`, `hideable` (needs `key`, `heading`) | yes |
+| `sort` | a record of `key`, `direction` (needs `key`, `direction`) | no |
+| `selectable` | `true` or `false` | no |
+| `selected` | a whole number from 0 to 100000 | no |
+| `total` | a whole number from 0 to 100000 | no |
+| `loading` | `true` or `false` | no |
+| `empty` | text, at most 200 characters | no |
+
+Tells the app: `sort`, `hide`, `selectAll`.
+
+## `bry-spreadsheet-row`
+
+Holds other elements or text.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `label` | text, at most 200 characters | no |
+| `checked` | `true` or `false` | no |
+| `depth` | a whole number from 0 to 4 | no |
+| `expandable` | `true` or `false` | no |
+| `expanded` | `true` or `false` | no |
+| `loading` | `true` or `false` | no |
+
+Tells the app: `toggle`, `expand`.
+
+## `bry-spreadsheet-group`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `label` | text, at most 200 characters | yes |
+| `mark` | `backlog`, `unstarted`, `started`, `completed`, `cancelled`, `review`, `blocked`, `urgent`, `high`, `medium`, `low`, `none`, `person`, `dot` | no |
+| `tone` | `neutral`, `brand`, `success`, `warn`, `danger` | no |
+| `count` | a whole number from 0 to 100000 | no |
+| `collapsed` | `true` or `false` | no |
+
+Tells the app: `toggle`.
+
+## `bry-rich-text`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `value` | text, at most 50,000 characters | no |
+| `placeholder` | text, at most 200 characters | no |
+| `label` | text, at most 200 characters | no |
+| `variant` | `document`, `comment`, `bare` | no |
+| `mentions` | a list of at most 200: a record of `value`, `label` (needs `value`, `label`) | no |
+| `disabled` | `true` or `false` | no |
+| `autofocus` | `true` or `false` | no |
+| `error` | text, at most 200 characters | no |
+
+Tells the app: `change`, `blur`, `submit`.
+
+## `bry-board-lane`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `title` | text, at most 200 characters | yes |
+| `mark` | `backlog`, `unstarted`, `started`, `completed`, `cancelled`, `review`, `blocked`, `urgent`, `high`, `medium`, `low`, `none`, `person`, `dot` | no |
+| `tone` | `neutral`, `brand`, `success`, `warn`, `danger` | no |
+| `count` | a whole number from 0 to 100000 | no |
+| `collapsible` | `true` or `false` | no |
+| `collapsed` | `true` or `false` | no |
+| `openable` | `true` or `false` | no |
+| `openLabel` | text, at most 200 characters | no |
+
+Tells the app: `toggle`, `open`.
+
+## `bry-property-list`
+
+Holds other elements or text.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `title` | text, at most 200 characters | no |
+| `collapsible` | `true` or `false` | no |
+| `collapsed` | `true` or `false` | no |
+
+Tells the app: `toggle`.
+
+## `bry-property-row`
+
+Holds other elements or text.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `label` | text, at most 200 characters | yes |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `readonly` | `true` or `false` | no |
+
+Tells the app nothing.
+
+## `bry-keys`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `bindings` | a list of at most 20: a record of `key`, `label` (needs `key`, `label`) | yes |
+
+Tells the app: `press`.
+
+## `bry-filter-chip`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `label` | text, at most 200 characters | yes |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `text` | text, at most 200 characters | no |
+| `marks` | a list of at most 4: a record of `mark`, `tone`, `name` (needs `mark`) | no |
+
+Tells the app: `press`, `remove`.

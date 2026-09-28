@@ -80,7 +80,7 @@ export const VIRTUAL_ROWS = 1_000_000;
 export const DIALOG_ACTIONS = 3;
 
 /** The most items a menu has. */
-export const MENU_ITEMS = 20;
+export const MENU_ITEMS = 60;
 
 /**
  * The icons a menu item may show, by name, from the shell's own set. An app
@@ -105,6 +105,45 @@ export const MENU_ICONS = [
   'settings',
   'tasks',
   'trash',
+  // Plan fidelity: what a planning app names.
+  'account',
+  'activity',
+  'attach',
+  'bell',
+  'boardLayout',
+  'box',
+  'branch',
+  'calendarRange',
+  'channel',
+  'chart',
+  'cycle',
+  'download',
+  'externalLink',
+  'flag',
+  'ganttLayout',
+  'history',
+  'home',
+  'inbox',
+  'layers',
+  'link',
+  'listLayout',
+  'lock',
+  'maximise',
+  'panelRight',
+  'pause',
+  'play',
+  'progress',
+  'project',
+  'relation',
+  'sliders',
+  'tableLayout',
+  'tag',
+  'target',
+  'temporary',
+  'userAdd',
+  'status',
+  'filter',
+  'stateReview',
 ] as const;
 
 /**
@@ -167,8 +206,11 @@ export const SLIDER_LIMIT = 1_000_000;
 /** The most toggles in one toggle group. */
 export const TOGGLE_GROUP_ITEMS = 12;
 
-/** A menu item, as `bry-menu`, `bry-context-menu` and `bry-menubar` take it. */
-const MENU_ITEM = {
+/**
+ * A menu item as `bry-menubar` takes it: the host declares its own apart from
+ * `bry-menu`'s, without `checked` or `parent`.
+ */
+const ACTION_ITEM = {
   kind: 'shape',
   fields: {
     id: { kind: 'text', max: KEY_MAX },
@@ -177,6 +219,19 @@ const MENU_ITEM = {
     tone: { kind: 'enum', values: ['default', 'danger'] },
     separator: { kind: 'boolean' },
     disabled: { kind: 'boolean' },
+  },
+  required: ['id', 'label'],
+} as const;
+
+/** One thing to do in a menu. Shared by every element that opens one of its own. */
+export const MENU_ITEM = {
+  kind: 'shape',
+  fields: {
+    ...ACTION_ITEM.fields,
+    // Ticked, as the view a View menu has chosen.
+    checked: { kind: 'boolean' },
+    // Drawn in the submenu of the item with this id, as Status ▸ Todo.
+    parent: { kind: 'text', max: KEY_MAX },
   },
   required: ['id', 'label'],
 } as const;
@@ -201,6 +256,62 @@ export const KBD_MAX = 40;
 /** The most tabs one set has. */
 export const TABS_MAX = 12;
 
+// Plan fidelity
+/** A work item's state group, in the order work moves through them. */
+export const STATE_GROUPS = ['backlog', 'unstarted', 'started', 'completed', 'cancelled'] as const;
+/** A work item's priority, most pressing first. */
+export const PRIORITIES = ['urgent', 'high', 'medium', 'low', 'none'] as const;
+/**
+ * Every mark an option in a planning picker can carry: a state ring (with
+ * `review` and `blocked` beside the five groups), a priority, a person's
+ * initials or a plain coloured dot.
+ */
+export const MARKS = [...STATE_GROUPS, 'review', 'blocked', 'urgent', 'high', 'medium', 'low', 'none', 'person', 'dot'] as const;
+/**
+ * Where a planned thing stands: a sprint's period, a module's status or a
+ * request's answer. Each has its own mark and colour.
+ */
+export const ENTITY_STATUSES = [
+  'draft',
+  'upcoming',
+  'active',
+  'completed',
+  'cancelled',
+  'backlog',
+  'planned',
+  'started',
+  'paused',
+  'pending',
+  'accepted',
+  'declined',
+  'snoozed',
+  'duplicate',
+] as const;
+/** The most things a row's own "⋯" menu offers. */
+export const ROW_MENU_ITEMS = 60;
+/** The most choices a property offers: a large team's members, a project's labels. */
+export const PROPERTY_OPTIONS = 200;
+/** The most choices one facet of a filter menu offers. */
+export const FILTER_OPTIONS = 200;
+/** An ISO moment, with room for an offset: `2026-09-16T09:30:00.000+05:30`. */
+export const ISO_TIME = 40;
+/** How wide a day is drawn in a Gantt chart: a column per day, per week or per month. */
+export const GANTT_ZOOMS = ['day', 'week', 'month'] as const;
+/** The most rows one Gantt chart draws. */
+export const GANTT_ROWS = 500;
+/** What an activity changed, each drawn with its own mark. */
+export const ACTIVITY_MARKS = ['status', 'priority', 'assignee', 'date', 'title', 'description', 'duplicate', 'created', 'comment'] as const;
+/** What can be done to a comment, in the order its menu lists them. */
+export const COMMENT_ACTIONS = ['reply', 'edit', 'resolve', 'copy', 'copyLink', 'subIssue', 'delete'] as const;
+/** An emoji is one character to a person, and a few to a string: a flag, a family. */
+export const EMOJI_MAX = 16;
+/** The most columns a spreadsheet has. */
+export const SPREADSHEET_COLUMNS = 16;
+/** The longest document a rich-text editor holds: the same as `bry-markdown`'s. */
+export const RICH_TEXT_MAX = 50_000;
+/** A key as a person presses it: `c`, `j`, `space`, `mod+enter`, `shift+/`. */
+const KEY_NAME = 24;
+
 /**
  * Every element an app may use, as the host declares them: Phase 0's five,
  * then each one Brydio has added since, in the order it registers them.
@@ -213,7 +324,12 @@ export const CATALOGUE = {
       align: { kind: 'enum', values: ['start', 'center', 'end', 'stretch'] },
       justify: { kind: 'enum', values: ['start', 'center', 'end', 'between'] },
       wrap: { kind: 'boolean' },
-      variant: { kind: 'enum', values: ['default', 'page', 'toolbar', 'scroll', 'section', 'section-header', 'filter-bar'] },
+      // `page-body` is a page's readable column; `action-bar` floats at the
+      // foot of the screen, as a bar of bulk actions does.
+      variant: {
+        kind: 'enum',
+        values: ['default', 'page', 'toolbar', 'scroll', 'section', 'section-header', 'filter-bar', 'page-body', 'action-bar'],
+      },
     },
     events: [],
     children: true,
@@ -287,12 +403,16 @@ export const CATALOGUE = {
       required: { kind: 'boolean' },
       disabled: { kind: 'boolean' },
       error: { kind: 'text', max: LABEL_MAX },
+      // `bare` has no box, for a composer's title: `size="lg"` sets it as one.
+      variant: { kind: 'enum', values: ['default', 'bare'] },
+      size: { kind: 'enum', values: SIZES },
     },
     events: ['change', 'submit'],
     children: false,
   },
   'bry-textarea': {
-    // Like `bry-input` over more than one line, without `submit`: Enter starts a new line.
+    // Like `bry-input` over more than one line: Enter starts a new line, and
+    // Mod+Enter raises `submit` with `{ value }`, for a composer that saves from the body.
     props: {
       value: { kind: 'text', max: PARAGRAPH_MAX },
       placeholder: { kind: 'text', max: LABEL_MAX },
@@ -301,8 +421,10 @@ export const CATALOGUE = {
       required: { kind: 'boolean' },
       disabled: { kind: 'boolean' },
       error: { kind: 'text', max: LABEL_MAX },
+      // `bare` has no box and grows to fill its place, for a composer's body.
+      variant: { kind: 'enum', values: ['default', 'bare'] },
     },
-    events: ['change'],
+    events: ['change', 'submit'],
     children: false,
   },
   'bry-select': {
@@ -343,9 +465,11 @@ export const CATALOGUE = {
     children: true,
   },
   'bry-badge': {
+    // `variant="count"` is a muted pill for a number beside a heading.
     props: {
       text: { kind: 'text', max: LABEL_MAX },
       tone: { kind: 'enum', values: TONES },
+      variant: { kind: 'enum', values: ['default', 'count'] },
     },
     required: ['text'],
     events: [],
@@ -362,7 +486,13 @@ export const CATALOGUE = {
     children: false,
   },
   'bry-list-row': {
-    // Children sit at the end of the row (a badge, an avatar).
+    // Children sit at the end of the row (a badge, an avatar). `work` is a
+    // planning row: a selection box, a monospaced `identifier`, the title,
+    // the children (property chips) and a "⋯" `menu` whose choice raises
+    // `select` with `{ id }`. `density="compact"` is tighter; `removable`
+    // puts a cross at the end that raises `remove`. `stacked` is a two-line
+    // work row: identifier and title above, `description` and the children
+    // under them, `meta` at the end.
     props: {
       title: { kind: 'text', max: LABEL_MAX },
       description: { kind: 'text', max: LABEL_MAX },
@@ -370,12 +500,15 @@ export const CATALOGUE = {
       pressable: { kind: 'boolean' },
       selected: { kind: 'boolean' },
       loading: { kind: 'boolean' },
-      variant: { kind: 'enum', values: ['default', 'work'] },
+      variant: { kind: 'enum', values: ['default', 'work', 'stacked'] },
       identifier: { kind: 'text', max: LABEL_MAX },
       selectable: { kind: 'boolean' },
       checked: { kind: 'boolean' },
+      density: { kind: 'enum', values: ['default', 'compact'] },
+      menu: { kind: 'list', max: ROW_MENU_ITEMS, of: MENU_ITEM },
+      removable: { kind: 'boolean' },
     },
-    events: ['press', 'toggle'],
+    events: ['press', 'toggle', 'select', 'remove'],
     children: true,
   },
   'bry-empty-state': {
@@ -489,31 +622,28 @@ export const CATALOGUE = {
         },
       },
       cancel: { kind: 'text', max: LABEL_MAX },
+      // `compose` is a composer rather than a question: a fixed-height card
+      // headed by its `crumbs`, with an expand button (raising `expand` with
+      // `{ expanded }`) and a close button; its footer holds a `toggle`
+      // switch ("Create another", raising `toggle` with `{ checked }`, on
+      // while `toggled`) and the primary action, which Mod+Enter raises.
+      variant: { kind: 'enum', values: ['default', 'compose'] },
+      crumbs: { kind: 'list', max: 3, of: { kind: 'text', max: LABEL_MAX } },
+      expanded: { kind: 'boolean' },
+      toggle: { kind: 'text', max: LABEL_MAX },
+      toggled: { kind: 'boolean' },
     },
     required: ['title'],
-    events: ['action', 'close'],
+    events: ['action', 'close', 'expand', 'toggle'],
     children: true,
   },
   'bry-menu': {
     // A short list of things to do, opened from its one child, the anchor.
     // Choosing an item raises `select` with `{ id }`.
     props: {
-      items: {
-        kind: 'list',
-        max: MENU_ITEMS,
-        of: {
-          kind: 'shape',
-          fields: {
-            id: { kind: 'text', max: KEY_MAX },
-            label: { kind: 'text', max: LABEL_MAX },
-            icon: { kind: 'enum', values: MENU_ICONS },
-            tone: { kind: 'enum', values: ['default', 'danger'] },
-            separator: { kind: 'boolean' },
-            disabled: { kind: 'boolean' },
-          },
-          required: ['id', 'label'],
-        },
-      },
+      items: { kind: 'list', max: MENU_ITEMS, of: MENU_ITEM },
+      // A small caption over the items: "View".
+      heading: { kind: 'text', max: LABEL_MAX },
     },
     required: ['items'],
     events: ['select'],
@@ -582,6 +712,13 @@ export const CATALOGUE = {
     props: {
       label: { kind: 'text', max: LABEL_MAX },
       cardSize: { kind: 'enum', values: ['sm', 'md', 'lg'] },
+      // `list` stacks the columns as full-width groups of rows; `plan` draws
+      // the columns with a planning header and cards tall enough for a work card.
+      // `lanes` is a swimlane board: a `bry-board-lane` heading, then that
+      // lane's `laneColumns` columns, then the next lane.
+      layout: { kind: 'enum', values: ['columns', 'list', 'lanes'] },
+      laneColumns: { kind: 'int', min: 1, max: 12 },
+      variant: { kind: 'enum', values: ['default', 'plan'] },
       settled: { kind: 'text', max: KEY_MAX },
       loading: { kind: 'boolean' },
       empty: { kind: 'text', max: LABEL_MAX },
@@ -601,9 +738,24 @@ export const CATALOGUE = {
       start: { kind: 'int', min: 0, max: BOARD_CARDS },
       loading: { kind: 'boolean' },
       empty: { kind: 'text', max: LABEL_MAX },
+      // On a `plan` board: `glyph` is the state group's mark, in `tone`.
+      // `collapsible` folds it away, raising `toggle` with `{ collapsed }`.
+      // `addable` puts a "+" in the header and `addLabel` under the cards,
+      // either raising `add`. With `adding` that line is an input: Enter
+      // raises `submit` with `{ value }`, Escape `cancel`; `busy` shows saving.
+      glyph: { kind: 'enum', values: STATE_GROUPS },
+      tone: { kind: 'enum', values: TONES },
+      collapsible: { kind: 'boolean' },
+      collapsed: { kind: 'boolean' },
+      addable: { kind: 'boolean' },
+      addLabel: { kind: 'text', max: LABEL_MAX },
+      adding: { kind: 'boolean' },
+      busy: { kind: 'boolean' },
+      // A "⋯" in a plan column's header, as "Hide column"; choosing raises `select`.
+      menu: { kind: 'list', max: ROW_MENU_ITEMS, of: MENU_ITEM },
     },
     required: ['title'],
-    events: ['range'],
+    events: ['range', 'toggle', 'add', 'submit', 'cancel', 'select'],
     children: true,
   },
   'bry-markdown': {
@@ -887,7 +1039,7 @@ export const CATALOGUE = {
           fields: {
             id: { kind: 'text', max: KEY_MAX },
             label: { kind: 'text', max: LABEL_MAX },
-            items: { kind: 'list', max: MENU_ITEMS, of: MENU_ITEM },
+            items: { kind: 'list', max: MENU_ITEMS, of: ACTION_ITEM },
           },
           required: ['id', 'label', 'items'],
         },
@@ -1402,6 +1554,546 @@ export const CATALOGUE = {
     required: ['text'],
     events: [],
     children: true,
+  },
+  // Plan fidelity
+  'bry-glyph': {
+    // The small mark before a state or a priority. `kind="state"` draws the
+    // `group`'s mark, `kind="priority"` the `priority`'s; `tone` replaces its
+    // own colour. `label` is what a screen reader hears; without one the mark
+    // is decoration.
+    props: {
+      kind: { kind: 'enum', values: ['state', 'priority'] },
+      group: { kind: 'enum', values: STATE_GROUPS },
+      priority: { kind: 'enum', values: PRIORITIES },
+      tone: { kind: 'enum', values: TONES },
+      size: { kind: 'enum', values: ['sm', 'md'] },
+      label: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['kind'],
+    events: [],
+    children: false,
+  },
+  'bry-property': {
+    // One of a work item's properties, as a chip that opens its own picker.
+    // `kind` says what it holds; `display` how the chip looks where it sits.
+    // Choosing raises `change` with `{ value }`, or `{ values }` for
+    // `members` and `labels`; clearing sends an empty value.
+    props: {
+      kind: { kind: 'enum', values: ['state', 'priority', 'members', 'labels', 'date', 'choice'] },
+      display: { kind: 'enum', values: ['badge', 'icon', 'dot', 'pill', 'button'] },
+      label: { kind: 'text', max: LABEL_MAX },
+      value: { kind: 'text', max: KEY_MAX },
+      values: { kind: 'list', max: PROPERTY_OPTIONS, of: { kind: 'text', max: KEY_MAX } },
+      options: {
+        kind: 'list',
+        max: PROPERTY_OPTIONS,
+        of: {
+          kind: 'shape',
+          fields: {
+            value: { kind: 'text', max: KEY_MAX },
+            label: { kind: 'text', max: LABEL_MAX },
+            tone: { kind: 'enum', values: TONES },
+            group: { kind: 'enum', values: STATE_GROUPS },
+            mark: { kind: 'enum', values: MARKS },
+          },
+          required: ['value', 'label'],
+        },
+      },
+      placeholder: { kind: 'text', max: LABEL_MAX },
+      max: { kind: 'int', min: 1, max: 5 },
+      clearable: { kind: 'boolean' },
+      due: { kind: 'boolean' },
+      disabled: { kind: 'boolean' },
+    },
+    required: ['kind', 'label'],
+    events: ['change'],
+    children: false,
+  },
+  'bry-quick-add': {
+    // "+ New work item" that turns into a bare input where it sits. Pressing
+    // the closed row raises `open`; the app answers with `open`. Enter raises
+    // `submit` with `{ value }`, Escape `cancel`; `busy` shows a spinner.
+    props: {
+      trigger: { kind: 'text', max: LABEL_MAX },
+      placeholder: { kind: 'text', max: LABEL_MAX },
+      hint: { kind: 'text', max: LABEL_MAX },
+      open: { kind: 'boolean' },
+      busy: { kind: 'boolean' },
+      value: { kind: 'text', max: LABEL_MAX },
+      variant: { kind: 'enum', values: ['row', 'card', 'link'] },
+    },
+    required: ['trigger'],
+    events: ['open', 'submit', 'cancel'],
+    children: false,
+  },
+  'bry-work-card': {
+    // One work item on a `plan` board: the `priority` mark and `identifier`
+    // on top, the title, a line of `description`, the `project` and `labels`
+    // as chips, then a foot of its children (pickers), `progress` and how
+    // long ago it was `updated`. With `lead` the first child sits on top in
+    // place of the priority mark. Without children, the foot shows
+    // `assignees` and the `due` date. A "⋯" `menu` raises `select` with
+    // `{ id }`; pressing the card raises `press`.
+    props: {
+      title: { kind: 'text', max: LABEL_MAX },
+      identifier: { kind: 'text', max: LABEL_MAX },
+      priority: { kind: 'enum', values: PRIORITIES },
+      description: { kind: 'text', max: LABEL_MAX },
+      project: { kind: 'text', max: LABEL_MAX },
+      labels: {
+        kind: 'list',
+        max: 12,
+        of: { kind: 'shape', fields: { label: { kind: 'text', max: LABEL_MAX }, tone: { kind: 'enum', values: TONES } }, required: ['label'] },
+      },
+      assignees: {
+        kind: 'list',
+        max: 20,
+        of: { kind: 'shape', fields: { id: { kind: 'text', max: KEY_MAX }, name: { kind: 'text', max: LABEL_MAX } }, required: ['id', 'name'] },
+      },
+      due: { kind: 'text', max: ISO_DATE },
+      updated: { kind: 'text', max: ISO_TIME },
+      progress: {
+        kind: 'shape',
+        fields: { done: { kind: 'int', min: 0, max: 10_000 }, total: { kind: 'int', min: 0, max: 10_000 } },
+        required: ['done', 'total'],
+      },
+      lead: { kind: 'boolean' },
+      menu: { kind: 'list', max: ROW_MENU_ITEMS, of: MENU_ITEM },
+      loading: { kind: 'boolean' },
+    },
+    required: ['title'],
+    events: ['press', 'select'],
+    children: true,
+  },
+  'bry-page-header': {
+    // The thin bar across the top of a page: a `back` arrow (raising `back`),
+    // `crumbs` (each raising `crumb` with `{ id }`), the `icon`, `title`,
+    // `badges` and `count`, `tabs` in the middle (raising `tab` with
+    // `{ id }`), and the children, the page's actions, at the end.
+    props: {
+      title: { kind: 'text', max: LABEL_MAX },
+      icon: { kind: 'enum', values: BUTTON_ICONS },
+      subtitle: { kind: 'text', max: LABEL_MAX },
+      back: { kind: 'boolean' },
+      count: { kind: 'int', min: 0, max: 1_000_000 },
+      crumbs: {
+        kind: 'list',
+        max: 4,
+        of: {
+          kind: 'shape',
+          fields: { id: { kind: 'text', max: KEY_MAX }, label: { kind: 'text', max: LABEL_MAX }, icon: { kind: 'enum', values: BUTTON_ICONS }, initial: { kind: 'boolean' } },
+          required: ['id', 'label'],
+        },
+      },
+      badges: {
+        kind: 'list',
+        max: 3,
+        of: { kind: 'shape', fields: { text: { kind: 'text', max: LABEL_MAX }, tone: { kind: 'enum', values: TONES } }, required: ['text'] },
+      },
+      tabs: {
+        kind: 'list',
+        max: 12,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            label: { kind: 'text', max: LABEL_MAX },
+            icon: { kind: 'enum', values: BUTTON_ICONS },
+            count: { kind: 'int', min: 0, max: 1_000_000 },
+          },
+          required: ['id', 'label'],
+        },
+      },
+      tab: { kind: 'text', max: KEY_MAX },
+      size: { kind: 'enum', values: ['sm', 'md'] },
+    },
+    required: ['title'],
+    events: ['back', 'crumb', 'tab'],
+    children: true,
+  },
+  'bry-entity-row': {
+    // A sprint, a module, a saved view or an inbox request in a list. The
+    // `leading` mark (`status`, a completion `ring`, or a `tile` holding
+    // `icon`), then `title`, `dateRange`, `meta` and `description`; at the
+    // end `statusLabel`, up to four `metrics` and a "⋯" `menu` (raising
+    // `select`). `rail` hangs it off a timeline. With `expandable`, a chevron
+    // raises `toggle` with `{ expanded }` and the children show under the
+    // row while `expanded`. Pressing the row raises `press`.
+    props: {
+      title: { kind: 'text', max: LABEL_MAX },
+      description: { kind: 'text', max: LABEL_MAX },
+      meta: { kind: 'text', max: LABEL_MAX },
+      dateRange: { kind: 'text', max: LABEL_MAX },
+      leading: { kind: 'enum', values: ['status', 'ring', 'tile', 'none'] },
+      status: { kind: 'enum', values: ENTITY_STATUSES },
+      statusLabel: { kind: 'text', max: LABEL_MAX },
+      tone: { kind: 'enum', values: TONES },
+      icon: { kind: 'enum', values: BUTTON_ICONS },
+      ring: { kind: 'int', min: 0, max: 100 },
+      metrics: {
+        kind: 'list',
+        max: 4,
+        of: {
+          kind: 'shape',
+          fields: { label: { kind: 'text', max: LABEL_MAX }, value: { kind: 'text', max: LABEL_MAX }, ring: { kind: 'int', min: 0, max: 100 } },
+          required: ['label', 'value'],
+        },
+      },
+      menu: { kind: 'list', max: ROW_MENU_ITEMS, of: MENU_ITEM },
+      rail: { kind: 'shape', fields: { month: { kind: 'text', max: LABEL_MAX }, day: { kind: 'text', max: LABEL_MAX }, active: { kind: 'boolean' } }, required: [] },
+      highlighted: { kind: 'boolean' },
+      selected: { kind: 'boolean' },
+      pressable: { kind: 'boolean' },
+      expandable: { kind: 'boolean' },
+      expanded: { kind: 'boolean' },
+      loading: { kind: 'boolean' },
+    },
+    required: ['title'],
+    events: ['press', 'select', 'toggle'],
+    children: true,
+  },
+  'bry-filter-menu': {
+    // A "Filter" button whose menu lists `facets`, each opening its options
+    // to tick. `values` says what is ticked, per facet. Ticking raises
+    // `change` with `{ facet, values }`, the facet's whole new list. A facet
+    // with `search` has a search field; one of `kind="dates"` offers `today`,
+    // `3d`, `7d` and a `from..to` range, and holds one value. With anything
+    // ticked, "Reset all filters" raises `reset`.
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      facets: {
+        kind: 'list',
+        max: 8,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            label: { kind: 'text', max: LABEL_MAX },
+            icon: { kind: 'enum', values: BUTTON_ICONS },
+            kind: { kind: 'enum', values: ['options', 'dates'] },
+            search: { kind: 'boolean' },
+            options: {
+              kind: 'list',
+              max: FILTER_OPTIONS,
+              of: {
+                kind: 'shape',
+                fields: {
+                  value: { kind: 'text', max: KEY_MAX },
+                  label: { kind: 'text', max: LABEL_MAX },
+                  mark: { kind: 'enum', values: MARKS },
+                  tone: { kind: 'enum', values: TONES },
+                  count: { kind: 'int', min: 0, max: 1_000_000 },
+                },
+                required: ['value', 'label'],
+              },
+            },
+          },
+          required: ['id', 'label'],
+        },
+      },
+      values: {
+        kind: 'list',
+        max: 8,
+        of: {
+          kind: 'shape',
+          fields: { facet: { kind: 'text', max: KEY_MAX }, values: { kind: 'list', max: FILTER_OPTIONS, of: { kind: 'text', max: KEY_MAX } } },
+          required: ['facet'],
+        },
+      },
+    },
+    required: ['facets'],
+    events: ['change', 'reset'],
+    children: false,
+  },
+  'bry-gantt': {
+    // Work items laid along days: a pane of `rows` beside a timeline cut
+    // into day, week or month columns by `zoom`. A row with `start` and `end`
+    // is a bar; with one of them a diamond; with neither a placeholder.
+    // `start` is the first day shown. The toolbar raises `zoom` with
+    // `{ zoom }`, `navigate` with `{ start }` and `completed` with
+    // `{ show }`; pressing a row or its bar raises `press` with `{ id }`.
+    props: {
+      start: { kind: 'text', max: ISO_DATE },
+      zoom: { kind: 'enum', values: GANTT_ZOOMS },
+      rows: {
+        kind: 'list',
+        max: GANTT_ROWS,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            title: { kind: 'text', max: LABEL_MAX },
+            identifier: { kind: 'text', max: LABEL_MAX },
+            mark: { kind: 'enum', values: MARKS },
+            tone: { kind: 'enum', values: TONES },
+            priority: { kind: 'enum', values: PRIORITIES },
+            assignee: { kind: 'text', max: LABEL_MAX },
+            start: { kind: 'text', max: ISO_DATE },
+            end: { kind: 'text', max: ISO_DATE },
+          },
+          required: ['id', 'title'],
+        },
+      },
+      showCompleted: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+      loading: { kind: 'boolean' },
+    },
+    events: ['press', 'navigate', 'zoom', 'completed'],
+    children: false,
+  },
+  'bry-timeline': {
+    // A work item's activity, one `bry-timeline-item` per line. A `folded`
+    // block of older activity is one line worded by `collapsedLabel`;
+    // pressing it raises `expand`.
+    props: {
+      collapsedLabel: { kind: 'text', max: LABEL_MAX },
+      folded: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+      loading: { kind: 'boolean' },
+    },
+    events: ['expand'],
+    children: true,
+  },
+  'bry-timeline-item': {
+    // One line of activity: the `mark` of what changed (or the `actor`'s
+    // face), the actor, the `text`, "×`count`" and how long ago from `time`.
+    props: {
+      actor: { kind: 'text', max: LABEL_MAX },
+      actorId: { kind: 'text', max: KEY_MAX },
+      text: { kind: 'text', max: LABEL_MAX },
+      mark: { kind: 'enum', values: ACTIVITY_MARKS },
+      tone: { kind: 'enum', values: TONES },
+      time: { kind: 'text', max: ISO_TIME },
+      count: { kind: 'int', min: 1, max: 9_999 },
+    },
+    required: ['text'],
+    events: [],
+    children: false,
+  },
+  'bry-comment': {
+    // One comment in a discussion; its children are the body (and a reply
+    // composer). `actions` sit in its "⋯" menu, reply and edit also on hover;
+    // choosing raises `action` with `{ id }`. With `replies` the thread
+    // folds: pressing its bar raises `toggle` with `{ collapsed }`.
+    props: {
+      author: { kind: 'text', max: LABEL_MAX },
+      authorId: { kind: 'text', max: KEY_MAX },
+      time: { kind: 'text', max: ISO_TIME },
+      edited: { kind: 'boolean' },
+      deleted: { kind: 'boolean' },
+      resolved: { kind: 'boolean' },
+      resolution: { kind: 'boolean' },
+      depth: { kind: 'int', min: 0, max: 1 },
+      collapsed: { kind: 'boolean' },
+      replies: { kind: 'int', min: 0, max: 9_999 },
+      repliers: {
+        kind: 'list',
+        max: 12,
+        of: { kind: 'shape', fields: { id: { kind: 'text', max: KEY_MAX }, name: { kind: 'text', max: LABEL_MAX } }, required: ['id', 'name'] },
+      },
+      actions: { kind: 'list', max: COMMENT_ACTIONS.length, of: { kind: 'enum', values: COMMENT_ACTIONS } },
+      highlighted: { kind: 'boolean' },
+      loading: { kind: 'boolean' },
+    },
+    events: ['action', 'toggle'],
+    children: true,
+  },
+  'bry-reactions': {
+    // A chip per emoji with its `count`, marked when `mine`, then "Add
+    // reaction" opening a grid of `choices`. Pressing either raises `toggle`
+    // with `{ emoji }`.
+    props: {
+      items: {
+        kind: 'list',
+        max: 24,
+        of: {
+          kind: 'shape',
+          fields: { emoji: { kind: 'text', max: EMOJI_MAX }, count: { kind: 'int', min: 0, max: 99_999 }, mine: { kind: 'boolean' } },
+          required: ['emoji'],
+        },
+      },
+      choices: { kind: 'list', max: 48, of: { kind: 'text', max: EMOJI_MAX } },
+      disabled: { kind: 'boolean' },
+    },
+    events: ['toggle'],
+    children: false,
+  },
+  'bry-peek': {
+    // A floating panel over the side of a list that shows one item without
+    // leaving it; not a dialog. `position` reads "3 / 12"; `previous` and
+    // `next` (and J/K) raise the same; the expand button raises `expand`, the
+    // close button and Escape `close`. Its children are the item.
+    props: {
+      open: { kind: 'boolean' },
+      label: { kind: 'text', max: LABEL_MAX },
+      position: { kind: 'text', max: LABEL_MAX },
+      previous: { kind: 'boolean' },
+      next: { kind: 'boolean' },
+    },
+    required: ['label'],
+    events: ['previous', 'next', 'expand', 'close'],
+    children: true,
+  },
+  'bry-spreadsheet': {
+    // A table whose cells are live elements. A heading's menu raises `sort`
+    // with `{ key, direction }` and `hide` with `{ key }`; with
+    // `selectable`, the corner box raises `selectAll` with `{ checked }`.
+    // Its children are `bry-spreadsheet-group`s and `bry-spreadsheet-row`s.
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      columns: {
+        kind: 'list',
+        max: SPREADSHEET_COLUMNS,
+        of: {
+          kind: 'shape',
+          fields: {
+            key: { kind: 'text', max: KEY_MAX },
+            heading: { kind: 'text', max: LABEL_MAX },
+            width: { kind: 'enum', values: ['sm', 'md', 'lg', 'fill'] },
+            pinned: { kind: 'boolean' },
+            sortable: { kind: 'boolean' },
+            hideable: { kind: 'boolean' },
+          },
+          required: ['key', 'heading'],
+        },
+      },
+      sort: {
+        kind: 'shape',
+        fields: { key: { kind: 'text', max: KEY_MAX }, direction: { kind: 'enum', values: ['asc', 'desc'] } },
+        required: ['key', 'direction'],
+      },
+      selectable: { kind: 'boolean' },
+      selected: { kind: 'int', min: 0, max: 100_000 },
+      total: { kind: 'int', min: 0, max: 100_000 },
+      loading: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['columns'],
+    events: ['sort', 'hide', 'selectAll'],
+    children: true,
+  },
+  'bry-spreadsheet-row': {
+    // One row; its children are its cells. Its box raises `toggle` with
+    // `{ checked }`; an `expandable` row's chevron raises `expand` with
+    // `{ expanded }`; `depth` indents it under its parent.
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      checked: { kind: 'boolean' },
+      depth: { kind: 'int', min: 0, max: 4 },
+      expandable: { kind: 'boolean' },
+      expanded: { kind: 'boolean' },
+      loading: { kind: 'boolean' },
+    },
+    events: ['toggle', 'expand'],
+    children: true,
+  },
+  'bry-spreadsheet-group': {
+    // A heading row between groups: `label`, `mark` and `count`. Pressing it
+    // raises `toggle` with `{ collapsed }`.
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      mark: { kind: 'enum', values: MARKS },
+      tone: { kind: 'enum', values: ['neutral', 'brand', 'success', 'warn', 'danger'] },
+      count: { kind: 'int', min: 0, max: 100_000 },
+      collapsed: { kind: 'boolean' },
+    },
+    required: ['label'],
+    events: ['toggle'],
+    children: false,
+  },
+  'bry-rich-text': {
+    // A markdown editor. `value` is markdown, and so is what it says:
+    // `change` as the person types, `blur` when they leave, `submit` on
+    // Mod+Enter, each with `{ value }`. `mentions` are who `@` offers.
+    props: {
+      value: { kind: 'text', max: RICH_TEXT_MAX },
+      placeholder: { kind: 'text', max: LABEL_MAX },
+      label: { kind: 'text', max: LABEL_MAX },
+      variant: { kind: 'enum', values: ['document', 'comment', 'bare'] },
+      mentions: {
+        kind: 'list',
+        max: 200,
+        of: { kind: 'shape', fields: { value: { kind: 'text', max: KEY_MAX }, label: { kind: 'text', max: LABEL_MAX } }, required: ['value', 'label'] },
+      },
+      disabled: { kind: 'boolean' },
+      autofocus: { kind: 'boolean' },
+      error: { kind: 'text', max: LABEL_MAX },
+    },
+    events: ['change', 'blur', 'submit'],
+    children: false,
+  },
+  'bry-board-lane': {
+    // One swimlane's heading on a `layout="lanes"` board: `title`, `mark`,
+    // `count`. With `collapsible`, pressing it raises `toggle` with
+    // `{ collapsed }`; `openable` adds a link raising `open`.
+    props: {
+      title: { kind: 'text', max: LABEL_MAX },
+      mark: { kind: 'enum', values: MARKS },
+      tone: { kind: 'enum', values: TONES },
+      count: { kind: 'int', min: 0, max: BOARD_CARDS },
+      collapsible: { kind: 'boolean' },
+      collapsed: { kind: 'boolean' },
+      openable: { kind: 'boolean' },
+      openLabel: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['title'],
+    events: ['toggle', 'open'],
+    children: false,
+  },
+  'bry-property-list': {
+    // A section of a detail sidebar. With `collapsible`, pressing the
+    // `title` raises `toggle` with `{ collapsed }`. Its children are
+    // `bry-property-row`s.
+    props: {
+      title: { kind: 'text', max: LABEL_MAX },
+      collapsible: { kind: 'boolean' },
+      collapsed: { kind: 'boolean' },
+    },
+    events: ['toggle'],
+    children: true,
+  },
+  'bry-property-row': {
+    // One property: a muted `label` (with an `icon`) and its value, the children.
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      icon: { kind: 'enum', values: BUTTON_ICONS },
+      readonly: { kind: 'boolean' },
+    },
+    required: ['label'],
+    events: [],
+    children: true,
+  },
+  'bry-keys': {
+    // The keyboard shortcuts a screen answers while shown. Draws nothing.
+    // Pressing one raises `press` with `{ key }`, never while typing.
+    props: {
+      bindings: {
+        kind: 'list',
+        max: 20,
+        of: { kind: 'shape', fields: { key: { kind: 'text', max: KEY_NAME }, label: { kind: 'text', max: LABEL_MAX } }, required: ['key', 'label'] },
+      },
+    },
+    required: ['bindings'],
+    events: ['press'],
+    children: false,
+  },
+  'bry-filter-chip': {
+    // One filter in force: the facet's `icon` and `label`, up to four
+    // `marks` of what is chosen, and `text` saying it. Pressing it raises
+    // `press`; its cross raises `remove`.
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      icon: { kind: 'enum', values: BUTTON_ICONS },
+      text: { kind: 'text', max: LABEL_MAX },
+      marks: {
+        kind: 'list',
+        max: 4,
+        of: { kind: 'shape', fields: { mark: { kind: 'enum', values: MARKS }, tone: { kind: 'enum', values: TONES }, name: { kind: 'text', max: LABEL_MAX } }, required: ['mark'] },
+      },
+    },
+    required: ['label'],
+    events: ['press', 'remove'],
+    children: false,
   },
 } as const satisfies Readonly<Record<`bry-${string}`, ElementSpec>>;
 

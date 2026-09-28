@@ -27,9 +27,12 @@ import './draw/questionnaire.ts';
 import './draw/a23-content.ts';
 import './draw/a23-layout.ts';
 import './draw/a23-overlays.ts';
+// Plan fidelity
+import './draw/plan.ts';
+import './draw/tracker.ts';
 import { defineCatalogue } from './define.ts';
 
 export { BryElement } from './base.ts';
-export { attributeOf, declarationOf, defineCatalogue, drawAs, type CatalogueElementClass, type Draw } from './define.ts';
+export { attributeOf, declarationOf, defineCatalogue, drawAs, settingOf, type CatalogueElementClass, type Draw } from './define.ts';
 
 if (typeof customElements !== 'undefined') defineCatalogue();

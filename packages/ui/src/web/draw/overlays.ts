@@ -2,6 +2,8 @@
 import { css, html, nothing } from '../base.ts';
 import { drawAs } from '../define.ts';
 import { initials } from './layout.ts';
+import type { El } from './catalogue-b-shared.ts';
+import { focusActive, icon, menuItemsOf, menuRows, PLAN, popOf, treeChoice, treeKeys, treeRows } from './plan-shared.ts';
 import { FOCUS, pick, str, TYPE } from './tokens.ts';
 
 /**
@@ -24,6 +26,8 @@ interface Action {
 interface Item extends Action {
   icon?: string;
   separator?: boolean;
+  /** Ticked, as the view a View menu has chosen. */
+  checked?: boolean;
 }
 
 interface Choice {
@@ -101,49 +105,8 @@ const POPUP = css`
   }
 `;
 
-/**
- * The keyboard every popup list answers, whatever it holds: the arrows, Home
- * and End, typing to find, and Escape to close. Answers with the row to make
- * active, or `null` for none of its business.
- */
-export function nextActive(
-  key: string,
-  rows: readonly { label: string; disabled?: boolean }[],
-  active: number,
-  typed: string,
-): { active: number } | 'close' | 'choose' | null {
-  const usable = rows.map((row, index) => ({ index, row })).filter(({ row }) => row.disabled !== true);
-
-  if (usable.length === 0) return key === 'Escape' ? 'close' : null;
-
-  const at = usable.findIndex(({ index }) => index === active);
-  const step = (by: number) => ({ active: usable[(((at === -1 ? 0 : at) + by) % usable.length + usable.length) % usable.length]!.index });
-
-  switch (key) {
-    case 'ArrowDown':
-      return at === -1 ? { active: usable[0]!.index } : step(1);
-    case 'ArrowUp':
-      return at === -1 ? { active: usable[usable.length - 1]!.index } : step(-1);
-    case 'Home':
-      return { active: usable[0]!.index };
-    case 'End':
-      return { active: usable[usable.length - 1]!.index };
-    case 'Escape':
-      return 'close';
-    case 'Enter':
-    case ' ':
-      return 'choose';
-    default: {
-      // Typing finds the next row that starts with what has been typed.
-      if (key.length !== 1 || typed === '') return null;
-
-      const from = usable.findIndex(({ index }) => index > active && rows[index]!.label.toLowerCase().startsWith(typed));
-      const found = from === -1 ? usable.find(({ index }) => rows[index]!.label.toLowerCase().startsWith(typed)) : usable[from];
-
-      return found ? { active: found.index } : null;
-    }
-  }
-}
+export { nextActive } from './keyboard.ts';
+import { nextActive } from './keyboard.ts';
 
 /** What a popup keeps while it is open: which row is active and what has been typed. */
 const popups = new WeakMap<object, { open: boolean; active: number; typed: string; typedAt: number }>();
@@ -170,6 +133,112 @@ function typing(state: { typed: string; typedAt: number }, key: string): string 
 }
 
 const DIALOG_VARIANT = { default: 'secondary', primary: 'primary', danger: 'danger' } as const;
+
+/**
+ * `variant="compose"`: a composer rather than a question. A fixed-height card
+ * headed by its `crumbs`, with an expand and a close button; the children fill
+ * the body, the last held at its foot; the footer holds the `toggle` switch
+ * and the primary action, which Mod+Enter anywhere in it raises. No Cancel:
+ * Escape, the backdrop and the close button close it.
+ */
+function compose(element: Element, actions: Action[], description: string, dismiss: () => void) {
+  const primary = actions.find(action => action.tone !== 'danger');
+  const expanded = element.expanded === true;
+  const crumbs = list<unknown>(element.crumbs).filter((one): one is string => typeof one === 'string');
+  const toggle = str(element.toggle);
+  const toggled = element.toggled === true;
+  const submit = () => {
+    if (primary && primary.disabled !== true) element.emit('action', { id: primary.id });
+  };
+
+  queueMicrotask(() => {
+    const dialog = element.shadowRoot?.querySelector('dialog');
+
+    if (dialog && dialog.isConnected && !dialog.open && typeof dialog.showModal === 'function') dialog.showModal();
+  });
+
+  return html`<dialog
+    class="compose ${expanded ? 'expanded' : ''}"
+    data-variant="compose"
+    aria-labelledby="title"
+    aria-describedby="description"
+    @close=${dismiss}
+    @cancel=${dismiss}
+    @click=${(event: MouseEvent) => {
+      if (event.composedPath()[0] === event.currentTarget) dismiss();
+    }}
+    @keydown=${(event: KeyboardEvent) => {
+      if (event.key !== 'Enter' || !(event.metaKey || event.ctrlKey)) return;
+      event.preventDefault();
+      submit();
+    }}
+  >
+    <h2 id="title" class="unseen">${str(element.title)}</h2>
+    <p id="description" class="unseen">${description || str(element.title)}</p>
+    <div class="compose-head">
+      <nav aria-label="Where this goes" class="crumbs">
+        ${crumbs.map(
+          (crumb, index) => html`${index > 0 ? html`<span class="chevron" aria-hidden="true">${icon('chevronRight', 12)}</span>` : nothing}<span
+              class="crumb ${index === crumbs.length - 1 ? 'last' : ''}"
+              >${crumb}</span
+            >`,
+        )}
+      </nav>
+      <div class="head-tools">
+        <button
+          type="button"
+          class="tool"
+          aria-label=${expanded ? 'Make smaller' : 'Make larger'}
+          @click=${() => element.emit('expand', { expanded: !expanded })}
+        >
+          ${icon('maximise', 16)}
+        </button>
+        <button type="button" class="tool" aria-label="Close" data-action="close" @click=${dismiss}>${icon('close', 16)}</button>
+      </div>
+    </div>
+    <div class="compose-body"><slot></slot></div>
+    <div class="compose-foot">
+      ${toggle
+        ? html`<label class="toggle">
+            <button
+              type="button"
+              role="switch"
+              class="switch"
+              aria-checked=${toggled ? 'true' : 'false'}
+              @click=${() => element.emit('toggle', { checked: !toggled })}
+            >
+              <span class="thumb"></span>
+            </button>
+            ${toggle}
+          </label>`
+        : nothing}
+      ${actions
+        .filter(action => action !== primary)
+        .map(
+          action => html`<button
+            type="button"
+            class="small ${DIALOG_VARIANT[(action.tone ?? 'default') as keyof typeof DIALOG_VARIANT] ?? 'secondary'}"
+            data-action=${action.id}
+            ?disabled=${action.disabled === true}
+            @click=${() => element.emit('action', { id: action.id })}
+          >
+            ${action.label}
+          </button>`,
+        )}
+      ${primary
+        ? html`<button
+            type="button"
+            class="small primary"
+            data-action=${primary.id}
+            aria-disabled=${primary.disabled === true ? 'true' : nothing}
+            @click=${submit}
+          >
+            ${primary.label}<span class="keys" aria-hidden="true"><kbd>⌘</kbd><kbd>↵</kbd></span>
+          </button>`
+        : nothing}
+    </div>
+  </dialog>`;
+}
 
 drawAs(
   'bry-dialog',
@@ -214,6 +283,13 @@ drawAs(
       .slice()
       .sort((a, b) => Number(a.tone === 'danger') - Number(b.tone === 'danger'));
     const description = str(element.description);
+
+    if (element.variant === 'compose') {
+      const current = state;
+
+      // Shown as a modal, it hears Escape as `cancel` and then `close`: one dismissal, said once.
+      return compose(element as Element, actions, description, () => current.dismissed || dismiss());
+    }
 
     return html`<dialog
       aria-labelledby="title"
@@ -325,6 +401,166 @@ drawAs(
         background: var(--danger);
         color: var(--fg-on-solid);
       }
+      dialog.compose {
+        display: flex;
+        width: 42rem;
+        max-width: calc(100vw - 1.5rem);
+        height: 24rem;
+        flex-direction: column;
+        overflow: hidden;
+        transition:
+          width var(--dur-fast),
+          height var(--dur-fast);
+      }
+      dialog.compose:not([open]) {
+        display: none;
+      }
+      dialog.compose.expanded {
+        width: 56rem;
+        height: 83vh;
+      }
+      .compose-head {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1.25rem 0.5rem;
+      }
+      .crumbs {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 0.375rem;
+        font-size: 0.75rem;
+        color: var(--fg-muted);
+      }
+      .crumb {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .crumb.last {
+        font-weight: 500;
+        color: var(--fg);
+      }
+      .chevron {
+        display: inline-flex;
+      }
+      .head-tools {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+      .tool {
+        display: inline-flex;
+        height: auto;
+        align-items: center;
+        border-radius: var(--radius-xs);
+        background: transparent;
+        padding: 0.375rem;
+        color: inherit;
+        opacity: 0.7;
+      }
+      .tool:hover {
+        background: var(--layer-hover);
+        opacity: 1;
+      }
+      .compose-body {
+        display: flex;
+        min-height: 0;
+        flex: 1;
+        flex-direction: column;
+        gap: 0.5rem;
+        overflow-y: auto;
+        padding: 0 1.25rem;
+      }
+      /* A bare description fills the body; the last child (the chips) sits at its foot. */
+      .compose-body ::slotted(bry-textarea) {
+        display: flex;
+        min-height: 0;
+        flex: 1;
+        flex-direction: column;
+      }
+      .compose-body ::slotted(:last-child) {
+        flex-shrink: 0;
+        margin-top: auto;
+        margin-inline: -0.25rem;
+        padding-block: 0.5rem;
+      }
+      .compose-foot {
+        display: flex;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.5rem 0.75rem;
+        border-top: 1px solid var(--line);
+        padding: 0.75rem 1rem;
+      }
+      .toggle {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        gap: 0.375rem;
+        font-size: 0.75rem;
+        color: var(--fg-muted);
+        cursor: pointer;
+        user-select: none;
+      }
+      .switch {
+        display: inline-flex;
+        width: 1.75rem;
+        height: 1rem;
+        align-items: center;
+        border: 1px solid transparent;
+        border-radius: 9999px;
+        background: var(--input);
+        padding: 0;
+      }
+      .switch[aria-checked='true'] {
+        background: var(--primary);
+      }
+      .thumb {
+        display: block;
+        width: 0.875rem;
+        height: 0.875rem;
+        border-radius: 9999px;
+        background: var(--background);
+        transition: transform var(--dur-fast);
+      }
+      .switch[aria-checked='true'] .thumb {
+        transform: translateX(calc(100% - 2px));
+      }
+      :host(:dir(rtl)) .switch[aria-checked='true'] .thumb {
+        transform: translateX(calc(-100% + 2px));
+      }
+      button.small {
+        height: var(--control-h-sm);
+        padding: 0 0.625rem;
+        border-radius: var(--radius-md);
+      }
+      button[aria-disabled='true'] {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+      .keys {
+        display: inline-flex;
+        gap: 0.125rem;
+        margin-inline-start: 0.25rem;
+      }
+      kbd {
+        border: 1px solid;
+        border-radius: var(--radius-xs);
+        padding: 0 0.25rem;
+        font: inherit;
+        font-size: 0.6875rem;
+        opacity: 0.8;
+      }
+      @media (max-width: 639px) {
+        .keys {
+          display: none;
+        }
+      }
     `,
   ],
 );
@@ -332,56 +568,58 @@ drawAs(
 drawAs(
   'bry-menu',
   element => {
-    const state = stateOf(element);
-    const items = list<Item>(element.items);
+    const host = element as unknown as El;
+    const pop = popOf(host, 'menu');
+    const rows = treeRows(menuItemsOf(element.items), pop.view);
+    const heading = str(element.heading);
     const shut = (toTrigger = true) => {
-      state.open = false;
-      state.active = -1;
-      element.requestUpdate();
+      pop.open = false;
+      pop.active = -1;
+      pop.view = '';
+      host.requestUpdate();
       if (toTrigger) queueMicrotask(() => (element.querySelector('button, [tabindex]') as HTMLElement | null)?.focus());
     };
-    const choose = (item: Item | undefined) => {
-      if (!item || item.disabled === true) return;
+    const choose = (index: number) => {
+      const next = treeChoice(rows, index);
 
-      element.emit('select', { id: item.id });
+      if (!next) return;
+      if ('view' in next) {
+        // Into a submenu, or back out of one.
+        pop.view = next.view;
+        pop.active = next.active;
+        host.requestUpdate();
+        return focusActive(host);
+      }
+      element.emit('select', { id: next.id });
       shut();
     };
     const open = () => {
-      state.open = true;
-      state.active = items.findIndex(item => item.disabled !== true);
-      element.requestUpdate();
-      queueMicrotask(() => (element.shadowRoot?.querySelector('[data-active]') as HTMLElement | null)?.focus());
+      pop.open = true;
+      pop.view = '';
+      pop.active = rows.findIndex(item => item.disabled !== true);
+      host.requestUpdate();
+      focusActive(host);
     };
+    const keys = treeKeys(host, pop, rows, choose, shut);
 
     return html`<div
       class="anchor"
       @click=${(event: MouseEvent) => {
-        if (state.open || (event.composedPath()[0] as Element)?.closest?.('.popup')) return;
+        if (pop.open || (event.composedPath()[0] as Element)?.closest?.('.popup')) return;
         open();
       }}
       @keydown=${(event: KeyboardEvent) => {
-        if (!state.open) {
+        if (!pop.open) {
           if (event.key !== 'ArrowDown' && event.key !== 'Enter' && event.key !== ' ') return;
           event.preventDefault();
           open();
 
           return;
         }
-
-        const answer = nextActive(event.key, items, state.active, event.key.length === 1 ? typing(state, event.key) : '');
-
-        if (answer === null) return;
-
-        event.preventDefault();
-        if (answer === 'close') return shut();
-        if (answer === 'choose') return choose(items[state.active]);
-
-        state.active = answer.active;
-        element.requestUpdate();
-        queueMicrotask(() => (element.shadowRoot?.querySelector('[data-active]') as HTMLElement | null)?.focus());
+        keys(event);
       }}
       @focusout=${(event: FocusEvent) => {
-        if (!state.open) return;
+        if (!pop.open) return;
         // Tab out, or a press elsewhere: the menu shuts without taking focus back.
         if (!event.relatedTarget || !element.contains(event.relatedTarget as Node)) {
           if (!element.shadowRoot?.contains(event.relatedTarget as Node)) shut(false);
@@ -389,28 +627,10 @@ drawAs(
       }}
     >
       <slot></slot>
-      ${state.open
-        ? html`<div class="popup" role="menu">
-            ${items.map(
-              (item, index) => html`${item.separator && index > 0 ? html`<div class="separator" role="separator"></div>` : nothing}
-                <button
-                  type="button"
-                  role="menuitem"
-                  tabindex="-1"
-                  data-item=${item.id}
-                  data-tone=${item.tone === 'danger' ? 'danger' : nothing}
-                  data-active=${index === state.active ? '' : nothing}
-                  aria-disabled=${item.disabled === true ? 'true' : nothing}
-                  @click=${() => choose(item)}
-                  @mousemove=${() => {
-                    if (state.active === index) return;
-                    state.active = index;
-                    element.requestUpdate();
-                  }}
-                >
-                  ${item.label}
-                </button>`,
-            )}
+      ${pop.open
+        ? html`<div class="popup" role="menu" aria-label=${heading || nothing}>
+            ${heading && !pop.view ? html`<p class="heading" role="presentation">${heading}</p>` : nothing}
+            ${menuRows(host, pop, rows, choose)}
           </div>`
         : nothing}
     </div>`;
@@ -418,6 +638,7 @@ drawAs(
   [
     FOCUS,
     POPUP,
+    PLAN,
     css`
       :host {
         display: inline-flex;
@@ -427,6 +648,15 @@ drawAs(
         position: relative;
         display: inline-flex;
         min-width: 0;
+      }
+      .popup [role='menuitem'] {
+        font-size: 0.8125rem;
+      }
+      .heading {
+        margin: 0;
+        padding: 0.375rem 0.5rem 0.25rem;
+        font-size: 0.75rem;
+        color: var(--fg-muted);
       }
     `,
   ],

@@ -72,8 +72,33 @@ drawAs(
       }
       :host([data-variant='filter-bar']) {
         flex-shrink: 0;
-        padding: 0.5rem 1rem;
+        padding: 0.375rem 1rem;
         border-bottom: 1px solid var(--line);
+        background: var(--layer-hover);
+      }
+      :host([data-variant='page-body']) {
+        width: 100%;
+        max-width: 72rem;
+        margin-inline: auto;
+        padding: 1.5rem 1rem;
+      }
+      @media (min-width: 640px) {
+        :host([data-variant='page-body']) {
+          padding-inline: 1.5rem;
+        }
+      }
+      /* A bar of bulk actions, floating at the foot of the screen. */
+      :host([data-variant='action-bar']) {
+        position: sticky;
+        bottom: 1.5rem;
+        z-index: 40;
+        width: fit-content;
+        margin-inline: auto;
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--line);
+        border-radius: 9999px;
+        background: var(--bg-surface);
+        box-shadow: var(--shadow-pop);
       }
     `,
   ],
@@ -130,6 +155,9 @@ const BADGE = {
 drawAs(
   'bry-badge',
   element => {
+    // A muted pill for a number beside a heading.
+    if (element.variant === 'count') return html`<span class="count" data-variant="count">${str(element.text)}</span>`;
+
     const tone = str(element.tone) in BADGE ? (str(element.tone) as keyof typeof BADGE) : 'neutral';
     const [fill, ink] = BADGE[tone];
 
@@ -150,6 +178,13 @@ drawAs(
         line-height: 1rem;
         font-weight: 500;
       }
+      .count {
+        padding: 0.125rem 0.375rem;
+        background: var(--layer-hover);
+        color: var(--fg-muted);
+        font-size: 0.75rem;
+        font-variant-numeric: tabular-nums;
+      }
     `,
   ],
 );
@@ -161,7 +196,9 @@ drawAs(
   element => {
     const working = element.working === true;
     const variant = pick(BUTTON_VARIANTS, element.variant) ?? 'secondary';
-    const size = element.size === 'sm' ? 'sm' : 'md';
+    // In a page header or a bar of bulk actions a button is drawn dense, as the host draws it.
+    const dense = element.closest('bry-page-header, bry-stack[data-variant="action-bar"]') !== null;
+    const size = element.size === 'sm' || dense ? 'sm' : 'md';
 
     return html`<button
       type="button"

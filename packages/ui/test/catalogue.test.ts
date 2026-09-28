@@ -150,6 +150,29 @@ describe('the catalogue as a whole', () => {
       'bry-spinner',
       'bry-tabs',
       'bry-tooltip',
+      // Plan fidelity
+      'bry-glyph',
+      'bry-property',
+      'bry-quick-add',
+      'bry-work-card',
+      'bry-page-header',
+      'bry-entity-row',
+      'bry-filter-menu',
+      'bry-gantt',
+      'bry-timeline',
+      'bry-timeline-item',
+      'bry-comment',
+      'bry-reactions',
+      'bry-peek',
+      'bry-spreadsheet',
+      'bry-spreadsheet-row',
+      'bry-spreadsheet-group',
+      'bry-rich-text',
+      'bry-board-lane',
+      'bry-property-list',
+      'bry-property-row',
+      'bry-keys',
+      'bry-filter-chip',
     ]);
   });
 
@@ -164,7 +187,7 @@ describe('the catalogue as a whole', () => {
   test('keeps free text to the settings that are words for a person', () => {
     for (const name of ELEMENT_NAMES) {
       for (const [prop, spec] of Object.entries(CATALOGUE[name].props) as [string, PropSpec][]) {
-        if (spec.kind === 'text') expect(['text', 'label', 'title', 'value', 'placeholder', 'error', 'name', 'description', 'meta', 'action', 'empty', 'selected', 'cancel', 'min', 'max', 'settled', 'search', 'month', 'filter', 'current', 'prefix', 'suffix', 'identifier']).toContain(prop);
+        if (spec.kind === 'text') expect(['text', 'label', 'title', 'value', 'placeholder', 'error', 'name', 'description', 'meta', 'action', 'empty', 'selected', 'cancel', 'min', 'max', 'settled', 'search', 'month', 'filter', 'current', 'prefix', 'suffix', 'identifier', 'toggle', 'heading', 'addLabel', 'trigger', 'hint', 'subtitle', 'tab', 'dateRange', 'statusLabel', 'due', 'project', 'updated', 'start', 'collapsedLabel', 'actor', 'actorId', 'time', 'author', 'authorId', 'position', 'openLabel']).toContain(prop);
       }
     }
   });
@@ -397,8 +420,8 @@ describe('checks', () => {
     const choiceless: ElementAttributes<'bry-select'> = { value: 'todo' };
     // @ts-expect-error a badge's tone is one of the five
     const loud: ElementAttributes<'bry-badge'> = { text: 'x', tone: 'muted' };
-    // @ts-expect-error a textarea has no submit
-    const submitted: ElementAttributes<'bry-textarea'> = { onSubmit: () => {} };
+    // A textarea's submit is Mod+Enter, and carries its text.
+    const submitted: ElementAttributes<'bry-textarea'> = { onSubmit: event => event.detail.value.trim() };
 
     const sorted: ElementAttributes<'bry-table'> = {
       columns: [{ key: 'title', heading: 'Title', sortable: true }],
