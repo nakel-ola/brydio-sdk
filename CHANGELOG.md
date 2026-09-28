@@ -22,6 +22,15 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.20
+
+- `bry-board-column` `checkable` / `checked` / `mixed`: a list group's select-all box, raising `check` with `{ checked }`.
+- `bry-property` `more`: up to three of the app's own actions under the picker, raising `more` with `{ id }`. The priority picker lists "No priority" first, as Multica's.
+- `bry-split` `side: 'sidebar'` keeps the second pane between a sidebar's widths (260–420 px); `resize` with `{ ratio }` says where the person left the handle.
+- `bry-spreadsheet` columns can be `movable` (drag, or Move left / right from the heading's menu → `reorder` with `{ keys }`) and `resizable` (the width is the person's, kept by Brydio; an app never sets pixels).
+- `bry-comment` scrolls into view when `highlighted`, and its header stays in view while a long comment scrolls. A plan board pans when its background is dragged.
+- New icon `swimlaneLayout` (Multica's Waves).
+
 ## 0.1.0-alpha.19
 
 - `bry-markdown` `quote` (a label, "Add to comment"): selecting text offers that button; pressing it raises `quote` with `{ text }` (up to 4,000 characters), as Multica's annotations do. Mermaid blocks draw as diagrams, in Brydio's sealed frame.
