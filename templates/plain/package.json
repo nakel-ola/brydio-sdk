@@ -11,12 +11,12 @@
     "check-types": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@brydio/app": "0.1.0-alpha.13"
+    "@brydio/app": "0.1.0-alpha.14"
   },
   "devDependencies": {
-    "@brydio/cli": "0.1.0-alpha.13",
-    "@brydio/fake-host": "0.1.0-alpha.13",
-    "@brydio/manifest": "0.1.0-alpha.13",
+    "@brydio/cli": "0.1.0-alpha.14",
+    "@brydio/fake-host": "0.1.0-alpha.14",
+    "@brydio/manifest": "0.1.0-alpha.14",
     "@types/bun": "1.4.2",
     "typescript": "5.9.3"
   }

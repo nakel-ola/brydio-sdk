@@ -22,6 +22,12 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.14
+
+- `bry-stack variant="inset"`: a full-width work area with the page's gutter.
+- The compose dialog, the peek, filter chips and removable rows close with a
+  plain ✕.
+
 ## 0.1.0-alpha.13
 
 - **`brydio dev` runs an app's custom tools.** It sends the built handlers
