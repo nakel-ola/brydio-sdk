@@ -22,7 +22,7 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
-## 0.1.0-alpha.0.1.0-alpha.16
+## 0.1.0-alpha.16
 
 - `bry-property` members: a single assignee is named beside their face (except `display="icon"` and `"dot"`), as in Multica's property rows.
 
