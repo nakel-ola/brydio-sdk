@@ -204,8 +204,9 @@ drawAs(
 
       said = people.length ? people.map(person => person.name).join(', ') : placeholder || 'Assign';
       muted = people.length === 0;
+      // One person is named beside their face, as Multica's property row does.
       face_ = people.length
-        ? faces(people, max)
+        ? html`${faces(people, max)}${people.length === 1 && display !== 'icon' && display !== 'dot' ? html`<span class="said">${people[0]!.name}</span>` : nothing}`
         : html`${display === 'pill' ? nothing : icon('userAdd', 14)}${display === 'icon' ? nothing : html`<span>${said}</span>`}`;
       rows = [
         ...people.map((person, index) => ({
