@@ -96,6 +96,7 @@ var LABEL_MAX = 200;
 var GAPS = ["1", "2", "3", "4", "5", "6", "7", "8"];
 var PADDINGS = ["2", "3", "4", "5", "6"];
 var TONES = ["neutral", "brand", "success", "warn", "danger"];
+var HUES = ["gray", "red", "orange", "yellow", "green", "teal", "blue", "indigo", "purple", "pink"];
 var SIZES = ["sm", "md", "lg"];
 var INPUT_MAX = 1000;
 var SELECT_MAX = 100;
@@ -378,6 +379,7 @@ var CATALOGUE = {
     props: {
       text: { kind: "text", max: LABEL_MAX },
       tone: { kind: "enum", values: TONES },
+      hue: { kind: "enum", values: HUES },
       variant: { kind: "enum", values: ["default", "count"] }
     },
     required: ["text"],
@@ -387,6 +389,7 @@ var CATALOGUE = {
   "bry-avatar": {
     props: {
       name: { kind: "text", max: LABEL_MAX },
+      memberId: { kind: "text", max: KEY_MAX },
       size: { kind: "enum", values: SIZES }
     },
     required: ["name"],
@@ -599,6 +602,7 @@ var CATALOGUE = {
       empty: { kind: "text", max: LABEL_MAX },
       glyph: { kind: "enum", values: STATE_GROUPS },
       tone: { kind: "enum", values: TONES },
+      hue: { kind: "enum", values: HUES },
       collapsible: { kind: "boolean" },
       collapsed: { kind: "boolean" },
       addable: { kind: "boolean" },
@@ -618,10 +622,17 @@ var CATALOGUE = {
     props: {
       text: { kind: "text", max: MARKDOWN_MAX },
       expanded: { kind: "boolean" },
-      quote: { kind: "text", max: LABEL_MAX }
+      quote: { kind: "text", max: LABEL_MAX },
+      references: {
+        kind: "list",
+        max: 500,
+        of: { kind: "shape", fields: { text: { kind: "text", max: LABEL_MAX }, route: { kind: "text", max: LABEL_MAX } }, required: ["text", "route"] }
+      },
+      find: { kind: "text", max: LABEL_MAX },
+      findIndex: { kind: "int", min: 0, max: 1e5 }
     },
     required: ["text"],
-    events: ["quote"],
+    events: ["quote", "open", "find"],
     children: false
   },
   "bry-diff": {
@@ -1348,6 +1359,7 @@ var CATALOGUE = {
             value: { kind: "text", max: KEY_MAX },
             label: { kind: "text", max: LABEL_MAX },
             tone: { kind: "enum", values: TONES },
+            hue: { kind: "enum", values: HUES },
             group: { kind: "enum", values: STATE_GROUPS },
             mark: { kind: "enum", values: MARKS }
           },
@@ -1393,7 +1405,7 @@ var CATALOGUE = {
       labels: {
         kind: "list",
         max: 12,
-        of: { kind: "shape", fields: { label: { kind: "text", max: LABEL_MAX }, tone: { kind: "enum", values: TONES } }, required: ["label"] }
+        of: { kind: "shape", fields: { label: { kind: "text", max: LABEL_MAX }, tone: { kind: "enum", values: TONES }, hue: { kind: "enum", values: HUES } }, required: ["label"] }
       },
       assignees: {
         kind: "list",
@@ -1515,6 +1527,7 @@ var CATALOGUE = {
                   label: { kind: "text", max: LABEL_MAX },
                   mark: { kind: "enum", values: MARKS },
                   tone: { kind: "enum", values: TONES },
+                  hue: { kind: "enum", values: HUES },
                   count: { kind: "int", min: 0, max: 1e6 }
                 },
                 required: ["value", "label"]
@@ -1718,7 +1731,14 @@ var CATALOGUE = {
       },
       disabled: { kind: "boolean" },
       autofocus: { kind: "boolean" },
-      error: { kind: "text", max: LABEL_MAX }
+      error: { kind: "text", max: LABEL_MAX },
+      attachments: { kind: "boolean" },
+      mentionAll: { kind: "boolean" },
+      references: {
+        kind: "list",
+        max: 500,
+        of: { kind: "shape", fields: { value: { kind: "text", max: KEY_MAX }, label: { kind: "text", max: LABEL_MAX } }, required: ["value", "label"] }
+      }
     },
     events: ["change", "blur", "submit"],
     children: false
@@ -1777,7 +1797,7 @@ var CATALOGUE = {
       marks: {
         kind: "list",
         max: 4,
-        of: { kind: "shape", fields: { mark: { kind: "enum", values: MARKS }, tone: { kind: "enum", values: TONES }, name: { kind: "text", max: LABEL_MAX } }, required: ["mark"] }
+        of: { kind: "shape", fields: { mark: { kind: "enum", values: MARKS }, tone: { kind: "enum", values: TONES }, hue: { kind: "enum", values: HUES }, name: { kind: "text", max: LABEL_MAX } }, required: ["mark"] }
       }
     },
     required: ["label"],

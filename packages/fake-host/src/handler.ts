@@ -160,7 +160,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
         secrets.set(key, value);
       }),
     }),
-    caller: Object.freeze({ userId: options.caller?.userId ?? 'user_test', origin: options.caller?.origin ?? 'assistant' }),
+    caller: Object.freeze({ userId: options.caller?.userId ?? 'user_test', origin: options.caller?.origin ?? 'assistant', role: options.caller?.role ?? 'owner' }),
   });
 
   return { client, secrets, calls, held };

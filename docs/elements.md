@@ -268,6 +268,7 @@ Holds nothing: it is drawn from its settings alone.
 |---|---|---|
 | `text` | text, at most 200 characters | yes |
 | `tone` | `neutral`, `brand`, `success`, `warn`, `danger` | no |
+| `hue` | `gray`, `red`, `orange`, `yellow`, `green`, `teal`, `blue`, `indigo`, `purple`, `pink` | no |
 | `variant` | `default`, `count` | no |
 
 Tells the app nothing.
@@ -279,6 +280,7 @@ Holds nothing: it is drawn from its settings alone.
 | Setting | Takes | Needed |
 |---|---|---|
 | `name` | text, at most 200 characters | yes |
+| `memberId` | text, at most 128 characters | no |
 | `size` | `sm`, `md`, `lg` | no |
 
 Tells the app nothing.
@@ -481,6 +483,7 @@ Holds other elements or text.
 | `empty` | text, at most 200 characters | no |
 | `glyph` | `backlog`, `unstarted`, `started`, `completed`, `cancelled` | no |
 | `tone` | `neutral`, `brand`, `success`, `warn`, `danger` | no |
+| `hue` | `gray`, `red`, `orange`, `yellow`, `green`, `teal`, `blue`, `indigo`, `purple`, `pink` | no |
 | `collapsible` | `true` or `false` | no |
 | `collapsed` | `true` or `false` | no |
 | `addable` | `true` or `false` | no |
@@ -503,8 +506,11 @@ Holds nothing: it is drawn from its settings alone.
 | `text` | text, at most 50,000 characters | yes |
 | `expanded` | `true` or `false` | no |
 | `quote` | text, at most 200 characters | no |
+| `references` | a list of at most 500: a record of `text`, `route` (needs `text`, `route`) | no |
+| `find` | text, at most 200 characters | no |
+| `findIndex` | a whole number from 0 to 100000 | no |
 
-Tells the app: `quote`.
+Tells the app: `quote`, `open`, `find`.
 
 ## `bry-diff`
 
@@ -1147,7 +1153,7 @@ Holds nothing: it is drawn from its settings alone.
 | `label` | text, at most 200 characters | yes |
 | `value` | text, at most 128 characters | no |
 | `values` | a list of at most 200: text, at most 128 characters | no |
-| `options` | a list of at most 200: a record of `value`, `label`, `tone`, `group`, `mark` (needs `value`, `label`) | no |
+| `options` | a list of at most 200: a record of `value`, `label`, `tone`, `hue`, `group`, `mark` (needs `value`, `label`) | no |
 | `placeholder` | text, at most 200 characters | no |
 | `max` | a whole number from 1 to 5 | no |
 | `clearable` | `true` or `false` | no |
@@ -1184,7 +1190,7 @@ Holds other elements or text.
 | `priority` | `urgent`, `high`, `medium`, `low`, `none` | no |
 | `description` | text, at most 200 characters | no |
 | `project` | text, at most 200 characters | no |
-| `labels` | a list of at most 12: a record of `label`, `tone` (needs `label`) | no |
+| `labels` | a list of at most 12: a record of `label`, `tone`, `hue` (needs `label`) | no |
 | `assignees` | a list of at most 20: a record of `id`, `name` (needs `id`, `name`) | no |
 | `due` | text, at most 10 characters | no |
 | `updated` | text, at most 40 characters | no |
@@ -1407,6 +1413,9 @@ Holds nothing: it is drawn from its settings alone.
 | `disabled` | `true` or `false` | no |
 | `autofocus` | `true` or `false` | no |
 | `error` | text, at most 200 characters | no |
+| `attachments` | `true` or `false` | no |
+| `mentionAll` | `true` or `false` | no |
+| `references` | a list of at most 500: a record of `value`, `label` (needs `value`, `label`) | no |
 
 Tells the app: `change`, `blur`, `submit`.
 
@@ -1470,6 +1479,6 @@ Holds nothing: it is drawn from its settings alone.
 | `label` | text, at most 200 characters | yes |
 | `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `swimlaneLayout`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
 | `text` | text, at most 200 characters | no |
-| `marks` | a list of at most 4: a record of `mark`, `tone`, `name` (needs `mark`) | no |
+| `marks` | a list of at most 4: a record of `mark`, `tone`, `hue`, `name` (needs `mark`) | no |
 
 Tells the app: `press`, `remove`.

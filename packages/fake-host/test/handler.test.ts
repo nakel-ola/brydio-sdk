@@ -76,8 +76,8 @@ describe('a handler’s secrets in the fake host', () => {
     const who: Handler = async (_input, { caller }) => ({ caller, keys: Object.keys(caller) });
 
     expect((await runHandler(who, {}, { caller: { userId: 'user_ada', origin: 'screen' } })).result).toEqual({
-      caller: { userId: 'user_ada', origin: 'screen' },
-      keys: ['userId', 'origin'],
+      caller: { userId: 'user_ada', origin: 'screen', role: 'owner' },
+      keys: ['userId', 'origin', 'role'],
     });
   });
 });

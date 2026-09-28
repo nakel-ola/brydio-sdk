@@ -106,6 +106,8 @@ export interface HostContext {
   route: { path: string };
   selection?: unknown;
   size: { width: number; height: number };
+  /** The viewer's role in the workspace; never who they are. Absent from an older Brydio. */
+  role?: 'owner' | 'admin' | 'member';
 }
 
 export interface AppInfo {

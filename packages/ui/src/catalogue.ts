@@ -58,6 +58,8 @@ export const PADDINGS = ['2', '3', '4', '5', '6'] as const;
  * so the catalogue can't offer one the stylesheet doesn't have.
  */
 export const TONES = ['neutral', 'brand', 'success', 'warn', 'danger'] as const;
+/** A label's colour, Multica's ten presets; drawn from Brydio's own tokens. `hue` wins over `tone`. */
+export const HUES = ['gray', 'red', 'orange', 'yellow', 'green', 'teal', 'blue', 'indigo', 'purple', 'pink'] as const;
 export const SIZES = ['sm', 'md', 'lg'] as const;
 
 /** The most a one-line field holds. */
@@ -473,6 +475,7 @@ export const CATALOGUE = {
     props: {
       text: { kind: 'text', max: LABEL_MAX },
       tone: { kind: 'enum', values: TONES },
+      hue: { kind: 'enum', values: HUES },
       variant: { kind: 'enum', values: ['default', 'count'] },
     },
     required: ['text'],
@@ -483,6 +486,8 @@ export const CATALOGUE = {
     // Initials only: a picture address would let an app load anything from anywhere.
     props: {
       name: { kind: 'text', max: LABEL_MAX },
+      // A workspace member's id: Brydio draws their card (name, role, email) on hover or focus.
+      memberId: { kind: 'text', max: KEY_MAX },
       size: { kind: 'enum', values: SIZES },
     },
     required: ['name'],
@@ -756,6 +761,7 @@ export const CATALOGUE = {
       // raises `submit` with `{ value }`, Escape `cancel`; `busy` shows saving.
       glyph: { kind: 'enum', values: STATE_GROUPS },
       tone: { kind: 'enum', values: TONES },
+      hue: { kind: 'enum', values: HUES },
       collapsible: { kind: 'boolean' },
       collapsed: { kind: 'boolean' },
       addable: { kind: 'boolean' },
@@ -784,9 +790,18 @@ export const CATALOGUE = {
       text: { kind: 'text', max: MARKDOWN_MAX },
       expanded: { kind: 'boolean' },
       quote: { kind: 'text', max: LABEL_MAX },
+      // Whole-word identifiers drawn as links: pressing one raises `open` with `{ route }`.
+      references: {
+        kind: 'list',
+        max: 500,
+        of: { kind: 'shape', fields: { text: { kind: 'text', max: LABEL_MAX }, route: { kind: 'text', max: LABEL_MAX } }, required: ['text', 'route'] },
+      },
+      // Words to find: every match marked; `find` raises `{ count }`; `findIndex` is the current one.
+      find: { kind: 'text', max: LABEL_MAX },
+      findIndex: { kind: 'int', min: 0, max: 100_000 },
     },
     required: ['text'],
-    events: ['quote'],
+    events: ['quote', 'open', 'find'],
     children: false,
   },
   'bry-diff': {
@@ -1612,7 +1627,7 @@ export const CATALOGUE = {
           fields: {
             value: { kind: 'text', max: KEY_MAX },
             label: { kind: 'text', max: LABEL_MAX },
-            tone: { kind: 'enum', values: TONES },
+            tone: { kind: 'enum', values: TONES }, hue: { kind: 'enum', values: HUES },
             group: { kind: 'enum', values: STATE_GROUPS },
             mark: { kind: 'enum', values: MARKS },
           },
@@ -1669,7 +1684,7 @@ export const CATALOGUE = {
       labels: {
         kind: 'list',
         max: 12,
-        of: { kind: 'shape', fields: { label: { kind: 'text', max: LABEL_MAX }, tone: { kind: 'enum', values: TONES } }, required: ['label'] },
+        of: { kind: 'shape', fields: { label: { kind: 'text', max: LABEL_MAX }, tone: { kind: 'enum', values: TONES }, hue: { kind: 'enum', values: HUES } }, required: ['label'] },
       },
       assignees: {
         kind: 'list',
@@ -1807,7 +1822,7 @@ export const CATALOGUE = {
                   value: { kind: 'text', max: KEY_MAX },
                   label: { kind: 'text', max: LABEL_MAX },
                   mark: { kind: 'enum', values: MARKS },
-                  tone: { kind: 'enum', values: TONES },
+                  tone: { kind: 'enum', values: TONES }, hue: { kind: 'enum', values: HUES },
                   count: { kind: 'int', min: 0, max: 1_000_000 },
                 },
                 required: ['value', 'label'],
@@ -2048,6 +2063,16 @@ export const CATALOGUE = {
       disabled: { kind: 'boolean' },
       autofocus: { kind: 'boolean' },
       error: { kind: 'text', max: LABEL_MAX },
+      // Files attached, dropped or pasted: Brydio uploads them and writes `![name](url)` or `!file[name](url)`.
+      attachments: { kind: 'boolean' },
+      // `@all` offered among the mentions.
+      mentionAll: { kind: 'boolean' },
+      // What `#` offers: choosing one writes its `value` (an identifier, TQ-2).
+      references: {
+        kind: 'list',
+        max: 500,
+        of: { kind: 'shape', fields: { value: { kind: 'text', max: KEY_MAX }, label: { kind: 'text', max: LABEL_MAX } }, required: ['value', 'label'] },
+      },
     },
     events: ['change', 'blur', 'submit'],
     children: false,
@@ -2118,7 +2143,7 @@ export const CATALOGUE = {
       marks: {
         kind: 'list',
         max: 4,
-        of: { kind: 'shape', fields: { mark: { kind: 'enum', values: MARKS }, tone: { kind: 'enum', values: TONES }, name: { kind: 'text', max: LABEL_MAX } }, required: ['mark'] },
+        of: { kind: 'shape', fields: { mark: { kind: 'enum', values: MARKS }, tone: { kind: 'enum', values: TONES }, hue: { kind: 'enum', values: HUES }, name: { kind: 'text', max: LABEL_MAX } }, required: ['mark'] },
       },
     },
     required: ['label'],

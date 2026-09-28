@@ -32,9 +32,14 @@
 export type HandlerOrigin = 'assistant' | 'screen' | 'folder';
 
 /** Who is calling. An id to compare and record, never something that authenticates. */
+/** The caller's place in the workspace: its creator, an admin, or anyone else. */
+export type WorkspaceRole = 'owner' | 'admin' | 'member';
+
 export interface HandlerCaller {
   readonly userId: string;
   readonly origin: HandlerOrigin;
+  /** Their role in the workspace, so a handler can let an admin do more (delete others' comments). */
+  readonly role: WorkspaceRole;
 }
 
 /** A record as a handler reads it: its fields, flat, beside Brydio's own. */

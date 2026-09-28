@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "6f922f7bc42e19c652d54c25ffbc85ddf8a3f736",
+    "commit": "eb41ddc2bb265dff685e7b4ebd56151afa00a22d",
     "dirty": true
   },
   "contracts": {
@@ -502,6 +502,21 @@
                 "danger"
               ]
             },
+            "hue": {
+              "kind": "enum",
+              "values": [
+                "gray",
+                "red",
+                "orange",
+                "yellow",
+                "green",
+                "teal",
+                "blue",
+                "indigo",
+                "purple",
+                "pink"
+              ]
+            },
             "variant": {
               "kind": "enum",
               "values": [
@@ -529,6 +544,10 @@
                 "md",
                 "lg"
               ]
+            },
+            "memberId": {
+              "kind": "text",
+              "max": 128
             }
           },
           "required": [
@@ -1389,6 +1408,21 @@
                 "danger"
               ]
             },
+            "hue": {
+              "kind": "enum",
+              "values": [
+                "gray",
+                "red",
+                "orange",
+                "yellow",
+                "green",
+                "teal",
+                "blue",
+                "indigo",
+                "purple",
+                "pink"
+              ]
+            },
             "collapsible": {
               "kind": "boolean"
             },
@@ -1547,13 +1581,45 @@
             "quote": {
               "kind": "text",
               "max": 200
+            },
+            "references": {
+              "kind": "list",
+              "max": 500,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "text": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "route": {
+                    "kind": "text",
+                    "max": 200
+                  }
+                },
+                "required": [
+                  "text",
+                  "route"
+                ]
+              }
+            },
+            "find": {
+              "kind": "text",
+              "max": 200
+            },
+            "findIndex": {
+              "kind": "int",
+              "min": 0,
+              "max": 100000
             }
           },
           "required": [
             "text"
           ],
           "events": [
-            "quote"
+            "quote",
+            "open",
+            "find"
           ],
           "children": false
         },
@@ -4161,6 +4227,21 @@
                       "danger"
                     ]
                   },
+                  "hue": {
+                    "kind": "enum",
+                    "values": [
+                      "gray",
+                      "red",
+                      "orange",
+                      "yellow",
+                      "green",
+                      "teal",
+                      "blue",
+                      "indigo",
+                      "purple",
+                      "pink"
+                    ]
+                  },
                   "group": {
                     "kind": "enum",
                     "values": [
@@ -4336,6 +4417,21 @@
                       "success",
                       "warn",
                       "danger"
+                    ]
+                  },
+                  "hue": {
+                    "kind": "enum",
+                    "values": [
+                      "gray",
+                      "red",
+                      "orange",
+                      "yellow",
+                      "green",
+                      "teal",
+                      "blue",
+                      "indigo",
+                      "purple",
+                      "pink"
                     ]
                   }
                 },
@@ -5280,6 +5376,21 @@
                             "danger"
                           ]
                         },
+                        "hue": {
+                          "kind": "enum",
+                          "values": [
+                            "gray",
+                            "red",
+                            "orange",
+                            "yellow",
+                            "green",
+                            "teal",
+                            "blue",
+                            "indigo",
+                            "purple",
+                            "pink"
+                          ]
+                        },
                         "count": {
                           "kind": "int",
                           "min": 0,
@@ -5910,6 +6021,33 @@
                 ]
               }
             },
+            "mentionAll": {
+              "kind": "boolean"
+            },
+            "references": {
+              "kind": "list",
+              "max": 500,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "value": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  }
+                },
+                "required": [
+                  "value",
+                  "label"
+                ]
+              }
+            },
+            "attachments": {
+              "kind": "boolean"
+            },
             "disabled": {
               "kind": "boolean"
             },
@@ -6236,6 +6374,21 @@
                       "success",
                       "warn",
                       "danger"
+                    ]
+                  },
+                  "hue": {
+                    "kind": "enum",
+                    "values": [
+                      "gray",
+                      "red",
+                      "orange",
+                      "yellow",
+                      "green",
+                      "teal",
+                      "blue",
+                      "indigo",
+                      "purple",
+                      "pink"
                     ]
                   },
                   "name": {
@@ -6613,6 +6766,16 @@
       "--code-punctuation on --bg-sunken",
       "--code-inserted on --code-inserted-bg",
       "--code-deleted on --code-deleted-bg",
+      "--fg on --label-gray-soft",
+      "--fg on --label-red-soft",
+      "--fg on --label-orange-soft",
+      "--fg on --label-yellow-soft",
+      "--fg on --label-green-soft",
+      "--fg on --label-teal-soft",
+      "--fg on --label-blue-soft",
+      "--fg on --label-indigo-soft",
+      "--fg on --label-purple-soft",
+      "--fg on --label-pink-soft",
       "--fg-muted on --bg-app",
       "--fg-soft on --bg-app",
       "--fg-muted on --bg-surface",
@@ -7769,8 +7932,8 @@
       "tamperedChecks": false
     },
     "tokens-css": {
-      "sha256": "b25543024fd50bda8385a6e3f252ca31d47a98dce3424d6b77de9a4f5eb56b23",
-      "bytes": 31638
+      "sha256": "229d0e8528292a9b4b27f6bca7b2d869ffdf179194e24d72d9de264e40b8f78b",
+      "bytes": 35879
     },
     "tool-writes": [
       "create",

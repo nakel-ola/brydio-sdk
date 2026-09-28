@@ -336,6 +336,10 @@ export interface ElementEventDetails {
   'bry-markdown': {
     /** The words the person selected, when they pressed the `quote` button. */
     quote: { text: string };
+    /** A reference pressed: the app's route for it. */
+    open: { route: string };
+    /** How many matches `find` has now. */
+    find: { count: number };
   };
   'bry-comment': {
     /** The action chosen. */

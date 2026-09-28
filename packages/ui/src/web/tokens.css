@@ -201,6 +201,48 @@
   --teal-500: oklch(0.655 0.112 192); /* #04a6a2 */
   --teal-600: oklch(0.56 0.096 192); /* #018683 */
 
+  /* Label hues (owner decision, 29 Sep 2026): the palette an app may tag a
+     label with, by name, as Multica's label picker offers it — gray, red,
+     orange, yellow, green, teal, blue, indigo, purple, pink. Gray is the
+     neutral ramp's. 500 is the dot on light, 400 on dark; 100 and 900 are
+     the chip's tint behind ink in each theme. Labels only. */
+  --lbl-red-100: oklch(0.955 0.035 25); /* #ffe8e4 */
+  --lbl-red-400: oklch(0.73 0.15 25); /* #f87e77 */
+  --lbl-red-500: oklch(0.64 0.17 25); /* #e15955 */
+  --lbl-red-900: oklch(0.31 0.06 25); /* #4a2321 */
+  --lbl-orange-100: oklch(0.955 0.035 55); /* #ffebda */
+  --lbl-orange-400: oklch(0.73 0.15 55); /* #ee8b3e */
+  --lbl-orange-500: oklch(0.64 0.17 55); /* #d76900 */
+  --lbl-orange-900: oklch(0.31 0.06 55); /* #47270f */
+  --lbl-yellow-100: oklch(0.965 0.05 95); /* #fef4ce */
+  --lbl-yellow-400: oklch(0.85 0.15 95); /* #edcc48 */
+  --lbl-yellow-500: oklch(0.78 0.16 95); /* #d8b501 */
+  --lbl-yellow-900: oklch(0.32 0.055 95); /* #3c320d */
+  --lbl-green-100: oklch(0.955 0.035 150); /* #e0f7e4 */
+  --lbl-green-400: oklch(0.73 0.15 150); /* #57c173 */
+  --lbl-green-500: oklch(0.64 0.16 150); /* #2aa654 */
+  --lbl-green-900: oklch(0.31 0.06 150); /* #17391f */
+  --lbl-teal-100: oklch(0.955 0.035 185); /* #d7f8f3 */
+  --lbl-teal-400: oklch(0.76 0.12 185); /* #3bcabb */
+  --lbl-teal-500: oklch(0.66 0.12 185); /* #00a99c */
+  --lbl-teal-900: oklch(0.31 0.05 185); /* #083834 */
+  --lbl-blue-100: oklch(0.955 0.035 255); /* #e1f2ff */
+  --lbl-blue-400: oklch(0.73 0.15 255); /* #62aaff */
+  --lbl-blue-500: oklch(0.64 0.17 255); /* #388cf0 */
+  --lbl-blue-900: oklch(0.31 0.06 255); /* #1a314e */
+  --lbl-indigo-100: oklch(0.955 0.035 280); /* #ebeeff */
+  --lbl-indigo-400: oklch(0.73 0.15 280); /* #969bff */
+  --lbl-indigo-500: oklch(0.64 0.17 280); /* #7a7cf0 */
+  --lbl-indigo-900: oklch(0.31 0.06 280); /* #2b2c4e */
+  --lbl-purple-100: oklch(0.955 0.035 305); /* #f5ebff */
+  --lbl-purple-400: oklch(0.73 0.15 305); /* #be8df3 */
+  --lbl-purple-500: oklch(0.64 0.17 305); /* #a56cde */
+  --lbl-purple-900: oklch(0.31 0.06 305); /* #372849 */
+  --lbl-pink-100: oklch(0.955 0.035 350); /* #ffe7f3 */
+  --lbl-pink-400: oklch(0.73 0.15 350); /* #ec7db5 */
+  --lbl-pink-500: oklch(0.64 0.17 350); /* #d4599b */
+  --lbl-pink-900: oklch(0.31 0.06 350); /* #472335 */
+
   /* ======================================================================
      Tier 2: semantic — light
      Every token below MUST also exist in `.dark`. See check:tokens.
@@ -364,6 +406,30 @@
   --chart-6: var(--violet-500);
   --chart-grid: var(--line-faint);
   --chart-axis: var(--fg-faint);
+
+  /* ---- Labels ---------------------------------------------------------
+     A label's dot and the tint of its chip. The chip's text is ink, so
+     every tint clears 4.5:1 under `--fg` (`check:contrast`). */
+  --label-gray: var(--n-500);
+  --label-gray-soft: var(--n-100);
+  --label-red: var(--lbl-red-500);
+  --label-red-soft: var(--lbl-red-100);
+  --label-orange: var(--lbl-orange-500);
+  --label-orange-soft: var(--lbl-orange-100);
+  --label-yellow: var(--lbl-yellow-500);
+  --label-yellow-soft: var(--lbl-yellow-100);
+  --label-green: var(--lbl-green-500);
+  --label-green-soft: var(--lbl-green-100);
+  --label-teal: var(--lbl-teal-500);
+  --label-teal-soft: var(--lbl-teal-100);
+  --label-blue: var(--lbl-blue-500);
+  --label-blue-soft: var(--lbl-blue-100);
+  --label-indigo: var(--lbl-indigo-500);
+  --label-indigo-soft: var(--lbl-indigo-100);
+  --label-purple: var(--lbl-purple-500);
+  --label-purple-soft: var(--lbl-purple-100);
+  --label-pink: var(--lbl-pink-500);
+  --label-pink-soft: var(--lbl-pink-100);
 
   /* ---- Code -----------------------------------------------------------
      Syntax colours for code in answers, on `--bg-sunken`. Every one clears
@@ -572,6 +638,28 @@
   --chart-6: var(--violet-500);
   --chart-grid: var(--line);
   --chart-axis: var(--fg-faint);
+
+  /* Labels: a brighter dot, and a deep tint under light ink. */
+  --label-gray: var(--n-450);
+  --label-gray-soft: var(--n-800);
+  --label-red: var(--lbl-red-400);
+  --label-red-soft: var(--lbl-red-900);
+  --label-orange: var(--lbl-orange-400);
+  --label-orange-soft: var(--lbl-orange-900);
+  --label-yellow: var(--lbl-yellow-400);
+  --label-yellow-soft: var(--lbl-yellow-900);
+  --label-green: var(--lbl-green-400);
+  --label-green-soft: var(--lbl-green-900);
+  --label-teal: var(--lbl-teal-400);
+  --label-teal-soft: var(--lbl-teal-900);
+  --label-blue: var(--lbl-blue-400);
+  --label-blue-soft: var(--lbl-blue-900);
+  --label-indigo: var(--lbl-indigo-400);
+  --label-indigo-soft: var(--lbl-indigo-900);
+  --label-purple: var(--lbl-purple-400);
+  --label-purple-soft: var(--lbl-purple-900);
+  --label-pink: var(--lbl-pink-400);
+  --label-pink-soft: var(--lbl-pink-900);
 
   /* Code, stepped up for the dark sunken fill. */
   --code-fg: var(--fg);
