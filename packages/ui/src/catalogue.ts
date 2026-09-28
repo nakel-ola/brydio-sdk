@@ -328,7 +328,7 @@ export const CATALOGUE = {
       // foot of the screen, as a bar of bulk actions does.
       variant: {
         kind: 'enum',
-        values: ['default', 'page', 'toolbar', 'scroll', 'section', 'section-header', 'filter-bar', 'page-body', 'action-bar'],
+        values: ['default', 'page', 'toolbar', 'scroll', 'section', 'section-header', 'filter-bar', 'page-body', 'action-bar', 'inset'],
       },
     },
     events: [],

@@ -126,7 +126,7 @@ Holds other elements or text.
 | `align` | `start`, `center`, `end`, `stretch` | no |
 | `justify` | `start`, `center`, `end`, `between` | no |
 | `wrap` | `true` or `false` | no |
-| `variant` | `default`, `page`, `toolbar`, `scroll`, `section`, `section-header`, `filter-bar`, `page-body`, `action-bar` | no |
+| `variant` | `default`, `page`, `toolbar`, `scroll`, `section`, `section-header`, `filter-bar`, `page-body`, `action-bar`, `inset` | no |
 
 Tells the app nothing.
 

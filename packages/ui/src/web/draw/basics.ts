@@ -87,6 +87,14 @@ drawAs(
           padding-inline: 1.5rem;
         }
       }
+      /* A full-width work area with the page's gutter: a board, a list. */
+      :host([data-variant='inset']) {
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+        overflow: auto;
+        padding: 0.75rem 1rem 1rem;
+      }
       /* A bar of bulk actions, floating at the foot of the screen. */
       :host([data-variant='action-bar']) {
         position: sticky;

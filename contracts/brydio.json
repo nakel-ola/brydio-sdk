@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "2f9f61ab3d2b078b42451f50a526cf60e5dcb7db",
+    "commit": "eb5de32bcc6fff566fb556840d40e420ada380b4",
     "dirty": true
   },
   "contracts": {
@@ -70,7 +70,8 @@
                 "section-header",
                 "filter-bar",
                 "page-body",
-                "action-bar"
+                "action-bar",
+                "inset"
               ]
             }
           },
