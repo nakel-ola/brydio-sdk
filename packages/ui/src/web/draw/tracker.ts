@@ -867,6 +867,7 @@ type CommentAction = (typeof COMMENT_ACTIONS)[number];
 const QUICK_ACTIONS: readonly CommentAction[] = ['reply', 'edit'];
 const ACTION_ICON: Record<CommentAction, string> = {
   reply: 'reply',
+  quote: 'quote',
   edit: 'edit',
   resolve: 'check',
   copy: 'copy',
@@ -879,6 +880,8 @@ function actionLabel(action: CommentAction, resolved: boolean): string {
   switch (action) {
     case 'reply':
       return 'Reply';
+    case 'quote':
+      return 'Quote reply';
     case 'edit':
       return 'Edit';
     case 'resolve':

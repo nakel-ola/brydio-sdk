@@ -244,7 +244,7 @@ var ISO_TIME = 40;
 var GANTT_ZOOMS = ["day", "week", "month"];
 var GANTT_ROWS = 500;
 var ACTIVITY_MARKS = ["status", "priority", "assignee", "date", "title", "description", "duplicate", "created", "comment"];
-var COMMENT_ACTIONS = ["reply", "edit", "resolve", "copy", "copyLink", "subIssue", "delete"];
+var COMMENT_ACTIONS = ["reply", "quote", "edit", "resolve", "copy", "copyLink", "subIssue", "delete"];
 var EMOJI_MAX = 16;
 var SPREADSHEET_COLUMNS = 16;
 var RICH_TEXT_MAX = 50000;
@@ -612,10 +612,11 @@ var CATALOGUE = {
   "bry-markdown": {
     props: {
       text: { kind: "text", max: MARKDOWN_MAX },
-      expanded: { kind: "boolean" }
+      expanded: { kind: "boolean" },
+      quote: { kind: "text", max: LABEL_MAX }
     },
     required: ["text"],
-    events: [],
+    events: ["quote"],
     children: false
   },
   "bry-diff": {

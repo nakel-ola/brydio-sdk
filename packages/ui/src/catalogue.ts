@@ -302,7 +302,7 @@ export const GANTT_ROWS = 500;
 /** What an activity changed, each drawn with its own mark. */
 export const ACTIVITY_MARKS = ['status', 'priority', 'assignee', 'date', 'title', 'description', 'duplicate', 'created', 'comment'] as const;
 /** What can be done to a comment, in the order its menu lists them. */
-export const COMMENT_ACTIONS = ['reply', 'edit', 'resolve', 'copy', 'copyLink', 'subIssue', 'delete'] as const;
+export const COMMENT_ACTIONS = ['reply', 'quote', 'edit', 'resolve', 'copy', 'copyLink', 'subIssue', 'delete'] as const;
 /** An emoji is one character to a person, and a few to a string: a flag, a family. */
 export const EMOJI_MAX = 16;
 /** The most columns a spreadsheet has. */
@@ -770,12 +770,15 @@ export const CATALOGUE = {
     // shown as the characters it is; a link is `https` only and asks the
     // person first; a picture loads only from Brydio's own file store. Past
     // 4,000 characters the rest waits behind "Show more", unless `expanded`.
+    // With `quote` (a label, "Add to comment"), selecting some of the text
+    // offers that button; pressing it raises `quote` with `{ text }`.
     props: {
       text: { kind: 'text', max: MARKDOWN_MAX },
       expanded: { kind: 'boolean' },
+      quote: { kind: 'text', max: LABEL_MAX },
     },
     required: ['text'],
-    events: [],
+    events: ['quote'],
     children: false,
   },
   'bry-diff': {

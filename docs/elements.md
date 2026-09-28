@@ -498,8 +498,9 @@ Holds nothing: it is drawn from its settings alone.
 |---|---|---|
 | `text` | text, at most 50,000 characters | yes |
 | `expanded` | `true` or `false` | no |
+| `quote` | text, at most 200 characters | no |
 
-Tells the app nothing.
+Tells the app: `quote`.
 
 ## `bry-diff`
 
@@ -1309,7 +1310,7 @@ Holds other elements or text.
 | `collapsed` | `true` or `false` | no |
 | `replies` | a whole number from 0 to 9999 | no |
 | `repliers` | a list of at most 12: a record of `id`, `name` (needs `id`, `name`) | no |
-| `actions` | a list of at most 7: `reply`, `edit`, `resolve`, `copy`, `copyLink`, `subIssue`, `delete` | no |
+| `actions` | a list of at most 8: `reply`, `quote`, `edit`, `resolve`, `copy`, `copyLink`, `subIssue`, `delete` | no |
 | `highlighted` | `true` or `false` | no |
 | `loading` | `true` or `false` | no |
 

@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "18c1be027f1786a90cd58303269ea8819fd17a48",
+    "commit": "f156be12530430943eafeba287e3c07f2a00e325",
     "dirty": true
   },
   "contracts": {
@@ -1520,12 +1520,18 @@
             },
             "expanded": {
               "kind": "boolean"
+            },
+            "quote": {
+              "kind": "text",
+              "max": 200
             }
           },
           "required": [
             "text"
           ],
-          "events": [],
+          "events": [
+            "quote"
+          ],
           "children": false
         },
         "bry-diff": {
@@ -5513,11 +5519,12 @@
             },
             "actions": {
               "kind": "list",
-              "max": 7,
+              "max": 8,
               "of": {
                 "kind": "enum",
                 "values": [
                   "reply",
+                  "quote",
                   "edit",
                   "resolve",
                   "copy",

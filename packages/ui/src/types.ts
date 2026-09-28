@@ -325,9 +325,13 @@ export interface ElementEventDetails {
     /** The folded line was pressed: send the block again, unfolded. */
     expand: undefined;
   };
+  'bry-markdown': {
+    /** The words the person selected, when they pressed the `quote` button. */
+    quote: { text: string };
+  };
   'bry-comment': {
     /** The action chosen. */
-    action: { id: 'reply' | 'edit' | 'resolve' | 'copy' | 'copyLink' | 'subIssue' | 'delete' };
+    action: { id: 'reply' | 'quote' | 'edit' | 'resolve' | 'copy' | 'copyLink' | 'subIssue' | 'delete' };
     /** Whether the thread's replies are asked to be folded now. */
     toggle: { collapsed: boolean };
   };
