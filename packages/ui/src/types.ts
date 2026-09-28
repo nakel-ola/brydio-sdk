@@ -76,7 +76,8 @@ export interface EventDetails {
 export interface ElementEventDetails {
   'bry-input': {
     change: { value: string };
-    submit: { value: string };
+    /** Enter: what the field held; `shift` when Shift was held (step back, in a find bar). */
+    submit: { value: string; shift?: boolean };
     /** The person left the field: what it held. */
     blur: { value: string };
     /** Escape. */
