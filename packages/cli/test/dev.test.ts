@@ -93,6 +93,29 @@ async function run(root: string, server: ReturnType<typeof brydio>, more: Record
 }
 
 describe('brydio dev, signed in', () => {
+  test('says where Brydio shows the app when it is placed in the sidebars rather than a tab', async () => {
+    const root = tiny();
+    const server = brydio({
+      'POST /api/v1/apps/development': body => [201, {
+        id: 'dev_1',
+        instanceId: 'i_1',
+        placementId: 'pl_issues',
+        projectId: body.projectId,
+        build: 0,
+        placements: [
+          { id: 'pl_issues', kind: 'project-sidebar', projectId: body.projectId, screen: 'home', label: 'Issues' },
+          { id: 'pl_mine', kind: 'workspace-sidebar', projectId: null, screen: 'home', label: 'My issues' },
+        ],
+      }],
+    });
+    const { lines } = await run(root, server);
+    const said = lines.join('\n');
+
+    expect(said).toContain("Issues, in the project's sidebar: /apps/pl_issues");
+    expect(said).toContain("My issues, in the workspace's sidebar: /apps/pl_mine");
+    expect(said).not.toContain('?tab=');
+  });
+
   test('keeps a new app private, asks for the project once, and starts a development tab', async () => {
     const root = tiny();
     const server = brydio();

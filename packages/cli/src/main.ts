@@ -39,7 +39,7 @@ const HELP = `brydio — build and check a Brydio app
                              revoke <key> --yes   a lost key; never undone
                              --publisher <id|name>  which publisher, when you are in several
                              --api <url>    the API's address, instead of BRYDIO_API_URL
-  brydio dev [folder]        Build, serve dist/ on localhost, show it as a tab in a project, and build again on change
+  brydio dev [folder]        Build, serve dist/ on localhost, show it in a project where its manifest places it, and build again on change
                              --project <id> the project (asked once, then kept in .brydio/dev.json)
                              --api <url>    Brydio's API (BRYDIO_API_URL); uses BRYDIO_TOKEN
                              --port <n>     the port (5174)

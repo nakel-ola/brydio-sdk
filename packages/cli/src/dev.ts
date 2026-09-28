@@ -53,7 +53,13 @@ export interface DevOptions {
 export interface DevSession {
   url: string;
   /** The development app in Brydio, when signed in. */
-  readonly development: { id: string; projectId: string; placementId: string } | null;
+  readonly development: {
+    id: string;
+    projectId: string;
+    placementId: string;
+    /** Everywhere Brydio shows the app while it runs; absent from an older Brydio, which made one tab. */
+    placements?: { id: string; kind: string; projectId: string | null; label: string }[];
+  } | null;
   /** Builds now, as a saved change would. */
   rebuild(): Promise<BuildResult>;
   /** Stops watching and serving, and removes the tab from Brydio. */
@@ -277,15 +283,28 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
   }
 
   if (development) {
+    const places = development.placements?.filter(place => place.kind !== 'project-tab') ?? [];
+    const where = (kind: string) => (kind === 'workspace-sidebar' ? "the workspace's sidebar" : "the project's sidebar");
+
     out(
       [
         '',
         `Serving ${relative(root, outDir) || '.'}/ at ${url}.`,
-        `Open the project in Brydio: the "${titleOf(project.raw)}" tab is marked development, and only you can see it.`,
-        `  /projects/${development.projectId}?tab=app-${development.placementId}`,
-        hot
-          ? 'Every saved change builds again and is swapped into the open tab, keeping what is on it (or starts it over when it cannot be). Stop with Ctrl-C to remove the tab.'
-          : 'Every saved change builds again and starts the tab over with the new code. Stop with Ctrl-C to remove the tab.',
+        ...(places.length
+          ? [
+              `Brydio shows "${titleOf(project.raw)}" marked development, and only you can see it:`,
+              ...places.map(place => `  ${place.label}, in ${where(place.kind)}: /apps/${place.id}`),
+              hot
+                ? 'Every saved change builds again and is swapped into what is open, keeping what is on it (or starts it over when it cannot be). Stop with Ctrl-C to remove it.'
+                : 'Every saved change builds again and starts what is open over with the new code. Stop with Ctrl-C to remove it.',
+            ]
+          : [
+              `Open the project in Brydio: the "${titleOf(project.raw)}" tab is marked development, and only you can see it.`,
+              `  /projects/${development.projectId}?tab=app-${development.placementId}`,
+              hot
+                ? 'Every saved change builds again and is swapped into the open tab, keeping what is on it (or starts it over when it cannot be). Stop with Ctrl-C to remove the tab.'
+                : 'Every saved change builds again and starts the tab over with the new code. Stop with Ctrl-C to remove the tab.',
+            ]),
         '',
       ].join('\n'),
     );
