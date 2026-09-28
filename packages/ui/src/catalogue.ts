@@ -144,6 +144,7 @@ export const MENU_ICONS = [
   'status',
   'filter',
   'stateReview',
+  'swimlaneLayout',
 ] as const;
 
 /**
@@ -674,11 +675,14 @@ export const CATALOGUE = {
   'bry-split': {
     // Two panes, its two children, with a handle between. `ratio` is the
     // first pane's starting share in percent. Where there isn't room they stack.
+    // `side: 'sidebar'` keeps the second pane between a sidebar's widths; where
+    // the person leaves the handle is raised as `resize` with `{ ratio }`.
     props: {
       ratio: { kind: 'int', min: 20, max: 80 },
       label: { kind: 'text', max: LABEL_MAX },
+      side: { kind: 'enum', values: ['sidebar'] },
     },
-    events: [],
+    events: ['resize'],
     children: true,
   },
   'bry-checkbox': {
@@ -758,11 +762,15 @@ export const CATALOGUE = {
       addLabel: { kind: 'text', max: LABEL_MAX },
       adding: { kind: 'boolean' },
       busy: { kind: 'boolean' },
+      // A list group's select-all box: `check` with `{ checked }`; `mixed` when only some are.
+      checkable: { kind: 'boolean' },
+      checked: { kind: 'boolean' },
+      mixed: { kind: 'boolean' },
       // A "⋯" in a plan column's header, as "Hide column"; choosing raises `select`.
       menu: { kind: 'list', max: ROW_MENU_ITEMS, of: MENU_ITEM },
     },
     required: ['title'],
-    events: ['range', 'toggle', 'add', 'submit', 'cancel', 'select'],
+    events: ['range', 'toggle', 'add', 'submit', 'cancel', 'select', 'check'],
     children: true,
   },
   'bry-markdown': {
@@ -1616,9 +1624,15 @@ export const CATALOGUE = {
       clearable: { kind: 'boolean' },
       due: { kind: 'boolean' },
       disabled: { kind: 'boolean' },
+      // Up to three of the app's own actions under the picker: `more` with `{ id }`.
+      more: {
+        kind: 'list',
+        max: 3,
+        of: { kind: 'shape', fields: { id: { kind: 'text', max: KEY_MAX }, label: { kind: 'text', max: LABEL_MAX } }, required: ['id', 'label'] },
+      },
     },
     required: ['kind', 'label'],
-    events: ['change'],
+    events: ['change', 'more'],
     children: false,
   },
   'bry-quick-add': {
@@ -1965,6 +1979,10 @@ export const CATALOGUE = {
             pinned: { kind: 'boolean' },
             sortable: { kind: 'boolean' },
             hideable: { kind: 'boolean' },
+            // Dragged or moved from its menu: `reorder` with `{ keys }`. A resizable
+            // column's width is the person's, kept by Brydio, never the app's.
+            movable: { kind: 'boolean' },
+            resizable: { kind: 'boolean' },
           },
           required: ['key', 'heading'],
         },
@@ -1981,7 +1999,7 @@ export const CATALOGUE = {
       empty: { kind: 'text', max: LABEL_MAX },
     },
     required: ['columns'],
-    events: ['sort', 'hide', 'all'],
+    events: ['sort', 'hide', 'all', 'reorder'],
     children: true,
   },
   'bry-spreadsheet-row': {

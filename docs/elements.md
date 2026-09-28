@@ -166,7 +166,7 @@ Holds nothing: it is drawn from its settings alone.
 | `size` | `sm`, `md` | no |
 | `disabled` | `true` or `false` | no |
 | `working` | `true` or `false` | no |
-| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `swimlaneLayout`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
 | `hideLabel` | `true` or `false` | no |
 
 Tells the app: `press`.
@@ -317,7 +317,7 @@ Holds nothing: it is drawn from its settings alone.
 | `text` | text, at most 4,000 characters | no |
 | `action` | text, at most 200 characters | no |
 | `variant` | `default`, `plain` | no |
-| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `swimlaneLayout`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
 
 Tells the app: `action`.
 
@@ -420,8 +420,9 @@ Holds other elements or text.
 |---|---|---|
 | `ratio` | a whole number from 20 to 80 | no |
 | `label` | text, at most 200 characters | no |
+| `side` | `sidebar` | no |
 
-Tells the app nothing.
+Tells the app: `resize`.
 
 ## `bry-checkbox`
 
@@ -486,9 +487,12 @@ Holds other elements or text.
 | `addLabel` | text, at most 200 characters | no |
 | `adding` | `true` or `false` | no |
 | `busy` | `true` or `false` | no |
+| `checkable` | `true` or `false` | no |
+| `checked` | `true` or `false` | no |
+| `mixed` | `true` or `false` | no |
 | `menu` | a list of at most 60: a record of `id`, `label`, `icon`, `tone`, `separator`, `disabled`, `checked`, `parent` (needs `id`, `label`) | no |
 
-Tells the app: `range`, `toggle`, `add`, `submit`, `cancel`, `select`.
+Tells the app: `range`, `toggle`, `add`, `submit`, `cancel`, `select`, `check`.
 
 ## `bry-markdown`
 
@@ -650,11 +654,11 @@ Holds nothing: it is drawn from its settings alone.
 | `placeholder` | text, at most 200 characters | no |
 | `label` | text, at most 200 characters | no |
 | `kind` | `text`, `email`, `url`, `search` | no |
-| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `swimlaneLayout` | no |
 | `prefix` | text, at most 24 characters | no |
 | `suffix` | text, at most 24 characters | no |
 | `action` | text, at most 200 characters | no |
-| `actionIcon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview` | no |
+| `actionIcon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `swimlaneLayout` | no |
 | `maxLength` | a whole number from 1 to 1000 | no |
 | `disabled` | `true` or `false` | no |
 | `error` | text, at most 200 characters | no |
@@ -781,7 +785,7 @@ Holds nothing: it is drawn from its settings alone.
 |---|---|---|
 | `pressed` | `true` or `false` | no |
 | `label` | text, at most 200 characters | yes |
-| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `swimlaneLayout`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
 | `hideLabel` | `true` or `false` | no |
 | `variant` | `default`, `outline` | no |
 | `size` | `sm`, `md` | no |
@@ -968,7 +972,7 @@ Holds other elements or text.
 |---|---|---|
 | `title` | text, at most 200 characters | no |
 | `description` | text, at most 200 characters | no |
-| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `swimlaneLayout` | no |
 | `variant` | `default`, `outline`, `muted` | no |
 | `size` | `sm`, `md` | no |
 | `pressable` | `true` or `false` | no |
@@ -1149,8 +1153,9 @@ Holds nothing: it is drawn from its settings alone.
 | `clearable` | `true` or `false` | no |
 | `due` | `true` or `false` | no |
 | `disabled` | `true` or `false` | no |
+| `more` | a list of at most 3: a record of `id`, `label` (needs `id`, `label`) | no |
 
-Tells the app: `change`.
+Tells the app: `change`, `more`.
 
 ## `bry-quick-add`
 
@@ -1197,7 +1202,7 @@ Holds other elements or text.
 | Setting | Takes | Needed |
 |---|---|---|
 | `title` | text, at most 200 characters | yes |
-| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `swimlaneLayout`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
 | `subtitle` | text, at most 200 characters | no |
 | `back` | `true` or `false` | no |
 | `count` | a whole number from 0 to 1000000 | no |
@@ -1223,7 +1228,7 @@ Holds other elements or text.
 | `status` | `draft`, `upcoming`, `active`, `completed`, `cancelled`, `backlog`, `planned`, `started`, `paused`, `pending`, `accepted`, `declined`, `snoozed`, `duplicate` | no |
 | `statusLabel` | text, at most 200 characters | no |
 | `tone` | `neutral`, `brand`, `success`, `warn`, `danger` | no |
-| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `swimlaneLayout`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
 | `ring` | a whole number from 0 to 100 | no |
 | `metrics` | a list of at most 4: a record of `label`, `value`, `ring` (needs `label`, `value`) | no |
 | `menu` | a list of at most 60: a record of `id`, `label`, `icon`, `tone`, `separator`, `disabled`, `checked`, `parent` (needs `id`, `label`) | no |
@@ -1349,7 +1354,7 @@ Holds other elements or text.
 | Setting | Takes | Needed |
 |---|---|---|
 | `label` | text, at most 200 characters | no |
-| `columns` | a list of at most 16: a record of `key`, `heading`, `width`, `pinned`, `sortable`, `hideable` (needs `key`, `heading`) | yes |
+| `columns` | a list of at most 16: a record of `key`, `heading`, `width`, `pinned`, `sortable`, `hideable`, `movable`, `resizable` (needs `key`, `heading`) | yes |
 | `sort` | a record of `key`, `direction` (needs `key`, `direction`) | no |
 | `selectable` | `true` or `false` | no |
 | `selected` | a whole number from 0 to 100000 | no |
@@ -1357,7 +1362,7 @@ Holds other elements or text.
 | `loading` | `true` or `false` | no |
 | `empty` | text, at most 200 characters | no |
 
-Tells the app: `sort`, `hide`, `all`.
+Tells the app: `sort`, `hide`, `all`, `reorder`.
 
 ## `bry-spreadsheet-row`
 
@@ -1441,7 +1446,7 @@ Holds other elements or text.
 | Setting | Takes | Needed |
 |---|---|---|
 | `label` | text, at most 200 characters | yes |
-| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `swimlaneLayout`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
 | `readonly` | `true` or `false` | no |
 
 Tells the app nothing.
@@ -1463,7 +1468,7 @@ Holds nothing: it is drawn from its settings alone.
 | Setting | Takes | Needed |
 |---|---|---|
 | `label` | text, at most 200 characters | yes |
-| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
+| `icon` | `add`, `archive`, `calendar`, `check`, `copy`, `dismiss`, `docs`, `info`, `mail`, `members`, `notes`, `pin`, `rename`, `retry`, `search`, `settings`, `tasks`, `trash`, `account`, `activity`, `attach`, `bell`, `boardLayout`, `box`, `branch`, `calendarRange`, `channel`, `chart`, `cycle`, `download`, `externalLink`, `flag`, `ganttLayout`, `history`, `home`, `inbox`, `layers`, `link`, `listLayout`, `lock`, `maximise`, `panelRight`, `pause`, `play`, `progress`, `project`, `relation`, `sliders`, `tableLayout`, `tag`, `target`, `temporary`, `userAdd`, `status`, `filter`, `stateReview`, `swimlaneLayout`, `more`, `close`, `arrowRight`, `chevronRight`, `chevronDown`, `chevronUp` | no |
 | `text` | text, at most 200 characters | no |
 | `marks` | a list of at most 4: a record of `mark`, `tone`, `name` (needs `mark`) | no |
 

@@ -161,7 +161,8 @@ var MENU_ICONS = [
   "userAdd",
   "status",
   "filter",
-  "stateReview"
+  "stateReview",
+  "swimlaneLayout"
 ];
 var BUTTON_ICONS = [...MENU_ICONS, "more", "close", "arrowRight", "chevronRight", "chevronDown", "chevronUp"];
 var BOARD_CARDS = 1e5;
@@ -546,9 +547,10 @@ var CATALOGUE = {
   "bry-split": {
     props: {
       ratio: { kind: "int", min: 20, max: 80 },
-      label: { kind: "text", max: LABEL_MAX }
+      label: { kind: "text", max: LABEL_MAX },
+      side: { kind: "enum", values: ["sidebar"] }
     },
-    events: [],
+    events: ["resize"],
     children: true
   },
   "bry-checkbox": {
@@ -603,10 +605,13 @@ var CATALOGUE = {
       addLabel: { kind: "text", max: LABEL_MAX },
       adding: { kind: "boolean" },
       busy: { kind: "boolean" },
+      checkable: { kind: "boolean" },
+      checked: { kind: "boolean" },
+      mixed: { kind: "boolean" },
       menu: { kind: "list", max: ROW_MENU_ITEMS, of: MENU_ITEM }
     },
     required: ["title"],
-    events: ["range", "toggle", "add", "submit", "cancel", "select"],
+    events: ["range", "toggle", "add", "submit", "cancel", "select", "check"],
     children: true
   },
   "bry-markdown": {
@@ -1353,10 +1358,15 @@ var CATALOGUE = {
       max: { kind: "int", min: 1, max: 5 },
       clearable: { kind: "boolean" },
       due: { kind: "boolean" },
-      disabled: { kind: "boolean" }
+      disabled: { kind: "boolean" },
+      more: {
+        kind: "list",
+        max: 3,
+        of: { kind: "shape", fields: { id: { kind: "text", max: KEY_MAX }, label: { kind: "text", max: LABEL_MAX } }, required: ["id", "label"] }
+      }
     },
     required: ["kind", "label"],
-    events: ["change"],
+    events: ["change", "more"],
     children: false
   },
   "bry-quick-add": {
@@ -1649,7 +1659,9 @@ var CATALOGUE = {
             width: { kind: "enum", values: ["sm", "md", "lg", "fill"] },
             pinned: { kind: "boolean" },
             sortable: { kind: "boolean" },
-            hideable: { kind: "boolean" }
+            hideable: { kind: "boolean" },
+            movable: { kind: "boolean" },
+            resizable: { kind: "boolean" }
           },
           required: ["key", "heading"]
         }
@@ -1666,7 +1678,7 @@ var CATALOGUE = {
       empty: { kind: "text", max: LABEL_MAX }
     },
     required: ["columns"],
-    events: ["sort", "hide", "all"],
+    events: ["sort", "hide", "all", "reorder"],
     children: true
   },
   "bry-spreadsheet-row": {

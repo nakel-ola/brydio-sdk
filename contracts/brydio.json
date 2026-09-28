@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "f156be12530430943eafeba287e3c07f2a00e325",
+    "commit": "6f922f7bc42e19c652d54c25ffbc85ddf8a3f736",
     "dirty": true
   },
   "contracts": {
@@ -233,6 +233,7 @@
                 "status",
                 "filter",
                 "stateReview",
+                "swimlaneLayout",
                 "more",
                 "close",
                 "arrowRight",
@@ -656,7 +657,8 @@
                       "userAdd",
                       "status",
                       "filter",
-                      "stateReview"
+                      "stateReview",
+                      "swimlaneLayout"
                     ]
                   },
                   "tone": {
@@ -784,6 +786,7 @@
                 "status",
                 "filter",
                 "stateReview",
+                "swimlaneLayout",
                 "more",
                 "close",
                 "arrowRight",
@@ -1135,7 +1138,8 @@
                       "userAdd",
                       "status",
                       "filter",
-                      "stateReview"
+                      "stateReview",
+                      "swimlaneLayout"
                     ]
                   },
                   "tone": {
@@ -1223,9 +1227,17 @@
             "label": {
               "kind": "text",
               "max": 200
+            },
+            "side": {
+              "kind": "enum",
+              "values": [
+                "sidebar"
+              ]
             }
           },
-          "events": [],
+          "events": [
+            "resize"
+          ],
           "children": true
         },
         "bry-checkbox": {
@@ -1396,6 +1408,15 @@
             "busy": {
               "kind": "boolean"
             },
+            "checkable": {
+              "kind": "boolean"
+            },
+            "checked": {
+              "kind": "boolean"
+            },
+            "mixed": {
+              "kind": "boolean"
+            },
             "menu": {
               "kind": "list",
               "max": 60,
@@ -1468,7 +1489,8 @@
                       "userAdd",
                       "status",
                       "filter",
-                      "stateReview"
+                      "stateReview",
+                      "swimlaneLayout"
                     ]
                   },
                   "tone": {
@@ -1508,7 +1530,8 @@
             "add",
             "submit",
             "cancel",
-            "select"
+            "select",
+            "check"
           ],
           "children": true
         },
@@ -1748,7 +1771,8 @@
                       "userAdd",
                       "status",
                       "filter",
-                      "stateReview"
+                      "stateReview",
+                      "swimlaneLayout"
                     ]
                   },
                   "tone": {
@@ -1978,7 +2002,8 @@
                       "userAdd",
                       "status",
                       "filter",
-                      "stateReview"
+                      "stateReview",
+                      "swimlaneLayout"
                     ]
                   },
                   "hint": {
@@ -2094,7 +2119,8 @@
                       "userAdd",
                       "status",
                       "filter",
-                      "stateReview"
+                      "stateReview",
+                      "swimlaneLayout"
                     ]
                   },
                   "tone": {
@@ -2387,7 +2413,8 @@
                 "userAdd",
                 "status",
                 "filter",
-                "stateReview"
+                "stateReview",
+                "swimlaneLayout"
               ]
             },
             "prefix": {
@@ -2460,7 +2487,8 @@
                 "userAdd",
                 "status",
                 "filter",
-                "stateReview"
+                "stateReview",
+                "swimlaneLayout"
               ]
             },
             "maxLength": {
@@ -2610,7 +2638,8 @@
                             "userAdd",
                             "status",
                             "filter",
-                            "stateReview"
+                            "stateReview",
+                            "swimlaneLayout"
                           ]
                         },
                         "tone": {
@@ -3042,6 +3071,7 @@
                 "status",
                 "filter",
                 "stateReview",
+                "swimlaneLayout",
                 "more",
                 "close",
                 "arrowRight",
@@ -3161,6 +3191,7 @@
                       "status",
                       "filter",
                       "stateReview",
+                      "swimlaneLayout",
                       "more",
                       "close",
                       "arrowRight",
@@ -3678,7 +3709,8 @@
                 "userAdd",
                 "status",
                 "filter",
-                "stateReview"
+                "stateReview",
+                "swimlaneLayout"
               ]
             },
             "variant": {
@@ -4182,6 +4214,27 @@
             },
             "disabled": {
               "kind": "boolean"
+            },
+            "more": {
+              "kind": "list",
+              "max": 3,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
             }
           },
           "required": [
@@ -4189,7 +4242,8 @@
             "label"
           ],
           "events": [
-            "change"
+            "change",
+            "more"
           ],
           "children": false
         },
@@ -4413,7 +4467,8 @@
                       "userAdd",
                       "status",
                       "filter",
-                      "stateReview"
+                      "stateReview",
+                      "swimlaneLayout"
                     ]
                   },
                   "tone": {
@@ -4521,6 +4576,7 @@
                 "status",
                 "filter",
                 "stateReview",
+                "swimlaneLayout",
                 "more",
                 "close",
                 "arrowRight",
@@ -4614,6 +4670,7 @@
                       "status",
                       "filter",
                       "stateReview",
+                      "swimlaneLayout",
                       "more",
                       "close",
                       "arrowRight",
@@ -4731,6 +4788,7 @@
                       "status",
                       "filter",
                       "stateReview",
+                      "swimlaneLayout",
                       "more",
                       "close",
                       "arrowRight",
@@ -4892,6 +4950,7 @@
                 "status",
                 "filter",
                 "stateReview",
+                "swimlaneLayout",
                 "more",
                 "close",
                 "arrowRight",
@@ -5003,7 +5062,8 @@
                       "userAdd",
                       "status",
                       "filter",
-                      "stateReview"
+                      "stateReview",
+                      "swimlaneLayout"
                     ]
                   },
                   "tone": {
@@ -5158,6 +5218,7 @@
                       "status",
                       "filter",
                       "stateReview",
+                      "swimlaneLayout",
                       "more",
                       "close",
                       "arrowRight",
@@ -5658,6 +5719,12 @@
                   },
                   "hideable": {
                     "kind": "boolean"
+                  },
+                  "movable": {
+                    "kind": "boolean"
+                  },
+                  "resizable": {
+                    "kind": "boolean"
                   }
                 },
                 "required": [
@@ -5713,7 +5780,8 @@
           "events": [
             "sort",
             "hide",
-            "all"
+            "all",
+            "reorder"
           ],
           "children": true
         },
@@ -6006,6 +6074,7 @@
                 "status",
                 "filter",
                 "stateReview",
+                "swimlaneLayout",
                 "more",
                 "close",
                 "arrowRight",
@@ -6121,6 +6190,7 @@
                 "status",
                 "filter",
                 "stateReview",
+                "swimlaneLayout",
                 "more",
                 "close",
                 "arrowRight",
@@ -6229,7 +6299,7 @@
         "bry-dialog actions must be a list of at most 3.",
         "bry-dialog actions[0].tone must be one of default, primary, danger.",
         "bry-dialog description must be text of at most 4000 characters.",
-        "bry-menu items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview.",
+        "bry-menu items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview, swimlaneLayout.",
         "bry-menu items[0].separator must be true or false.",
         "bry-date value must be text of at most 10 characters.",
         "bry-split ratio must be a whole number from 20 to 80.",
@@ -6240,7 +6310,7 @@
         "bry-board settled must be text of at most 128 characters.",
         "bry-board-column limit must be a whole number from 1 to 100000.",
         "bry-board-column count must be a whole number from 0 to 100000.",
-        "bry-button icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview, more, close, arrowRight, chevronRight, chevronDown, chevronUp.",
+        "bry-button icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview, swimlaneLayout, more, close, arrowRight, chevronRight, chevronDown, chevronUp.",
         "bry-button hideLabel must be true or false.",
         "bry-heading level must be a whole number from 1 to 4.",
         "bry-heading variant must be one of title, heading, subheading, label.",
@@ -6258,7 +6328,7 @@
         "bry-calendar values[0] must be text of at most 10 characters.",
         "bry-calendar values must be a list of at most 366.",
         "bry-combobox options must be a list of at most 500 choices, each with a value and a label of at most 200 characters (and optionally a member id as avatar), and no value twice.",
-        "bry-command items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview.",
+        "bry-command items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview, swimlaneLayout.",
         "bry-command items[0].hint must be text of at most 40 characters.",
         "bry-context-menu items[0] has no field called \"href\".",
         "bry-data-table perPage must be a whole number from 1 to 100.",
@@ -6267,7 +6337,7 @@
         "bry-data-table columns[0].hideable must be true or false.",
         "bry-field orientation must be one of vertical, horizontal.",
         "bry-input-group prefix must be text of at most 24 characters.",
-        "bry-input-group actionIcon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview.",
+        "bry-input-group actionIcon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview, swimlaneLayout.",
         "bry-input-otp length must be a whole number from 4 to 8.",
         "bry-input-otp pattern must be one of digits, alphanumeric.",
         "bry-menubar menus[0] needs a items.",
@@ -6281,7 +6351,7 @@
         "bry-slider step must be a whole number from 1 to 1000000.",
         "bry-toggle pressed must be true or false.",
         "bry-toggle-group type must be one of single, multiple.",
-        "bry-toggle-group items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview, more, close, arrowRight, chevronRight, chevronDown, chevronUp."
+        "bry-toggle-group items[0].icon must be one of add, archive, calendar, check, copy, dismiss, docs, info, mail, members, notes, pin, rename, retry, search, settings, tasks, trash, account, activity, attach, bell, boardLayout, box, branch, calendarRange, channel, chart, cycle, download, externalLink, flag, ganttLayout, history, home, inbox, layers, link, listLayout, lock, maximise, panelRight, pause, play, progress, project, relation, sliders, tableLayout, tag, target, temporary, userAdd, status, filter, stateReview, swimlaneLayout, more, close, arrowRight, chevronRight, chevronDown, chevronUp."
       ],
       "empties": [
         "bry-button needs a label.",

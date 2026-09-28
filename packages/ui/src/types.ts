@@ -134,6 +134,8 @@ export interface ElementEventDetails {
     move: { card: string; from: string; to: string; position: number };
   };
   'bry-board-column': {
+    /** A list group's select-all box: whether every issue in it is chosen now. */
+    check: { checked: boolean };
     /** The cards now wanted, `end` excluded: the ones to send, from `start`. */
     range: { start: number; end: number };
     /** The header was pressed: whether it asks to be folded away now. */
@@ -274,6 +276,8 @@ export interface ElementEventDetails {
   };
   // Plan fidelity
   'bry-property': {
+    /** One of the app's own actions under the picker. */
+    more: { id: string };
     /** The value chosen, or, for `members` and `labels`, every value chosen now. Empty when cleared. */
     change: { value: string } | { values: string[] };
   };
@@ -325,6 +329,10 @@ export interface ElementEventDetails {
     /** The folded line was pressed: send the block again, unfolded. */
     expand: undefined;
   };
+  'bry-split': {
+    /** Where the person left the handle, as the first pane's percentage. */
+    resize: { ratio: number };
+  };
   'bry-markdown': {
     /** The words the person selected, when they pressed the `quote` button. */
     quote: { text: string };
@@ -347,6 +355,8 @@ export interface ElementEventDetails {
     close: undefined;
   };
   'bry-spreadsheet': {
+    /** Every column's key, in the order the person moved them to. */
+    reorder: { keys: string[] };
     /** A heading's menu asked for this order. */
     sort: { key: string; direction: 'asc' | 'desc' };
     /** A heading's menu asked to hide its column. */
