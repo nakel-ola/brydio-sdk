@@ -22,8 +22,11 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
-## 0.1.0-alpha.12
+## 0.1.0-alpha.13
 
+- **`brydio dev` runs an app's custom tools.** It sends the built handlers
+  with every good build, and Brydio runs a development app's tools from them,
+  so an app no longer has to be published before its tools can be tried.
 - **`bry-spreadsheet` raises `all`**, not `selectAll`: an app's `onSelectAll`
   handler never heard the camel-cased name. Every event name is now lower case.
 - `bry-input` raises `blur` and `cancel` (Escape) and can `autofocus`.
