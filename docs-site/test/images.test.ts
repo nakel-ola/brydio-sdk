@@ -155,7 +155,8 @@ test('keeps checked renderer captures complete and current', async () => {
     expectPng(dark);
   }
   expect((await readdir(IMAGE_DIRECTORY)).sort()).toEqual([...expectedFiles].sort());
-});
+  // Two pictures and a source hash for each of the catalogue's ninety-odd elements.
+}, 60_000);
 
 test('rejects a PNG that omits its IEND chunk', async () => {
   const png = await readFile(join(IMAGE_DIRECTORY, 'bry-button-light.png'));

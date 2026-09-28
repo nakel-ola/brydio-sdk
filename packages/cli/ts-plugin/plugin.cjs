@@ -321,9 +321,10 @@ var CATALOGUE = {
       disabled: { kind: "boolean" },
       error: { kind: "text", max: LABEL_MAX },
       variant: { kind: "enum", values: ["default", "bare"] },
+      autofocus: { kind: "boolean" },
       size: { kind: "enum", values: SIZES }
     },
-    events: ["change", "submit"],
+    events: ["change", "submit", "blur", "cancel"],
     children: false
   },
   "bry-textarea": {
@@ -405,7 +406,9 @@ var CATALOGUE = {
       checked: { kind: "boolean" },
       density: { kind: "enum", values: ["default", "compact"] },
       menu: { kind: "list", max: ROW_MENU_ITEMS, of: MENU_ITEM },
-      removable: { kind: "boolean" }
+      removable: { kind: "boolean" },
+      muted: { kind: "boolean" },
+      lead: { kind: "boolean" }
     },
     events: ["press", "toggle", "select", "remove"],
     children: true
@@ -1311,7 +1314,8 @@ var CATALOGUE = {
   },
   "bry-glyph": {
     props: {
-      kind: { kind: "enum", values: ["state", "priority"] },
+      kind: { kind: "enum", values: ["state", "priority", "progress"] },
+      value: { kind: "int", min: 0, max: 100 },
       group: { kind: "enum", values: STATE_GROUPS },
       priority: { kind: "enum", values: PRIORITIES },
       tone: { kind: "enum", values: TONES },
@@ -1661,7 +1665,7 @@ var CATALOGUE = {
       empty: { kind: "text", max: LABEL_MAX }
     },
     required: ["columns"],
-    events: ["sort", "hide", "selectAll"],
+    events: ["sort", "hide", "all"],
     children: true
   },
   "bry-spreadsheet-row": {

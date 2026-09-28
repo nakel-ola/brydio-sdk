@@ -93,6 +93,30 @@ async function run(root: string, server: ReturnType<typeof brydio>, more: Record
 }
 
 describe('brydio dev, signed in', () => {
+  test('sends its built handlers, so its custom tools run before it is published', async () => {
+    const root = app({
+      '.brydio/app.json': JSON.stringify({
+        name: 'tooled',
+        version: '1.0.0',
+        displayName: 'Tooled',
+        placements: [{ kind: 'project-sidebar', screen: 'home' }],
+        screens: { home: { entry: 'screens/home.js' } },
+        tools: { custom: [{ name: 'whoami', description: 'Who is using the app.', handler: 'handlers/whoami.js', input: {} }] },
+        grants: { tools: ['whoami'] },
+      }),
+      'src/screens/home.ts': 'export const home = 1;\n',
+      'src/handlers/whoami.ts': 'export default async (_input: unknown, { caller }: { caller: { userId: string } }) => ({ member: caller.userId });\n',
+    });
+    const server = brydio();
+
+    await run(root, server);
+
+    const started = server.calls.find(call => call.method === 'POST' && call.path === '/api/v1/apps/development')!.body;
+
+    expect(Object.keys(started.handlers ?? {})).toEqual(['handlers/whoami.js']);
+    expect(started.handlers['handlers/whoami.js']).toContain('userId');
+  });
+
   test('says where Brydio shows the app when it is placed in the sidebars rather than a tab', async () => {
     const root = tiny();
     const server = brydio({

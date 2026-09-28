@@ -110,6 +110,20 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
     return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>) : null;
   };
 
+  /**
+   * The built custom-tool handlers, by path, for Brydio to run this build's
+   * tools from: a development app has no published bundle.
+   */
+  const handlersOf = (result: BuildResult): Record<string, string> | undefined => {
+    const handlers: Record<string, string> = {};
+
+    for (const [path, bytes] of result.files) {
+      if (path.startsWith('handlers/') && path.endsWith('.js')) handlers[path] = new TextDecoder().decode(bytes);
+    }
+
+    return Object.keys(handlers).length ? handlers : undefined;
+  };
+
   const rebuild = async (): Promise<BuildResult> => {
     const result = await build(root, { minify: false, hot });
 
@@ -138,6 +152,7 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
       const answer = await call('POST', `${DEV_PATH}/${development.id}/heartbeat`, {
         build: buildNumber,
         manifest: manifestOf(result),
+        handlers: handlersOf(result),
         problem: null,
       }).catch((error: unknown): Answer => ({ status: 0, json: { message: String(error) } }));
 
@@ -241,7 +256,7 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
     if (!manifest || !name) throw new DevRefused('The build has no app.json with a name.');
 
     const projectId = await chooseProject();
-    const started = await call('POST', DEV_PATH, { projectId, origin: url, manifest });
+    const started = await call('POST', DEV_PATH, { projectId, origin: url, manifest, handlers: handlersOf(result) });
 
     if (started.status !== 201 && started.status !== 200) throw new DevRefused(turnedAway(started, apiUrl));
 
