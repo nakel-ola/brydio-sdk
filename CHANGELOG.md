@@ -22,6 +22,11 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.15
+
+- The editor plugin is rebuilt from this catalogue (0.1.0-alpha.14's was not,
+  and was never published).
+
 ## 0.1.0-alpha.14
 
 - `bry-stack variant="inset"`: a full-width work area with the page's gutter.
