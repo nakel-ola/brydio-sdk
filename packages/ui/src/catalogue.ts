@@ -736,7 +736,7 @@ export const CATALOGUE = {
       // lane's `laneColumns` columns, then the next lane.
       layout: { kind: 'enum', values: ['columns', 'list', 'lanes'] },
       laneColumns: { kind: 'int', min: 1, max: 12 },
-      variant: { kind: 'enum', values: ['default', 'plan'] },
+      variant: { kind: 'enum', values: ['default', 'plan', 'panel'] },
       settled: { kind: 'text', max: KEY_MAX },
       loading: { kind: 'boolean' },
       empty: { kind: 'text', max: LABEL_MAX },

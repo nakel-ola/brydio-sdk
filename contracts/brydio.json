@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "580f809e809a936e090e34720c55a27be87876d5",
+    "commit": "4772aebc5148493e3cc9a7b6b8c0b26a75149cc1",
     "dirty": true
   },
   "contracts": {
@@ -1350,7 +1350,8 @@
               "kind": "enum",
               "values": [
                 "default",
-                "plan"
+                "plan",
+                "panel"
               ]
             },
             "settled": {

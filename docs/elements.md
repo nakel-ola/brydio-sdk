@@ -463,7 +463,7 @@ Holds other elements or text.
 | `cardSize` | `sm`, `md`, `lg` | no |
 | `layout` | `columns`, `list`, `lanes` | no |
 | `laneColumns` | a whole number from 1 to 12 | no |
-| `variant` | `default`, `plan` | no |
+| `variant` | `default`, `plan`, `panel` | no |
 | `settled` | text, at most 128 characters | no |
 | `loading` | `true` or `false` | no |
 | `empty` | text, at most 200 characters | no |

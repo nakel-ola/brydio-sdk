@@ -585,7 +585,7 @@ var CATALOGUE = {
       cardSize: { kind: "enum", values: ["sm", "md", "lg"] },
       layout: { kind: "enum", values: ["columns", "list", "lanes"] },
       laneColumns: { kind: "int", min: 1, max: 12 },
-      variant: { kind: "enum", values: ["default", "plan"] },
+      variant: { kind: "enum", values: ["default", "plan", "panel"] },
       settled: { kind: "text", max: KEY_MAX },
       loading: { kind: "boolean" },
       empty: { kind: "text", max: LABEL_MAX }
