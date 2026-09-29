@@ -22,6 +22,10 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.27
+
+- `bry-board` takes `variant: "panel"`: planning cards in Multica's columns, each column one rounded panel faintly tinted by its tone with its header inside, filling the height it is given.
+
 ## 0.1.0-alpha.26
 
 - `bry-toggle-group` takes `variant: "chips"`: separate round pills that wrap onto more lines, for a long list of choices such as a display menu's properties.
