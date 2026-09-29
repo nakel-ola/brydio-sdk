@@ -22,6 +22,11 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.24
+
+- `bry-stack` variants `narrow` (a centred settings column), `group` (rows in one rounded box with hairlines between them) and `group-header` (the slim tinted strip naming a group), as Multica lays out its settings lists.
+- A plain `bry-list-row` takes `lead` (its first child before the title: a status glyph) and `menu` (its "⋯", shown on hover), as the work row already did.
+
 ## 0.1.0-alpha.23
 
 - Handlers: `members.canSeeProject(projectId, userId)` answers whether a workspace member can open a project (a member, its maker, or an admin of a shared project), from Brydio's own rule. Needs the `members` host grant; `validate` now counts it as using that grant.
