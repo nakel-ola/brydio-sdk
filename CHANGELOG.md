@@ -22,6 +22,11 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.26
+
+- `bry-toggle-group` takes `variant: "chips"`: separate round pills that wrap onto more lines, for a long list of choices such as a display menu's properties.
+- `bry-radio-group` swatches also draw the five tones (neutral, brand, success, warn, danger) in their own colours, for a status's colour.
+
 ## 0.1.0-alpha.25
 
 - `bry-radio-group` takes `variant: "swatches"`: each choice is a round dot in the label hue its `value` names (gray … pink), ringed and ticked when chosen — a label's colour picker, as Multica's presets.
