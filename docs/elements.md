@@ -201,6 +201,7 @@ Holds nothing: it is drawn from its settings alone.
 | `variant` | `default`, `bare` | no |
 | `autofocus` | `true` or `false` | no |
 | `size` | `sm`, `md`, `lg` | no |
+| `fit` | `full`, `compact` | no |
 
 Tells the app: `change`, `submit`, `blur`, `cancel`.
 
@@ -762,6 +763,7 @@ Holds nothing: it is drawn from its settings alone.
 | `options` | at most 20 `{ value, label }` choices | yes |
 | `label` | text, at most 200 characters | yes |
 | `orientation` | `vertical`, `horizontal` | no |
+| `variant` | `default`, `swatches` | no |
 | `disabled` | `true` or `false` | no |
 | `error` | text, at most 200 characters | no |
 
@@ -1132,11 +1134,12 @@ Holds nothing: it is drawn from its settings alone.
 
 | Setting | Takes | Needed |
 |---|---|---|
-| `kind` | `state`, `priority`, `progress` | yes |
+| `kind` | `state`, `priority`, `progress`, `dot` | yes |
 | `value` | a whole number from 0 to 100 | no |
 | `group` | `backlog`, `unstarted`, `started`, `completed`, `cancelled` | no |
 | `priority` | `urgent`, `high`, `medium`, `low`, `none` | no |
 | `tone` | `neutral`, `brand`, `success`, `warn`, `danger` | no |
+| `hue` | `gray`, `red`, `orange`, `yellow`, `green`, `teal`, `blue`, `indigo`, `purple`, `pink` | no |
 | `size` | `sm`, `md` | no |
 | `label` | text, at most 200 characters | no |
 

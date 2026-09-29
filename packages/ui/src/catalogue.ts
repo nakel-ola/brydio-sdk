@@ -411,6 +411,8 @@ export const CATALOGUE = {
       // Takes the focus when it first appears.
       autofocus: { kind: 'boolean' },
       size: { kind: 'enum', values: SIZES },
+      // `compact` keeps a filter box short beside its buttons, as Multica's label search.
+      fit: { kind: 'enum', values: ['full', 'compact'] },
     },
     // `blur` with `{ value }` when the person leaves the field; `cancel` on Escape.
     events: ['change', 'submit', 'blur', 'cancel'],
@@ -1193,6 +1195,8 @@ export const CATALOGUE = {
       options: { kind: 'options', max: RADIO_MAX },
       label: { kind: 'text', max: LABEL_MAX },
       orientation: { kind: 'enum', values: ['vertical', 'horizontal'] },
+      // Each choice a round dot in the label hue its `value` names, ringed when chosen.
+      variant: { kind: 'enum', values: ['default', 'swatches'] },
       disabled: { kind: 'boolean' },
       error: { kind: 'text', max: LABEL_MAX },
     },
@@ -1595,12 +1599,14 @@ export const CATALOGUE = {
     // own colour. `label` is what a screen reader hears; without one the mark
     // is decoration.
     props: {
-      // `progress` draws a completion ring filled to `value` (0 to 100).
-      kind: { kind: 'enum', values: ['state', 'priority', 'progress'] },
+      // `progress` draws a completion ring filled to `value` (0 to 100);
+      // `dot` a plain round dot in a label `hue`, as a label list leads with.
+      kind: { kind: 'enum', values: ['state', 'priority', 'progress', 'dot'] },
       value: { kind: 'int', min: 0, max: 100 },
       group: { kind: 'enum', values: STATE_GROUPS },
       priority: { kind: 'enum', values: PRIORITIES },
       tone: { kind: 'enum', values: TONES },
+      hue: { kind: 'enum', values: HUES },
       size: { kind: 'enum', values: ['sm', 'md'] },
       label: { kind: 'text', max: LABEL_MAX },
     },

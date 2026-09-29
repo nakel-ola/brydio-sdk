@@ -324,7 +324,8 @@ var CATALOGUE = {
       error: { kind: "text", max: LABEL_MAX },
       variant: { kind: "enum", values: ["default", "bare"] },
       autofocus: { kind: "boolean" },
-      size: { kind: "enum", values: SIZES }
+      size: { kind: "enum", values: SIZES },
+      fit: { kind: "enum", values: ["full", "compact"] }
     },
     events: ["change", "submit", "blur", "cancel"],
     children: false
@@ -995,6 +996,7 @@ var CATALOGUE = {
       options: { kind: "options", max: RADIO_MAX },
       label: { kind: "text", max: LABEL_MAX },
       orientation: { kind: "enum", values: ["vertical", "horizontal"] },
+      variant: { kind: "enum", values: ["default", "swatches"] },
       disabled: { kind: "boolean" },
       error: { kind: "text", max: LABEL_MAX }
     },
@@ -1331,11 +1333,12 @@ var CATALOGUE = {
   },
   "bry-glyph": {
     props: {
-      kind: { kind: "enum", values: ["state", "priority", "progress"] },
+      kind: { kind: "enum", values: ["state", "priority", "progress", "dot"] },
       value: { kind: "int", min: 0, max: 100 },
       group: { kind: "enum", values: STATE_GROUPS },
       priority: { kind: "enum", values: PRIORITIES },
       tone: { kind: "enum", values: TONES },
+      hue: { kind: "enum", values: HUES },
       size: { kind: "enum", values: ["sm", "md"] },
       label: { kind: "text", max: LABEL_MAX }
     },

@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "33f5870f2d3b38d8dd64323de10f29a0a92bc304",
+    "commit": "3bc7abda64d5ea81b0d0e9fe1ffe7c1290579320",
     "dirty": true
   },
   "contracts": {
@@ -339,6 +339,13 @@
                 "sm",
                 "md",
                 "lg"
+              ]
+            },
+            "fit": {
+              "kind": "enum",
+              "values": [
+                "full",
+                "compact"
               ]
             }
           },
@@ -3012,6 +3019,13 @@
                 "horizontal"
               ]
             },
+            "variant": {
+              "kind": "enum",
+              "values": [
+                "default",
+                "swatches"
+              ]
+            },
             "disabled": {
               "kind": "boolean"
             },
@@ -4111,7 +4125,8 @@
               "values": [
                 "state",
                 "priority",
-                "progress"
+                "progress",
+                "dot"
               ]
             },
             "value": {
@@ -4147,6 +4162,21 @@
                 "success",
                 "warn",
                 "danger"
+              ]
+            },
+            "hue": {
+              "kind": "enum",
+              "values": [
+                "gray",
+                "red",
+                "orange",
+                "yellow",
+                "green",
+                "teal",
+                "blue",
+                "indigo",
+                "purple",
+                "pink"
               ]
             },
             "size": {
