@@ -44,6 +44,8 @@ export interface FakeHandlerOptions {
   tools?: HandlerClient['tools'];
   connection?: (name: string, request: HandlerConnectionRequest) => Promise<{ status: number; body: unknown }>;
   model?: Partial<HandlerClient['model']>;
+  /** Who can open which project, for `members.canSeeProject`. Without it, everyone can. */
+  canSeeProject?: (projectId: string, userId: string) => boolean | Promise<boolean>;
 }
 
 /** One call the handler made through its client. */
@@ -158,6 +160,16 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
         if (value.length > MAX_SECRET_CHARS) throw new Error(`${key} may be at most ${MAX_SECRET_CHARS} characters.`);
 
         secrets.set(key, value);
+      }),
+    }),
+    members: Object.freeze({
+      canSeeProject: recorded('members.canSeeProject', async (projectId: string, userId: string) => {
+        const allowed = manifest ? (manifest.grants?.host ?? []).some(grant => grant === 'members' || grant === '*') : true;
+
+        if (!allowed) throw new Error(`${appName} did not ask to see the names of people.`);
+        if (typeof projectId !== 'string' || !projectId || typeof userId !== 'string' || !userId) throw new Error('canSeeProject takes a project id and a member id.');
+
+        return (await options.canSeeProject?.(projectId, userId)) ?? true;
       }),
     }),
     caller: Object.freeze({ userId: options.caller?.userId ?? 'user_test', origin: options.caller?.origin ?? 'assistant', role: options.caller?.role ?? 'owner' }),

@@ -176,6 +176,12 @@ describe('what the screens call, against the grants', () => {
     expect(screen("import { useMembers } from '@brydio/app/preact';\nuseMembers(ids);", { tools: ['*'], collections: ['*'], host: ['members'] })).toEqual([]);
   });
 
+  test("counts a handler asking who can see a project as using the members grant", () => {
+    const source = "export default async function (input, { members }) { return members.canSeeProject(input.project, input.member); }";
+
+    expect(callsOf('src/handlers/check.ts', source).map(call => [call.kind, call.name, call.sure])).toEqual([['host', 'members', false]]);
+  });
+
   test('finds project, file, and chat calls through the typed API', () => {
     const source = "import { api as brydio } from '@brydio/api';\nbrydio.files.list(project);\nbrydio.projects.get(project);\nbrydio.chats.list({ projectId: project });";
 

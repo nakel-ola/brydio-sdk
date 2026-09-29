@@ -113,6 +113,8 @@ export function callsOf(file: string, text: string): ScreenCall[] {
         else if (METHODS[method]) named(METHODS[method], first, callee);
         else if (method === 'navigate') add('host', 'navigate', callee, false);
         else if (method === 'members' || method === 'projects') add('host', method, callee, false);
+        // A handler asking who can see a project uses the members grant too.
+        else if (method === 'canSeeProject') add('host', 'members', callee, false);
       }
     }
 

@@ -81,3 +81,17 @@ describe('a handler’s secrets in the fake host', () => {
     });
   });
 });
+
+describe('asking who can see a project, in the fake host', () => {
+  test('answers from the test\'s own rule, and refuses without the members grant', async () => {
+    const sees: Handler<{ project: string; member: string }> = async (input, { members }) => ({ sees: await members.canSeeProject(input.project, input.member) });
+    const rule = (projectId: string, userId: string) => projectId === 'prj_1' && userId === 'user_ada';
+
+    expect((await runHandler(sees, { project: 'prj_1', member: 'user_ada' }, { canSeeProject: rule })).result).toEqual({ sees: true });
+    expect((await runHandler(sees, { project: 'prj_1', member: 'user_bo' }, { canSeeProject: rule })).result).toEqual({ sees: false });
+
+    const refused = await runHandler(sees, { project: 'prj_1', member: 'user_ada' }, { manifest: { displayName: 'Tasks', grants: { host: [] } } as never });
+
+    expect(refused.error).toBe('Tasks did not ask to see the names of people.');
+  });
+});

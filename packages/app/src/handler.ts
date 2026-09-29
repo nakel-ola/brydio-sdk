@@ -108,6 +108,15 @@ export interface HandlerSecrets {
   set(name: string, value: string | null): Promise<void>;
 }
 
+/**
+ * Who may see what, answered by Brydio for an app with the `members` host
+ * grant: yes or no, from Brydio's own project rule, never a list of people.
+ */
+export interface HandlerMembers {
+  /** Whether this workspace member can open the project (a member, its maker, or an admin of a shared one). */
+  canSeeProject(projectId: string, userId: string): Promise<boolean>;
+}
+
 /** Everything a handler is given beside its input. */
 export interface HandlerClient {
   readonly data: HandlerData;
@@ -115,6 +124,7 @@ export interface HandlerClient {
   connection(name: string): HandlerConnection;
   readonly model: HandlerModel;
   readonly secrets: HandlerSecrets;
+  readonly members: HandlerMembers;
   readonly caller: HandlerCaller;
 }
 
