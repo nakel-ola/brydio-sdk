@@ -22,6 +22,11 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.23
+
+- Handlers: `members.canSeeProject(projectId, userId)` answers whether a workspace member can open a project (a member, its maker, or an admin of a shared project), from Brydio's own rule. Needs the `members` host grant; `validate` now counts it as using that grant.
+- FakeHost: `runHandler(..., { canSeeProject })` supplies the rule for tests (everyone can, without it) and refuses without the `members` grant, as Brydio does.
+
 ## 0.1.0-alpha.22
 
 - `bry-input` `submit` carries `shift: true` when Shift+Enter was pressed.
