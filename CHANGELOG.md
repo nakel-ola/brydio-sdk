@@ -22,6 +22,12 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.25
+
+- `bry-radio-group` takes `variant: "swatches"`: each choice is a round dot in the label hue its `value` names (gray … pink), ringed and ticked when chosen — a label's colour picker, as Multica's presets.
+- `bry-input` takes `fit: "compact"`, which keeps a filter box short beside its buttons; a `kind: "search"` box now shows a magnifier.
+- `bry-glyph` takes `kind: "dot"` with a label `hue`: a plain round dot, as a label list leads each row with.
+
 ## 0.1.0-alpha.24
 
 - `bry-stack` variants `narrow` (a centred settings column), `group` (rows in one rounded box with hairlines between them) and `group-header` (the slim tinted strip naming a group), as Multica lays out its settings lists.
