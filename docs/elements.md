@@ -811,7 +811,7 @@ Holds nothing: it is drawn from its settings alone.
 | `items` | a list of at most 12: a record of `value`, `label`, `icon`, `hideLabel`, `disabled` (needs `value`, `label`) | yes |
 | `values` | a list of at most 12: text, at most 128 characters | no |
 | `label` | text, at most 200 characters | yes |
-| `variant` | `default`, `outline` | no |
+| `variant` | `default`, `outline`, `chips` | no |
 | `size` | `sm`, `md` | no |
 | `disabled` | `true` or `false` | no |
 

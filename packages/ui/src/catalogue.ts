@@ -1255,7 +1255,7 @@ export const CATALOGUE = {
       },
       values: { kind: 'list', max: TOGGLE_GROUP_ITEMS, of: { kind: 'text', max: KEY_MAX } },
       label: { kind: 'text', max: LABEL_MAX },
-      variant: { kind: 'enum', values: ['default', 'outline'] },
+      variant: { kind: 'enum', values: ['default', 'outline', 'chips'] },
       size: { kind: 'enum', values: ['sm', 'md'] },
       disabled: { kind: 'boolean' },
     },
