@@ -22,6 +22,12 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.28
+
+- **Project tabs are retired; apps show on a project's page as widgets.** A placement of kind `project-widget` is a card on the project's page, drawn by its `screen` at one of the `sizes` it declares (`small`, `medium`, `large`; a large one takes two columns). `sizes` is required there, as on a `home` card, and refused on the sidebar kinds (`placement_widget_sizes`, `placement_home_sizes`, `placement_sizes_not_home`).
+- **What to change:** in `.brydio/app.json`, change `"kind": "project-tab"` to `"project-widget"` and add `"sizes"`, such as `["medium", "large"]`. `brydio validate`, `build`, `dev` and `publish` now refuse a new tab (`placement_tab_retired`). A version already published with a tab keeps working: Brydio draws it as a large widget until you publish one with a widget. `validateManifest` takes `{ retired: true }` for the same check; without it a published manifest with a tab still parses.
+- The templates place their screen as a widget, and `brydio dev` names the widget on the project's page.
+
 ## 0.1.0-alpha.27
 
 - `bry-board` takes `variant: "panel"`: planning cards in Multica's columns, each column one rounded panel faintly tinted by its tone with its header inside, filling the height it is given.
