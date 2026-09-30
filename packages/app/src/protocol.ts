@@ -178,11 +178,19 @@ export interface DataChange {
   version: number;
 }
 
-/** A workspace member's name for an id a screen holds, and the initials `bry-avatar` draws. */
+/**
+ * A workspace member's name for an id a screen holds, and the initials
+ * `bry-avatar` draws. A workspace bot (an id that is its principal id) comes
+ * with `bot: true`, so a picker can mark it, and its picture when it has one.
+ */
 export interface MemberName {
   id: string;
   name: string;
   initials: string;
+  /** Set when this member is one of the workspace's bots, never for a person. */
+  bot?: true;
+  /** A bot's picture, when it has one. */
+  image?: string;
 }
 
 /** A project's name for an id a screen holds. */

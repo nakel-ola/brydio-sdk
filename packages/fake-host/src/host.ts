@@ -76,7 +76,7 @@ export interface FakeHostOptions {
    * The people and projects Brydio would name to this screen (`host/members`,
    * `host/projects`): only these, as the viewer's own directory would be.
    */
-  directory?: { members?: { id: string; name: string }[]; projects?: { id: string; name: string }[] };
+  directory?: { members?: DirectoryMember[]; projects?: { id: string; name: string }[] };
   /** Run Brydio's prelude before the screen. On unless a test needs it off. */
   prelude?: boolean;
   /**
@@ -690,7 +690,7 @@ export class FakeHost {
     const found = ids.flatMap(one => known.filter(entry => entry.id === one));
     const result =
       kind === 'members'
-        ? { members: found.map(one => ({ id: one.id, name: one.name, initials: initialsOf(one.name) })) }
+        ? { members: found.map(one => memberName(one)) }
         : { projects: found.map(one => ({ id: one.id, name: one.name })) };
 
     this.namesAsked.push({ kind, ids });
@@ -780,11 +780,13 @@ export class FakeHost {
 
     const query = typeof params.query === 'string' ? params.query.toLowerCase() : '';
     const limit = Number.isInteger(params.limit) ? Math.max(1, Math.min(50, params.limit as number)) : 50;
-    const members = [...(this.#options.directory?.members ?? [])]
-      .filter(one => !query || one.name.toLowerCase().includes(query))
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .slice(0, limit)
-      .map(one => ({ id: one.id, name: one.name, initials: initialsOf(one.name) }));
+    const matching = [...(this.#options.directory?.members ?? [])].filter(one => !query || one.name.toLowerCase().includes(query));
+    const people = matching.filter(one => !one.bot).sort((a, b) => a.name.localeCompare(b.name));
+    const bots = matching.filter(one => one.bot);
+    // Bots after people, with a few places kept for them, as Brydio lists them.
+    const room = Math.min(bots.length, 10, Math.floor(limit / 2));
+    const shown = people.slice(0, limit - room);
+    const members = [...shown, ...bots.slice(0, limit - shown.length)].map(one => memberName(one));
 
     this.namesAsked.push({ kind: 'members', ids: [] });
     this.#send({ jsonrpc: '2.0', method: 'host/result', params: { id, result: { members } } as never });
@@ -1116,6 +1118,24 @@ function moduleUrl(given: string): string {
 }
 
 /** "Ada Lovelace" is AL, "cher" is C: Brydio's rule, the one `bry-avatar` draws with. */
+/** Someone the fake host's directory may name: a person, or a workspace bot with `bot: true`. */
+export interface DirectoryMember {
+  id: string;
+  name: string;
+  bot?: boolean;
+  image?: string;
+}
+
+/** A directory entry as Brydio names it: initials always, the bot mark and picture for a bot. */
+function memberName(one: DirectoryMember): { id: string; name: string; initials: string; bot?: true; image?: string } {
+  return {
+    id: one.id,
+    name: one.name,
+    initials: initialsOf(one.name),
+    ...(one.bot ? { bot: true as const, ...(one.image ? { image: one.image } : {}) } : {}),
+  };
+}
+
 export function initialsOf(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
   const letters = words.length > 1 ? [words[0]!, words[words.length - 1]!] : words;

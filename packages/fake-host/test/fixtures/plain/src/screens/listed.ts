@@ -7,5 +7,5 @@ void mount(async root => {
   const everyone = await bridge.listMembers();
   const some = await bridge.listMembers({ query: 'AD', limit: 1 });
 
-  root.append(text({ text: everyone.map(one => one.name).join(', ') }), text({ text: some.map(one => `${one.name} (${one.initials})`).join(', ') }));
+  root.append(text({ text: everyone.map(one => (one.bot ? `${one.name} (bot)` : one.name)).join(', ') }), text({ text: some.map(one => `${one.name} (${one.initials})`).join(', ') }));
 });

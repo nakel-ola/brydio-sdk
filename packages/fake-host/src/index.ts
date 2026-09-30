@@ -13,6 +13,7 @@ export {
   wordsOf,
   type ApiCall,
   type AskAnswer,
+  type DirectoryMember,
   type FakeHostOptions,
   hostRefusal,
   type HostContext,

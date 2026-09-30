@@ -352,6 +352,16 @@ test('host/members with no ids lists the people the app may name, by name, filte
   expect(host.findAll(node => node.type === 'bry-text').map(node => node.props.text)).toEqual(['Ada Lovelace, Adam Smith, Cy Twombly', 'Ada Lovelace (AL)']);
 });
 
+test('host/members lists workspace bots after people, marked as bots', async () => {
+  const directory = { members: [{ id: 'principal_pm', name: 'Aardvark Bot', bot: true }, { id: 'u_c', name: 'Cy Twombly' }, { id: 'u_a', name: 'Ada Lovelace' }] };
+
+  host = FakeHost.start({ entry: screen('listed'), manifest: { ...manifest, grants: { ...manifest.grants, host: ['members'] } }, directory });
+  await host.mounted();
+  await host.waitFor(() => host!.findAll(node => node.type === 'bry-text').length === 2, { what: 'both lists' });
+
+  expect(host.findAll(node => node.type === 'bry-text')[0]!.props.text).toBe('Ada Lovelace, Cy Twombly, Aardvark Bot (bot)');
+});
+
 /**
  * A8-F02-S03: a chat about something the app keeps no record of.
  *
