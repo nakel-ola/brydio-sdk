@@ -84,7 +84,9 @@ export function readProject(dir: string): Project {
     };
   }
 
-  const checked = validateManifest(raw);
+  // An app being written now: a retired kind (`project-tab`) is refused here,
+  // before publishing would refuse it.
+  const checked = validateManifest(raw, { retired: true });
 
   return {
     root,

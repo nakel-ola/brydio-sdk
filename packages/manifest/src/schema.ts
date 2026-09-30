@@ -77,6 +77,14 @@ const folderLevelSchema = z.object({
   create: folderCreateSchema.optional(),
 });
 
+/** The sizes a Home card or a project widget can be drawn at (CC11-F10). */
+export const HOME_CARD_SIZES = ['small', 'medium', 'large'] as const;
+
+export type HomeCardSize = (typeof HOME_CARD_SIZES)[number];
+
+/** The kinds drawn as a card, which say the sizes they draw well at. */
+export const SIZED_PLACEMENT_KINDS = ['home', 'project-widget'] as const;
+
 /** A stable identity for one independently addable placement offering. */
 export const PLACEMENT_KEY = /^[a-z][a-z0-9-]{0,39}$/;
 
@@ -90,8 +98,16 @@ export function effectivePlacementKey(one: {
 
 const placementSchema = z.object({
   key: z.string().regex(PLACEMENT_KEY).optional(),
-  kind: z.enum(['project-tab', 'project-sidebar', 'workspace-sidebar', 'home']),
+  /**
+   * `home`: a card on a person's Home, drawn by `screen` at one of `sizes`.
+   * `project-widget`: a card on a project's page, drawn at one of `sizes`.
+   * `project-tab` is retired (30 Sep 2026): still read from a published
+   * manifest, refused in a new one (`placement_tab_retired`).
+   */
+  kind: z.enum(['project-tab', 'project-widget', 'project-sidebar', 'workspace-sidebar', 'home']),
   screen: z.string().min(1).max(FIELD_LIMITS.nameChars),
+  /** For `home` and `project-widget` only, and required there: the sizes the screen draws well at. */
+  sizes: z.array(z.enum(HOME_CARD_SIZES)).max(3).optional(),
   label: z.string().min(1).max(60).optional(),
   icon: z.string().max(60).optional(),
   settings: z.record(z.string().regex(FIELD_NAME), placementSettingSchema).optional(),
@@ -258,6 +274,10 @@ export type DataProblemCode =
   | 'custom_input_invalid'
   | 'placement_key_taken'
   | 'placement_screen_unknown'
+  | 'placement_home_sizes'
+  | 'placement_sizes_not_home'
+  | 'placement_widget_sizes'
+  | 'placement_tab_retired'
   | 'placement_children_too_deep'
   | 'placement_create_tool_unknown'
   | 'placement_create_not_write'
@@ -273,7 +293,14 @@ type Additions = z.infer<z.ZodObject<typeof extensionShape>>;
  * report; the zod schemas below run it too, so a parse never accepts what
  * this refuses.
  */
-export function dataProblems(additions: Additions, options: { grants?: boolean } = {}): DataProblem[] {
+export interface DataProblemOptions {
+  /** Off where the grants are the install's record, not the manifest's. */
+  grants?: boolean;
+  /** On for a manifest being written now: refuses kinds that are retired, such as `project-tab`. */
+  retired?: boolean;
+}
+
+export function dataProblems(additions: Additions, options: DataProblemOptions = {}): DataProblem[] {
   const problems: DataProblem[] = [];
   const collections = Object.entries(additions.data ?? {});
 
@@ -439,6 +466,35 @@ export function dataProblems(additions: Additions, options: { grants?: boolean }
       problems.push({
         code: 'placement_screen_unknown',
         message: `A ${placement.kind} placement opens "${placement.screen}", which is not one of the app's screens.`,
+      });
+    }
+
+    // A card must say how big it can be drawn (CC11-F10-S01).
+    if (placement.kind === 'home' && !placement.sizes?.length) {
+      problems.push({
+        code: 'placement_home_sizes',
+        message: `The Home card "${placement.screen}" must say which sizes it draws at: small, medium or large.`,
+      });
+    }
+
+    if (placement.kind === 'project-widget' && !placement.sizes?.length) {
+      problems.push({
+        code: 'placement_widget_sizes',
+        message: `The project widget "${placement.screen}" must say which sizes it draws at: small, medium or large.`,
+      });
+    }
+
+    if (!(SIZED_PLACEMENT_KINDS as readonly string[]).includes(placement.kind) && placement.sizes?.length) {
+      problems.push({
+        code: 'placement_sizes_not_home',
+        message: `Only a Home card or a project widget has sizes; the ${placement.kind} placement "${placement.screen}" cannot.`,
+      });
+    }
+
+    if (options.retired && placement.kind === 'project-tab') {
+      problems.push({
+        code: 'placement_tab_retired',
+        message: 'Project tabs are retired; declare a project-widget with sizes instead.',
       });
     }
   }
@@ -624,7 +680,7 @@ function secretProblems(additions: Additions, options: { grants?: boolean }): Da
   return problems;
 }
 
-const refuse = (additions: Additions, ctx: z.RefinementCtx, options: { grants?: boolean } = {}) => {
+const refuse = (additions: Additions, ctx: z.RefinementCtx, options: DataProblemOptions = {}) => {
   for (const problem of dataProblems(additions, options)) {
     ctx.addIssue({
       code: 'custom',
@@ -659,6 +715,15 @@ export const storedExtensionsSchema = z.object(extensionShape).superRefine((addi
 
 /** E5's manifest with the additions: the whole `.brydio/app.json` of an app. */
 export const appManifestSchema = manifestSchema.extend(extensionShape).superRefine((additions, ctx) => refuse(additions, ctx));
+
+/**
+ * A manifest being written now, as `brydio validate`, `build` and `dev` read
+ * it: the same, and nothing retired (`placement_tab_retired`) — which a
+ * published version may still hold.
+ */
+export const newAppManifestSchema = manifestSchema
+  .extend(extensionShape)
+  .superRefine((additions, ctx) => refuse(additions, ctx, { retired: true }));
 
 export type ManifestExtensions = z.infer<typeof manifestExtensionsSchema>;
 export type AppManifestWithData = z.infer<typeof appManifestSchema>;

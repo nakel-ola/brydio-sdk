@@ -4,7 +4,7 @@ import { Bridge, createRoot, type BuiltApp, type HostContext, type Port, type Ro
 export const CONTEXT: HostContext = {
   theme: 'light',
   locale: 'en-GB',
-  placement: { id: 'pl_1', kind: 'project-tab', projectId: 'pr_1' },
+  placement: { id: 'pl_1', kind: 'project-widget', projectId: 'pr_1' },
   instance: { id: 'in_1', name: 'Issues', scope: 'workspace' },
   route: { path: '/' },
   size: { width: 960, height: 640 },

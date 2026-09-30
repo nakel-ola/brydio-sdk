@@ -33,7 +33,7 @@ const tiny = () =>
       name: 'tiny',
       version: '1.0.0',
       displayName: 'Tiny',
-      placements: [{ kind: 'project-tab', screen: 'home' }],
+      placements: [{ kind: 'project-widget', screen: 'home', sizes: ['large'] }],
       screens: { home: { entry: 'screens/home.js' } },
     }),
     'src/screens/home.ts': 'export const home = 1;\n',
@@ -207,7 +207,7 @@ describe('brydio dev, signed in', () => {
     expect(failed.manifest).toBeUndefined();
     expect(typeof failed.problem.message).toBe('string');
     expect(failed.problem.message.length).toBeGreaterThan(0);
-    expect(lines.join('\n')).toContain('the tab keeps the last good build');
+    expect(lines.join('\n')).toContain('the widget keeps the last good build');
 
     writeFileSync(join(root, 'src/screens/home.ts'), 'export const home = 3;\n');
     await session.rebuild();
@@ -274,7 +274,7 @@ describe('brydio dev and hot reload', () => {
       '.brydio/app.json': JSON.stringify({
         name: 'counter',
         version: '1.0.0',
-        placements: [{ kind: 'project-tab', screen: 'home' }],
+        placements: [{ kind: 'project-widget', screen: 'home', sizes: ['large'] }],
         screens: { home: { entry: 'screens/home.js' } },
       }),
       'tsconfig.json': JSON.stringify({ compilerOptions: { jsx: 'react-jsx', jsxImportSource: '@brydio/app/preact' } }),
@@ -294,14 +294,14 @@ describe('brydio dev and hot reload', () => {
     expect(shared.status).toBe(200);
     expect(shared.headers.get('access-control-allow-origin')).toBe('*');
     expect(await shared.text()).toContain('__PREFRESH__');
-    expect(lines.join('\n')).toContain('swapped into the open tab, keeping what is on it');
+    expect(lines.join('\n')).toContain('swapped into the widget, keeping what is on it');
   });
 
   test('builds an app that is not Preact whole, and starts its tab over on a save', async () => {
     const { session, lines } = await run(tiny(), brydio());
 
     expect(await (await fetch(`${session.url}/screens/home.js`)).text()).not.toContain('chunk-');
-    expect(lines.join('\n')).toContain('starts the tab over with the new code');
+    expect(lines.join('\n')).toContain('starts the widget over with the new code');
   });
 });
 

@@ -122,7 +122,29 @@ describe('the Issues manifest', () => {
     expect(parsed.name).toBe('issues');
     expect(parsed.data?.issues?.label).toBe('issue');
     expect(parsed.screens?.board?.entry).toBe('screens/board.js');
-    expect(parsed.placements?.[0]).toEqual({ kind: 'project-tab', screen: 'board', label: 'Issues', icon: 'kanban' });
+    expect(parsed.placements?.[0]).toEqual({
+      kind: 'project-widget',
+      screen: 'board',
+      sizes: ['medium', 'large'],
+      label: 'Issues',
+      icon: 'kanban',
+    });
+  });
+
+  test('a project widget says the sizes it draws at, and only a card has sizes', () => {
+    const codes = (placements: unknown[]) =>
+      validateManifest({ ...ISSUES_MANIFEST, placements }).problems.map(problem => problem.code);
+
+    expect(codes([{ kind: 'project-widget', screen: 'board' }])).toEqual(['placement_widget_sizes']);
+    expect(codes([{ kind: 'project-widget', screen: 'board', sizes: ['small'] }])).toEqual([]);
+    expect(codes([{ kind: 'project-sidebar', screen: 'board', sizes: ['small'] }])).toEqual(['placement_sizes_not_home']);
+  });
+
+  test('a tab is refused in a manifest written now, and still read from a published one', () => {
+    const tab = { ...ISSUES_MANIFEST, placements: [{ kind: 'project-tab', screen: 'board' }] };
+
+    expect(validateManifest(tab).ok).toBe(true);
+    expect(validateManifest(tab, { retired: true }).problems.map(problem => problem.code)).toEqual(['placement_tab_retired']);
   });
 
   test('parses settings collected when an app is placed', () => {

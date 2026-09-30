@@ -4,7 +4,7 @@
   "displayName": "Checklist",
   "logo": { "color": "./brand/logo.svg", "mono": "./brand/logo-mono.svg" },
   "icon": { "color": "./brand/icon.svg", "mono": "./brand/icon-mono.svg" },
-  "placements": [{ "kind": "project-tab", "screen": "home", "label": "Checklist" }],
+  "placements": [{ "kind": "project-widget", "screen": "home", "label": "Checklist", "sizes": ["medium", "large"] }],
   "data": {
     "items": {
       "schema": { "title": "string", "done": "boolean", "note": "text?" },

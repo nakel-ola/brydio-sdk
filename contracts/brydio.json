@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "4772aebc5148493e3cc9a7b6b8c0b26a75149cc1",
+    "commit": "f79cb8689c2656584710ce09c2b16b454d6048e6",
     "dirty": true
   },
   "contracts": {
@@ -6943,8 +6943,12 @@
       "displayName": "Issues",
       "placements": [
         {
-          "kind": "project-tab",
+          "kind": "project-widget",
           "screen": "board",
+          "sizes": [
+            "medium",
+            "large"
+          ],
           "label": "Issues",
           "icon": "kanban"
         }
@@ -7034,8 +7038,12 @@
           "displayName": "Issues",
           "placements": [
             {
-              "kind": "project-tab",
+              "kind": "project-widget",
               "screen": "board",
+              "sizes": [
+                "medium",
+                "large"
+              ],
               "label": "Issues",
               "icon": "kanban"
             }
@@ -7119,7 +7127,7 @@
       {
         "ok": false,
         "messages": [
-          "Invalid option: expected one of \"project-tab\"|\"project-sidebar\"|\"workspace-sidebar\"|\"home\""
+          "Invalid option: expected one of \"project-tab\"|\"project-widget\"|\"project-sidebar\"|\"workspace-sidebar\"|\"home\""
         ]
       },
       {
@@ -7136,8 +7144,12 @@
           "displayName": "Issues",
           "placements": [
             {
-              "kind": "project-tab",
+              "kind": "project-widget",
               "screen": "board",
+              "sizes": [
+                "medium",
+                "large"
+              ],
               "label": "Issues",
               "icon": "kanban"
             }
@@ -7252,8 +7264,12 @@
           "displayName": "Issues",
           "placements": [
             {
-              "kind": "project-tab",
+              "kind": "project-widget",
               "screen": "board",
+              "sizes": [
+                "medium",
+                "large"
+              ],
               "label": "Issues",
               "icon": "kanban"
             }
@@ -7298,8 +7314,12 @@
           "displayName": "Issues",
           "placements": [
             {
-              "kind": "project-tab",
+              "kind": "project-widget",
               "screen": "board",
+              "sizes": [
+                "medium",
+                "large"
+              ],
               "label": "Issues",
               "icon": "kanban"
             }
@@ -7571,8 +7591,12 @@
           "displayName": "Issues",
           "placements": [
             {
-              "kind": "project-tab",
+              "kind": "project-widget",
               "screen": "board",
+              "sizes": [
+                "medium",
+                "large"
+              ],
               "label": "Issues",
               "icon": "kanban"
             }

@@ -293,11 +293,11 @@ describe('a manifest refused in the publish route’s words (A8-F04-S03)', () =>
       'app.json: "grants.collections": issues is kept but not asked for: add it to grants.collections.',
     ]);
 
-    const nowhere = built(JSON.stringify({ ...JSON.parse(V020), placements: [{ kind: 'project-tab', screen: 'nowhere' }] }));
+    const nowhere = built(JSON.stringify({ ...JSON.parse(V020), placements: [{ kind: 'project-widget', screen: 'nowhere', sizes: ['large'] }] }));
 
     expect(found(validate(nowhere).problems)).toContainEqual([
       'placement_screen_unknown',
-      'app.json: A project-tab placement opens "nowhere", which is not one of the app\'s screens.',
+      'app.json: A project-widget placement opens "nowhere", which is not one of the app\'s screens.',
     ]);
   });
 

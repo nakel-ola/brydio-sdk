@@ -11,7 +11,7 @@
  *   name: 'issues',
  *   version: '0.1.0',
  *   screens: { board: { entry: 'screens/board.js' } },
- *   placements: [{ kind: 'project-tab', screen: 'bord' }],   // error: "bord" is not a screen
+ *   placements: [{ kind: 'project-widget', screen: 'bord', sizes: ['large'] }],   // error: "bord" is not a screen
  * });
  * ```
  */

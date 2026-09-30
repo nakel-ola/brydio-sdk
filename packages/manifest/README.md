@@ -11,7 +11,7 @@ export const manifest = defineManifest({
   name: 'checklist',
   version: '0.1.0',
   screens: { home: { entry: 'screens/home.js' } },
-  placements: [{ kind: 'project-tab', screen: 'home', label: 'Checklist' }],
+  placements: [{ kind: 'project-widget', screen: 'home', label: 'Checklist', sizes: ['medium', 'large'] }],
 });
 ```
 

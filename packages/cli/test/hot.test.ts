@@ -50,7 +50,7 @@ function app(grants: object = {}): string {
       name: 'counter',
       version: '1.0.0',
       displayName: 'Counter',
-      placements: [{ kind: 'project-tab', screen: 'home' }],
+      placements: [{ kind: 'project-widget', screen: 'home', sizes: ['large'] }],
       screens: { home: { entry: 'screens/home.js' } },
       grants,
     }),
@@ -88,7 +88,7 @@ function run(entry: string) {
         params: {
           theme: 'light',
           locale: 'en-GB',
-          placement: { id: 'pl_1', kind: 'project-tab', projectId: 'pr_1' },
+          placement: { id: 'pl_1', kind: 'project-widget', projectId: 'pr_1' },
           instance: { id: 'in_1', name: 'Counter', scope: 'project' },
           size: { width: 960, height: 640 },
         },

@@ -52,7 +52,7 @@ function screen() {
       listener({
         jsonrpc: '2.0',
         method: 'host/context',
-        params: { theme: 'light', locale: 'en-GB', placement: { id: 'p', kind: 'project-tab' }, instance: { id: 'i', name: 'Issues', scope: 'workspace' }, size: { width: 960, height: 640 } },
+        params: { theme: 'light', locale: 'en-GB', placement: { id: 'p', kind: 'project-widget' }, instance: { id: 'i', name: 'Issues', scope: 'workspace' }, size: { width: 960, height: 640 } },
       });
       await connected;
       await settle();

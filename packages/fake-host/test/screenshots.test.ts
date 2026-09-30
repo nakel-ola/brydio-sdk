@@ -27,9 +27,9 @@ describe('pictures of every screen (A5-F04-S04)', () => {
 
     expect(wideDark.tree.root).toBe('root');
     expect(wideDark.tree.nodes[0]).toMatchObject({ id: 'root', type: 'bry-stack' });
-    expect(texts).toEqual(['1200 dark project-tab', 'Buy milk', 'Call Ada']);
+    expect(texts).toEqual(['1200 dark project-widget', 'Buy milk', 'Call Ada']);
     expect(screenshots.find(one => one.width === 'narrow' && one.theme === 'light')!.tree.nodes.filter(node => node.type === 'bry-text')[0]!.props?.text).toBe(
-      '400 light project-tab',
+      '400 light project-widget',
     );
   });
 

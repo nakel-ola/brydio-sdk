@@ -21,7 +21,7 @@ two screens, collection grants, tool grants, and host grants.
   "version": "0.1.0",
   "displayName": "Issues",
   "placements": [
-    { "kind": "project-tab", "screen": "board", "label": "Issues", "icon": "kanban" },
+    { "kind": "project-widget", "screen": "board", "sizes": ["medium", "large"], "label": "Issues", "icon": "kanban" },
     { "kind": "project-sidebar", "screen": "board", "label": "Issues", "icon": "kanban" },
     { "kind": "workspace-sidebar", "screen": "board", "label": "Issues", "icon": "kanban" }
   ],

@@ -7,7 +7,7 @@ export const ISSUES_MANIFEST = {
   name: 'issues',
   version: '0.1.0',
   displayName: 'Issues',
-  placements: [{ kind: 'project-tab', screen: 'board', label: 'Issues', icon: 'kanban' }],
+  placements: [{ kind: 'project-widget', screen: 'board', sizes: ['medium', 'large'], label: 'Issues', icon: 'kanban' }],
   data: {
     issues: {
       schema: {

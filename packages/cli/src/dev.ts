@@ -131,7 +131,7 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
       for (const problem of result.problems) out(formatProblem(problem));
 
       if (development) {
-        out('Not built: the tab keeps the last good build, and says why.');
+        out('Not built: the widget keeps the last good build, and says why.');
 
         const first = result.problems.find(problem => problem.severity === 'error') ?? result.problems[0];
 
@@ -298,7 +298,9 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
   }
 
   if (development) {
-    const places = development.placements?.filter(place => place.kind !== 'project-tab') ?? [];
+    // A widget is on the project's page; the rest open at their own address.
+    const places =
+      development.placements?.filter(place => place.kind !== 'project-widget' && place.kind !== 'project-tab') ?? [];
     const where = (kind: string) => (kind === 'workspace-sidebar' ? "the workspace's sidebar" : "the project's sidebar");
 
     out(
@@ -314,11 +316,11 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
                 : 'Every saved change builds again and starts what is open over with the new code. Stop with Ctrl-C to remove it.',
             ]
           : [
-              `Open the project in Brydio: the "${titleOf(project.raw)}" tab is marked development, and only you can see it.`,
+              `Open the project in Brydio: the "${titleOf(project.raw)}" widget is marked development, and only you can see it.`,
               `  /projects/${development.projectId}?tab=app-${development.placementId}`,
               hot
-                ? 'Every saved change builds again and is swapped into the open tab, keeping what is on it (or starts it over when it cannot be). Stop with Ctrl-C to remove the tab.'
-                : 'Every saved change builds again and starts the tab over with the new code. Stop with Ctrl-C to remove the tab.',
+                ? 'Every saved change builds again and is swapped into the widget, keeping what is on it (or starts it over when it cannot be). Stop with Ctrl-C to remove the widget.'
+                : 'Every saved change builds again and starts the widget over with the new code. Stop with Ctrl-C to remove the widget.',
             ]),
         '',
       ].join('\n'),

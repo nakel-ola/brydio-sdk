@@ -1,4 +1,4 @@
-import { appManifestSchema, type AppManifestWithData, type DataProblemCode } from './schema.ts';
+import { appManifestSchema, newAppManifestSchema, type AppManifestWithData, type DataProblemCode } from './schema.ts';
 
 /**
  * Reading a manifest and saying what is wrong with it, the way Brydio would.
@@ -27,8 +27,12 @@ export interface ManifestValidation {
   problems: ManifestProblem[];
 }
 
-export function validateManifest(source: unknown): ManifestValidation {
-  const parsed = appManifestSchema.safeParse(source);
+export function validateManifest(
+  source: unknown,
+  /** `retired`: a manifest being written now, which may not use a retired kind such as `project-tab`. */
+  options: { retired?: boolean } = {},
+): ManifestValidation {
+  const parsed = (options.retired ? newAppManifestSchema : appManifestSchema).safeParse(source);
 
   if (parsed.success) return { ok: true, manifest: parsed.data, problems: [] };
 
@@ -45,7 +49,7 @@ export function validateManifest(source: unknown): ManifestValidation {
 }
 
 /** Parses the text of `.brydio/app.json` and validates it. */
-export function validateManifestText(text: string): ManifestValidation {
+export function validateManifestText(text: string, options: { retired?: boolean } = {}): ManifestValidation {
   let json: unknown;
 
   try {
@@ -57,5 +61,5 @@ export function validateManifestText(text: string): ManifestValidation {
     };
   }
 
-  return validateManifest(json);
+  return validateManifest(json, options);
 }

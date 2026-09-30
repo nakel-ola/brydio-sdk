@@ -143,7 +143,7 @@ describe('brydio build', () => {
   });
 
   test('refuses a manifest the server would refuse, with the server’s code', async () => {
-    const result = await build(app({ '.brydio/app.json': manifest({ placements: [{ kind: 'project-tab', screen: 'nowhere' }] }) }));
+    const result = await build(app({ '.brydio/app.json': manifest({ placements: [{ kind: 'project-widget', screen: 'nowhere', sizes: ['large'] }] }) }));
 
     expect(codes(result.problems)).toEqual(['placement_screen_unknown']);
   });

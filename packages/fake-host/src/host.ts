@@ -43,7 +43,7 @@ export interface HostContext {
 export const DEFAULT_CONTEXT: HostContext = {
   theme: 'light',
   locale: 'en-GB',
-  placement: { id: 'placement_1', kind: 'project-tab', projectId: 'project_1' },
+  placement: { id: 'placement_1', kind: 'project-widget', projectId: 'project_1' },
   instance: { id: 'instance_1', name: 'Issues', scope: 'workspace' },
   route: { path: '/' },
   size: { width: 960, height: 640 },

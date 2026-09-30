@@ -93,7 +93,8 @@ export type Op =
 
 // --- Where the screen is ----------------------------------------------------
 
-export type PlacementKind = 'project-tab' | 'project-sidebar' | 'workspace-sidebar' | 'home';
+/** `project-tab` is retired (30 Sep 2026): a tab placed before then is drawn as a large widget. */
+export type PlacementKind = 'project-widget' | 'project-tab' | 'project-sidebar' | 'workspace-sidebar' | 'home';
 export type InstanceScope = 'workspace' | 'project' | 'personal';
 
 /** Everything the host tells a screen about where it is running. Nothing about the person. */

@@ -39,7 +39,7 @@ describe('brydio create', () => {
       name: 'team-issues',
       version: '0.1.0',
       displayName: 'Team issues',
-      placements: [{ kind: 'project-tab', screen: 'home', label: 'Team issues' }],
+      placements: [{ kind: 'project-widget', screen: 'home', label: 'Team issues', sizes: ['medium', 'large'] }],
     });
 
     const pkg = json(join(dir, 'package.json'));
