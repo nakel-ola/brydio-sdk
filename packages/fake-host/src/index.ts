@@ -27,6 +27,7 @@ export {
   fakeHandlerClient,
   runHandler,
   type FakeHandlerOptions,
+  type FakeNotices,
   type HandlerCall,
   type HandlerRun,
 } from './handler.ts';

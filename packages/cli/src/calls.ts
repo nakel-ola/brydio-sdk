@@ -115,6 +115,8 @@ export function callsOf(file: string, text: string): ScreenCall[] {
         else if (method === 'members' || method === 'projects') add('host', method, callee, false);
         // A handler asking who can see a project uses the members grant too.
         else if (method === 'canSeeProject') add('host', 'members', callee, false);
+        // A handler's `notify.send`, `notify.at` and `notify.cancel` use the notify grant.
+        else if ((method === 'send' || method === 'at' || method === 'cancel') && /(^|\.)notify$/.test(object.getText(source))) add('host', 'notify', callee, false);
       }
     }
 

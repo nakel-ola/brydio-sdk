@@ -95,3 +95,58 @@ describe('asking who can see a project, in the fake host', () => {
     expect(refused.error).toBe('Tasks did not ask to see the names of people.');
   });
 });
+
+describe('notifying a member, in the fake host (TK01)', () => {
+  const tell: Handler<{ to: string; due?: string }> = async (input, { notify }) => {
+    const now = await notify.send({ to: input.to, kind: 'assigned', collection: 'issues', record: 'iss_1', title: 'WEB-1 Ship it' });
+    const later = input.due ? await notify.at({ to: input.to, kind: 'due_soon', collection: 'issues', record: 'iss_1', title: 'WEB-1 Ship it', at: input.due, key: 'due:iss_1' }) : null;
+
+    return { now, later };
+  };
+
+  test('keeps what was sent and set, and answers "self" for the caller, as Brydio does', async () => {
+    const run = await runHandler(tell, { to: 'user_bo', due: '2026-10-02T09:00:00Z' }, { caller: { userId: 'user_ada' } });
+
+    expect(run.result).toEqual({ now: { notified: true }, later: { scheduled: true } });
+    expect(run.notices.sent.map(one => one.to)).toEqual(['user_bo']);
+    expect([...run.notices.pending.keys()]).toEqual(['user_bo:due:iss_1']);
+
+    const own = await runHandler(tell, { to: 'user_ada', due: '2026-10-02T09:00:00Z' }, { caller: { userId: 'user_ada' } });
+
+    // Told of what you did: no. A due date for yourself: yes.
+    expect(own.result).toEqual({ now: { notified: false, reason: 'self' }, later: { scheduled: true } });
+  });
+
+  test("answers cannot_see from the test's rule, moves a pending one by key, and cancels it", async () => {
+    const hidden = await runHandler(tell, { to: 'user_cy' }, { canNotify: to => to !== 'user_cy' });
+
+    expect(hidden.result).toEqual({ now: { notified: false, reason: 'cannot_see' }, later: null });
+
+    const move: Handler = async (_input, { notify }) => {
+      const base = { to: 'user_bo', kind: 'overdue' as const, collection: 'issues', record: 'iss_1', title: 'Late', key: 'late:iss_1' };
+
+      await notify.at({ ...base, at: '2026-10-02T09:00:00Z' });
+      await notify.at({ ...base, at: '2026-10-03T09:00:00Z' });
+      const kept = { ...base, at: '2026-10-04T09:00:00Z', key: 'late:iss_2' };
+
+      await notify.at(kept);
+
+      return notify.cancel('late:iss_1', 'user_bo');
+    };
+    const run = await runHandler(move, {});
+
+    expect(run.result).toEqual({ cancelled: 1 });
+    expect([...run.notices.pending.keys()]).toEqual(['user_bo:late:iss_2']);
+  });
+
+  test('refuses without the notify grant, from a read tool, and a kind Brydio does not know', async () => {
+    const refused = await runHandler(tell, { to: 'user_bo' }, { manifest: { displayName: 'Tasks', grants: { host: [] } } as never });
+
+    expect(refused.error).toBe('Tasks did not ask to notify people about its records.');
+    expect((await runHandler(tell, { to: 'user_bo' }, { write: false, tool: 'list_issues' })).error).toBe("list_issues is a read tool, so its handler can't notify anyone.");
+
+    const odd: Handler = async (_input, { notify }) => notify.send({ to: 'user_bo', kind: 'shouting' as never, collection: 'issues', record: 'iss_1', title: 'x' });
+
+    expect((await runHandler(odd, {})).error).toMatch(/kind is one of assigned/);
+  });
+});

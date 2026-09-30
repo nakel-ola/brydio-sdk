@@ -1,4 +1,4 @@
-import type { Handler, HandlerCaller, HandlerClient, HandlerConnectionRequest } from '@brydio/app/handler';
+import type { Handler, HandlerCaller, HandlerClient, HandlerConnectionRequest, Notice, NoticeAt, NoticeKind } from '@brydio/app/handler';
 import { MAX_SECRET_CHARS, SECRET_NAME, type ManifestExtensions } from '@brydio/manifest';
 
 /**
@@ -46,6 +46,20 @@ export interface FakeHandlerOptions {
   model?: Partial<HandlerClient['model']>;
   /** Who can open which project, for `members.canSeeProject`. Without it, everyone can. */
   canSeeProject?: (projectId: string, userId: string) => boolean | Promise<boolean>;
+  /**
+   * Whom `notify` may reach, as Brydio's member and visibility check would
+   * answer. Without it, anyone but the caller. Answer false to have the fake
+   * say `cannot_see`.
+   */
+  canNotify?: (to: string, notice: Notice) => boolean | Promise<boolean>;
+}
+
+/** What a handler asked Brydio to tell people, as the fake host kept it. */
+export interface FakeNotices {
+  /** Sent now, in order. */
+  sent: Notice[];
+  /** Set for later, by `<to>:<key>`, as they stand after the run (moved and cancelled ones applied). */
+  pending: Map<string, NoticeAt>;
 }
 
 /** One call the handler made through its client. */
@@ -63,7 +77,14 @@ export interface HandlerRun<O> {
   /** Secrets as they stand after the run, as the app's settings would say: set or not. */
   secrets: Map<string, string>;
   calls: HandlerCall[];
+  /** Who the handler notified, and what it set for later. */
+  notices: FakeNotices;
 }
+
+const NOTICE_KINDS: readonly NoticeKind[] = ['assigned', 'mentioned', 'commented', 'status_changed', 'due_soon', 'overdue', 'reminder', 'updated'];
+/** Kinds a caller may set for themselves with `notify.at`, as Brydio allows. */
+const OWN_REMINDERS: readonly NoticeKind[] = ['reminder', 'due_soon', 'overdue'];
+const NOTICE_KEY = /^[A-Za-z0-9:_.-]{1,120}$/;
 
 const unavailable = (what: string) => async () => {
   throw new Error(`${what} is not answered in this test: pass it in the fake handler's options.`);
@@ -76,6 +97,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
   calls: HandlerCall[];
   /** Every secret value the handler was handed or stored. */
   held: Set<string>;
+  notices: FakeNotices;
 } {
   const secrets = new Map(Object.entries(options.secrets ?? {}));
   const calls: HandlerCall[] = [];
@@ -109,6 +131,25 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
 
       return run(...args);
     };
+
+  const notices: FakeNotices = { sent: [], pending: new Map() };
+  const callerId = options.caller?.userId ?? 'user_test';
+  // Brydio's checks on a notice, in its words: the grant, a write tool, the shape.
+  const notifies = (method: string, args: unknown[]) => {
+    const allowed = manifest ? (manifest.grants?.host ?? []).some(grant => grant === 'notify' || grant === '*') : true;
+
+    if (!allowed) throw new Error(`${appName} did not ask to notify people about its records.`);
+    if (options.write === false) throw new Error(`${tool} is a read tool, so its handler can't notify anyone.`);
+    keeps(method, args);
+  };
+  const checkNotice = (notice: Notice) => {
+    if (!notice || typeof notice.to !== 'string' || !notice.to) throw new Error('notify needs `to`: the member to tell.');
+    if (!NOTICE_KINDS.includes(notice.kind)) throw new Error(`notify's kind is one of ${NOTICE_KINDS.join(', ')}.`);
+    if (typeof notice.collection !== 'string' || !notice.collection) throw new Error('notify needs `collection`: the collection the record is in.');
+    if (typeof notice.record !== 'string' || !notice.record) throw new Error('notify needs `record`: the id of the record it is about.');
+    if (typeof notice.title !== 'string' || !notice.title.trim()) throw new Error('notify needs a `title`.');
+  };
+  const reaches = async (notice: Notice) => (options.canNotify ? await options.canNotify(notice.to, notice) : true);
 
   const data = options.data ?? {};
   const client: HandlerClient = Object.freeze({
@@ -172,22 +213,67 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
         return (await options.canSeeProject?.(projectId, userId)) ?? true;
       }),
     }),
+    notify: Object.freeze({
+      send: recorded(
+        'notify.send',
+        async (notice: Notice) => {
+          checkNotice(notice);
+          if (notice.to === callerId) return { notified: false as const, reason: 'self' as const };
+          if (!(await reaches(notice))) return { notified: false as const, reason: 'cannot_see' as const };
+          notices.sent.push(notice);
+
+          return { notified: true as const };
+        },
+        notifies,
+      ),
+      at: recorded(
+        'notify.at',
+        async (notice: NoticeAt) => {
+          checkNotice(notice);
+          if (Number.isNaN(new Date(notice.at).getTime())) throw new Error('notify.at needs `at`: an ISO date and time.');
+          if (typeof notice.key !== 'string' || !NOTICE_KEY.test(notice.key)) throw new Error('notify.at needs a `key` (letters, digits, : _ . -, up to 120) to move or cancel it by.');
+          if (notice.to === callerId && !OWN_REMINDERS.includes(notice.kind)) return { scheduled: false as const, reason: 'self' as const };
+          if (!(await reaches(notice))) return { scheduled: false as const, reason: 'cannot_see' as const };
+          notices.pending.set(`${notice.to}:${notice.key}`, notice);
+
+          return { scheduled: true as const };
+        },
+        notifies,
+      ),
+      cancel: recorded(
+        'notify.cancel',
+        async (key: string, to?: string) => {
+          if (typeof key !== 'string' || !NOTICE_KEY.test(key)) throw new Error('notify.cancel takes the key the notice was set with.');
+          let cancelled = 0;
+
+          for (const [id, one] of notices.pending) {
+            if (one.key === key && (!to || one.to === to)) {
+              notices.pending.delete(id);
+              cancelled += 1;
+            }
+          }
+
+          return { cancelled };
+        },
+        notifies,
+      ),
+    }),
     caller: Object.freeze({ userId: options.caller?.userId ?? 'user_test', origin: options.caller?.origin ?? 'assistant', role: options.caller?.role ?? 'owner' }),
   });
 
-  return { client, secrets, calls, held };
+  return { client, secrets, calls, held, notices };
 }
 
 /** Runs a handler against the fake client, and answers as Brydio would pass its answer on. */
 export async function runHandler<I, O>(handler: Handler<I, O>, input: I, options: FakeHandlerOptions = {}): Promise<HandlerRun<O>> {
-  const { client, secrets, calls, held } = fakeHandlerClient(options);
+  const { client, secrets, calls, held, notices } = fakeHandlerClient(options);
 
   try {
     const result = await handler(input, client);
 
-    return { result: scrub(JSON.parse(JSON.stringify(result ?? null)) as O, held), secrets, calls };
+    return { result: scrub(JSON.parse(JSON.stringify(result ?? null)) as O, held), secrets, calls, notices };
   } catch (error) {
-    return { error: scrub(error instanceof Error ? error.message : String(error), held), secrets, calls };
+    return { error: scrub(error instanceof Error ? error.message : String(error), held), secrets, calls, notices };
   }
 }
 

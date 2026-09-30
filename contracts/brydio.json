@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "8aa859a1f6f03e77f19104467015f79858dab624",
+    "commit": "96d52a6d35b5d6e40a225371f68e616bbcc3785c",
     "dirty": false
   },
   "contracts": {
@@ -6092,104 +6092,12 @@
             "error": {
               "kind": "text",
               "max": 200
-            },
-            "bind": {
-              "kind": "shape",
-              "fields": {
-                "collection": {
-                  "kind": "text",
-                  "max": 40
-                },
-                "id": {
-                  "kind": "text",
-                  "max": 128
-                },
-                "field": {
-                  "kind": "text",
-                  "max": 40
-                }
-              },
-              "required": [
-                "collection",
-                "id",
-                "field"
-              ]
-            },
-            "hide": {
-              "kind": "list",
-              "max": 13,
-              "of": {
-                "kind": "enum",
-                "values": [
-                  "headings",
-                  "lists",
-                  "tasks",
-                  "quote",
-                  "code",
-                  "table",
-                  "maths",
-                  "callout",
-                  "toggle",
-                  "divider",
-                  "highlight",
-                  "scripts",
-                  "align"
-                ]
-              }
             }
           },
           "events": [
             "change",
             "blur",
             "submit"
-          ],
-          "children": false
-        },
-        "bry-whiteboard": {
-          "props": {
-            "bind": {
-              "kind": "shape",
-              "fields": {
-                "collection": {
-                  "kind": "text",
-                  "max": 40
-                },
-                "id": {
-                  "kind": "text",
-                  "max": 128
-                },
-                "field": {
-                  "kind": "text",
-                  "max": 40
-                }
-              },
-              "required": [
-                "collection",
-                "id",
-                "field"
-              ]
-            },
-            "size": {
-              "kind": "enum",
-              "values": [
-                "sm",
-                "md",
-                "lg"
-              ]
-            },
-            "readonly": {
-              "kind": "boolean"
-            },
-            "label": {
-              "kind": "text",
-              "max": 200
-            }
-          },
-          "required": [
-            "bind"
-          ],
-          "events": [
-            "change"
           ],
           "children": false
         },
@@ -7014,7 +6922,8 @@
         "files",
         "chats",
         "model",
-        "secrets"
+        "secrets",
+        "notify"
       ],
       "reads": [
         true,

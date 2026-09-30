@@ -182,6 +182,18 @@ describe('what the screens call, against the grants', () => {
     expect(callsOf('src/handlers/check.ts', source).map(call => [call.kind, call.name, call.sure])).toEqual([['host', 'members', false]]);
   });
 
+  test('counts a handler notifying a member as using the notify grant (TK01)', () => {
+    const source = "export default async function (input, client) { const { notify } = client; await notify.send(input.notice); await client.notify.at(input.later); return notify.cancel('k'); }";
+
+    expect(callsOf('src/handlers/tell.ts', source).map(call => [call.kind, call.name, call.sure])).toEqual([
+      ['host', 'notify', false],
+      ['host', 'notify', false],
+      ['host', 'notify', false],
+    ]);
+    // Another object's `send` is not a notification.
+    expect(callsOf('src/handlers/other.ts', 'socket.send(x); mail.at(y);')).toEqual([]);
+  });
+
   test('finds project, file, and chat calls through the typed API', () => {
     const source = "import { api as brydio } from '@brydio/api';\nbrydio.files.list(project);\nbrydio.projects.get(project);\nbrydio.chats.list({ projectId: project });";
 
@@ -261,7 +273,7 @@ describe('what the publish route refuses, found first', () => {
     const root = built(issues('0.2.0', { title: 'string' }, { grants: { tools: ['*'], collections: ['*'], host: ['camera'] } }));
 
     expect(found(validate(root).problems)).toEqual([
-      ['grant_unknown', 'app.json asks for "camera", which Brydio does not grant. An app may ask for navigate, message, members, projects, files, chats, model, secrets or connection:<name>.'],
+      ['grant_unknown', 'app.json asks for "camera", which Brydio does not grant. An app may ask for navigate, message, members, projects, files, chats, model, secrets, notify or connection:<name>.'],
     ]);
   });
 

@@ -117,6 +117,65 @@ export interface HandlerMembers {
   canSeeProject(projectId: string, userId: string): Promise<boolean>;
 }
 
+/** What a notification is about, in words every app shares, so a person's settings read the same for each. */
+export type NoticeKind = 'assigned' | 'mentioned' | 'commented' | 'status_changed' | 'due_soon' | 'overdue' | 'reminder' | 'updated';
+
+/** One notification: whom to tell, what about, and the record it opens. */
+export interface Notice {
+  /** The member's id, as a member field holds it. */
+  to: string;
+  kind: NoticeKind;
+  /** The collection and id of the record a click opens. */
+  collection: string;
+  record: string;
+  /** The line people read first: the record's title, say "WEB-12 Crash on save". Up to 200 characters. */
+  title: string;
+  /** A second line: "Ada assigned it to you". Up to 500 characters. */
+  body?: string;
+}
+
+/** A notification for later: when, and the app's own key to move or cancel it by (letters, digits, `: _ . -`). */
+export interface NoticeAt extends Notice {
+  /** An ISO date and time, at most 400 days ahead. A time already past goes out within a minute. */
+  at: string;
+  key: string;
+}
+
+/**
+ * Why Brydio did not send a notice. Not an error: a handler carries on.
+ *
+ * - `self`: the person is the one who caused it.
+ * - `not_a_member`: not an active person in this workspace.
+ * - `cannot_see`: they can't open this instance or the record's project.
+ * - `bot`: a bot hears of its work another way.
+ * - `no_record`: the record isn't in this instance (or was deleted).
+ * - `muted` / `kind_off`: the person turned this app, or this kind, off.
+ * - `rate_limited`: this app told them too much in the last hour.
+ */
+export type NoticeSkip = 'self' | 'not_a_member' | 'cannot_see' | 'bot' | 'no_record' | 'muted' | 'kind_off' | 'rate_limited';
+
+export type NoticeSent = { notified: true; held?: true } | { notified: false; reason: NoticeSkip };
+export type NoticeSet = { scheduled: true } | { scheduled: false; reason: NoticeSkip };
+
+/**
+ * Telling a member about one of the app's records (`tasks/tasks-gaps` TK01),
+ * with the `notify` host grant, from a write tool's handler. Brydio delivers
+ * it as a desktop or in-app notification that opens the record, and holds it
+ * through the person's do not disturb and quiet hours.
+ *
+ * - `send` tells them now (or when their quiet time ends).
+ * - `at` tells them at a time; setting the same key again for them moves it.
+ *   For a `reminder`, `due_soon` or `overdue`, the caller may set one for
+ *   themselves.
+ * - `cancel` drops this instance's pending notices with the key, for one
+ *   member or everyone.
+ */
+export interface HandlerNotify {
+  send(notice: Notice): Promise<NoticeSent>;
+  at(notice: NoticeAt): Promise<NoticeSet>;
+  cancel(key: string, to?: string): Promise<{ cancelled: number }>;
+}
+
 /** Everything a handler is given beside its input. */
 export interface HandlerClient {
   readonly data: HandlerData;
@@ -125,6 +184,7 @@ export interface HandlerClient {
   readonly model: HandlerModel;
   readonly secrets: HandlerSecrets;
   readonly members: HandlerMembers;
+  readonly notify: HandlerNotify;
   readonly caller: HandlerCaller;
 }
 
