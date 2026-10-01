@@ -48,9 +48,27 @@ without Brydio with `runHandler` from `@brydio/fake-host`.
 
 No part of an app — screen, worker or handler — is ever given a Brydio
 session token, a cookie, or any other credential that reaches Brydio's
-backend. A handler's `caller` is a user id and an origin, and a connection's
-request carries the connection's own token, added by Brydio; a handler
-cannot set headers.
+backend. A handler's `caller` is a user id (or none, for a visitor) and an
+origin, and a connection's request carries the connection's own token, added
+by Brydio; a handler cannot set headers.
+
+## Visitors on a public page
+
+A screen placed as a `public-page` is opened by people with no Brydio
+account. Brydio treats such a visitor as an anonymous caller: the screen's
+context has `role: 'anonymous'`, and a handler's `caller` is
+`{ userId: null, origin: 'public', role: 'anonymous' }` (a `VisitorCaller`).
+
+A visitor reaches only what the app marks public. They may get and list the
+records of a `publicRead` collection, create records in a `publicSubmit` one
+(never update, remove or batch), and run a custom tool marked `public`. A
+public tool's handler is held to the same rules, may call only other public
+tools, and its `connection`, `model`, `secrets`, `notify`, `members`,
+`approvals` and `files` refuse with `not_for_visitors`. Records a visitor
+reads never say who made or changed them.
+
+Mark only what you mean a stranger to see or send. A handler that does more
+for an admin should check `caller.role` before trusting `caller.userId`.
 
 ## What is worth reporting
 

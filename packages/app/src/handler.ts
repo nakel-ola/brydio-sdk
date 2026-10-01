@@ -28,19 +28,51 @@
  * sign anything.
  */
 
-/** Where a call came from: the assistant, the app's screen, or a sidebar folder listing its rows. */
-export type HandlerOrigin = 'assistant' | 'screen' | 'folder';
+/**
+ * Where a call came from: the assistant, the app's screen, a sidebar folder
+ * listing its rows, or a visitor on one of the app's public pages (P3).
+ */
+export type HandlerOrigin = 'assistant' | 'screen' | 'folder' | 'public';
 
-/** Who is calling. An id to compare and record, never something that authenticates. */
 /** The caller's place in the workspace: its creator, an admin, or anyone else. */
 export type WorkspaceRole = 'owner' | 'admin' | 'member';
 
-export interface HandlerCaller {
+/** A workspace member calling: from the assistant, the app's screen or a folder. */
+export interface MemberCaller {
+  /** An id to compare and record, never something that authenticates. */
   readonly userId: string;
-  readonly origin: HandlerOrigin;
+  readonly origin: Exclude<HandlerOrigin, 'public'>;
   /** Their role in the workspace, so a handler can let an admin do more (delete others' comments). */
   readonly role: WorkspaceRole;
 }
+
+/**
+ * Someone with no Brydio account, on one of the app's public pages (P3).
+ * Only a custom tool marked `public` is ever run for one. Brydio knows
+ * nothing about them, so there is no id.
+ *
+ * A visitor's client is smaller than a member's:
+ *
+ * - `data` is held to the collection flags: `get` and `list` only where the
+ *   collection is `publicRead`, `create` only where it is `publicSubmit`,
+ *   and never `update`, `remove` or `batch`. Records come back without who
+ *   made or changed them.
+ * - `tools.call` reaches only the app's other `public` tools.
+ * - `connection`, `model`, `secrets`, `notify`, `members`, `approvals` and
+ *   `files` refuse with the code `not_for_visitors`.
+ */
+export interface VisitorCaller {
+  readonly userId: null;
+  readonly origin: 'public';
+  readonly role: 'anonymous';
+}
+
+/**
+ * Who is calling: a member, or a visitor on a public page. Tell them apart
+ * with `caller.role === 'anonymous'` (or `caller.userId === null`), which
+ * narrows to `VisitorCaller`.
+ */
+export type HandlerCaller = MemberCaller | VisitorCaller;
 
 /** A record as a handler reads it: its fields, flat, beside Brydio's own. */
 export type HandlerRecord = Record<string, unknown> & { id: string; version: number };

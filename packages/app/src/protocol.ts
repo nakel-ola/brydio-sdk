@@ -93,9 +93,22 @@ export type Op =
 
 // --- Where the screen is ----------------------------------------------------
 
-/** `project-tab` is retired (30 Sep 2026): a tab placed before then is drawn as a large widget. */
-export type PlacementKind = 'project-widget' | 'project-tab' | 'project-sidebar' | 'workspace-sidebar' | 'home';
-export type InstanceScope = 'workspace' | 'project' | 'personal';
+/**
+ * `project-tab` is retired (30 Sep 2026): a tab placed before then is drawn as a large widget.
+ * `public-page` is a screen opened by people with no Brydio account (P3).
+ */
+export type PlacementKind = 'project-widget' | 'project-tab' | 'project-sidebar' | 'workspace-sidebar' | 'home' | 'public-page';
+
+/** `public` is a public page's: its `instance.id` is the page's id and `name` its title. */
+export type InstanceScope = 'workspace' | 'project' | 'personal' | 'public';
+
+/**
+ * The viewer's role: a member's place in the workspace, or `anonymous` for a
+ * visitor on a public page, who has no account. A public page's screen can
+ * read only `publicRead` collections, create only in `publicSubmit` ones and
+ * call only `public` tools; the rest of the host bridge is refused.
+ */
+export type ScreenRole = 'owner' | 'admin' | 'member' | 'anonymous';
 
 /** Everything the host tells a screen about where it is running. Nothing about the person. */
 export interface HostContext {
@@ -107,8 +120,8 @@ export interface HostContext {
   route: { path: string };
   selection?: unknown;
   size: { width: number; height: number };
-  /** The viewer's role in the workspace; never who they are. Absent from an older Brydio. */
-  role?: 'owner' | 'admin' | 'member';
+  /** The viewer's role in the workspace, or `anonymous` on a public page; never who they are. Absent from an older Brydio. */
+  role?: ScreenRole;
 }
 
 export interface AppInfo {
