@@ -22,7 +22,7 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
-## Unreleased
+## 0.1.0-alpha.33
 
 Public pages (P3). An app can offer a screen that people with no Brydio account open at its own address, once a workspace admin turns it on.
 
