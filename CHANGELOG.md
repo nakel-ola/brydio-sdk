@@ -22,6 +22,13 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.30
+
+- **Screens share code.** An app with two or more screens is built in one split build: each screen keeps its path, and code they share goes to `chunks/<hash>.js`, counted once toward the 1 MB cap. The size report says how much is shared. The 30 KB runtime budget is still per screen, counting the chunks it imports. `BuildOptions.split: false` builds each screen whole, as before. **What to change:** nothing, unless you copy `dist/` yourself: copy `chunks/` with the screens. Brydio captures a split bundle from its matching release on; single-file bundles keep working.
+- **Handlers can notify people.** With the new `notify` grant, a write handler can call `notify.send({to, kind, collection, record, title, body?})`, `notify.at({..., at, key})` and `notify.cancel(key, to?)`. Kinds: assigned, mentioned, commented, status_changed, due_soon, overdue, reminder, updated. A skipped notice answers `{notified: false, reason}` rather than throwing. The fake host has `notify` too, with a `canNotify` option and the `notices` sent on the run result.
+- **Member names can be bots.** `MemberName` gains `bot?: true` and `image?: string`, which Brydio already sends. The fake host's directory takes them and lists bots after people.
+- `files.read` takes the calling instance's own `appfile_…` ids as well as project files.
+
 ## 0.1.0-alpha.29
 
 - **Co-edited text.** A collection's `text` field may say `"coedit": true` (`{ "type": "text", "coedit": true }`). Several people then write it at once: draw it with `bry-rich-text` and `bind: { collection, id, field }`, and Brydio opens the record's shared document in the screen's own instance, with everyone's carets, and ignores `value`. The app still hears `change` (once typing settles) and `blur` with the markdown, and the record's body keeps the markdown, so `get_*`, search and the assistant read the text as it is. `coedit` on any other type is refused with `data_coedit_not_text`.
