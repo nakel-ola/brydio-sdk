@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "29c9e9acd5fef70825b54f9a93bb518334472fa0",
+    "commit": "cb779d5e7d57edc846b7d7c8ac1b962398d2796e",
     "dirty": false
   },
   "contracts": {
@@ -7875,6 +7875,430 @@
           "field": "status",
           "message": "issues.status no longer allows \"done\"; say which value replaces each."
         }
+      ]
+    },
+    "open-schema-fixture": {
+      "name": "database",
+      "version": "0.1.0",
+      "displayName": "Database",
+      "data": {
+        "tables": {
+          "schema": {
+            "name": "string"
+          },
+          "label": "table"
+        },
+        "columns": {
+          "schema": {
+            "table": "string",
+            "key": "string?",
+            "name": "string",
+            "type": [
+              "text",
+              "long_text",
+              "number",
+              "currency",
+              "percent",
+              "rating",
+              "date",
+              "datetime",
+              "checkbox",
+              "select",
+              "multi_select",
+              "person",
+              "link",
+              "url",
+              "email",
+              "phone",
+              "attachment"
+            ],
+            "choices": "string[]",
+            "required": "boolean?",
+            "currency": "string?",
+            "precision": "number?",
+            "linkTo": "string?",
+            "description": "string?",
+            "position": "number?"
+          },
+          "label": "column"
+        },
+        "rows": {
+          "schema": {
+            "table": "string",
+            "title": "string?"
+          },
+          "label": "row",
+          "search": [
+            "title"
+          ],
+          "openSchema": {
+            "fields": "columns",
+            "table": "table"
+          }
+        }
+      },
+      "tools": {
+        "generated": true,
+        "custom": []
+      },
+      "grants": {
+        "tools": [
+          "*"
+        ],
+        "collections": [
+          "*"
+        ]
+      }
+    },
+    "open-schema-manifests": [
+      {
+        "ok": true,
+        "data": {
+          "tables": {
+            "schema": {
+              "name": "string"
+            },
+            "label": "table"
+          },
+          "columns": {
+            "schema": {
+              "table": "string",
+              "key": "string?",
+              "name": "string",
+              "type": [
+                "text",
+                "long_text",
+                "number",
+                "currency",
+                "percent",
+                "rating",
+                "date",
+                "datetime",
+                "checkbox",
+                "select",
+                "multi_select",
+                "person",
+                "link",
+                "url",
+                "email",
+                "phone",
+                "attachment"
+              ],
+              "choices": "string[]",
+              "required": "boolean?",
+              "currency": "string?",
+              "precision": "number?",
+              "linkTo": "string?",
+              "description": "string?",
+              "position": "number?"
+            },
+            "label": "column"
+          },
+          "rows": {
+            "schema": {
+              "table": "string",
+              "title": "string?"
+            },
+            "search": [
+              "title"
+            ],
+            "label": "row",
+            "openSchema": {
+              "fields": "columns",
+              "table": "table"
+            }
+          }
+        },
+        "problems": []
+      },
+      {
+        "ok": false,
+        "data": null,
+        "problems": [
+          {
+            "code": "data_open_fields_unknown",
+            "message": "rows.openSchema.fields names nothing, which must be another collection of this app.",
+            "collection": "rows"
+          }
+        ]
+      },
+      {
+        "ok": false,
+        "data": null,
+        "problems": [
+          {
+            "code": "data_open_fields_unknown",
+            "message": "rows.openSchema.fields names rows, which must be another collection of this app.",
+            "collection": "rows"
+          }
+        ]
+      },
+      {
+        "ok": false,
+        "data": null,
+        "problems": [
+          {
+            "code": "data_open_fields_shape",
+            "field": "key",
+            "message": "tables defines columns's fields, so it needs key: \"string?\".",
+            "collection": "columns"
+          },
+          {
+            "code": "data_open_fields_shape",
+            "field": "type",
+            "message": "tables defines columns's fields, so it needs type: a choice of some of \"text\", \"long_text\", \"number\", \"currency\", \"percent\", \"rating\", \"date\", \"datetime\", \"checkbox\", \"select\", \"multi_select\", \"person\", \"link\", \"url\", \"email\", \"phone\", \"attachment\".",
+            "collection": "columns"
+          },
+          {
+            "code": "data_open_fields_unknown",
+            "message": "columns defines rows's fields, so it cannot have open fields itself.",
+            "collection": "rows"
+          }
+        ]
+      },
+      {
+        "ok": false,
+        "data": null,
+        "problems": [
+          {
+            "code": "data_open_fields_shape",
+            "field": "key",
+            "message": "columns defines rows's fields, so it needs key: \"string?\".",
+            "collection": "rows"
+          },
+          {
+            "code": "data_open_fields_shape",
+            "field": "name",
+            "message": "columns defines rows's fields, so it needs name: \"string\".",
+            "collection": "rows"
+          },
+          {
+            "code": "data_open_fields_shape",
+            "field": "type",
+            "message": "columns.type offers \"spreadsheet\", which is not an open field type; use some of \"text\", \"long_text\", \"number\", \"currency\", \"percent\", \"rating\", \"date\", \"datetime\", \"checkbox\", \"select\", \"multi_select\", \"person\", \"link\", \"url\", \"email\", \"phone\", \"attachment\".",
+            "collection": "rows"
+          },
+          {
+            "code": "data_open_fields_shape",
+            "field": "required",
+            "message": "columns.required is read by Brydio as boolean; declare it so.",
+            "collection": "rows"
+          }
+        ]
+      },
+      {
+        "ok": false,
+        "data": null,
+        "problems": [
+          {
+            "code": "data_open_fields_shape",
+            "field": "choices",
+            "message": "columns.choices is read by Brydio as string[]; declare it so.",
+            "collection": "rows"
+          },
+          {
+            "code": "data_open_fields_shape",
+            "field": "precision",
+            "message": "columns.precision is read by Brydio as number; declare it so.",
+            "collection": "rows"
+          }
+        ]
+      },
+      {
+        "ok": false,
+        "data": null,
+        "problems": [
+          {
+            "code": "data_open_fields_shape",
+            "field": "type",
+            "message": "columns defines rows's fields, so it needs type: a choice of some of \"text\", \"long_text\", \"number\", \"currency\", \"percent\", \"rating\", \"date\", \"datetime\", \"checkbox\", \"select\", \"multi_select\", \"person\", \"link\", \"url\", \"email\", \"phone\", \"attachment\".",
+            "collection": "rows"
+          }
+        ]
+      },
+      {
+        "ok": false,
+        "data": null,
+        "problems": [
+          {
+            "code": "data_open_table_unknown",
+            "field": "table",
+            "message": "rows.openSchema.table is table, so columns needs table: \"string\", naming each record's table.",
+            "collection": "rows"
+          }
+        ]
+      },
+      {
+        "ok": false,
+        "data": null,
+        "problems": [
+          {
+            "code": "data_open_table_unknown",
+            "field": "table",
+            "message": "rows.openSchema.table is table, so rows needs table: \"string\", naming each record's table.",
+            "collection": "rows"
+          }
+        ]
+      },
+      {
+        "ok": false,
+        "data": null,
+        "problems": [
+          {
+            "code": "data_open_fields_unknown",
+            "collection": "more",
+            "message": "columns already defines rows's fields; give more its own."
+          }
+        ]
+      },
+      {
+        "ok": true,
+        "data": {
+          "tables": {
+            "schema": {
+              "name": "string"
+            },
+            "label": "table"
+          },
+          "columns": {
+            "schema": {
+              "table": "string",
+              "key": "string?",
+              "name": "string",
+              "type": [
+                "text",
+                "long_text",
+                "number",
+                "currency",
+                "percent",
+                "rating",
+                "date",
+                "datetime",
+                "checkbox",
+                "select",
+                "multi_select",
+                "person",
+                "link",
+                "url",
+                "email",
+                "phone",
+                "attachment"
+              ],
+              "choices": "string[]",
+              "required": "boolean?",
+              "currency": "string?",
+              "precision": "number?",
+              "linkTo": "string?",
+              "description": "string?",
+              "position": "number?"
+            },
+            "label": "column"
+          },
+          "rows": {
+            "schema": {
+              "table": "string",
+              "title": "string?"
+            },
+            "search": [
+              "title"
+            ],
+            "label": "row",
+            "openSchema": {
+              "fields": "columns"
+            }
+          }
+        },
+        "problems": []
+      }
+    ],
+    "open-schema-values": {
+      "moves": [
+        {
+          "outcome": "converted",
+          "value": 1200
+        },
+        {
+          "outcome": "cleared"
+        },
+        {
+          "outcome": "converted",
+          "value": "42"
+        },
+        {
+          "outcome": "kept",
+          "value": 42
+        },
+        {
+          "outcome": "converted",
+          "value": 4
+        },
+        {
+          "outcome": "cleared"
+        },
+        {
+          "outcome": "converted",
+          "value": true
+        },
+        {
+          "outcome": "cleared"
+        },
+        {
+          "outcome": "converted",
+          "value": "2026-10-01"
+        },
+        {
+          "outcome": "converted",
+          "value": "2026-10-01T00:00:00.000Z"
+        },
+        {
+          "outcome": "converted",
+          "value": "won"
+        },
+        {
+          "outcome": "cleared"
+        },
+        {
+          "outcome": "converted",
+          "value": [
+            "won",
+            "lost"
+          ]
+        },
+        {
+          "outcome": "converted",
+          "value": "lost"
+        },
+        {
+          "outcome": "converted",
+          "value": [
+            "won"
+          ]
+        },
+        {
+          "outcome": "converted",
+          "value": "won, lost"
+        },
+        {
+          "outcome": "kept",
+          "value": "user_1"
+        },
+        {
+          "outcome": "cleared"
+        },
+        {
+          "outcome": "cleared"
+        },
+        {
+          "outcome": "cleared"
+        }
+      ],
+      "keys": [
+        "deal_size_2",
+        "f_2026_target",
+        "cafe",
+        "version_2",
+        "field",
+        "a_very_long_field_name_that_goes_on_"
       ]
     },
     "prelude": {

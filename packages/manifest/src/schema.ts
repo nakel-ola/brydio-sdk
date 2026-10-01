@@ -14,6 +14,7 @@ import {
   type FieldType,
 } from './field-types.ts';
 import { migrationsSchema } from './migrations.ts';
+import { openSchemaProblems, type OpenProblemCode } from './open-schema.ts';
 
 export {
   COLOUR_TOKENS,
@@ -147,6 +148,18 @@ const collectionSchema = z.object({
   /** The singular noun the tools are named with: `issue` gives `create_issue`. */
   label: z.string().optional(),
   /**
+   * Fields defined at runtime as records of another collection (P5): `fields`
+   * names it, and `table`, when given, the `string` field on both naming
+   * which table a row or a definition belongs to.
+   */
+  openSchema: z
+    .object({
+      fields: z.string().min(1).max(FIELD_LIMITS.nameChars),
+      table: z.string().min(1).max(FIELD_LIMITS.nameChars).optional(),
+    })
+    .strict()
+    .optional(),
+  /**
    * A visitor on one of the app's public pages may `get` and `list` every
    * record of this collection in that instance (P3).
    */
@@ -279,6 +292,7 @@ export interface DataProblem {
 
 export type DataProblemCode =
   | FieldTypeInvalid['code']
+  | OpenProblemCode
   | 'data_too_many_collections'
   | 'data_too_many_fields'
   | 'data_collection_name_format'
@@ -449,6 +463,30 @@ export function dataProblems(additions: Additions, options: DataProblemOptions =
         });
       }
     }
+  }
+
+  // Open-schema collections (P5): the companion is declared, shaped as the
+  // host reads it, and defines one collection's fields at most.
+  const companions = new Map<string, string>();
+
+  for (const [collection, declared] of collections) {
+    if (!declared.openSchema) continue;
+
+    for (const problem of openSchemaProblems(collection, declared.openSchema, additions.data ?? {})) {
+      problems.push({ ...problem, collection });
+    }
+
+    const other = companions.get(declared.openSchema.fields);
+
+    if (other) {
+      problems.push({
+        code: 'data_open_fields_unknown',
+        collection,
+        message: `${declared.openSchema.fields} already defines ${other}'s fields; give ${collection} its own.`,
+      });
+    }
+
+    companions.set(declared.openSchema.fields, collection);
   }
 
   // What the app keeps must be what it asks to keep (A3-F06-S01): a
@@ -791,6 +829,14 @@ export interface CollectionSpec {
   search: string[];
   /** The one `project` field, whose value is copied to `app_document.project_id`. */
   projectField: string | null;
+  /**
+   * Fields defined at runtime (P5): the companion collection, and the field
+   * naming a row's table (null: one table per instance). The store reads the
+   * live definitions; `fields` here holds only the manifest's own.
+   */
+  openSchema?: { fields: string; table: string | null };
+  /** On a companion: the open collection whose fields its records define (P5). */
+  definesFieldsOf?: string;
 }
 
 /**
@@ -811,9 +857,23 @@ export function labelOf(collection: string, label?: string): string {
 export function collectionsOf(manifest: { data?: ManifestExtensions['data'] }): CollectionSpec[] {
   const parsed = storedExtensionsSchema.parse({ data: manifest.data ?? {} });
 
+  const owners = new Map(
+    Object.entries(parsed.data ?? {}).flatMap(([name, declared]) =>
+      declared.openSchema ? [[declared.openSchema.fields, { name, flag: declared.openSchema }] as const] : []
+    )
+  );
+
   return Object.entries(parsed.data ?? {}).map(([name, declared]) => {
+    const owner = owners.get(name);
+    // The field naming a row's table is kept in plain on both sides, so a
+    // table is filtered and counted without decrypting a row (P5).
+    const tableField = declared.openSchema?.table ?? owner?.flag.table;
     const fields = Object.fromEntries(
-      Object.entries(declared.schema).map(([field, raw]) => [field, parseFieldType(raw)])
+      Object.entries(declared.schema).map(([field, raw]) => {
+        const type = parseFieldType(raw);
+
+        return [field, field === tableField ? { ...type, plain: true } : type];
+      })
     );
     const label = labelOf(name, declared.label);
     const names = Object.keys(fields);
@@ -827,6 +887,10 @@ export function collectionsOf(manifest: { data?: ManifestExtensions['data'] }): 
       sortable: names.filter(field => isSortable(fields[field]!)),
       search: declared.search ?? [],
       projectField: names.find(field => fields[field]!.kind === 'project') ?? null,
+      ...(declared.openSchema
+        ? { openSchema: { fields: declared.openSchema.fields, table: declared.openSchema.table ?? null } }
+        : {}),
+      ...(owner ? { definesFieldsOf: owner.name } : {}),
     };
   });
 }

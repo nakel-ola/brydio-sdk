@@ -88,6 +88,33 @@ export {
   type SecretSpec,
 } from './schema.ts';
 
+export {
+  OPEN_LIMITS,
+  OPEN_TYPES,
+  choicesProblem,
+  definitionOf,
+  definitionTypeProblem,
+  describeField,
+  fieldTypeOf,
+  hasChoices,
+  isPlainOpenType,
+  keyFromName,
+  keyProblem,
+  missingRequired,
+  moveValue,
+  openSchemaProblems,
+  openSpec,
+  openValueProblem,
+  type Moved,
+  type OpenField,
+  type OpenFieldChange,
+  type OpenFieldValue,
+  type OpenProblem,
+  type OpenProblemCode,
+  type OpenSchemaFlag,
+  type OpenType,
+} from './open-schema.ts';
+
 export { DOCUMENT_LIMITS } from './document-limits.ts';
 
 export { HOST_CAPABILITIES, KNOWN_HOST_GRANTS, isHostCapability, unknownHostGrant } from './grants.ts';

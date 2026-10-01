@@ -53,6 +53,12 @@ export interface FieldType {
    * check, and a tool's change to it merges into the live text.
    */
   coedit?: boolean;
+  /**
+   * Kept in the plain `fields` column although its kind is not (P5): an
+   * open-schema table's multi-select and link lists, and the field naming a
+   * row's table. Set by the host only, never parsed from a manifest.
+   */
+  plain?: boolean;
 }
 
 /**
@@ -332,10 +338,11 @@ function parseEnumeration(values: unknown[]): FieldType {
 }
 
 /** True for a type whose value lands in the plain `fields` column. */
-export const isStructured = (type: FieldType): boolean => STRUCTURED.has(type.kind);
+export const isStructured = (type: FieldType): boolean => STRUCTURED.has(type.kind) || type.plain === true;
 
 /** True for a type a list can be ordered by: structured, and one value. */
-export const isSortable = (type: FieldType): boolean => STRUCTURED.has(type.kind);
+export const isSortable = (type: FieldType): boolean =>
+  STRUCTURED.has(type.kind) || (type.plain === true && type.kind !== 'string[]');
 
 export const isSearchable = (type: FieldType): boolean => SEARCHABLE.has(type.kind);
 
