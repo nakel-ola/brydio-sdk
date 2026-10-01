@@ -22,6 +22,13 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.35
+
+Confirmation emails for public forms (FO04).
+
+- **Manifest.** A `publicSubmit` collection may say `confirmEmail: { field, subject?, message?, link? }`: Brydio emails the visitor once after a public submission, to the address in `field`. New codes: `data_confirm_submit` (the collection is not `publicSubmit`), `data_confirm_field` (`field` is not one of its `string` fields), `data_confirm_text` (a link, an address or markup in `subject` or `message`). See [the manifest](docs/manifest.md#collections-and-schema-types).
+- **`@brydio/manifest`.** New exports: `CONFIRM_LIMITS` (subject 120, message 600 characters), `confirmEmailProblems`, `confirmEmailSpec`, `ConfirmEmailDeclared`, `ConfirmEmailSpec`, `ConfirmProblemCode`. Nothing to change in existing apps.
+
 ## 0.1.0-alpha.34
 
 Open-schema collections (P5). A collection can have fields that people define while they use the app, each one a record of a companion collection: a database's columns, a CRM's custom properties. See [open-schema collections](docs/open-schema.md).

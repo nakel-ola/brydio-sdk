@@ -64,18 +64,18 @@ describe('brydio create', () => {
     const options: CreateOptions & { version: string } = {
       into,
       template: 'preact',
-      version: '0.1.0-alpha.34',
+      version: '0.1.0-alpha.35',
       install: false,
       out: () => {},
     };
     const dir = await create('registry-app', options);
     const pkg = json(join(dir, 'package.json'));
 
-    expect(pkg.dependencies).toEqual({ '@brydio/app': '0.1.0-alpha.34' });
+    expect(pkg.dependencies).toEqual({ '@brydio/app': '0.1.0-alpha.35' });
     expect(pkg.devDependencies).toMatchObject({
-      '@brydio/cli': '0.1.0-alpha.34',
-      '@brydio/fake-host': '0.1.0-alpha.34',
-      '@brydio/manifest': '0.1.0-alpha.34',
+      '@brydio/cli': '0.1.0-alpha.35',
+      '@brydio/fake-host': '0.1.0-alpha.35',
+      '@brydio/manifest': '0.1.0-alpha.35',
       '@types/bun': '1.4.2',
       typescript: '5.9.3',
     });
