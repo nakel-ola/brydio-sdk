@@ -22,6 +22,16 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## Unreleased
+
+Open-schema collections (P5). A collection can have fields that people define while they use the app, each one a record of a companion collection: a database's columns, a CRM's custom properties. See [open-schema collections](docs/open-schema.md).
+
+- **Manifest.** A collection may say `openSchema: { fields, table? }`. `fields` names the companion, which must declare `key: "string?"`, `name: "string"` and `type` as a choice of `OPEN_TYPES`, and, when it declares them, `choices`, `required`, `currency`, `precision`, `linkTo` and `description` with the kinds Brydio reads. `table` names a required `string` field on both collections that says which table a row or definition belongs to. New codes: `data_open_fields_unknown`, `data_open_fields_shape`, `data_open_table_unknown`.
+- **`@brydio/manifest`.** New exports: `OPEN_TYPES`, `OPEN_LIMITS` (50,000 rows and 200 fields per table), `OpenField`, `OpenFieldChange`, `openSchemaProblems`, `fieldTypeOf`, `openSpec`, `definitionOf`, `keyFromName`, `keyProblem`, `choicesProblem`, `openValueProblem`, `missingRequired`, `moveValue` and `describeField`. `CollectionSpec` gains `openSchema` and, on a companion, `definesFieldsOf`. `FieldType` gains `plain`, set only by `collectionsOf` on the table field and by `fieldTypeOf`, which `isStructured` and `isSortable` read.
+- **Fake host.** The generated tools of an open collection take open fields by key and check them against the companion's records. Keys are made from names and never change, a retype or fewer choices moves the table's values and answers with `fieldChange: { field, op, rows, kept, converted, cleared }`, a delete removes the field's values, and lists filter and sort open fields when the filter names the table. `FixtureStore` takes `rowsPerTable` to lower the per-table limit in a test.
+
+Nothing you wrote has to change.
+
 ## 0.1.0-alpha.33
 
 Public pages (P3). An app can offer a screen that people with no Brydio account open at its own address, once a workspace admin turns it on.

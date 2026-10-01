@@ -217,3 +217,22 @@ Read against Brydio at `f28d98b` plus Kestrel's uncommitted
     the card's `loading` (`d92803e`), with the host's `options` kind for a
     select's choices.
 
+## Open-schema collections (P5)
+
+32. **Recorded from the P5 lane, before it reached Brydio's main.** The
+    `open-schema-fixture`, `open-schema-manifests` and `open-schema-values`
+    answers in `contracts/brydio.json` were recorded with `BRYDIO_DIR` at the
+    `schema-pages/p5` worktree (`cb779d5`), running only
+    `packages/manifest/test/open-schema.test.ts`, so no other contract was
+    re-recorded from a branch that lacks P3's `publicRead`. A Brydio checkout
+    without `manifest/open-schema.ts` answers from the recording.
+33. **`notAField` and `renamed` are not copied.** The SDK has no
+    `CollectionSpec.renamed`, so the fake host keeps its own `notAField`:
+    Brydio's sentence for an open table (naming the table's fields) and the
+    plain one otherwise.
+34. **The fake host's store half is `apps/data/open-schema.ts` and
+    `document-store.service.ts` as of `cb779d5`**, without the table lock (one
+    thread, no transactions) or the definition cache. A batch that moves a
+    table's values and is then refused puts every collection back. A
+    definition's delete answers without `fieldChange`, as Brydio's does.
+

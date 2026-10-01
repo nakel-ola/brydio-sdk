@@ -146,6 +146,12 @@ instance. `publicSubmit: true` lets a visitor create records in it and do
 nothing else: no update, remove or batch, and no get or list unless
 `publicRead` is set too. A visitor never sees who made or changed a record.
 
+`openSchema: { "fields": "<companion>", "table": "<field>" }` gives a
+collection fields that people define at runtime, as records of its
+companion collection, up to 200 per table and 50,000 rows per table.
+`docs/open-schema.md` in the SDK repository covers the companion's shape,
+the open field types, and how a retype moves values.
+
 | Manifest spelling | Stored value |
 |---|---|
 | `string` | Short text, at most 1,000 characters. |

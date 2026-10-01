@@ -8,6 +8,7 @@ import { baseManifestSchema, MANIFEST_LIMITS } from '../packages/manifest/src/ba
 import { DOCUMENT_LIMITS } from '../packages/manifest/src/document-limits.ts';
 import { COLOUR_TOKENS, FIELD_LIMITS, LABEL_CHARS } from '../packages/manifest/src/field-types.ts';
 import { HOST_CAPABILITIES } from '../packages/manifest/src/grants.ts';
+import { OPEN_LIMITS } from '../packages/manifest/src/open-schema.ts';
 import { migrationStepSchema } from '../packages/manifest/src/migrations.ts';
 import { manifestExtensionsSchema, MAX_APP_SECRETS, MAX_CUSTOM_TOOLS, MAX_SECRET_CHARS } from '../packages/manifest/src/schema.ts';
 
@@ -283,6 +284,12 @@ export function manifestDoc(): string {
     'instance. `publicSubmit: true` lets a visitor create records in it and do',
     'nothing else: no update, remove or batch, and no get or list unless',
     '`publicRead` is set too. A visitor never sees who made or changed a record.',
+    '',
+    '`openSchema: { "fields": "<companion>", "table": "<field>" }` gives a',
+    'collection fields that people define at runtime, as records of its',
+    `companion collection, up to ${OPEN_LIMITS.fieldsPerTable} per table and ${OPEN_LIMITS.rowsPerTable.toLocaleString('en-GB')} rows per table.`,
+    '`docs/open-schema.md` in the SDK repository covers the companion\'s shape,',
+    'the open field types, and how a retype moves values.',
     '',
     table(['Manifest spelling', 'Stored value'], FIELD_TYPES.map(([name, description]) => [name, description])),
     '',

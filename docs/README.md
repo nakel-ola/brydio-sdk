@@ -10,6 +10,9 @@ commands, see the [SDK documentation site](../docs-site/README.md).
 - [Manifest](manifest.md) lists every field, collection schema type, grant,
   placement, migration operation, and limit. It includes the full Issues
   manifest as a worked example.
+- [Open-schema collections](open-schema.md) covers collections whose fields
+  people define at runtime: the companion's shape, the open types, keys, and
+  how a retype moves values.
 - [Catalogue](elements.md) lists every element and setting a screen may draw.
 - [Bridge](bridge.md) covers every public SDK call, protocol method, limit,
   and error.
