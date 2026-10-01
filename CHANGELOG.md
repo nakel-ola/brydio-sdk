@@ -22,6 +22,14 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.29
+
+- **Co-edited text.** A collection's `text` field may say `"coedit": true` (`{ "type": "text", "coedit": true }`). Several people then write it at once: draw it with `bry-rich-text` and `bind: { collection, id, field }`, and Brydio opens the record's shared document in the screen's own instance, with everyone's carets, and ignores `value`. The app still hears `change` (once typing settles) and `blur` with the markdown, and the record's body keeps the markdown, so `get_*`, search and the assistant read the text as it is. `coedit` on any other type is refused with `data_coedit_not_text`.
+- A co-edited field leaves the record's `version` check: an update that changes only co-edited fields keeps the version, and a tool's change to one is merged into the live text. Ordinary fields beside it keep the check. The fake host does the same.
+- `bry-rich-text` gains a slash menu (`/` at the start of a line: headings, lists, tasks, quotes, code, tables, maths, callouts, toggles, dividers), highlights, sub- and superscript, centring, and embeds from YouTube, Vimeo, Loom, Figma, Miro, Airtable, Typeform and Google Drive pasted on a line of their own. `hide` takes menu entries and buttons away; what a document can hold is the same in every app.
+- **Drawing together.** A field of type `canvas` is a drawing several people make at once with `bry-whiteboard` and `bind: { collection, id, field }`: an endless canvas Brydio draws with Excalidraw, with everyone's pointers. It is always optional and always co-edited; the record holds `{ elements, text }` (how many shapes, and the words on them), written by Brydio, so lists, search and the assistant can say what is on a board. No tool may write a drawing: the generated tools leave it out. `size` is `sm`, `md` or `lg`; `readonly` shows it without tools.
+- In `brydio dev`'s preview a bound editor is not shared: it shows `value`, and a board shows where Brydio would draw it.
+
 ## 0.1.0-alpha.28
 
 - **Project tabs are retired; apps show on a project's page as widgets.** A placement of kind `project-widget` is a card on the project's page, drawn by its `screen` at one of the `sizes` it declares (`small`, `medium`, `large`; a large one takes two columns). `sizes` is required there, as on a `home` card, and refused on the sidebar kinds (`placement_widget_sizes`, `placement_home_sizes`, `placement_sizes_not_home`).
