@@ -138,6 +138,7 @@ an optional singular `label` used in generated tool names, and an optional
 | `boolean` | `true` or `false`. |
 | `string[]` | A list of at most 100 short strings. |
 | `token` | One of `neutral`, `brand`, `success`, `warn`, `danger`. |
+| `canvas` | A drawing several people make at once with `bry-whiteboard`. Always optional and co-edited; the record holds `{ elements, text }`, written by Brydio, and no tool may write it. |
 
 Add `?` to a named type to make the field optional, such as `member?`.
 A field may also use `{ "type": ..., "optional": true, "default": ...,

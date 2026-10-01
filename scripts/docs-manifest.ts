@@ -133,6 +133,7 @@ const FIELD_TYPES = [
   ['`boolean`', '`true` or `false`.'],
   ['`string[]`', `A list of at most ${FIELD_LIMITS.listEntries} short strings.`],
   ['`token`', `One of ${COLOUR_TOKENS.map(token => `\`${token}\``).join(', ')}.`],
+  ['`canvas`', 'A drawing several people make at once with `bry-whiteboard`. Always optional and co-edited; the record holds `{ elements, text }`, written by Brydio, and no tool may write it.'],
 ] as const;
 
 const MIGRATION_DOCS = {

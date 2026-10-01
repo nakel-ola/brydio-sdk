@@ -18,7 +18,7 @@ A toast is not an element: it is said, not placed. A screen shows one with
 `toast(text, tone)` from `@brydio/app`, which Brydio draws in its own
 toaster; see [the bridge](bridge.md).
 
-There are 94 elements.
+There are 95 elements.
 
 - [`bry-stack`](#bry-stack)
 - [`bry-heading`](#bry-heading)
@@ -109,6 +109,7 @@ There are 94 elements.
 - [`bry-spreadsheet-row`](#bry-spreadsheet-row)
 - [`bry-spreadsheet-group`](#bry-spreadsheet-group)
 - [`bry-rich-text`](#bry-rich-text)
+- [`bry-whiteboard`](#bry-whiteboard)
 - [`bry-board-lane`](#bry-board-lane)
 - [`bry-property-list`](#bry-property-list)
 - [`bry-property-row`](#bry-property-row)
@@ -1423,6 +1424,19 @@ Holds nothing: it is drawn from its settings alone.
 | `hide` | a list of at most 13: `headings`, `lists`, `tasks`, `quote`, `code`, `table`, `maths`, `callout`, `toggle`, `divider`, `highlight`, `scripts`, `align` | no |
 
 Tells the app: `change`, `blur`, `submit`.
+
+## `bry-whiteboard`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `bind` | a record of `collection`, `id`, `field` (needs `collection`, `id`, `field`) | yes |
+| `size` | `sm`, `md`, `lg` | no |
+| `readonly` | `true` or `false` | no |
+| `label` | text, at most 200 characters | no |
+
+Tells the app: `change`.
 
 ## `bry-board-lane`
 

@@ -491,6 +491,10 @@ function checked(spec: CollectionSpec, changes: Record<string, unknown>, base: R
 
   for (const [field, value] of Object.entries(changes)) {
     if (!spec.fields[field]) throw new Refused(`${field} is not a field of ${spec.label}.`, { error: 'invalid', field });
+    // A drawing's summary is the host's to write, from its board (WB01).
+    if (spec.fields[field].kind === 'canvas') {
+      throw new Refused(`${field} is a drawing: it is changed on its board, never written.`, { error: 'invalid', field });
+    }
 
     if (value === null || value === undefined) delete body[field];
     else body[field] = value;
@@ -575,8 +579,13 @@ const idSchema = z.string().min(1).max(200);
 const limitSchema = z.number().int().min(1).optional();
 
 function inputFor(verb: ToolVerb, spec: CollectionSpec): z.ZodObject {
+  // A drawing is changed on its board, never by a tool (WB01), as in Brydio.
   const fields = (as: (type: FieldType) => ZodType) =>
-    Object.fromEntries(Object.entries(spec.fields).map(([field, type]) => [field, as(type)]));
+    Object.fromEntries(
+      Object.entries(spec.fields)
+        .filter(([, type]) => type.kind !== 'canvas')
+        .map(([field, type]) => [field, as(type)]),
+    );
 
   switch (verb) {
     case 'create':

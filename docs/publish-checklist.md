@@ -70,7 +70,7 @@ first.
 | `data_label_invalid` | `<collection>.<field>`: The label for "<value>" is 1 to `<n>` characters of text. | yes | publish | Give each label 1 to `<n>` characters. |
 | `data_label_unknown_value` | `<collection>.<field>`: "<value>" is not one of the choice's values, so it can't have a label. | yes | publish | Label only values the choice allows. |
 | `data_field_key_unknown` | `<collection>.<field>`: "<key>" is not something a field may say; use type, optional, default, labels and coedit. | yes | publish | Keep to type, optional, default, labels and coedit. |
-| `data_coedit_not_text` | `<collection>.<field>`: Only a text field may be co-edited, not a <type>. | yes | publish | Take `coedit` out, or make the field `text`. |
+| `data_coedit_not_text` | `<collection>.<field>`: Only a text or canvas field may be co-edited, not a <type>. | yes | publish | Take `coedit` out, or make the field `text`. |
 | `custom_name_taken` | `tools.custom`: <name> is already a tool this app has: give the custom tool another name, or switch generated tools off. | yes | publish | Rename the custom tool. |
 | `custom_collection_unknown` | `tools.custom`: <name> works on <collection>, which the app does not keep. | yes | publish | Name a collection in `data`, or leave `collection` out. |
 | `custom_input_invalid` | `tools.custom`: <name>'s input <field>: not a field type. | yes | publish | Write the input in the field-type grammar. |

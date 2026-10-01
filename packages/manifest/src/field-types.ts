@@ -29,7 +29,8 @@ export type FieldKind =
   | 'number'
   | 'boolean'
   | 'string[]'
-  | 'token';
+  | 'token'
+  | 'canvas';
 
 export interface FieldType {
   kind: FieldKind;
@@ -129,7 +130,7 @@ const STRUCTURED: ReadonlySet<FieldKind> = new Set<FieldKind>([
 /** Only the words in these may one day be searched (A3-F01-S02). */
 const SEARCHABLE: ReadonlySet<FieldKind> = new Set<FieldKind>(['string', 'text', 'string[]']);
 
-const SCALARS = new Set(['string', 'text', 'member', 'project', 'date', 'number', 'boolean', 'token']);
+const SCALARS = new Set(['string', 'text', 'member', 'project', 'date', 'number', 'boolean', 'token', 'canvas']);
 
 /** A field type the manifest wrote that Brydio does not have, or a bad list. */
 export class FieldTypeInvalid extends Error {
@@ -178,6 +179,8 @@ export function parseFieldType(raw: unknown): FieldType {
 
   if (name === 'string[]') return { kind: 'string[]', optional };
   if (name === 'token') return { kind: 'token', optional, values: COLOUR_TOKENS };
+  // A drawing is always co-edited and never required: it starts empty (WB01).
+  if (name === 'canvas') return { kind: 'canvas', optional: true, coedit: true };
   if (SCALARS.has(name)) return { kind: name as FieldKind, optional };
 
   throw new FieldTypeInvalid('data_field_type_unknown', `"${raw}" is not a field type.`);
@@ -274,15 +277,22 @@ function labelsOf(type: FieldType, raw: Record<string, unknown>): Pick<FieldType
 function coeditOf(type: FieldType, raw: Record<string, unknown>): Pick<FieldType, 'coedit'> {
   if (raw.coedit !== true) return {};
 
-  if (type.kind !== 'text') {
-    throw new FieldTypeInvalid('data_coedit_not_text', `Only a text field may be co-edited, not a ${type.kind}.`);
+  if (type.kind !== 'text' && type.kind !== 'canvas') {
+    throw new FieldTypeInvalid('data_coedit_not_text', `Only a text or canvas field may be co-edited, not a ${type.kind}.`);
   }
 
   return { coedit: true };
 }
 
 /** True for a field several people write at once, through the co-editing layer. */
-export const isCoedited = (type: FieldType): boolean => type.kind === 'text' && type.coedit === true;
+export const isCoedited = (type: FieldType): boolean => type.kind === 'canvas' || (type.kind === 'text' && type.coedit === true);
+
+/**
+ * What a drawing's field holds in the record (WB01): a summary the host writes
+ * from the live board, so a list, search and the assistant can say what is on
+ * it. The drawing itself lives only in the co-edited document.
+ */
+export const CANVAS_SUMMARY_CHARS = 10_000;
 
 /** A collection's co-edited fields, by name. */
 export const coeditedFields = (fields: Readonly<Record<string, FieldType>>): string[] =>
@@ -381,6 +391,8 @@ export function valueSchema(type: FieldType): ZodType {
       return z.boolean();
     case 'string[]':
       return z.array(z.string().max(FIELD_LIMITS.stringChars)).max(FIELD_LIMITS.listEntries);
+    case 'canvas':
+      return z.object({ elements: z.number().int().min(0), text: z.string().max(CANVAS_SUMMARY_CHARS) }).strict();
   }
 }
 
@@ -417,6 +429,8 @@ export function valueProblem(field: string, type: FieldType, value: unknown): st
       return Array.isArray(value) && value.length > FIELD_LIMITS.listEntries
         ? `${field} may hold at most ${FIELD_LIMITS.listEntries} entries.`
         : `${field} must be a list of short texts, each at most ${FIELD_LIMITS.stringChars.toLocaleString('en-GB')} characters.`;
+    case 'canvas':
+      return `${field} is a drawing: it is changed on its board, never written.`;
   }
 }
 
@@ -443,6 +457,8 @@ export function describeType(type: FieldType): string {
       return 'true or false';
     case 'string[]':
       return 'a list of short texts';
+    case 'canvas':
+      return 'a drawing, read only: how many shapes it has and the words on it';
   }
 }
 
@@ -480,9 +496,11 @@ export type FieldValue<T> = T extends { type: infer U }
         ? string[]
         : T extends 'token' | 'token?'
           ? (typeof COLOUR_TOKENS)[number]
-          : T extends string
-            ? string
-            : never;
+          : T extends 'canvas' | 'canvas?'
+            ? { elements: number; text: string }
+            : T extends string
+              ? string
+              : never;
 
 type Simplify<T> = { [K in keyof T]: T[K] } & {};
 

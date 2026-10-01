@@ -1753,6 +1753,21 @@ var CATALOGUE = {
     events: ["change", "blur", "submit"],
     children: false
   },
+  "bry-whiteboard": {
+    props: {
+      bind: {
+        kind: "shape",
+        fields: { collection: { kind: "text", max: 40 }, id: { kind: "text", max: KEY_MAX }, field: { kind: "text", max: 40 } },
+        required: ["collection", "id", "field"]
+      },
+      size: { kind: "enum", values: ["sm", "md", "lg"] },
+      readonly: { kind: "boolean" },
+      label: { kind: "text", max: LABEL_MAX }
+    },
+    required: ["bind"],
+    events: ["change"],
+    children: false
+  },
   "bry-board-lane": {
     props: {
       title: { kind: "text", max: LABEL_MAX },

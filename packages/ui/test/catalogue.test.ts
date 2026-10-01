@@ -168,6 +168,7 @@ describe('the catalogue as a whole', () => {
       'bry-spreadsheet-row',
       'bry-spreadsheet-group',
       'bry-rich-text',
+      'bry-whiteboard',
       'bry-board-lane',
       'bry-property-list',
       'bry-property-row',

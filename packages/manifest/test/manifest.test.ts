@@ -12,6 +12,7 @@ import {
   effectivePlacementKey,
   generatedToolsOf,
   parseFieldType,
+  valueProblem,
   compareVersions,
   sdkRefusal,
   validateManifest,
@@ -286,6 +287,12 @@ describe('field types (contracts §5)', () => {
     expect(parseFieldType({ type: 'text', coedit: false })).toEqual({ kind: 'text', optional: false });
     expect(() => parseFieldType({ type: 'string', coedit: true })).toThrow(expect.objectContaining({ code: 'data_coedit_not_text' }));
     expect(() => parseFieldType({ type: 'text', coedit: 'yes' })).toThrow(expect.objectContaining({ code: 'data_field_key_unknown' }));
+  });
+
+  test('read a drawing field, always co-edited and never written by a tool (WB01)', () => {
+    expect(parseFieldType('canvas')).toEqual({ kind: 'canvas', optional: true, coedit: true });
+    expect(valueProblem('board', parseFieldType('canvas'), { elements: 2, text: 'Login' })).toBeNull();
+    expect(valueProblem('board', parseFieldType('canvas'), 'a picture')).toBe('board is a drawing: it is changed on its board, never written.');
   });
 
   test('refuse with a code', () => {

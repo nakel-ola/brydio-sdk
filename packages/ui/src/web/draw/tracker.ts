@@ -1930,6 +1930,40 @@ export function mentionAt(text: string, at: number): { from: number; query: stri
   return match ? { from: at - match[2]!.length - 1, query: match[2]! } : null;
 }
 
+// bry-whiteboard
+
+const BOARD_HEIGHTS = { sm: 320, md: 520, lg: 760 } as const;
+
+// Brydio draws the board with Excalidraw and keeps the drawing in the record's
+// shared document; outside Brydio there is no document to draw, so the
+// preview says what would be there.
+drawAs(
+  'bry-whiteboard',
+  element => {
+    const size = pick(['sm', 'md', 'lg'] as const, element.size) ?? 'md';
+    const label = str(element.label) || 'Whiteboard';
+
+    element.style.setProperty('--bry-board-height', `${BOARD_HEIGHTS[size]}px`);
+
+    return html`<div class="board type-body" role="group" aria-label=${label}>${label}: drawn together in Brydio</div>`;
+  },
+  [
+    TYPE,
+    css`
+      :host { display: block; }
+      .board {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: var(--bry-board-height);
+        border: 1px dashed var(--line);
+        border-radius: 0.75rem;
+        color: var(--fg-muted);
+      }
+    `,
+  ],
+);
+
 drawAs(
   'bry-rich-text',
   element => {

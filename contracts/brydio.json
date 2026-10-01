@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "c1f9b006f268554d4033873e5b8857e0c9192374",
+    "commit": "8aa859a1f6f03e77f19104467015f79858dab624",
     "dirty": false
   },
   "contracts": {
@@ -6142,6 +6142,54 @@
             "change",
             "blur",
             "submit"
+          ],
+          "children": false
+        },
+        "bry-whiteboard": {
+          "props": {
+            "bind": {
+              "kind": "shape",
+              "fields": {
+                "collection": {
+                  "kind": "text",
+                  "max": 40
+                },
+                "id": {
+                  "kind": "text",
+                  "max": 128
+                },
+                "field": {
+                  "kind": "text",
+                  "max": 40
+                }
+              },
+              "required": [
+                "collection",
+                "id",
+                "field"
+              ]
+            },
+            "size": {
+              "kind": "enum",
+              "values": [
+                "sm",
+                "md",
+                "lg"
+              ]
+            },
+            "readonly": {
+              "kind": "boolean"
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "bind"
+          ],
+          "events": [
+            "change"
           ],
           "children": false
         },

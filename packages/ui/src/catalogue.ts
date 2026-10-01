@@ -2096,6 +2096,25 @@ export const CATALOGUE = {
     events: ['change', 'blur', 'submit'],
     children: false,
   },
+  'bry-whiteboard': {
+    // An endless canvas several people draw on at once (WB01), drawn by
+    // Brydio with Excalidraw. `bind` names a record's `canvas` field; the app
+    // never holds the drawing and hears `change` with `{ elements, text }`
+    // once drawing settles. `size` is `sm`, `md` (default) or `lg`.
+    props: {
+      bind: {
+        kind: 'shape',
+        fields: { collection: { kind: 'text', max: 40 }, id: { kind: 'text', max: KEY_MAX }, field: { kind: 'text', max: 40 } },
+        required: ['collection', 'id', 'field'],
+      },
+      size: { kind: 'enum', values: ['sm', 'md', 'lg'] },
+      readonly: { kind: 'boolean' },
+      label: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['bind'],
+    events: ['change'],
+    children: false,
+  },
   'bry-board-lane': {
     // One swimlane's heading on a `layout="lanes"` board: `title`, `mark`,
     // `count`. With `collapsible`, pressing it raises `toggle` with
