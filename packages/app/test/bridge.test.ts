@@ -161,6 +161,38 @@ describe('answering events and listing people', () => {
   });
 });
 
+describe('approvals (host/approval, host/approval/decide)', () => {
+  test('reads a request and decides it under the approvals grant, the approval id beside the envelope id', async () => {
+    const { bridge, take, hostSays, connect } = harness({ app: { grants: { host: ['approvals'] } } });
+
+    await connect();
+    take();
+
+    const read = bridge.approval('apr_1');
+
+    expect(take()).toEqual([{ jsonrpc: '2.0', id: '1', method: 'host/approval', params: { id: '1', approval: 'apr_1' } }]);
+    hostSays('host/result', { id: '1', result: { id: 'apr_1', status: 'pending' } });
+    expect(await read).toEqual({ id: 'apr_1', status: 'pending' } as never);
+
+    void bridge.decideApproval('apr_1', 'decline', '  not this week ');
+    expect(take()).toEqual([{ jsonrpc: '2.0', id: '2', method: 'host/approval/decide', params: { id: '2', approval: 'apr_1', decision: 'decline', comment: 'not this week' } }]);
+
+    void bridge.decideApproval('apr_1', 'approve');
+    expect(take()).toEqual([{ jsonrpc: '2.0', id: '3', method: 'host/approval/decide', params: { id: '3', approval: 'apr_1', decision: 'approve' } }]);
+  });
+
+  test('refuses without the approvals grant and sends nothing', async () => {
+    const { bridge, take, connect } = harness({ app: { grants: { host: ['members'] } } });
+
+    await connect();
+    take();
+
+    await expect(bridge.approval('apr_1')).rejects.toThrow();
+    await expect(bridge.decideApproval('apr_1', 'approve')).rejects.toThrow();
+    expect(take()).toEqual([]);
+  });
+});
+
 describe('data reads (contracts §9 data/get, data/list)', () => {
   test('list reads a page through data/list, counted as a read, and answers { items, nextCursor }', async () => {
     const { bridge, take, hostSays, connect } = harness();

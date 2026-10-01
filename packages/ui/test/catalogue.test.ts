@@ -169,6 +169,7 @@ describe('the catalogue as a whole', () => {
       'bry-spreadsheet-group',
       'bry-rich-text',
       'bry-whiteboard',
+      'bry-approval',
       'bry-board-lane',
       'bry-property-list',
       'bry-property-row',
@@ -188,7 +189,7 @@ describe('the catalogue as a whole', () => {
   test('keeps free text to the settings that are words for a person', () => {
     for (const name of ELEMENT_NAMES) {
       for (const [prop, spec] of Object.entries(CATALOGUE[name].props) as [string, PropSpec][]) {
-        if (spec.kind === 'text') expect(['text', 'label', 'title', 'value', 'placeholder', 'error', 'name', 'description', 'meta', 'action', 'empty', 'selected', 'cancel', 'min', 'max', 'settled', 'search', 'month', 'filter', 'current', 'prefix', 'suffix', 'identifier', 'toggle', 'heading', 'addLabel', 'trigger', 'hint', 'subtitle', 'tab', 'dateRange', 'statusLabel', 'due', 'project', 'updated', 'start', 'collapsedLabel', 'actor', 'actorId', 'time', 'author', 'authorId', 'position', 'openLabel', 'quote', 'memberId', 'find']).toContain(prop);
+        if (spec.kind === 'text') expect(['text', 'label', 'title', 'value', 'placeholder', 'error', 'name', 'description', 'meta', 'action', 'empty', 'selected', 'cancel', 'min', 'max', 'settled', 'search', 'month', 'filter', 'current', 'prefix', 'suffix', 'identifier', 'toggle', 'heading', 'addLabel', 'trigger', 'hint', 'subtitle', 'tab', 'dateRange', 'statusLabel', 'due', 'project', 'updated', 'start', 'collapsedLabel', 'actor', 'actorId', 'time', 'author', 'authorId', 'position', 'openLabel', 'quote', 'memberId', 'find', 'request']).toContain(prop);
       }
     }
   });

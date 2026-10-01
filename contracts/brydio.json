@@ -6193,6 +6193,24 @@
           ],
           "children": false
         },
+        "bry-approval": {
+          "props": {
+            "request": {
+              "kind": "text",
+              "max": 128
+            },
+            "compact": {
+              "kind": "boolean"
+            }
+          },
+          "required": [
+            "request"
+          ],
+          "events": [
+            "decided"
+          ],
+          "children": false
+        },
         "bry-board-lane": {
           "props": {
             "title": {

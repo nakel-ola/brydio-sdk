@@ -1,5 +1,5 @@
 import { defaultBridge, type Bridge } from './bridge.ts';
-import type { AppDocument, CopyTarget, DownloadType, DataChange, HostContext, ListQuery, ListResult, NavigateTarget, ToastAction, ToastTone, ToolResult } from './protocol.ts';
+import type { AppDocument, ApprovalDecision, ApprovalView, CopyTarget, DownloadType, DataChange, HostContext, ListQuery, ListResult, NavigateTarget, ToastAction, ToastTone, ToolResult } from './protocol.ts';
 import { createRoot, type RemoteRoot, type RootOptions } from './tree.ts';
 
 /**
@@ -24,6 +24,17 @@ export const host = {
   /** Called each time the host sends the context again. Returns a function that stops. */
   subscribe(listener: (context: HostContext) => void): () => void {
     return defaultBridge().subscribe(listener);
+  },
+  /**
+   * One approval request the viewer may see, by id, with its steps and
+   * whether the viewer may decide now. Needs the `approvals` host grant.
+   */
+  approval(id: string): Promise<ApprovalView> {
+    return defaultBridge().approval(id);
+  },
+  /** Approves or declines the waiting step as the viewer, with an optional comment. Needs the `approvals` host grant. */
+  decideApproval(id: string, decision: ApprovalDecision, comment?: string): Promise<ApprovalView> {
+    return defaultBridge().decideApproval(id, decision, comment);
   },
 };
 

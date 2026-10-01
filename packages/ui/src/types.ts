@@ -391,6 +391,10 @@ export interface ElementEventDetails {
     /** The board once drawing settles: how many shapes, and the words on them. */
     change: { elements: number; text: string };
   };
+  'bry-approval': {
+    /** The request's status once the viewer approved or declined it. */
+    decided: { status: 'pending' | 'approved' | 'declined' | 'cancelled' };
+  };
   'bry-board-lane': {
     /** Whether the lane asks to be folded now. */
     toggle: { collapsed: boolean };

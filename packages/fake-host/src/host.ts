@@ -1,4 +1,5 @@
 import { TOOL_WRITES, collectionsOf, toolNames, type ManifestExtensions } from '@brydio/manifest';
+import type { ApprovalView } from '@brydio/app';
 import { TEXT_NODE, type DetailOf, type ElementEvent, type ElementName } from '@brydio/ui';
 import { checkEvent, isElementName } from '@brydio/ui/validate';
 import { existsSync, readFileSync } from 'node:fs';
@@ -77,6 +78,11 @@ export interface FakeHostOptions {
    * `host/projects`): only these, as the viewer's own directory would be.
    */
   directory?: { members?: DirectoryMember[]; projects?: { id: string; name: string }[] };
+  /**
+   * The approval requests Brydio would show this screen (`host/approval`), by
+   * id. Deciding one the viewer may decide settles it with that decision.
+   */
+  approvals?: Record<string, ApprovalView>;
   /** Run Brydio's prelude before the screen. On unless a test needs it off. */
   prelude?: boolean;
   /**
@@ -586,6 +592,12 @@ export class FakeHost {
         if (message.method === 'host/members' && params.ids === undefined) this.#listMembers(message.id, params);
         else this.#names(message.id, message.method === 'host/members' ? 'members' : 'projects', params.ids);
         break;
+      case 'host/approval':
+      case 'host/approval/decide':
+        if (!this.app || message.id === undefined) break;
+
+        this.#approval(message.id, message.method === 'host/approval/decide', params);
+        break;
       case 'ui/message':
         if (!this.app) break;
 
@@ -768,6 +780,33 @@ export class FakeHost {
     this.#send({ jsonrpc: '2.0', method: 'host/error', params: { id, error: { code: -32000, message: `${this.#options.manifest?.name ?? this.app?.name} did not ask to ${words}.` } } });
 
     return false;
+  }
+
+  /**
+   * `host/approval` and `host/approval/decide`, as Brydio's host answers them
+   * from its approvals engine: refused without the `approvals` grant, a
+   * request the viewer may not see is not found, and only a viewer who
+   * `can.decide` decides.
+   */
+  #approval(id: string | number, deciding: boolean, params: Record<string, unknown>): void {
+    const fail = (message: string) => this.#send({ jsonrpc: '2.0', method: 'host/error', params: { id, error: { code: -32000, message } } });
+    const host = this.#options.manifest?.grants?.host ?? [];
+
+    if (!host.includes('approvals') && !host.includes('*')) return fail(`${this.#options.manifest?.name ?? this.app?.name} did not ask to see approvals.`);
+
+    const known = typeof params.approval === 'string' ? this.#options.approvals?.[params.approval] : undefined;
+
+    if (!known) return fail('That approval request was not found.');
+
+    if (deciding) {
+      if (!known.can.decide || known.status !== 'pending') return fail('You can\'t decide this approval request.');
+      if (params.decision !== 'approve' && params.decision !== 'decline') return fail('Say approve or decline.');
+
+      known.status = params.decision === 'approve' ? 'approved' : 'declined';
+      known.can = { ...known.can, decide: false };
+    }
+
+    this.#send({ jsonrpc: '2.0', method: 'host/result', params: { id, result: known } as never });
   }
 
   /**

@@ -183,6 +183,49 @@ export interface DataChange {
  * `bry-avatar` draws. A workspace bot (an id that is its principal id) comes
  * with `bot: true`, so a picker can mark it, and its picture when it has one.
  */
+/** A person on an approval, as the host names them. */
+export interface ApprovalPerson {
+  principalId: string;
+  name: string;
+  avatarUrl: string | null;
+  kind: 'human' | 'bot' | 'system';
+}
+
+/** Where an approval request stands. */
+export type ApprovalStatus = 'pending' | 'approved' | 'declined' | 'cancelled';
+
+/** What one approver can say. */
+export type ApprovalDecision = 'approve' | 'decline';
+
+/**
+ * `host/approval`: one approval request the viewer may see, as Brydio's
+ * approvals engine shows it (`GET /approvals/requests/:id`). `can.decide` is
+ * whether the viewer is an approver on the step now waiting.
+ */
+export interface ApprovalView {
+  id: string;
+  kind: string;
+  title: string;
+  note: string | null;
+  fields: { key: string; label: string; type: string; value: unknown }[];
+  subject: { type: string; id: string; href?: string | null; title?: string | null; appInstanceId?: string | null; collection?: string | null } | null;
+  requester: ApprovalPerson;
+  status: ApprovalStatus;
+  currentStep: number | null;
+  steps: {
+    index: number;
+    name: string | null;
+    rule: 'any' | 'all' | 'count';
+    count: number | null;
+    status: 'waiting' | 'active' | 'approved' | 'declined' | 'skipped';
+    assignees: { person: ApprovalPerson; status: 'waiting' | 'approved' | 'declined' | 'passed'; reason: string; comment: string | null; decidedAt: string | null }[];
+    note: string | null;
+  }[];
+  createdAt: string;
+  decidedAt: string | null;
+  can: { decide: boolean; cancel: boolean; comment: boolean };
+}
+
 export interface MemberName {
   id: string;
   name: string;
@@ -330,6 +373,8 @@ export const WORKER_METHODS = [
   'ui/toast',
   'host/members',
   'host/projects',
+  'host/approval',
+  'host/approval/decide',
   'ui/message',
   'ui/copy',
   'ui/download',

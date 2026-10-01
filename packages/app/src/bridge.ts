@@ -6,6 +6,8 @@ import {
   type ApiGrant,
   type AppInfo,
   type DataChange,
+  type ApprovalDecision,
+  type ApprovalView,
   type MemberName,
   type ProjectName,
   type DevUpdateParams,
@@ -484,6 +486,34 @@ export class Bridge {
     };
 
     return this.request('host/members', params, true).then(result => namesIn<MemberName>(result, 'members'));
+  }
+
+  /**
+   * One approval request the viewer may see, by id: its title, steps, who
+   * approves each and whether the viewer may decide now. Rejects with a
+   * `HostError` when it is not one they may see. Needs the `approvals` host grant.
+   */
+  approval(id: string): Promise<ApprovalView> {
+    const refused = this.#grant('host', 'approvals');
+
+    if (refused) return Promise.reject(refused);
+
+    return this.request('host/approval', { approval: id }, true) as Promise<ApprovalView>;
+  }
+
+  /**
+   * The viewer approves or declines the request's waiting step, with an
+   * optional comment, and resolves with the request as it now stands. Brydio
+   * refuses a requester deciding their own, and a bot. Needs the `approvals` host grant.
+   */
+  decideApproval(id: string, decision: ApprovalDecision, comment?: string): Promise<ApprovalView> {
+    const refused = this.#grant('host', 'approvals');
+
+    if (refused) return Promise.reject(refused);
+
+    const params = { approval: id, decision, ...(typeof comment === 'string' && comment.trim() ? { comment: comment.trim() } : {}) };
+
+    return this.request('host/approval/decide', params, true) as Promise<ApprovalView>;
   }
 
   #hostCall(capability: 'members' | 'projects', ids: readonly string[]): Promise<unknown> {

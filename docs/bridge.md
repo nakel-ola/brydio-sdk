@@ -33,6 +33,15 @@ for a screen that draws immediately.
 later theme, size, selection, placement, or instance update and returns an
 unsubscribe function.
 
+### `host.approval(id)` and `host.decideApproval(id, decision, comment)`
+
+`host.approval` reads one Brydio approval request the viewer may see: its
+title, status, steps, approvers and `can.decide`. `host.decideApproval`
+approves or declines the waiting step as the viewer, with an optional comment,
+and resolves with the request as it now stands. Both need the `approvals` host
+grant; without it they throw `GrantError` before anything leaves the worker.
+A screen that only shows a request can place `bry-approval` instead.
+
 ### `tools.call(tool, input)` and `tools.result(tool, input)`
 
 Calls one generated or custom tool. A write waits for Brydio to show an
@@ -121,6 +130,8 @@ A connection path is relative. `GET` and `HEAD` are reads. `POST`, `PUT`,
 | `ui/toast` | app to Brydio | `UiToastParams`: text and optional tone | No reply. Brydio shows the sentence in its own toast. |
 | `host/members` | app to Brydio | `{ ids? }` plus the envelope id | `host/result` with visible member names, or `host/error`. |
 | `host/projects` | app to Brydio | `{ ids }` plus the envelope id | `host/result` with visible project names, or `host/error`. |
+| `host/approval` | app to Brydio | `{ approval }` plus the envelope id; needs the `approvals` host grant | `host/result` with the approval request as the viewer sees it, or `host/error`. |
+| `host/approval/decide` | app to Brydio | `{ approval, decision, comment? }` plus the envelope id; `decision` is `approve` or `decline` | `host/result` with the request as it now stands, or `host/error`. |
 | `ui/message` | app to Brydio | `{ text, target? }` plus the envelope id | `ui/result` after Brydio opens or appends to a chat, or `ui/error`. |
 | `ui/copy` | app to Brydio | `{ text }` (up to 10,000 characters) or `{ route }`, one of the app's own routes | `ui/result` `{ copied }` once the clipboard took it or not, or `ui/error`. |
 | `ui/download` | app to Brydio | `{ name, text, type }`: a text file up to 5 MB, as CSV, plain text, Markdown or JSON | `ui/result` `{ saved: true }` once Brydio handed it to the person, or `ui/error`. |

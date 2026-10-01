@@ -1768,6 +1768,15 @@ var CATALOGUE = {
     events: ["change"],
     children: false
   },
+  "bry-approval": {
+    props: {
+      request: { kind: "text", max: KEY_MAX },
+      compact: { kind: "boolean" }
+    },
+    required: ["request"],
+    events: ["decided"],
+    children: false
+  },
   "bry-board-lane": {
     props: {
       title: { kind: "text", max: LABEL_MAX },

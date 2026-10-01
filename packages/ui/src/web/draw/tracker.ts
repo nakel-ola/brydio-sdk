@@ -1964,6 +1964,40 @@ drawAs(
   ],
 );
 
+// bry-approval
+
+// Brydio draws the request from its approvals engine, with the viewer's own
+// Approve and Decline; outside Brydio there is no request to read, so the
+// preview says what would be there.
+drawAs(
+  'bry-approval',
+  element => {
+    const compact = element.compact === true;
+
+    return html`<div class="approval type-body ${compact ? 'compact' : ''}" role="group" aria-label="Approval">
+      <span>Approval request</span><span class="pill">Pending</span>
+    </div>`;
+  },
+  [
+    TYPE,
+    css`
+      :host { display: block; }
+      .approval {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 1rem;
+        border: 1px dashed var(--line);
+        border-radius: 1rem;
+        color: var(--fg-muted);
+      }
+      .approval.compact { padding: 0.5rem 0.75rem; border-radius: 999px; }
+      .pill { padding: 0.125rem 0.625rem; border-radius: 999px; border: 1px solid var(--line); }
+    `,
+  ],
+);
+
 drawAs(
   'bry-rich-text',
   element => {

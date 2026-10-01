@@ -2115,6 +2115,21 @@ export const CATALOGUE = {
     events: ['change'],
     children: false,
   },
+  'bry-approval': {
+    // One Brydio approval request (AP05), drawn by Brydio from its approvals
+    // engine: title, status, each step with its approvers, and Approve and
+    // Decline with an optional comment when the viewer may decide. `request`
+    // is the request's id; the app never holds who approves. A decision
+    // raises `decided` with `{ status }`, the request's status after it.
+    // `compact` draws one line: title and status.
+    props: {
+      request: { kind: 'text', max: KEY_MAX },
+      compact: { kind: 'boolean' },
+    },
+    required: ['request'],
+    events: ['decided'],
+    children: false,
+  },
   'bry-board-lane': {
     // One swimlane's heading on a `layout="lanes"` board: `title`, `mark`,
     // `count`. With `collapsible`, pressing it raises `toggle` with

@@ -18,7 +18,7 @@ A toast is not an element: it is said, not placed. A screen shows one with
 `toast(text, tone)` from `@brydio/app`, which Brydio draws in its own
 toaster; see [the bridge](bridge.md).
 
-There are 95 elements.
+There are 96 elements.
 
 - [`bry-stack`](#bry-stack)
 - [`bry-heading`](#bry-heading)
@@ -110,6 +110,7 @@ There are 95 elements.
 - [`bry-spreadsheet-group`](#bry-spreadsheet-group)
 - [`bry-rich-text`](#bry-rich-text)
 - [`bry-whiteboard`](#bry-whiteboard)
+- [`bry-approval`](#bry-approval)
 - [`bry-board-lane`](#bry-board-lane)
 - [`bry-property-list`](#bry-property-list)
 - [`bry-property-row`](#bry-property-row)
@@ -1437,6 +1438,17 @@ Holds nothing: it is drawn from its settings alone.
 | `label` | text, at most 200 characters | no |
 
 Tells the app: `change`.
+
+## `bry-approval`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `request` | text, at most 128 characters | yes |
+| `compact` | `true` or `false` | no |
+
+Tells the app: `decided`.
 
 ## `bry-board-lane`
 
