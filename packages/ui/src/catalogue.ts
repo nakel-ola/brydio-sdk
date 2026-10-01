@@ -312,6 +312,9 @@ export const EMOJI_MAX = 16;
 export const SPREADSHEET_COLUMNS = 16;
 /** The longest document a rich-text editor holds: the same as `bry-markdown`'s. */
 export const RICH_TEXT_MAX = 50_000;
+
+/** What `bry-rich-text`'s `hide` may name: its menus and buttons, never its nodes. */
+export const RICH_TEXT_HIDEABLE = ['headings', 'lists', 'tasks', 'quote', 'code', 'table', 'maths', 'callout', 'toggle', 'divider', 'highlight', 'scripts', 'align'] as const;
 /** A key as a person presses it: `c`, `j`, `space`, `mod+enter`, `shift+/`. */
 const KEY_NAME = 24;
 
@@ -2079,6 +2082,16 @@ export const CATALOGUE = {
         max: 500,
         of: { kind: 'shape', fields: { value: { kind: 'text', max: KEY_MAX }, label: { kind: 'text', max: LABEL_MAX } }, required: ['value', 'label'] },
       },
+      // Co-edited text (DW01): a record's `coedit: true` text field, which
+      // several people write at once. Brydio opens the record's shared
+      // document in the screen's own instance and ignores `value`.
+      bind: {
+        kind: 'shape',
+        fields: { collection: { kind: 'text', max: 40 }, id: { kind: 'text', max: KEY_MAX }, field: { kind: 'text', max: 40 } },
+        required: ['collection', 'id', 'field'],
+      },
+      // Menu entries and buttons taken away; what a document holds is the same in every app.
+      hide: { kind: 'list', max: 13, of: { kind: 'enum', values: [...RICH_TEXT_HIDEABLE] } },
     },
     events: ['change', 'blur', 'submit'],
     children: false,

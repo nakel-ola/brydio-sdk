@@ -45,6 +45,13 @@ export interface FieldType {
    * changes, and a value with no label reads as itself.
    */
   labels?: Readonly<Record<string, string>>;
+  /**
+   * Written by several people at once (`tasks/docs-wiki` DW01): a `text`
+   * field drawn with `bry-rich-text bind` is one fragment of a shared Yjs
+   * document the host keeps. Such a field leaves the record's `version`
+   * check, and a tool's change to it merges into the live text.
+   */
+  coedit?: boolean;
 }
 
 /**
@@ -139,7 +146,8 @@ export class FieldTypeInvalid extends Error {
       | 'data_labels_not_allowed'
       | 'data_label_invalid'
       | 'data_label_unknown_value'
-      | 'data_field_key_unknown',
+      | 'data_field_key_unknown'
+      | 'data_coedit_not_text',
     message: string
   ) {
     super(message);
@@ -175,7 +183,7 @@ export function parseFieldType(raw: unknown): FieldType {
   throw new FieldTypeInvalid('data_field_type_unknown', `"${raw}" is not a field type.`);
 }
 
-const FIELD_KEYS: ReadonlySet<string> = new Set(['type', 'optional', 'default', 'labels']);
+const FIELD_KEYS: ReadonlySet<string> = new Set(['type', 'optional', 'default', 'labels', 'coedit']);
 
 /** How long a choice value's label may be. */
 export const LABEL_CHARS = 60;
@@ -185,7 +193,11 @@ function parseFieldObject(raw: Record<string, unknown>): FieldType {
   const unknown = Object.keys(raw).find(key => !FIELD_KEYS.has(key));
 
   if (unknown) {
-    throw new FieldTypeInvalid('data_field_key_unknown', `"${unknown}" is not something a field may say; use type, optional, default and labels.`);
+    throw new FieldTypeInvalid('data_field_key_unknown', `"${unknown}" is not something a field may say; use type, optional, default, labels and coedit.`);
+  }
+
+  if (raw.coedit !== undefined && typeof raw.coedit !== 'boolean') {
+    throw new FieldTypeInvalid('data_field_key_unknown', '"coedit" is true or false.');
   }
 
   if (typeof raw.type !== 'string' && !Array.isArray(raw.type)) {
@@ -197,7 +209,12 @@ function parseFieldObject(raw: Record<string, unknown>): FieldType {
   }
 
   const inner = parseFieldType(raw.type);
-  const type: FieldType = { ...inner, optional: inner.optional || raw.optional === true, ...labelsOf(inner, raw) };
+  const type: FieldType = {
+    ...inner,
+    optional: inner.optional || raw.optional === true,
+    ...labelsOf(inner, raw),
+    ...coeditOf(inner, raw),
+  };
 
   if (!('default' in raw)) return type;
 
@@ -252,6 +269,26 @@ function labelsOf(type: FieldType, raw: Record<string, unknown>): Pick<FieldType
 
   return { labels: { ...(labels as Record<string, string>) } };
 }
+
+/** `coedit`, on long text only: nothing else is typed into by several people at once. */
+function coeditOf(type: FieldType, raw: Record<string, unknown>): Pick<FieldType, 'coedit'> {
+  if (raw.coedit !== true) return {};
+
+  if (type.kind !== 'text') {
+    throw new FieldTypeInvalid('data_coedit_not_text', `Only a text field may be co-edited, not a ${type.kind}.`);
+  }
+
+  return { coedit: true };
+}
+
+/** True for a field several people write at once, through the co-editing layer. */
+export const isCoedited = (type: FieldType): boolean => type.kind === 'text' && type.coedit === true;
+
+/** A collection's co-edited fields, by name. */
+export const coeditedFields = (fields: Readonly<Record<string, FieldType>>): string[] =>
+  Object.entries(fields)
+    .filter(([, type]) => isCoedited(type))
+    .map(([field]) => field);
 
 /** How a choice's value reads to a person: its label, or the value itself. */
 export const labelOfValue = (type: FieldType, value: string): string => type.labels?.[value] ?? value;

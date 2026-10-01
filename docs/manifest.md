@@ -144,6 +144,13 @@ A field may also use `{ "type": ..., "optional": true, "default": ...,
 `"labels": ... }`. Only optional choices and booleans may have defaults.
 Choice labels are 1 to 60 characters and may name only declared values.
 
+A `text` field may say `"coedit": true` (`{ "type": "text", "coedit": true }`):
+several people then write it at once through `bry-rich-text bind`, which
+Brydio keeps as a shared document with everyone's carets. A co-edited field
+leaves the record's `version` check, and a tool's change to it is merged
+into the live text rather than written over it. Any other type refuses
+`coedit` with `data_coedit_not_text`.
+
 ## Tools
 
 `tools.generated` defaults to `true`. Each collection then gets create,

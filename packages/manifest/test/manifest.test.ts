@@ -280,6 +280,14 @@ describe('field types (contracts §5)', () => {
     expect(parseFieldType('token')).toMatchObject({ kind: 'token', values: ['neutral', 'brand', 'success', 'warn', 'danger'] });
   });
 
+  test('read a co-edited text field, and refuse coedit on anything else (DW01)', () => {
+    expect(parseFieldType({ type: 'text', coedit: true })).toEqual({ kind: 'text', optional: false, coedit: true });
+    expect(parseFieldType({ type: 'text?', coedit: true })).toEqual({ kind: 'text', optional: true, coedit: true });
+    expect(parseFieldType({ type: 'text', coedit: false })).toEqual({ kind: 'text', optional: false });
+    expect(() => parseFieldType({ type: 'string', coedit: true })).toThrow(expect.objectContaining({ code: 'data_coedit_not_text' }));
+    expect(() => parseFieldType({ type: 'text', coedit: 'yes' })).toThrow(expect.objectContaining({ code: 'data_field_key_unknown' }));
+  });
+
   test('refuse with a code', () => {
     expect(() => parseFieldType('ref')).toThrow(expect.objectContaining({ code: 'data_field_type_unknown' }));
     expect(() => parseFieldType(['a', 'a'])).toThrow(expect.objectContaining({ code: 'data_enum_duplicate' }));

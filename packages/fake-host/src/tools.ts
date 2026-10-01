@@ -1,5 +1,6 @@
 import {
   FIELD_LIMITS,
+  coeditedFields,
   collectionsOf,
   describeType,
   toolNames,
@@ -341,8 +342,13 @@ export class FixtureStore {
       case 'update': {
         const { id, version, ...changes } = input;
         const current = this.#find(spec, String(id));
+        // A co-edited field (DW01) leaves the version check, as in Brydio:
+        // several people write it at once and its text comes back without a
+        // new version. A change that touches only such fields keeps the version.
+        const coedited = new Set(coeditedFields(spec.fields));
+        const ordinary = Object.keys(changes).some(field => !coedited.has(field));
 
-        if (current.version !== version) {
+        if (ordinary && current.version !== version) {
           throw new Refused(
             `This ${label} changed since you read it. Here it is as it is now; make the change again on version ${current.version}.\n${JSON.stringify(flat(current))}`,
             { error: 'stale', current: flat(current) },
@@ -350,7 +356,7 @@ export class FixtureStore {
         }
 
         current.body = checked(spec, changes, current.body);
-        current.version += 1;
+        if (ordinary) current.version += 1;
         current.updatedAt = this.#stamp().updatedAt;
         // The screen, as the person testing it.
         current.updatedBy = 'user_fixture';

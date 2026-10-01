@@ -1419,6 +1419,8 @@ Holds nothing: it is drawn from its settings alone.
 | `attachments` | `true` or `false` | no |
 | `mentionAll` | `true` or `false` | no |
 | `references` | a list of at most 500: a record of `value`, `label` (needs `value`, `label`) | no |
+| `bind` | a record of `collection`, `id`, `field` (needs `collection`, `id`, `field`) | no |
+| `hide` | a list of at most 13: `headings`, `lists`, `tasks`, `quote`, `code`, `table`, `maths`, `callout`, `toggle`, `divider`, `highlight`, `scripts`, `align` | no |
 
 Tells the app: `change`, `blur`, `submit`.
 

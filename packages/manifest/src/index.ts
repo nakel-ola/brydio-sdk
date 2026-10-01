@@ -42,9 +42,11 @@ export {
 
 export {
   COLOUR_TOKENS,
+  coeditedFields,
   FIELD_LIMITS,
   RESERVED_FIELDS,
   describeType,
+  isCoedited,
   isSearchable,
   isSortable,
   isStructured,

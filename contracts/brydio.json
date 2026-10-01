@@ -1,7 +1,7 @@
 {
   "brydio": {
-    "commit": "f79cb8689c2656584710ce09c2b16b454d6048e6",
-    "dirty": true
+    "commit": "c1f9b006f268554d4033873e5b8857e0c9192374",
+    "dirty": false
   },
   "contracts": {
     "bundle-files": {
@@ -6092,6 +6092,50 @@
             "error": {
               "kind": "text",
               "max": 200
+            },
+            "bind": {
+              "kind": "shape",
+              "fields": {
+                "collection": {
+                  "kind": "text",
+                  "max": 40
+                },
+                "id": {
+                  "kind": "text",
+                  "max": 128
+                },
+                "field": {
+                  "kind": "text",
+                  "max": 40
+                }
+              },
+              "required": [
+                "collection",
+                "id",
+                "field"
+              ]
+            },
+            "hide": {
+              "kind": "list",
+              "max": 13,
+              "of": {
+                "kind": "enum",
+                "values": [
+                  "headings",
+                  "lists",
+                  "tasks",
+                  "quote",
+                  "code",
+                  "table",
+                  "maths",
+                  "callout",
+                  "toggle",
+                  "divider",
+                  "highlight",
+                  "scripts",
+                  "align"
+                ]
+              }
             }
           },
           "events": [

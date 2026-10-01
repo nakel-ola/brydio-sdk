@@ -250,6 +250,7 @@ var COMMENT_ACTIONS = ["reply", "quote", "edit", "resolve", "copy", "copyLink", 
 var EMOJI_MAX = 16;
 var SPREADSHEET_COLUMNS = 16;
 var RICH_TEXT_MAX = 50000;
+var RICH_TEXT_HIDEABLE = ["headings", "lists", "tasks", "quote", "code", "table", "maths", "callout", "toggle", "divider", "highlight", "scripts", "align"];
 var KEY_NAME = 24;
 var CATALOGUE = {
   "bry-stack": {
@@ -1741,7 +1742,13 @@ var CATALOGUE = {
         kind: "list",
         max: 500,
         of: { kind: "shape", fields: { value: { kind: "text", max: KEY_MAX }, label: { kind: "text", max: LABEL_MAX } }, required: ["value", "label"] }
-      }
+      },
+      bind: {
+        kind: "shape",
+        fields: { collection: { kind: "text", max: 40 }, id: { kind: "text", max: KEY_MAX }, field: { kind: "text", max: 40 } },
+        required: ["collection", "id", "field"]
+      },
+      hide: { kind: "list", max: 13, of: { kind: "enum", values: [...RICH_TEXT_HIDEABLE] } }
     },
     events: ["change", "blur", "submit"],
     children: false
