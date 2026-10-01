@@ -1,14 +1,28 @@
 import {
   FIELD_LIMITS,
+  OPEN_LIMITS,
   coeditedFields,
   collectionsOf,
+  definitionOf,
+  definitionTypeProblem,
   describeType,
+  fieldTypeOf,
+  hasChoices,
+  keyFromName,
+  keyProblem,
+  missingRequired,
+  moveValue,
+  openSpec,
+  openValueProblem,
   toolNames,
   valueProblem,
   valueSchema,
   type CollectionSpec,
   type FieldType,
   type ManifestExtensions,
+  type Moved,
+  type OpenField,
+  type OpenFieldChange,
   type ToolVerb,
 } from '@brydio/manifest';
 import { z, type ZodType } from 'zod';
@@ -93,14 +107,27 @@ export class FixtureStore {
   readonly #listeners = new Set<(change: StoreChange) => void>();
   #clock: number;
   #next = 0;
+  /** The most rows one open-schema table may hold (P5); an option so a test can lower it. */
+  readonly #rowsPerTable: number;
 
-  constructor(manifest: Pick<ManifestExtensions, 'data' | 'tools'>, fixtures: Fixtures = {}, options: { now?: Date } = {}) {
+  constructor(
+    manifest: Pick<ManifestExtensions, 'data' | 'tools'>,
+    fixtures: Fixtures = {},
+    options: { now?: Date; rowsPerTable?: number } = {},
+  ) {
     this.#specs = manifest.tools?.generated === false ? [] : collectionsOf(manifest);
     this.#clock = (options.now ?? new Date('2026-09-12T09:00:00.000Z')).getTime();
+    this.#rowsPerTable = options.rowsPerTable ?? OPEN_LIMITS.rowsPerTable;
 
     for (const spec of this.#specs) this.#records.set(spec.name, []);
 
-    for (const [collection, seeds] of Object.entries(fixtures)) {
+    // Field definitions first, so an open collection's seeded rows are
+    // checked against them (P5).
+    const seeded = Object.entries(fixtures).sort(
+      ([a], [b]) => Number(Boolean(this.#specs.find(one => one.name === b)?.definesFieldsOf)) - Number(Boolean(this.#specs.find(one => one.name === a)?.definesFieldsOf)),
+    );
+
+    for (const [collection, seeds] of seeded) {
       const spec = this.#spec(collection);
 
       for (const seed of seeds) {
@@ -111,7 +138,7 @@ export class FixtureStore {
           updatedBy?: unknown;
           updatedOrigin?: unknown;
         };
-        const body = checked(spec, fields, {});
+        const body = this.#created(spec, fields);
 
         this.#records.get(spec.name)!.push({
           id: typeof id === 'string' ? id : this.#id(spec),
@@ -153,7 +180,7 @@ export class FixtureStore {
 
     try {
       if (current) {
-        current.body = checked(spec, changes, current.body);
+        current.body = this.#changed(spec, current, changes).body;
         current.version += 1;
         current.updatedAt = this.#stamp().updatedAt;
         // Somebody else: the assistant, acting for another person.
@@ -167,7 +194,7 @@ export class FixtureStore {
       const made: StoredDocument = {
         id: typeof id === 'string' ? id : this.#id(spec),
         version: 1,
-        body: checked(spec, changes, {}),
+        body: this.#created(spec, changes),
         createdBy: 'user_other',
         updatedBy: 'user_other',
         updatedOrigin: 'assistant',
@@ -193,6 +220,7 @@ export class FixtureStore {
 
     if (!found) throw new Error(`There is no such ${spec.label}.`);
 
+    this.#removed(spec, found);
     records.splice(records.indexOf(found), 1);
     this.#emit(spec, found, 'delete');
   }
@@ -252,8 +280,8 @@ export class FixtureStore {
       return refusal(`changes: ${Array.isArray(changes) && changes.length > 50 ? 'Too big: expected array to have <=50 items' : 'Too small: expected array to have >=1 items'}.`);
     }
 
-    const records = this.#records.get(spec.name)!;
-    const saved = records.map(record => ({ ...record, body: { ...record.body } }));
+    // Every collection, since a field definition's change moves its table's rows too (P5).
+    const saved = new Map([...this.#records].map(([name, records]) => [name, records.map(record => ({ ...record, body: { ...record.body } }))]));
     const clock = this.#clock;
     const next = this.#next;
     const listeners = [...this.#listeners];
@@ -309,8 +337,8 @@ export class FixtureStore {
   }
 
   /** Puts a collection back as it was before a refused batch, and answers the refusal. */
-  #undo(spec: CollectionSpec, saved: StoredDocument[], clock: number, next: number, message: string, data?: Record<string, unknown>): ToolResultShape {
-    this.#records.set(spec.name, saved);
+  #undo(_spec: CollectionSpec, saved: Map<string, StoredDocument[]>, clock: number, next: number, message: string, data?: Record<string, unknown>): ToolResultShape {
+    for (const [name, records] of saved) this.#records.set(name, records);
     this.#clock = clock;
     this.#next = next;
 
@@ -327,7 +355,7 @@ export class FixtureStore {
         const made: StoredDocument = {
           id: this.#id(spec),
           version: 1,
-          body: checked(spec, input, {}),
+          body: this.#created(spec, input),
           createdBy: 'user_fixture',
           updatedBy: 'user_fixture',
           updatedOrigin: 'screen',
@@ -342,6 +370,11 @@ export class FixtureStore {
       case 'update': {
         const { id, version, ...changes } = input;
         const current = this.#find(spec, String(id));
+
+        // A field's key and table, and a row's table, never change (P5):
+        // refused before the version is looked at, as in Brydio.
+        this.#settled(spec, current, changes);
+
         // A co-edited field (DW01) leaves the version check, as in Brydio:
         // several people write it at once and its text comes back without a
         // new version. A change that touches only such fields keeps the version.
@@ -355,7 +388,9 @@ export class FixtureStore {
           );
         }
 
-        current.body = checked(spec, changes, current.body);
+        const { body, fieldChange } = this.#changed(spec, current, changes);
+
+        current.body = body;
         if (ordinary) current.version += 1;
         current.updatedAt = this.#stamp().updatedAt;
         // The screen, as the person testing it.
@@ -363,7 +398,12 @@ export class FixtureStore {
         current.updatedOrigin = 'screen';
         this.#emit(spec, current, 'update');
 
-        return answer(`Changed ${label} ${current.id}; it is at version ${current.version} now.`, flat(current), `Changed ${article} ${label}`);
+        // A field definition's change says what it did to the table (P5).
+        return answer(
+          `Changed ${label} ${current.id}; it is at version ${current.version} now.`,
+          { ...flat(current), ...(fieldChange ? { fieldChange } : {}) },
+          `Changed ${article} ${label}`,
+        );
       }
       case 'get': {
         const found = flat(this.#find(spec, String(input.id)));
@@ -380,6 +420,7 @@ export class FixtureStore {
       case 'delete': {
         const found = this.#find(spec, String(input.id));
 
+        this.#removed(spec, found);
         records.splice(records.indexOf(found), 1);
         this.#emit(spec, found, 'delete');
 
@@ -388,18 +429,26 @@ export class FixtureStore {
     }
   }
 
-  #page(spec: CollectionSpec, filter: Record<string, unknown>, input: Record<string, unknown>) {
+  #page(declared: CollectionSpec, filter: Record<string, unknown>, input: Record<string, unknown>) {
+    const sort = (input.sort as { field: string; dir?: 'asc' | 'desc' } | undefined) ?? { field: 'updatedAt' };
+    const spec = declared.openSchema ? this.#listedTable(declared, filter, sort) : declared;
+
     for (const field of Object.keys(filter)) {
       if (!spec.structured.includes(field)) {
-        throw new Refused(
-          spec.fields[field] ? `${field} is not a field a list can be filtered by.` : `${field} is not a field of ${spec.label}.`,
-          { error: 'invalid', field },
-        );
+        throw new Refused(spec.fields[field] ? `${field} is not a field a list can be filtered by.` : notAField(spec, field), { error: 'invalid', field });
       }
     }
 
-    const sort = (input.sort as { field: string; dir?: 'asc' | 'desc' } | undefined) ?? { field: 'updatedAt' };
     const time = sort.field === 'updatedAt' || sort.field === 'createdAt';
+
+    // An open table's sort is checked here: its fields are not the schema's enum.
+    if (!time && !spec.sortable.includes(sort.field)) {
+      throw new Refused(spec.fields[sort.field] ? `${sort.field} is not a field a list can be sorted by.` : notAField(spec, sort.field), {
+        error: 'invalid',
+        field: sort.field,
+      });
+    }
+
     const dir = sort.dir ?? (time ? 'desc' : 'asc');
     // The store's paging: 50 unless asked, never more than 200.
     const limit = input.limit === undefined ? 50 : Math.min(Number(input.limit), 200);
@@ -434,6 +483,229 @@ export class FixtureStore {
       nextCursor: more ? String(offset + limit) : null,
       ...(capped ? { note: `At most ${limit} come back at once.` } : {}),
     };
+  }
+
+  // --- Open-schema collections (P5), as Brydio's document store keeps them --
+
+  /** A new record's body: for an open table, checked against its live fields; for a field definition, given its key. */
+  #created(spec: CollectionSpec, input: Record<string, unknown>): Record<string, unknown> {
+    if (spec.definesFieldsOf) return checked(spec, this.#newDefinition(spec, input), {});
+
+    if (!spec.openSchema) return checked(spec, input, {});
+
+    const live = this.#openRow(spec, input, input, true);
+
+    if (this.#tableRows(spec, live.table).length >= this.#rowsPerTable) {
+      throw new Refused(
+        `This table already holds ${this.#rowsPerTable.toLocaleString('en-GB')} ${spec.plural}, the most one table may hold. Delete some to make room.`,
+        { error: 'full' },
+      );
+    }
+
+    return checked(live.spec, input, {});
+  }
+
+  /** What an update leaves a record as, and, for a field definition whose type or choices changed, what it did to the table. */
+  #changed(
+    spec: CollectionSpec,
+    current: StoredDocument,
+    changes: Record<string, unknown>,
+  ): { body: Record<string, unknown>; fieldChange?: OpenFieldChange } {
+    this.#settled(spec, current, changes);
+
+    if (spec.openSchema) return { body: checked(this.#openRow(spec, changes, current.body, false).spec, changes, current.body) };
+
+    if (!spec.definesFieldsOf) return { body: checked(spec, changes, current.body) };
+
+    const table = this.#ownerOf(spec).openSchema!.table;
+    const body = checked(spec, changes, current.body);
+    const problem = definitionTypeProblem(body);
+
+    if (problem) throw new Refused(problem, { error: 'invalid', field: 'choices' });
+
+    const before = definitionOf(current.id, current.body, table);
+    const after = definitionOf(current.id, body, table);
+
+    if (!before || !after) return { body };
+
+    const retyped = before.type !== after.type;
+    const narrowed = hasChoices(after.type) && before.choices.some(choice => !after.choices.includes(choice));
+
+    if (!retyped && !narrowed) return { body };
+
+    return {
+      body,
+      fieldChange: this.#rewriteTable(spec, before, retyped ? 'retype' : 'choices', value => moveValue(value, before, after), after),
+    };
+  }
+
+  /** Refuses a change to what never changes: a field's key and table, and a row's table. */
+  #settled(spec: CollectionSpec, current: StoredDocument, changes: Record<string, unknown>): void {
+    if (spec.openSchema) {
+      const field = spec.openSchema.table;
+
+      if (field && Object.hasOwn(changes, field) && changes[field] !== current.body[field]) {
+        throw new Refused(`A ${spec.label} stays in its table: ${field} never changes.`, { error: 'invalid', field });
+      }
+    }
+
+    if (spec.definesFieldsOf) {
+      const field = this.#ownerOf(spec).openSchema!.table;
+
+      if (field && Object.hasOwn(changes, field) && changes[field] !== current.body[field]) {
+        throw new Refused(`A field stays in its table: ${field} never changes.`, { error: 'invalid', field });
+      }
+
+      if (Object.hasOwn(changes, 'key') && changes.key !== current.body.key) {
+        throw new Refused(`A field's key never changes, so rows and tools keep finding it; change its name instead.`, { error: 'invalid', field: 'key' });
+      }
+    }
+  }
+
+  /** A field definition's delete takes its values from every row of its table. */
+  #removed(spec: CollectionSpec, found: StoredDocument): void {
+    if (!spec.definesFieldsOf) return;
+
+    const gone = definitionOf(found.id, found.body, this.#ownerOf(spec).openSchema!.table);
+
+    if (gone) this.#rewriteTable(spec, gone, 'delete', () => ({ outcome: 'cleared' }));
+  }
+
+  /** The open collection a companion defines the fields of. */
+  #ownerOf(companion: CollectionSpec): CollectionSpec {
+    return this.#spec(companion.definesFieldsOf!);
+  }
+
+  /** One table's live fields, in the order they were made. */
+  #liveFields(owner: CollectionSpec, table: string | null): OpenField[] {
+    const { fields, table: field } = owner.openSchema!;
+
+    return (this.#records.get(fields) ?? [])
+      .map(record => definitionOf(record.id, record.body, field))
+      .filter((one): one is OpenField => one !== null && one.table === table);
+  }
+
+  /** The live rows of one table. */
+  #tableRows(owner: CollectionSpec, table: string | null): StoredDocument[] {
+    return this.#records.get(owner.name)!.filter(record => tableValue(owner.openSchema!.table, record.body) === table);
+  }
+
+  /**
+   * A row write's schema: its table named, its live fields folded in, and
+   * what the store's own types cannot say checked (a web address, a rating's
+   * range, a create leaving a required field out).
+   */
+  #openRow(spec: CollectionSpec, given: Record<string, unknown>, body: Record<string, unknown>, create: boolean) {
+    const field = spec.openSchema!.table;
+    const table = tableValue(field, body);
+
+    if (field && table === null) {
+      throw new Refused(`${field} names the table this ${spec.label} belongs to, and is required.`, { error: 'invalid', field });
+    }
+
+    const fields = this.#liveFields(spec, table);
+
+    for (const one of fields) {
+      if (create && missingRequired(one, given[one.key])) {
+        throw new Refused(`${one.key} ("${one.name}") is required.`, { error: 'invalid', field: one.key });
+      }
+
+      const problem = Object.hasOwn(given, one.key) ? openValueProblem(one, given[one.key]) : null;
+
+      if (problem) throw new Refused(problem, { error: 'invalid', field: one.key });
+    }
+
+    return { spec: openSpec(spec, fields), table, fields };
+  }
+
+  /** A list's table: named in its filter, or the only one. Without it, only the manifest's fields filter and sort. */
+  #listedTable(spec: CollectionSpec, filter: Record<string, unknown>, sort: { field: string }): CollectionSpec {
+    const field = spec.openSchema!.table;
+    const named = field ? filter[field] : null;
+
+    if (field && typeof named !== 'string') {
+      const asked = [...Object.keys(filter), sort.field].find(key => !spec.fields[key] && key !== 'updatedAt' && key !== 'createdAt');
+
+      if (asked) {
+        throw new Refused(`${asked}: name the ${field} in the filter to filter or sort on a table's own fields.`, { error: 'invalid', field: asked });
+      }
+
+      return spec;
+    }
+
+    return openSpec(spec, this.#liveFields(spec, field ? (named as string) : null));
+  }
+
+  /**
+   * A new field definition: its table named, room for one more field, a key
+   * (made from its name when left out) that is free, and its choices.
+   */
+  #newDefinition(spec: CollectionSpec, input: Record<string, unknown>): Record<string, unknown> {
+    const owner = this.#ownerOf(spec);
+    const field = owner.openSchema!.table;
+    const table = tableValue(field, input);
+
+    if (field && table === null) throw new Refused(`${field} names the table this field belongs to, and is required.`, { error: 'invalid', field });
+
+    const live = this.#liveFields(owner, table);
+
+    if (live.length >= OPEN_LIMITS.fieldsPerTable) {
+      throw new Refused(`A table may have at most ${OPEN_LIMITS.fieldsPerTable} fields.`, { error: 'invalid', field: 'key' });
+    }
+
+    const taken = new Set(live.map(one => one.key));
+    const fixed = new Set(Object.keys(owner.fields));
+    const key =
+      input.key === undefined || input.key === null || input.key === ''
+        ? keyFromName(typeof input.name === 'string' ? input.name : '', new Set([...taken, ...fixed]))
+        : input.key;
+
+    if (typeof key !== 'string') throw new Refused('key must be text.', { error: 'invalid', field: 'key' });
+
+    const wrong = keyProblem(key, fixed, taken) ?? definitionTypeProblem(input);
+
+    if (wrong) throw new Refused(wrong, { error: 'invalid', field: keyProblem(key, fixed, taken) ? 'key' : 'choices' });
+
+    return { ...input, key };
+  }
+
+  /**
+   * Moves one field's value in every row of its table that holds one, after
+   * its definition changed. Each moved row gets a new version and is heard
+   * as a migration's change, as in Brydio; its `updatedAt` is left alone.
+   */
+  #rewriteTable(companion: CollectionSpec, field: OpenField, op: OpenFieldChange['op'], move: (value: unknown) => Moved, to?: OpenField): OpenFieldChange {
+    const owner = this.#ownerOf(companion);
+    const report: OpenFieldChange = { field: field.key, op, rows: 0, kept: 0, converted: 0, cleared: 0 };
+
+    for (const row of this.#tableRows(owner, field.table)) {
+      if (!Object.hasOwn(row.body, field.key)) continue;
+
+      // An empty list is how a list field is kept when nobody set it: it
+      // stays for a list, goes quietly for anything else, and is no value to report.
+      const blank = Array.isArray(row.body[field.key]) && (row.body[field.key] as unknown[]).length === 0;
+
+      if (blank && to && fieldTypeOf(to).kind === 'string[]') continue;
+      if (!blank) report.rows += 1;
+
+      const moved: Moved = blank ? { outcome: 'cleared' } : move(row.body[field.key]);
+
+      if (!blank) report[moved.outcome] += 1;
+      if (moved.outcome === 'kept') continue;
+
+      const next = { ...row.body };
+
+      if (moved.outcome === 'cleared') delete next[field.key];
+      else next[field.key] = moved.value;
+
+      row.body = next;
+      row.version += 1;
+      row.updatedOrigin = 'migration';
+      row.updatedBy = 'user_fixture';
+      this.#emit(owner, row, 'update');
+    }
+
+    return report;
   }
 
   #find(spec: CollectionSpec, id: string): StoredDocument {
@@ -485,12 +757,30 @@ function flat(doc: StoredDocument): Record<string, unknown> {
   };
 }
 
+/** Brydio's `notAField`: an open table's fields are the live ones, so it names them (P5). */
+function notAField(spec: CollectionSpec, field: string): string {
+  if (spec.openSchema) {
+    return `${field} is not a field of this ${spec.label}'s table; its fields are ${Object.keys(spec.fields).join(', ')}.`;
+  }
+
+  return `${field} is not a field of ${spec.label}.`;
+}
+
+/** The table a row or definition names, or null when the collection has none. */
+function tableValue(tableField: string | null, body: Record<string, unknown>): string | null {
+  if (!tableField) return null;
+
+  const value = body[tableField];
+
+  return typeof value === 'string' && value.length > 0 && value.length <= FIELD_LIMITS.stringChars ? value : null;
+}
+
 /** The store's rules for a write, from `document-store.service.ts`. */
 function checked(spec: CollectionSpec, changes: Record<string, unknown>, base: Record<string, unknown>): Record<string, unknown> {
   const body: Record<string, unknown> = { ...base };
 
   for (const [field, value] of Object.entries(changes)) {
-    if (!spec.fields[field]) throw new Refused(`${field} is not a field of ${spec.label}.`, { error: 'invalid', field });
+    if (!spec.fields[field]) throw new Refused(notAField(spec, field), { error: 'invalid', field });
     // A drawing's summary is the host's to write, from its board (WB01).
     if (spec.fields[field].kind === 'canvas') {
       throw new Refused(`${field} is a drawing: it is changed on its board, never written.`, { error: 'invalid', field });
@@ -587,11 +877,15 @@ function inputFor(verb: ToolVerb, spec: CollectionSpec): z.ZodObject {
         .map(([field, type]) => [field, as(type)]),
     );
 
+  // An open table's own fields (P5) are given by key beside the manifest's;
+  // the store checks them against the table's live definitions.
+  const openKeys = (shape: z.ZodObject): z.ZodObject => (spec.openSchema ? shape.catchall(z.unknown()) : shape);
+
   switch (verb) {
     case 'create':
-      return z.object(fields(createField));
+      return openKeys(z.object(fields(createField)));
     case 'update':
-      return z.object({ id: idSchema, version: z.number().int().min(1), ...fields(updateField) });
+      return openKeys(z.object({ id: idSchema, version: z.number().int().min(1), ...fields(updateField) }));
     case 'get':
     case 'delete':
       return z.object({ id: idSchema });
@@ -600,7 +894,9 @@ function inputFor(verb: ToolVerb, spec: CollectionSpec): z.ZodObject {
         filter: filterSchema(spec),
         sort: z
           .object({
-            field: z.enum([...spec.sortable, 'updatedAt', 'createdAt'] as unknown as [string, ...string[]]),
+            field: spec.openSchema
+              ? z.string().min(1).max(FIELD_LIMITS.nameChars)
+              : z.enum([...spec.sortable, 'updatedAt', 'createdAt'] as unknown as [string, ...string[]]),
             dir: z.enum(['asc', 'desc']).optional(),
           })
           .optional(),
