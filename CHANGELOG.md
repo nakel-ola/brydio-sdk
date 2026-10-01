@@ -22,6 +22,10 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.32
+
+Approvals. A new `approvals` host grant lets an app ask people to approve its records: a handler calls `approvals.request`, `approvals.get` and `approvals.cancel` (see [approvals](docs/approvals.md)), and `@brydio/fake-host` keeps what was asked in `FakeApprovals`. A screen places `bry-approval` (`request`, `compact`; hears `decided` with `{ status }`) for Brydio to draw a request with its steps and approvers, or reads and decides one itself with `host.approval(id)` and `host.decideApproval(id, decision, comment)` (`host/approval`, `host/approval/decide`). Nothing you wrote has to change.
+
 ## 0.1.0-alpha.31
 
 The same as 0.1.0-alpha.30, which was tagged but never published: its recorded Brydio contract had lost the co-edit fields.
