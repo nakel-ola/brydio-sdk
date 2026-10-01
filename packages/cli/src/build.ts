@@ -19,9 +19,12 @@ import { checkSources } from './validate.ts';
 /**
  * `brydio build`: an app's source in, the bundle Brydio loads out (A5-F02).
  *
- * One ES module per screen, each whole on its own (Preact, the runtime and
- * the screen, with nothing left to fetch, because the worker can fetch
- * nothing), written where the manifest's `entry` says, plus `app.json`. Then
+ * One ES module per screen, written where the manifest's `entry` says, plus
+ * `app.json`. An app of one screen gets one module, whole on its own. Two or
+ * more are built together: each entry then imports what the screens share
+ * from `chunks/`, by a relative path inside the bundle, which Brydio serves
+ * from the same place as the entry (the worker fetches nothing; its module
+ * imports are not fetches its code can make). Then
  * the checks the store will make, with its numbers: only scripts and the
  * manifest, 1 MB for everything. And the fingerprint the server will serve
  * the code under, worked out by its recipe, so the number printed here is the
@@ -57,6 +60,14 @@ export interface BuildOptions {
    * that is published: `publish` and `build` leave it off.
    */
   hot?: boolean;
+  /**
+   * Build an app's screens together, so the code two screens share is one
+   * file under `chunks/` that each imports, counted once against the 1 MB
+   * (on by default for two or more screens). Off builds every screen as one
+   * module with nothing to import, as before. Handlers are always built
+   * alone: Brydio runs each by itself, from its one file.
+   */
+  split?: boolean;
 }
 
 export async function build(dir: string, options: BuildOptions = {}): Promise<BuildResult> {
@@ -83,7 +94,22 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
     collections: Object.fromEntries(collectionsOf(manifest).map(spec => [spec.name, { label: spec.label, plural: spec.plural }])),
   };
 
-  for (const [screen, { entry }] of Object.entries(manifest.screens ?? {})) {
+  // Two or more screens are built together, so the code they share is one
+  // file each imports rather than a copy in every screen. One screen, or a
+  // build that cannot be done together, is built screen by screen below,
+  // which is also where a screen that did not build is named.
+  const screens = Object.entries(manifest.screens ?? {});
+  const together =
+    options.hot !== true && options.split !== false && screens.length > 1
+      ? await bundleScreens(
+          project.root,
+          screens.map(([, { entry }]) => ({ entry, source: sourceOf(project.root, entry) })),
+          baked,
+          options.minify ?? true,
+        )
+      : null;
+
+  for (const [screen, { entry }] of screens) {
     const source = sourceOf(project.root, entry);
 
     if (!source) {
@@ -96,7 +122,7 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
       continue;
     }
 
-    const built = await bundle(project.root, source, baked, options.minify ?? true, options.hot === true);
+    const built = together?.screens.get(entry) ?? (await bundle(project.root, source, baked, options.minify ?? true, options.hot === true));
 
     if (typeof built === 'string') {
       problems.push({
@@ -141,6 +167,10 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
     // share a runtime share its file.
     for (const [name, bytes] of built.chunks) files.set(join(dirname(entry), name), bytes);
   }
+
+  // The shared files, at the paths the screens import them by. Only once
+  // every screen was built from them: a screen built alone imports none.
+  if (together && !problems.some(problem => problem.severity === 'error')) for (const [path, bytes] of together.chunks) files.set(path, bytes);
 
   // A custom tool's handler (`tasks/apps` A3-F08): the app's own code, which
   // Brydio runs on its side in a box with no page and no network — so it is
@@ -241,9 +271,15 @@ export function describeBuild(result: BuildResult, root: string): string {
     // Each file's own sha256, the one its line of the fingerprint is made from.
     .map(([path, bytes]) => `  ${join(relative(root, result.outDir) || '.', path)}  ${sizeOf(bytes.length)}  sha256 ${createHash('sha256').update(bytes).digest('hex')}`);
 
+  const shared = [...result.files].filter(([path]) => path.startsWith(`${CHUNKS_FOLDER}/`));
+  const sharedBytes = shared.reduce((sum, [, bytes]) => sum + bytes.length, 0);
+
   return [
     'Built:',
     ...lines,
+    ...(shared.length
+      ? [`The screens share ${sharedBytes ? sizeOf(sharedBytes) : 'nothing'} of code in ${shared.length} ${shared.length === 1 ? 'file' : 'files'} under ${CHUNKS_FOLDER}/, counted once.`]
+      : []),
     `Total ${sizeOf(result.bytes)} of ${sizeOf(BUNDLE_MAX_BYTES)}.`,
     `Fingerprint ${result.hash}`,
   ].join('\n');
@@ -388,6 +424,105 @@ async function bundle(
   } finally {
     rmSync(scratch, { recursive: true, force: true });
     rmSync(join(scratch, '..', `${basename(scratch)}.meta.json`), { force: true });
+  }
+}
+
+/** Where a split build puts what screens share, by its path inside the bundle. */
+export const CHUNKS_FOLDER = 'chunks';
+
+type Built = { code: Uint8Array; chunks: Map<string, Uint8Array>; others: string[]; runtimeBytes: number | null };
+
+/** The outputs a metafile output reaches through its imports, itself included. */
+function reachable(outputs: Record<string, { imports?: { path: string }[] }>, from: string): Set<string> {
+  const seen = new Set<string>();
+  const next = [from];
+
+  while (next.length) {
+    const at = next.pop()!;
+
+    if (seen.has(at) || !outputs[at]) continue;
+
+    seen.add(at);
+
+    for (const one of outputs[at]!.imports ?? []) next.push(one.path.startsWith('./') ? one.path : `./${one.path}`);
+  }
+
+  return seen;
+}
+
+/**
+ * Every screen bundled in one `bun build` with code splitting: each entry
+ * keeps its own code and imports what two or more share from
+ * `chunks/<hash>.js`. Each screen's runtime bytes are counted over the
+ * entry and every file it imports, so a screen is held to the same budget
+ * as when it was whole.
+ *
+ * Null when the screens can't be built this way, for any reason: a missing
+ * source, a build error, a stylesheet. The screen-by-screen build then runs
+ * and names the screen and the problem, as it always has.
+ */
+async function bundleScreens(
+  root: string,
+  screens: { entry: string; source: string | null }[],
+  baked: object,
+  minify: boolean,
+): Promise<{ screens: Map<string, Built>; chunks: Map<string, Uint8Array> } | null> {
+  const src = join(root, 'src');
+
+  if (screens.some(({ source }) => !source || relative(src, source).startsWith('..'))) return null;
+
+  const scratch = mkdtempSync(join(tmpdir(), 'brydio-build-'));
+  const out = join(scratch, 'out');
+  const meta = join(scratch, 'meta.json');
+
+  try {
+    const child = Bun.spawn(
+      [
+        process.execPath,
+        'build',
+        ...new Set(screens.map(({ source }) => source!)),
+        '--splitting',
+        `--root=${src}`,
+        '--entry-naming=[dir]/[name].[ext]',
+        `--chunk-naming=${CHUNKS_FOLDER}/[hash].[ext]`,
+        '--target=browser',
+        '--format=esm',
+        `--outdir=${out}`,
+        `--metafile=${meta}`,
+        `--define=__BRYDIO_APP__=${JSON.stringify(JSON.stringify(baked))}`,
+        '--define=process.env.NODE_ENV="production"',
+        ...(minify ? ['--minify'] : []),
+      ],
+      { cwd: root, stdout: 'pipe', stderr: 'pipe', env: { ...process.env, NO_COLOR: '1' } },
+    );
+    const [code] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
+
+    if (code !== 0 || !existsSync(meta)) return null;
+
+    const written = (readdirSync(out, { recursive: true }) as string[]).filter(name => !statSync(join(out, name)).isDirectory()).map(name => name.replace(/\\/g, '/'));
+    const entryFiles = new Map(screens.map(({ entry, source }) => [entry, relative(src, source!).replace(/\\/g, '/').replace(/\.[^./]+$/, '.js')]));
+    const chunkFiles = written.filter(name => name.startsWith(`${CHUNKS_FOLDER}/`) && name.endsWith('.js'));
+
+    // Anything else written is a stylesheet or an image: the screen-by-screen
+    // build names which screen brought it in.
+    if (written.some(name => !chunkFiles.includes(name) && ![...entryFiles.values()].includes(name))) return null;
+
+    const metafile = JSON.parse(readFileSync(meta, 'utf8')) as { outputs?: Record<string, { imports?: { path: string }[]; inputs?: Record<string, { bytesInOutput?: number }> }> };
+    const outputs = metafile.outputs ?? {};
+    const built = new Map<string, Built>();
+
+    for (const [entry, file] of entryFiles) {
+      if (!existsSync(join(out, file))) return null;
+
+      const mine = reachable(outputs, `./${file}`);
+      const runtimeBytes = minify ? runtimeBytesOf({ outputs: Object.fromEntries(Object.entries(outputs).filter(([path]) => mine.has(path))) }, root) : null;
+
+      built.set(entry, { code: new Uint8Array(readFileSync(join(out, file))), chunks: new Map(), others: [], runtimeBytes });
+    }
+
+    return { screens: built, chunks: new Map(chunkFiles.map(name => [name, new Uint8Array(readFileSync(join(out, name)))])) };
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
   }
 }
 

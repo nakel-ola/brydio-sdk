@@ -2,7 +2,7 @@ import { TOOL_WRITES, collectionsOf, toolNames, type ManifestExtensions } from '
 import { TEXT_NODE, type DetailOf, type ElementEvent, type ElementName } from '@brydio/ui';
 import { checkEvent, isElementName } from '@brydio/ui/validate';
 import { existsSync, readFileSync } from 'node:fs';
-import { isAbsolute, resolve } from 'node:path';
+import { dirname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { workerPrelude } from './prelude.ts';
@@ -1096,25 +1096,58 @@ export class FakeHost {
 /**
  * Where the worker imports the screen from.
  *
- * A built screen is one self-contained module, so it is handed to the worker
- * as a `blob:` of the file's bytes, as Brydio's frame fetches it whole. Asking
- * Bun to import the file instead failed for a file written after this process
- * first looked in its folder (a build during the test run, publish's pictures
- * straight after its build): Bun's module resolver remembers the folder as it
- * was and answers "Cannot find module". A file that is missing, or that imports
- * a neighbour by a relative path, is still imported from disk, so a missing
- * build stops the app for `load` as before.
+ * A built screen is handed to the worker as a `blob:` of the file's bytes, as
+ * Brydio's frame fetches it whole. Asking Bun to import the file instead
+ * failed for a file written after this process first looked in its folder (a
+ * build during the test run, publish's pictures straight after its build):
+ * Bun's module resolver remembers the folder as it was and answers "Cannot
+ * find module".
+ *
+ * A screen of a split build imports the code it shares with other screens by
+ * a relative path (`../chunks/….js`). Each such file is read the same way and
+ * handed over as its own `blob:`, its path in the importer swapped for that
+ * address, so the whole graph comes from what is on disk now. A file that is
+ * missing, or a graph that goes round in a circle, is imported from disk
+ * instead, so a missing build still stops the app for `load` as before; so
+ * is anything that is not built code.
  */
 function moduleUrl(given: string): string {
   const path = given.startsWith('file:') ? fileURLToPath(given) : isAbsolute(given) ? given : resolve(given);
 
-  if (existsSync(path)) {
-    const code = readFileSync(path, 'utf8');
+  return blobGraph(path, new Map(), []) ?? pathToFileURL(path).href;
+}
 
-    if (!/(?:\bfrom\s*|\bimport\s*\(?\s*)["']\.\.?\//.test(code)) return URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
-  }
+/** `from "./x.js"`, `import "./x.js"` and `import("./x.js")`, as a bundler writes them. */
+const RELATIVE_IMPORT = /(\bfrom\s*|\bimport\s*\(?\s*)(["'])(\.\.?\/[^"'\n]+)\2/g;
 
-  return pathToFileURL(path).href;
+function blobGraph(path: string, done: Map<string, string>, visiting: string[]): string | null {
+  const known = done.get(path);
+
+  if (known) return known;
+  // Built code only: a source file (`.ts`, `.tsx`) is Bun's to compile, from disk.
+  if (visiting.includes(path) || !/\.m?js$/.test(path) || !existsSync(path)) return null;
+
+  const code = readFileSync(path, 'utf8');
+  let unresolved = false;
+  const rewritten = code.replace(RELATIVE_IMPORT, (whole, lead: string, quote: string, specifier: string) => {
+    const url = unresolved ? null : blobGraph(resolve(dirname(path), specifier), done, [...visiting, path]);
+
+    if (!url) {
+      unresolved = true;
+
+      return whole;
+    }
+
+    return `${lead}${quote}${url}${quote}`;
+  });
+
+  if (unresolved) return null;
+
+  const url = URL.createObjectURL(new Blob([rewritten], { type: 'text/javascript' }));
+
+  done.set(path, url);
+
+  return url;
 }
 
 /** "Ada Lovelace" is AL, "cher" is C: Brydio's rule, the one `bry-avatar` draws with. */

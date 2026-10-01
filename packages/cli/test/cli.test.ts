@@ -50,6 +50,64 @@ describe('brydio build', () => {
     expect(JSON.parse(readFileSync(join(template, 'dist/app.json'), 'utf8')).name).toBe('checklist');
   });
 
+  test('builds two or more screens together: what they share is one file under chunks/, imported by both', async () => {
+    const shared = `export const words = ${JSON.stringify('shared words '.repeat(2_000))};\n`;
+    const root = app({
+      '.brydio/app.json': manifest({ screens: { home: { entry: 'screens/home.js' }, board: { entry: 'screens/board.js' } } }),
+      'src/shared/words.ts': shared,
+      'src/screens/home.ts': "import { words } from '../shared/words.ts';\nexport const home = words.length;\n",
+      'src/screens/board.ts': "import { words } from '../shared/words.ts';\nexport const board = words.slice(1);\n",
+    });
+    const result = await build(root);
+    const chunks = [...result.files.keys()].filter(path => path.startsWith('chunks/'));
+    const everything = [...result.files.values()].map(bytes => new TextDecoder().decode(bytes)).join('\n');
+
+    expect(result.problems).toEqual([]);
+    expect(chunks.length).toBeGreaterThan(0);
+    expect(chunks.every(path => /^chunks\/[a-z0-9]+\.js$/.test(path))).toBe(true);
+    // Carried once, not once per screen.
+    expect(everything.split('shared words '.repeat(2_000)).length - 1).toBe(1);
+
+    for (const entry of ['screens/home.js', 'screens/board.js']) {
+      const code = readFileSync(join(root, 'dist', entry), 'utf8');
+      const imported = [...code.matchAll(/from\s*"(\.\.\/chunks\/[a-z0-9]+\.js)"/g)].map(match => match[1]!);
+
+      expect(imported.length).toBeGreaterThan(0);
+      // Each import names a file of this bundle, by a path inside it.
+      for (const one of imported) expect(result.files.has(join(dirname(entry), one))).toBe(true);
+    }
+
+    for (const path of chunks) expect(readFileSync(join(root, 'dist', path))).toEqual(Buffer.from(result.files.get(path)!));
+    expect(result.hash).toBe(bundleHash(result.files));
+    expect(validate(root)).toEqual({ ok: true, problems: [] });
+  });
+
+  test('builds every screen whole when splitting is off, as before', async () => {
+    const root = app({
+      '.brydio/app.json': manifest({ screens: { home: { entry: 'screens/home.js' }, board: { entry: 'screens/board.js' } } }),
+      'src/shared/words.ts': 'export const words = "shared";\n',
+      'src/screens/home.ts': "import { words } from '../shared/words.ts';\nexport const home = words;\n",
+      'src/screens/board.ts': "import { words } from '../shared/words.ts';\nexport const board = words;\n",
+    });
+    const result = await build(root, { split: false });
+
+    expect(result.problems).toEqual([]);
+    expect([...result.files.keys()].filter(path => path.startsWith('chunks/'))).toEqual([]);
+    expect(readFileSync(join(root, 'dist/screens/home.js'), 'utf8')).not.toMatch(/^\s*import\s/m);
+  });
+
+  test('still names the screen that did not build when screens are built together', async () => {
+    const root = app({
+      '.brydio/app.json': manifest({ screens: { home: { entry: 'screens/home.js' }, board: { entry: 'screens/board.js' } } }),
+      'src/screens/home.ts': 'export const home = 1;\n',
+      'src/screens/board.ts': "import './nowhere.ts';\n",
+    });
+    const result = await build(root);
+
+    expect(codes(result.problems)).toEqual(['screen_build_failed']);
+    expect(result.problems[0]!.message).toContain('"board"');
+  });
+
   test('prints the fingerprint the server will compute: code files only, by the recipe', async () => {
     const result = await build(template);
     const home = readFileSync(join(template, 'dist/screens/home.js'));
