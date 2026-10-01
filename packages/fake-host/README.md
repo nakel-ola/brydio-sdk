@@ -37,6 +37,12 @@ test('asks for the key before listing', async () => {
 });
 ```
 
+A screen placed as a `public-page` runs for a visitor with no account. Start
+it with `visitor: true` to get the context Brydio gives one (role
+`anonymous`) and only the answers Brydio gives one: reads of `publicRead`
+collections, creates in `publicSubmit` ones, and tools marked `public`. A
+public tool's handler runs the same way with `caller: { role: 'anonymous' }`.
+
 Run the app's tests with `brydio test`. The command builds once, then runs its
 `*.test.ts` files against that build.
 

@@ -7,6 +7,7 @@ export { BUILT_ENV, testApp, type TestApp } from './app.ts';
 export {
   COALESCE_MS,
   DEFAULT_CONTEXT,
+  VISITOR_CONTEXT,
   MAX_WATCHES,
   FakeHost,
   TREE_PROTOCOL,
@@ -23,6 +24,7 @@ export {
   type ToolCall,
 } from './host.ts';
 export {
+  NotForVisitors,
   SECRET_PLACEHOLDER,
   fakeHandlerClient,
   runHandler,

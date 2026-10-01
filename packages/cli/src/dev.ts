@@ -299,8 +299,10 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
 
   if (development) {
     // A widget is on the project's page; the rest open at their own address.
+    // A public page never opens in development: Brydio serves it only for a
+    // published version an admin turned on (run it with FakeHost's `visitor`).
     const places =
-      development.placements?.filter(place => place.kind !== 'project-widget' && place.kind !== 'project-tab') ?? [];
+      development.placements?.filter(place => place.kind !== 'project-widget' && place.kind !== 'project-tab' && place.kind !== 'public-page') ?? [];
     const where = (kind: string) => (kind === 'workspace-sidebar' ? "the workspace's sidebar" : "the project's sidebar");
 
     out(

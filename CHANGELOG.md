@@ -22,6 +22,15 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## Unreleased
+
+Public pages (P3). An app can offer a screen that people with no Brydio account open at its own address, once a workspace admin turns it on.
+
+- **Manifest.** A new placement kind, `public-page` (`screen`, and optional `key`, `label`, `icon`): no `sizes`, `children` or `settings` (`placement_public_shape`). A collection may say `publicRead` (a visitor may get and list its records) and `publicSubmit` (a visitor may create records, and do nothing else), and a custom tool may say `public: true`. An app with a public page and none of these is refused with `placement_public_nothing`.
+- **Handlers.** `HandlerCaller` is now `MemberCaller | VisitorCaller`, and `HandlerOrigin` gains `'public'`. A visitor is `{ userId: null, origin: 'public', role: 'anonymous' }`; its client's `data` is held to the collection flags, `tools.call` reaches only other public tools, and `connection`, `model`, `secrets`, `notify`, `members`, `approvals` and `files` refuse with `not_for_visitors`. **What to change:** a handler that uses `caller.userId` as a string must first check `caller.role !== 'anonymous'` (TypeScript now says so). A handler only ever runs for a visitor when its tool is marked `public`.
+- **Screens.** `PlacementKind` gains `'public-page'`, `InstanceScope` gains `'public'`, and `HostContext.role` is a `ScreenRole`, which adds `'anonymous'`. See [the bridge](docs/bridge.md#public-pages) for what a public page's screen may call.
+- **Fake host.** `FakeHost.start({ ..., visitor: true })` runs a screen as a public page (`VISITOR_CONTEXT`) and answers only what Brydio answers a visitor. `runHandler` and `fakeHandlerClient` take `caller: { role: 'anonymous' }` and refuse as Brydio does, with `NotForVisitors` (`code: 'not_for_visitors'`).
+
 ## 0.1.0-alpha.32
 
 Approvals. A new `approvals` host grant lets an app ask people to approve its records: a handler calls `approvals.request`, `approvals.get` and `approvals.cancel` (see [approvals](docs/approvals.md)), and `@brydio/fake-host` keeps what was asked in `FakeApprovals`. A screen places `bry-approval` (`request`, `compact`; hears `decided` with `{ status }`) for Brydio to draw a request with its steps and approvers, or reads and decides one itself with `host.approval(id)` and `host.decideApproval(id, decision, comment)` (`host/approval`, `host/approval/decide`). Nothing you wrote has to change.

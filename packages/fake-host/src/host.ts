@@ -1,4 +1,4 @@
-import { TOOL_WRITES, collectionsOf, toolNames, type ManifestExtensions } from '@brydio/manifest';
+import { TOOL_WRITES, collectionsOf, toolNames, type ManifestExtensions, type ToolVerb } from '@brydio/manifest';
 import type { ApprovalView } from '@brydio/app';
 import { TEXT_NODE, type DetailOf, type ElementEvent, type ElementName } from '@brydio/ui';
 import { checkEvent, isElementName } from '@brydio/ui/validate';
@@ -38,6 +38,8 @@ export interface HostContext {
   route: { path: string };
   selection?: unknown;
   size: { width: number; height: number };
+  /** The viewer's role: `anonymous` on a public page. Absent unless a test sets it, or runs as a visitor. */
+  role?: 'owner' | 'admin' | 'member' | 'anonymous';
 }
 
 /** A project tab of a workspace instance called Issues, in light mode. */
@@ -48,6 +50,20 @@ export const DEFAULT_CONTEXT: HostContext = {
   instance: { id: 'instance_1', name: 'Issues', scope: 'workspace' },
   route: { path: '/' },
   size: { width: 960, height: 640 },
+};
+
+/**
+ * A public page (P3), as a visitor with no Brydio account sees it: the
+ * page's id stands in for the instance's, and its title for the name.
+ */
+export const VISITOR_CONTEXT: HostContext = {
+  theme: 'light',
+  locale: 'en-GB',
+  placement: { id: 'page_1', kind: 'public-page' },
+  instance: { id: 'page_1', name: 'Public page', scope: 'public' },
+  route: { path: '/' },
+  size: { width: 960, height: 640 },
+  role: 'anonymous',
 };
 
 /** How the pretend person answers a write's approval card. `hold` leaves it for `answer()`. */
@@ -92,6 +108,18 @@ export interface FakeHostOptions {
   navigate?: (to: NavigateTo) => void | Promise<void>;
   /** The host's budgets, in milliseconds. A test can shorten them; a longer one is held to the host's. */
   budgets?: { ready?: number; start?: number; answer?: number };
+  /**
+   * Run the screen as a public page (P3), for a visitor with no account:
+   * the context is `VISITOR_CONTEXT` (role `anonymous`, placement
+   * `public-page`, scope `public`) under any `context` given, and the host
+   * answers only what Brydio answers a visitor. Reads only of `publicRead`
+   * collections, creates only in `publicSubmit` ones, custom tools only when
+   * the manifest marks them `public`; never an update, delete or batch.
+   * `data/subscribe`, `host/*`, `api/call`, `ui/message`, `ui/download`, a
+   * copied route and opening anything but a route are refused, and records
+   * come back without `createdBy` or `updatedBy`.
+   */
+  visitor?: boolean;
 }
 
 /** What a screen may ask Brydio to open. */
@@ -233,7 +261,7 @@ export class FakeHost {
       start: Math.min(options.budgets?.start ?? START_BUDGET, START_BUDGET),
       answer: Math.min(options.budgets?.answer ?? ANSWER_BUDGET_MS, ANSWER_BUDGET_MS),
     };
-    this.#context = { ...DEFAULT_CONTEXT, ...options.context };
+    this.#context = { ...(options.visitor ? VISITOR_CONTEXT : DEFAULT_CONTEXT), ...options.context };
     this.store = options.manifest ? new FixtureStore(options.manifest, options.fixtures) : null;
     this.#tools = { ...this.store?.tools(), ...options.tools };
     this.store?.onChange(change => this.#gather(change));
@@ -507,6 +535,12 @@ export class FakeHost {
     this.received.push(message);
 
     const params = message.params ?? {};
+
+    if (this.#options.visitor && this.app && this.#closedToVisitors(message, params)) {
+      this.#changed();
+
+      return;
+    }
 
     switch (message.method) {
       case 'worker/ready': {
@@ -852,6 +886,9 @@ export class FakeHost {
     if (!spec) return error(-32000, 'There is no such collection.');
 
     const tool = op === 'get' ? `get_${spec.label}` : `list_${spec.plural}`;
+
+    if (this.#options.visitor && !this.#openToVisitors(tool)) return error(-32000, `${collection} is not open to visitors on a public page.`);
+
     const input: Record<string, unknown> = {};
 
     if (op === 'get') input.id = params.id;
@@ -881,7 +918,9 @@ export class FakeHost {
 
         error(-32000, text ? text.slice(0, 300) : 'That couldn’t be read.');
       } else {
-        this.#send({ jsonrpc: '2.0', method: 'data/result', params: { id, result: result.structuredContent as never } });
+        const shown = this.#options.visitor ? withoutMembers(result.structuredContent) : result.structuredContent;
+
+        this.#send({ jsonrpc: '2.0', method: 'data/result', params: { id, result: shown as never } });
       }
     } catch (failure) {
       error(-32000, failure instanceof Error ? failure.message.slice(0, 300) : 'That didn’t work.');
@@ -1034,6 +1073,12 @@ export class FakeHost {
       return;
     }
 
+    if (this.#options.visitor && !this.#openToVisitors(tool)) {
+      this.#fail(id, call, `${tool} is not open to visitors on a public page.`);
+
+      return;
+    }
+
     const turnedAway = this.#options.refuse?.(call);
 
     if (turnedAway) {
@@ -1078,13 +1123,73 @@ export class FakeHost {
 
     try {
       call.result = await this.#tools[call.tool]!(call.input);
-      this.#send({ jsonrpc: '2.0', method: 'tools/result', params: { id, result: call.result as never } });
+
+      const shown = this.#options.visitor ? forVisitor(call.result) : call.result;
+
+      this.#send({ jsonrpc: '2.0', method: 'tools/result', params: { id, result: shown as never } });
     } catch (error) {
       this.#fail(id, call, error instanceof Error ? error.message.slice(0, 300) : 'That didn’t work.');
     } finally {
       this.#busy -= 1;
       this.#changed();
     }
+  }
+
+  /**
+   * Whether a visitor may run this tool, as Brydio decides for a public page
+   * (P3): a generated read of a `publicRead` collection, a create in a
+   * `publicSubmit` one, or a custom tool the manifest marks `public`. Never
+   * an update, delete or batch, and never a tool the manifest doesn't name.
+   */
+  #openToVisitors(tool: string): boolean {
+    const manifest = this.#options.manifest;
+
+    if (!manifest) return false;
+
+    const custom = manifest.tools?.custom?.find(one => one.name === tool);
+
+    if (custom) return custom.public === true;
+    if (manifest.tools?.generated === false) return false;
+
+    for (const spec of collectionsOf(manifest)) {
+      const declared = manifest.data?.[spec.name];
+      const verb = (Object.entries(toolNames(spec)) as [ToolVerb, string][]).find(([, name]) => name === tool)?.[0];
+
+      if (!verb) continue;
+      if (verb === 'create') return declared?.publicSubmit === true;
+      if (verb === 'get' || verb === 'list' || verb === 'search') return declared?.publicRead === true;
+
+      return false;
+    }
+
+    return false;
+  }
+
+  /**
+   * What Brydio refuses outright on a public page, before reading it: true
+   * when the message was answered with a refusal (or, for a notice, dropped).
+   */
+  #closedToVisitors(message: Rpc, params: Record<string, unknown>): boolean {
+    const family = message.method?.split('/')[0];
+    const target = params.to as { kind?: unknown } | undefined;
+    const closed =
+      message.method === 'data/subscribe' ||
+      family === 'host' ||
+      message.method === 'api/call' ||
+      message.method === 'ui/message' ||
+      message.method === 'ui/download' ||
+      (message.method === 'ui/copy' && params.route !== undefined) ||
+      (message.method === 'ui/navigate' && target?.kind !== 'route');
+
+    if (!closed) return false;
+
+    if (message.id !== undefined) {
+      const said = family === 'host' || family === 'api' || family === 'data' ? family : 'ui';
+
+      this.#send({ jsonrpc: '2.0', method: `${said}/error`, params: { id: message.id, error: { code: -32601, message: 'That isn’t available on a public page.' } } });
+    }
+
+    return true;
   }
 
   #fail(id: string | number, call: ToolCall, message: string): void {
@@ -1187,6 +1292,37 @@ function blobGraph(path: string, done: Map<string, string>, visiting: string[]):
   done.set(path, url);
 
   return url;
+}
+
+/** A record or a page of them, as a visitor is shown it: without who made or changed it. */
+function withoutMembers(content: unknown): unknown {
+  const hide = (one: unknown) => {
+    if (!one || typeof one !== 'object' || Array.isArray(one)) return one;
+
+    const { createdBy: _made, updatedBy: _changed, ...rest } = one as Record<string, unknown>;
+
+    return rest;
+  };
+
+  if (content && typeof content === 'object' && Array.isArray((content as { items?: unknown }).items)) {
+    return { ...(content as object), items: (content as { items: unknown[] }).items.map(hide) };
+  }
+
+  return hide(content);
+}
+
+/** A tool's answer as a visitor is shown it: the record, and the text that repeats it, without member ids. */
+function forVisitor(result: ToolResultShape): ToolResultShape {
+  if (result.structuredContent === undefined) return result;
+
+  const whole = JSON.stringify(result.structuredContent);
+  const structuredContent = withoutMembers(result.structuredContent);
+
+  return {
+    ...result,
+    structuredContent,
+    ...(result.content ? { content: result.content.map(part => (part.text === whole ? { ...part, text: JSON.stringify(structuredContent) } : part)) } : {}),
+  };
 }
 
 /** "Ada Lovelace" is AL, "cher" is C: Brydio's rule, the one `bry-avatar` draws with. */

@@ -57,6 +57,9 @@
     },
     "asks-nothing": {
       "entry": "screens/asks-nothing.js"
+    },
+    "visitor": {
+      "entry": "screens/visitor.js"
     }
   },
   "grants": {

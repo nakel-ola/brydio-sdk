@@ -33,7 +33,13 @@ export interface FakeHandlerOptions {
   manifest?: Partial<ManifestExtensions> & { displayName?: string; name?: string };
   /** Secret values already set, by name, as an administrator would have. */
   secrets?: Record<string, string>;
-  /** Who is calling. A user id and an origin; never a credential, as in Brydio. */
+  /**
+   * Who is calling. A user id and an origin; never a credential, as in Brydio.
+   * `{ role: 'anonymous' }` (or `{ origin: 'public' }`) runs the handler for a
+   * visitor on a public page (P3): `data` is held to the manifest's
+   * `publicRead` and `publicSubmit`, `tools.call` to its `public` tools, and
+   * the rest of the client refuses with `not_for_visitors`.
+   */
   caller?: Partial<HandlerCaller>;
   /** The custom tool's name, for Brydio's sentences. */
   tool?: string;
@@ -101,6 +107,11 @@ const NOTICE_KINDS: readonly NoticeKind[] = ['assigned', 'mentioned', 'commented
 const OWN_REMINDERS: readonly NoticeKind[] = ['reminder', 'due_soon', 'overdue'];
 const NOTICE_KEY = /^[A-Za-z0-9:_.-]{1,120}$/;
 
+/** What a visitor's client refuses with (P3): a plain sentence, and `code: 'not_for_visitors'`. */
+export class NotForVisitors extends Error {
+  readonly code = 'not_for_visitors';
+}
+
 const unavailable = (what: string) => async () => {
   throw new Error(`${what} is not answered in this test: pass it in the fake handler's options.`);
 };
@@ -152,6 +163,8 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
   const callerId = options.caller?.userId ?? 'user_test';
   // Brydio's checks on a notice, in its words: the grant, a write tool, the shape.
   const notifies = (method: string, args: unknown[]) => {
+    notForVisitors(method);
+
     const allowed = manifest ? (manifest.grants?.host ?? []).some(grant => grant === 'notify' || grant === '*') : true;
 
     if (!allowed) throw new Error(`${appName} did not ask to notify people about its records.`);
@@ -169,6 +182,8 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
 
   // Brydio's checks on an approval, in its words: the grant, a write tool to raise or cancel, the shape.
   const asksApproval = (method: string, args: unknown[]) => {
+    notForVisitors(method);
+
     const allowed = manifest ? (manifest.grants?.host ?? []).some(grant => grant === 'approvals' || grant === '*') : true;
 
     if (!allowed) throw new Error(`${appName} did not ask to ask people to approve its records.`);
@@ -177,35 +192,88 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
   };
   const approvals = fakeApprovals(callerId);
 
+  // A visitor on a public page (P3): only what the app marks public.
+  const visitor = options.caller?.role === 'anonymous' || options.caller?.origin === 'public';
+  const caller: HandlerCaller = visitor
+    ? { userId: null, origin: 'public', role: 'anonymous' }
+    : {
+        userId: options.caller?.userId ?? 'user_test',
+        origin: (options.caller?.origin as Exclude<HandlerCaller['origin'], 'public'> | undefined) ?? 'assistant',
+        role: (options.caller?.role as Exclude<HandlerCaller['role'], 'anonymous'> | undefined) ?? 'owner',
+      };
+  const notForVisitors = (method: string) => {
+    if (visitor) throw new NotForVisitors(`${tool} runs for a visitor on a public page, who can't use ${method.split('.')[0]}.`);
+  };
+  // Without a manifest there are no flags to hold a visitor to, so only the
+  // changes no visitor may ever make are refused.
+  const visitorData = (method: string, args: unknown[]) => {
+    if (!visitor) return;
+
+    const collection = String(args[0]);
+    const declared = manifest?.data?.[collection];
+    const read = method === 'data.get' || method === 'data.list';
+
+    if (method === 'data.update' || method === 'data.remove' || method === 'data.batch') {
+      throw new NotForVisitors(`A visitor on a public page can only add records, never change or remove them.`);
+    }
+    if (manifest && !(read ? declared?.publicRead : declared?.publicSubmit)) {
+      throw new NotForVisitors(`${collection} is not open to visitors on a public page.`);
+    }
+  };
+  const visitorTool = (_method: string, args: unknown[]) => {
+    if (!visitor || !manifest) return;
+
+    const name = String(args[0]);
+
+    if (!(manifest.tools?.custom ?? []).some(one => one.name === name && one.public === true)) {
+      throw new NotForVisitors(`${name} is not open to visitors on a public page.`);
+    }
+  };
+  const both =
+    (...checks: ((method: string, args: unknown[]) => void)[]) =>
+    (method: string, args: unknown[]) => {
+      for (const check of checks) check(method, args);
+    };
+  const hidden = <R>(method: string, run: (...args: never[]) => Promise<R>) =>
+    (async (...args: never[]) => {
+      const answer = await run(...args);
+
+      return visitor && method !== 'data.batch' ? withoutMembers(answer) : answer;
+    }) as unknown as (...args: never[]) => Promise<R>;
+
   const data = options.data ?? {};
   const client: HandlerClient = Object.freeze({
     data: Object.freeze({
-      get: recorded('data.get', data.get ?? unavailable('data.get')),
-      list: recorded('data.list', data.list ?? unavailable('data.list')),
-      create: recorded('data.create', data.create ?? unavailable('data.create'), writes),
-      update: recorded('data.update', data.update ?? unavailable('data.update'), writes),
-      remove: recorded('data.remove', data.remove ?? unavailable('data.remove'), writes),
-      batch: recorded('data.batch', data.batch ?? unavailable('data.batch'), writes),
+      get: recorded('data.get', hidden('data.get', data.get ?? unavailable('data.get')) as HandlerClient['data']['get'], visitorData),
+      list: recorded('data.list', hidden('data.list', data.list ?? unavailable('data.list')) as HandlerClient['data']['list'], visitorData),
+      create: recorded('data.create', hidden('data.create', data.create ?? unavailable('data.create')) as HandlerClient['data']['create'], both(visitorData, writes)),
+      update: recorded('data.update', data.update ?? unavailable('data.update'), both(visitorData, writes)),
+      remove: recorded('data.remove', data.remove ?? unavailable('data.remove'), both(visitorData, writes)),
+      batch: recorded('data.batch', data.batch ?? unavailable('data.batch'), both(visitorData, writes)),
     }),
     tools: Object.freeze({
-      call: recorded('tools.call', (options.tools?.call ?? unavailable('tools.call')) as HandlerClient['tools']['call'], keeps),
+      call: recorded('tools.call', (options.tools?.call ?? unavailable('tools.call')) as HandlerClient['tools']['call'], both(visitorTool, keeps)),
     }) as HandlerClient['tools'],
     connection: (name: string) =>
       Object.freeze({
-        request: recorded('connection.request', (request: HandlerConnectionRequest) =>
-          options.connection ? options.connection(name, request) : unavailable(`connection("${name}")`)(),
+        request: recorded(
+          'connection.request',
+          (request: HandlerConnectionRequest) => (options.connection ? options.connection(name, request) : unavailable(`connection("${name}")`)()),
+          notForVisitors,
         ),
       }),
     model: Object.freeze({
-      generate: recorded('model.generate', (options.model?.generate ?? unavailable('model.generate')) as HandlerClient['model']['generate'], keeps),
+      generate: recorded('model.generate', (options.model?.generate ?? unavailable('model.generate')) as HandlerClient['model']['generate'], both(notForVisitors, keeps)),
       generateMany: recorded(
         'model.generateMany',
         (options.model?.generateMany ?? unavailable('model.generateMany')) as HandlerClient['model']['generateMany'],
-        keeps,
+        both(notForVisitors, keeps),
       ),
     }) as HandlerClient['model'],
     secrets: Object.freeze({
       get: recorded('secrets.get', async (name: string) => {
+        notForVisitors('secrets.get');
+
         const value = secrets.get(secretOf(name)) ?? null;
 
         if (value !== null) held.add(value);
@@ -213,6 +281,8 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
         return value;
       }),
       set: recorded('secrets.set', async (name: string, value: string | null) => {
+        notForVisitors('secrets.set');
+
         const key = secretOf(name);
 
         if (value === null) {
@@ -231,6 +301,8 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
     }),
     members: Object.freeze({
       canSeeProject: recorded('members.canSeeProject', async (projectId: string, userId: string) => {
+        notForVisitors('members.canSeeProject');
+
         const allowed = manifest ? (manifest.grants?.host ?? []).some(grant => grant === 'members' || grant === '*') : true;
 
         if (!allowed) throw new Error(`${appName} did not ask to see the names of people.`);
@@ -299,7 +371,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
       ),
       cancel: recorded('approvals.cancel', async (id: string) => approvals.cancel(id), asksApproval),
     }),
-    caller: Object.freeze({ userId: options.caller?.userId ?? 'user_test', origin: options.caller?.origin ?? 'assistant', role: options.caller?.role ?? 'owner' }),
+    caller: Object.freeze(caller),
   });
 
   return { client, secrets, calls, held, notices, approvals: { requests: approvals.requests, decide: approvals.decide } };
@@ -316,6 +388,23 @@ export async function runHandler<I, O>(handler: Handler<I, O>, input: I, options
   } catch (error) {
     return { error: scrub(error instanceof Error ? error.message : String(error), held), secrets, calls, notices, approvals };
   }
+}
+
+/** A record or a page of them, as a visitor's handler is given it: without who made or changed it. */
+function withoutMembers<T>(answer: T): T {
+  const hide = (one: unknown) => {
+    if (!one || typeof one !== 'object' || Array.isArray(one)) return one;
+
+    const { createdBy: _made, updatedBy: _changed, ...rest } = one as Record<string, unknown>;
+
+    return rest;
+  };
+
+  if (answer && typeof answer === 'object' && Array.isArray((answer as { items?: unknown }).items)) {
+    return { ...answer, items: (answer as unknown as { items: unknown[] }).items.map(hide) } as T;
+  }
+
+  return hide(answer) as T;
 }
 
 const worth = (held: ReadonlySet<string>) =>
