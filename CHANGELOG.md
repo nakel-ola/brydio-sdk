@@ -22,6 +22,10 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.31
+
+The same as 0.1.0-alpha.30, which was tagged but never published: its recorded Brydio contract had lost the co-edit fields.
+
 ## 0.1.0-alpha.30
 
 - **Screens share code.** An app with two or more screens is built in one split build: each screen keeps its path, and code they share goes to `chunks/<hash>.js`, counted once toward the 1 MB cap. The size report says how much is shared. The 30 KB runtime budget is still per screen, counting the chunks it imports. `BuildOptions.split: false` builds each screen whole, as before. **What to change:** nothing, unless you copy `dist/` yourself: copy `chunks/` with the screens. Brydio captures a split bundle from its matching release on; single-file bundles keep working.
