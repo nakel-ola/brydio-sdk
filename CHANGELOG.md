@@ -22,7 +22,7 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
-## Unreleased
+## 0.1.0-alpha.34
 
 Open-schema collections (P5). A collection can have fields that people define while they use the app, each one a record of a companion collection: a database's columns, a CRM's custom properties. See [open-schema collections](docs/open-schema.md).
 
