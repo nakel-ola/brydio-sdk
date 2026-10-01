@@ -103,8 +103,13 @@ const placementSchema = z.object({
    * `project-widget`: a card on a project's page, drawn at one of `sizes`.
    * `project-tab` is retired (30 Sep 2026): still read from a published
    * manifest, refused in a new one (`placement_tab_retired`).
+   * `public-page`: a screen people without a Brydio account open at the
+   * page's own address, once an admin turns it on (P3). It has no `sizes`,
+   * `children` or `settings` (`placement_public_shape`), and it reaches only
+   * collections marked `publicRead` or `publicSubmit` and tools marked
+   * `public`.
    */
-  kind: z.enum(['project-tab', 'project-widget', 'project-sidebar', 'workspace-sidebar', 'home']),
+  kind: z.enum(['project-tab', 'project-widget', 'project-sidebar', 'workspace-sidebar', 'home', 'public-page']),
   screen: z.string().min(1).max(FIELD_LIMITS.nameChars),
   /** For `home` and `project-widget` only, and required there: the sizes the screen draws well at. */
   sizes: z.array(z.enum(HOME_CARD_SIZES)).max(3).optional(),
@@ -141,6 +146,17 @@ const collectionSchema = z.object({
   search: z.array(z.string()).optional(),
   /** The singular noun the tools are named with: `issue` gives `create_issue`. */
   label: z.string().optional(),
+  /**
+   * A visitor on one of the app's public pages may `get` and `list` every
+   * record of this collection in that instance (P3).
+   */
+  publicRead: z.boolean().optional(),
+  /**
+   * A visitor on one of the app's public pages may create records here, and
+   * nothing else: no update, remove or batch, and no get or list unless
+   * `publicRead` is set too (P3).
+   */
+  publicSubmit: z.boolean().optional(),
 });
 
 const screenSchema = z.object({
@@ -181,6 +197,12 @@ const customToolSchema = z.object({
   write: z.boolean().optional(),
   /** The collection it works on, when it works on one: its grant then needs that collection too. */
   collection: z.string().optional(),
+  /**
+   * Callable from a public page (P3). Its handler then runs for a visitor,
+   * whose `data` is held to `publicRead` and `publicSubmit` and who can use
+   * nothing else of the workspace's.
+   */
+  public: z.boolean().optional(),
 });
 
 export type CustomToolSpec = z.infer<typeof customToolSchema>;
@@ -278,6 +300,8 @@ export type DataProblemCode =
   | 'placement_sizes_not_home'
   | 'placement_widget_sizes'
   | 'placement_tab_retired'
+  | 'placement_public_shape'
+  | 'placement_public_nothing'
   | 'placement_children_too_deep'
   | 'placement_create_tool_unknown'
   | 'placement_create_not_write'
@@ -495,6 +519,28 @@ export function dataProblems(additions: Additions, options: DataProblemOptions =
       problems.push({
         code: 'placement_tab_retired',
         message: 'Project tabs are retired; declare a project-widget with sizes instead.',
+      });
+    }
+
+    // A public page is one screen at its own address: nothing to list in a
+    // sidebar, and nothing for an admin to fill in when it is placed.
+    if (placement.kind === 'public-page' && (placement.children || placement.settings)) {
+      problems.push({
+        code: 'placement_public_shape',
+        message: `The public page "${placement.screen}" can have no children or settings: it is one screen at its own address.`,
+      });
+    }
+  }
+
+  // A public page with nothing public could show a visitor nothing at all.
+  if ((additions.placements ?? []).some(placement => placement.kind === 'public-page')) {
+    const publicData = Object.values(additions.data ?? {}).some(declared => declared.publicRead || declared.publicSubmit);
+    const publicTool = (additions.tools?.custom ?? []).some(tool => tool.public);
+
+    if (!publicData && !publicTool) {
+      problems.push({
+        code: 'placement_public_nothing',
+        message: 'A public page needs something a visitor may use: mark a collection publicRead or publicSubmit, or a custom tool public.',
       });
     }
   }

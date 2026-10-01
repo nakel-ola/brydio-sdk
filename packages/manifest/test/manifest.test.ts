@@ -148,6 +148,69 @@ describe('the Issues manifest', () => {
     expect(validateManifest(tab, { retired: true }).problems.map(problem => problem.code)).toEqual(['placement_tab_retired']);
   });
 
+  describe('a public page (P3)', () => {
+    const page = { kind: 'public-page', screen: 'board' };
+    const withPage = (extra: Record<string, unknown> = {}, placement: Record<string, unknown> = page) => ({
+      ...ISSUES_MANIFEST,
+      ...extra,
+      placements: [placement],
+    });
+    const submitted = { data: { ...ISSUES_MANIFEST.data, issues: { ...ISSUES_MANIFEST.data.issues, publicSubmit: true } } };
+    const tool = { name: 'book_slot', description: 'Books a slot.', handler: 'handlers/book.js', write: true };
+    const withTool = (one: Record<string, unknown>) => ({ tools: { custom: [one] }, grants: { ...ISSUES_MANIFEST.grants, tools: ['*'] } });
+
+    test('is a placement kind, with the collection flags it reaches', () => {
+      const read = validateManifest(withPage({ data: { ...ISSUES_MANIFEST.data, labels: { ...ISSUES_MANIFEST.data.labels, publicRead: true } } }));
+
+      expect(read.problems).toEqual([]);
+      expect(read.manifest?.placements?.[0]?.kind).toBe('public-page');
+      expect(read.manifest?.data?.labels?.publicRead).toBe(true);
+
+      const parsed = validateManifest(withPage(submitted), { retired: true });
+
+      expect(parsed.problems).toEqual([]);
+      expect(parsed.manifest?.data?.issues?.publicSubmit).toBe(true);
+      expect(effectivePlacementKey({ kind: 'public-page', screen: 'board' })).toBe('public-page:board');
+    });
+
+    test('is satisfied by a public custom tool alone', () => {
+      const result = validateManifest(withPage(withTool({ ...tool, public: true })));
+
+      expect(result.problems).toEqual([]);
+      expect(result.manifest?.tools?.custom?.[0]?.public).toBe(true);
+    });
+
+    test('with nothing public is placement_public_nothing', () => {
+      expect(validateManifest(withPage()).problems).toEqual([
+        {
+          code: 'placement_public_nothing',
+          message: 'A public page needs something a visitor may use: mark a collection publicRead or publicSubmit, or a custom tool public.',
+        },
+      ]);
+      // A tool not marked public does not count.
+      expect(codesOf(withPage(withTool(tool)))).toEqual(['placement_public_nothing']);
+      expect(codesOf(withPage(withTool({ ...tool, public: false })))).toEqual(['placement_public_nothing']);
+      // The flags alone, with no public page, are never a problem.
+      expect(codesOf({ ...ISSUES_MANIFEST, ...submitted })).toEqual([]);
+    });
+
+    test('has no sizes, children or settings', () => {
+      expect(codesOf(withPage(submitted, { ...page, sizes: ['large'] }))).toEqual(['placement_sizes_not_home']);
+      expect(codesOf(withPage(submitted, { ...page, children: { tool: 'list_issues' } }))).toEqual(['placement_public_shape']);
+      expect(codesOf(withPage(submitted, { ...page, settings: { site: { type: 'url', label: 'Site' } } }))).toEqual(['placement_public_shape']);
+      expect(validateManifest(withPage(submitted, { ...page, children: { tool: 'list_issues' } })).problems[0]?.message).toBe(
+        'The public page "board" can have no children or settings: it is one screen at its own address.',
+      );
+    });
+
+    test('takes its flags only as booleans', () => {
+      const wrong = withPage({ data: { ...ISSUES_MANIFEST.data, issues: { ...ISSUES_MANIFEST.data.issues, publicRead: 'yes' } } });
+
+      expect(validateManifest(wrong).problems[0]).toMatchObject({ code: 'manifest_invalid', path: 'data.issues.publicRead' });
+      expect(validateManifest(withPage(withTool({ ...tool, public: 1 }))).problems[0]).toMatchObject({ code: 'manifest_invalid', path: 'tools.custom.0.public' });
+    });
+  });
+
   test('parses settings collected when an app is placed', () => {
     const parsed = appManifestSchema.parse({
       ...ISSUES_MANIFEST,

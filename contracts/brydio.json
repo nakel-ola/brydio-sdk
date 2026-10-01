@@ -7239,7 +7239,7 @@
       {
         "ok": false,
         "messages": [
-          "Invalid option: expected one of \"project-tab\"|\"project-widget\"|\"project-sidebar\"|\"workspace-sidebar\"|\"home\""
+          "Invalid option: expected one of \"project-tab\"|\"project-widget\"|\"project-sidebar\"|\"workspace-sidebar\"|\"home\"|\"public-page\""
         ]
       },
       {
