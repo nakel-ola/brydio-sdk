@@ -86,6 +86,12 @@ export const api = {
     list(projectId: string): Promise<FileSummary[]> {
       return call('files.list', { projectId }, 'files');
     },
+    /**
+     * One file's bytes: a project file by its id, or one of this instance's
+     * own stored files by its `appfile_…` id (one a person attached in the
+     * app). Brydio checks the person may use the instance and the file is
+     * this instance's; another instance's file is "no such file".
+     */
     read(id: string): Promise<FileContent> {
       return call('files.read', { id }, 'files');
     },
