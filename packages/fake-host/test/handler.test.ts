@@ -150,3 +150,64 @@ describe('notifying a member, in the fake host (TK01)', () => {
     expect((await runHandler(odd, {})).error).toMatch(/kind is one of assigned/);
   });
 });
+
+describe('asking people to approve a record, in the fake host (AP01)', () => {
+  const ask: Handler<{ approvers: string[] }> = async (input, { approvals }) =>
+    approvals.request({
+      title: 'Approve WEB-1',
+      steps: [
+        { name: 'Lead', approvers: input.approvers.map(principalId => ({ type: 'person' as const, principalId })), rule: 'any' },
+        { name: 'Finance', approvers: [{ type: 'role', role: 'admin' }], rule: 'all' },
+      ],
+      record: { collection: 'issues', id: 'iss_1' },
+      statusField: 'approval',
+    });
+
+  test('raises a request, moves step to step, and completes when both rules are met', async () => {
+    const run = await runHandler(ask, { approvers: ['user_bo', 'user_cy'] }, { caller: { userId: 'user_ada' } });
+
+    expect(run.result).toEqual({ id: 'apr_test_1', status: 'pending' });
+    expect(run.approvals.decide('apr_test_1', 'user_cy', 'approve').currentStep).toBe(1);
+    const done = run.approvals.decide('apr_test_1', 'admin_test', 'approve', 'Fine');
+
+    expect(done.status).toBe('approved');
+    expect(done.steps.map(step => step.status)).toEqual(['approved', 'approved']);
+    expect(run.approvals.requests.get('apr_test_1')?.statusField).toBe('approval');
+  });
+
+  test('never makes the requester an approver, and a decline ends it with its comment', async () => {
+    const run = await runHandler(ask, { approvers: ['user_ada'] }, { caller: { userId: 'user_ada' } });
+    const state = run.approvals.requests.get('apr_test_1')!;
+
+    expect(state.steps[0]?.assignees.map(one => [one.person.principalId, one.reason])).toEqual([['admin_test', 'nobody_left']]);
+    expect(() => run.approvals.decide('apr_test_1', 'user_ada', 'approve')).toThrow('Nobody approves their own request.');
+
+    const declined = run.approvals.decide('apr_test_1', 'admin_test', 'decline', 'Not this sprint');
+
+    expect(declined.status).toBe('declined');
+    expect(declined.steps[0]?.assignees[0]?.comment).toBe('Not this sprint');
+    expect(declined.steps[1]?.status).toBe('waiting');
+  });
+
+  test('reads and cancels one it raised', async () => {
+    const both: Handler = async (_input, { approvals }) => {
+      const asked = await approvals.request({ title: 'x', steps: [{ approvers: [{ type: 'person', principalId: 'user_bo' }], rule: 'any' }], record: { collection: 'issues', id: 'iss_1' } });
+      const seen = await approvals.get(asked.id);
+
+      return { seen: seen.status, gone: await approvals.cancel(asked.id), again: await approvals.cancel(asked.id) };
+    };
+
+    expect((await runHandler(both, {})).result).toEqual({ seen: 'pending', gone: { cancelled: true }, again: { cancelled: false } });
+  });
+
+  test('refuses without the approvals grant, from a read tool, and a request with no steps', async () => {
+    const refused = await runHandler(ask, { approvers: ['user_bo'] }, { manifest: { displayName: 'Tasks', grants: { host: [] } } as never });
+
+    expect(refused.error).toBe('Tasks did not ask to ask people to approve its records.');
+    expect((await runHandler(ask, { approvers: ['user_bo'] }, { write: false, tool: 'list_issues' })).error).toBe("list_issues is a read tool, so its handler can't ask for or cancel an approval.");
+
+    const empty: Handler = async (_input, { approvals }) => approvals.request({ title: 'x', steps: [], record: { collection: 'issues', id: 'iss_1' } });
+
+    expect((await runHandler(empty, {})).error).toBe('approvals.request needs between 1 and 10 `steps`.');
+  });
+});

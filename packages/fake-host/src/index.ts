@@ -26,6 +26,8 @@ export {
   SECRET_PLACEHOLDER,
   fakeHandlerClient,
   runHandler,
+  checkApprovalInput,
+  type FakeApprovals,
   type FakeHandlerOptions,
   type FakeNotices,
   type HandlerCall,

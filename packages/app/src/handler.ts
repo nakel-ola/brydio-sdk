@@ -176,6 +176,100 @@ export interface HandlerNotify {
   cancel(key: string, to?: string): Promise<{ cancelled: number }>;
 }
 
+/** Who a step waits on: a member by id, the workspace admins, or (until Directory) the person's manager or a group. */
+export type ApproverSpec =
+  | { type: 'person'; principalId: string }
+  | { type: 'role'; role: 'admin' }
+  | { type: 'manager' }
+  | { type: 'group'; groupId: string };
+
+/** How many of a step's approvers must say yes: one, every one, or `count`. */
+export type ApprovalStepRule = 'any' | 'all' | 'count';
+
+export interface ApprovalStepInput {
+  /** "Manager", "Finance": what the request shows for this step. */
+  name?: string;
+  approvers: ApproverSpec[];
+  rule: ApprovalStepRule;
+  /** With `rule: 'count'`: how many yeses. */
+  count?: number;
+}
+
+/** A value shown on the request: `text`, `long_text`, `number`, `money`, `date`, `date_range`, `choice`, `person` or `file`. */
+export interface ApprovalField {
+  key: string;
+  label: string;
+  type: string;
+  value: unknown;
+}
+
+/** Asking people to approve one of the app's records. */
+export interface AppApprovalInput {
+  /** What people read first. Up to 200 characters. */
+  title: string;
+  note?: string;
+  fields?: ApprovalField[];
+  /** In order; a decline ends the request. At least one. */
+  steps: ApprovalStepInput[];
+  /** The record it is about: a click opens it, and it hears the outcome. */
+  record: { collection: string; id: string };
+  /** A text field on the record Brydio sets to `pending`, `approved`, `declined` or `cancelled`. */
+  statusField?: string;
+}
+
+export type ApprovalStatus = 'pending' | 'approved' | 'declined' | 'cancelled';
+export type ApprovalStepStatus = 'waiting' | 'active' | 'approved' | 'declined' | 'skipped';
+export type ApprovalAssigneeStatus = 'waiting' | 'approved' | 'declined' | 'passed';
+
+export interface ApprovalPerson {
+  principalId: string;
+  name: string;
+  avatarUrl: string | null;
+  kind: 'human' | 'bot' | 'system';
+}
+
+/** One request as Brydio holds it: its steps, who each waits on, and what they said. */
+export interface ApprovalState {
+  id: string;
+  title: string;
+  note: string | null;
+  fields: ApprovalField[];
+  requester: ApprovalPerson;
+  status: ApprovalStatus;
+  currentStep: number | null;
+  steps: {
+    index: number;
+    name: string | null;
+    rule: ApprovalStepRule;
+    count: number | null;
+    status: ApprovalStepStatus;
+    assignees: { person: ApprovalPerson; status: ApprovalAssigneeStatus; reason: string; comment: string | null; decidedAt: string | null }[];
+    /** Plain words when the step went to the admins instead, and why. */
+    note: string | null;
+  }[];
+  createdAt: string;
+  decidedAt: string | null;
+}
+
+/**
+ * Asking people to approve one of the app's records (`tasks/approvals` AP01),
+ * with the `approvals` host grant. The requester is the caller and never an
+ * approver; a step with nobody left goes to the workspace admins and says why.
+ * `request` and `cancel` need a write tool.
+ *
+ * - `request` raises it and answers its id, to keep on the record.
+ * - `get` reads one this instance raised.
+ * - `cancel` stops one still pending.
+ *
+ * Show it on a screen with `bry-approval`; an approver decides there or in
+ * Brydio's inbox, and `statusField` on the record follows the outcome.
+ */
+export interface HandlerApprovals {
+  request(input: AppApprovalInput): Promise<{ id: string; status: ApprovalStatus }>;
+  get(id: string): Promise<ApprovalState>;
+  cancel(id: string): Promise<{ cancelled: boolean }>;
+}
+
 /** Everything a handler is given beside its input. */
 export interface HandlerClient {
   readonly data: HandlerData;
@@ -185,6 +279,7 @@ export interface HandlerClient {
   readonly secrets: HandlerSecrets;
   readonly members: HandlerMembers;
   readonly notify: HandlerNotify;
+  readonly approvals: HandlerApprovals;
   readonly caller: HandlerCaller;
 }
 

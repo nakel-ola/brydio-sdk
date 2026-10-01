@@ -108,7 +108,7 @@ describe('host grants', () => {
     expect(unknownHostGrant(ISSUES_MANIFEST)).toBeNull();
     expect(unknownHostGrant({ grants: { host: ['navigate', 'camera'] } })).toEqual({
       code: 'grant_unknown',
-      message: 'app.json asks for "camera", which Brydio does not grant. An app may ask for navigate, message, members, projects, files, chats, model, secrets, notify or connection:<name>.',
+      message: 'app.json asks for "camera", which Brydio does not grant. An app may ask for navigate, message, members, projects, files, chats, model, secrets, notify, approvals or connection:<name>.',
       path: 'grants.host',
     });
   });

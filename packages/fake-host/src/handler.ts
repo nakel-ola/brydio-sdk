@@ -1,4 +1,4 @@
-import type { Handler, HandlerCaller, HandlerClient, HandlerConnectionRequest, Notice, NoticeAt, NoticeKind } from '@brydio/app/handler';
+import type { AppApprovalInput, ApprovalState, Handler, HandlerCaller, HandlerClient, HandlerConnectionRequest, Notice, NoticeAt, NoticeKind } from '@brydio/app/handler';
 import { MAX_SECRET_CHARS, SECRET_NAME, type ManifestExtensions } from '@brydio/manifest';
 
 /**
@@ -62,6 +62,19 @@ export interface FakeNotices {
   pending: Map<string, NoticeAt>;
 }
 
+/**
+ * The approvals a handler raised, as the fake host keeps them, and a way for
+ * a test to answer as an approver would. Each step waits on the people its
+ * specs name (a person by id; `admin`, `manager` and `group` as the one
+ * pretend admin, `admin_test`), never the requester.
+ */
+export interface FakeApprovals {
+  /** By id, as they stand after the run. */
+  requests: Map<string, ApprovalState & { record: AppApprovalInput['record']; statusField: string | null }>;
+  /** Answers as `by` would, in the engine's words; a decline ends the request. */
+  decide(id: string, by: string, decision: 'approve' | 'decline', comment?: string): ApprovalState;
+}
+
 /** One call the handler made through its client. */
 export interface HandlerCall {
   method: string;
@@ -79,6 +92,8 @@ export interface HandlerRun<O> {
   calls: HandlerCall[];
   /** Who the handler notified, and what it set for later. */
   notices: FakeNotices;
+  /** What the handler asked people to approve. */
+  approvals: FakeApprovals;
 }
 
 const NOTICE_KINDS: readonly NoticeKind[] = ['assigned', 'mentioned', 'commented', 'status_changed', 'due_soon', 'overdue', 'reminder', 'updated'];
@@ -98,6 +113,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
   /** Every secret value the handler was handed or stored. */
   held: Set<string>;
   notices: FakeNotices;
+  approvals: FakeApprovals;
 } {
   const secrets = new Map(Object.entries(options.secrets ?? {}));
   const calls: HandlerCall[] = [];
@@ -150,6 +166,16 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
     if (typeof notice.title !== 'string' || !notice.title.trim()) throw new Error('notify needs a `title`.');
   };
   const reaches = async (notice: Notice) => (options.canNotify ? await options.canNotify(notice.to, notice) : true);
+
+  // Brydio's checks on an approval, in its words: the grant, a write tool to raise or cancel, the shape.
+  const asksApproval = (method: string, args: unknown[]) => {
+    const allowed = manifest ? (manifest.grants?.host ?? []).some(grant => grant === 'approvals' || grant === '*') : true;
+
+    if (!allowed) throw new Error(`${appName} did not ask to ask people to approve its records.`);
+    if (method !== 'approvals.get' && options.write === false) throw new Error(`${tool} is a read tool, so its handler can't ask for or cancel an approval.`);
+    keeps(method, args);
+  };
+  const approvals = fakeApprovals(callerId);
 
   const data = options.data ?? {};
   const client: HandlerClient = Object.freeze({
@@ -258,22 +284,37 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
         notifies,
       ),
     }),
+    approvals: Object.freeze({
+      request: recorded('approvals.request', async (input: AppApprovalInput) => approvals.raise(input), asksApproval),
+      get: recorded(
+        'approvals.get',
+        async (id: string) => {
+          const one = approvals.requests.get(id);
+
+          if (!one) throw new Error(`${appName} has no approval request ${String(id)}.`);
+
+          return approvals.view(one);
+        },
+        asksApproval,
+      ),
+      cancel: recorded('approvals.cancel', async (id: string) => approvals.cancel(id), asksApproval),
+    }),
     caller: Object.freeze({ userId: options.caller?.userId ?? 'user_test', origin: options.caller?.origin ?? 'assistant', role: options.caller?.role ?? 'owner' }),
   });
 
-  return { client, secrets, calls, held, notices };
+  return { client, secrets, calls, held, notices, approvals: { requests: approvals.requests, decide: approvals.decide } };
 }
 
 /** Runs a handler against the fake client, and answers as Brydio would pass its answer on. */
 export async function runHandler<I, O>(handler: Handler<I, O>, input: I, options: FakeHandlerOptions = {}): Promise<HandlerRun<O>> {
-  const { client, secrets, calls, held, notices } = fakeHandlerClient(options);
+  const { client, secrets, calls, held, notices, approvals } = fakeHandlerClient(options);
 
   try {
     const result = await handler(input, client);
 
-    return { result: scrub(JSON.parse(JSON.stringify(result ?? null)) as O, held), secrets, calls, notices };
+    return { result: scrub(JSON.parse(JSON.stringify(result ?? null)) as O, held), secrets, calls, notices, approvals };
   } catch (error) {
-    return { error: scrub(error instanceof Error ? error.message : String(error), held), secrets, calls, notices };
+    return { error: scrub(error instanceof Error ? error.message : String(error), held), secrets, calls, notices, approvals };
   }
 }
 
@@ -299,4 +340,146 @@ function carries(value: unknown, held: ReadonlySet<string>): boolean {
   const text = JSON.stringify(value) ?? '';
 
   return worth(held).some(secret => text.includes(secret) || text.includes(JSON.stringify(secret).slice(1, -1)));
+}
+
+const APPROVER_TYPES = ['person', 'role', 'manager', 'group'];
+const STEP_RULES = ['any', 'all', 'count'];
+const FAKE_ADMIN = 'admin_test';
+
+/** Brydio's check of `approvals.request`'s input, in its words. */
+export function checkApprovalInput(input: AppApprovalInput): void {
+  if (!input || typeof input !== 'object') throw new Error('approvals.request takes { title, steps, record }.');
+  if (typeof input.title !== 'string' || !input.title.trim() || input.title.length > 200) throw new Error('approvals.request needs a `title` of up to 200 characters.');
+  if (input.note !== undefined && (typeof input.note !== 'string' || input.note.length > 2000)) throw new Error('An approval `note` is text of up to 2000 characters.');
+  if (!input.record || typeof input.record.collection !== 'string' || !input.record.collection || typeof input.record.id !== 'string' || !input.record.id) {
+    throw new Error('approvals.request needs `record`: the collection and id of the record it is about.');
+  }
+  if (input.statusField !== undefined && (typeof input.statusField !== 'string' || !input.statusField)) throw new Error('`statusField` names a text field on the record.');
+  if (input.fields !== undefined && (!Array.isArray(input.fields) || input.fields.some(field => !field || typeof field.key !== 'string' || typeof field.label !== 'string' || typeof field.type !== 'string'))) {
+    throw new Error('Each approval field has a `key`, a `label` and a `type`.');
+  }
+  if (!Array.isArray(input.steps) || input.steps.length === 0 || input.steps.length > 10) throw new Error('approvals.request needs between 1 and 10 `steps`.');
+  input.steps.forEach((step, index) => {
+    const at = `Step ${index + 1}`;
+
+    if (!step || !STEP_RULES.includes(step.rule)) throw new Error(`${at}'s rule is one of any, all or count.`);
+    if (!Array.isArray(step.approvers) || step.approvers.length === 0) throw new Error(`${at} needs at least one approver.`);
+    for (const approver of step.approvers) {
+      if (!approver || !APPROVER_TYPES.includes(approver.type)) throw new Error(`${at}: an approver is a person, a role, a manager or a group.`);
+      if (approver.type === 'person' && (typeof approver.principalId !== 'string' || !approver.principalId)) throw new Error(`${at}: a person approver needs \`principalId\`.`);
+      if (approver.type === 'role' && approver.role !== 'admin') throw new Error(`${at}: the only role is admin.`);
+      if (approver.type === 'group' && (typeof approver.groupId !== 'string' || !approver.groupId)) throw new Error(`${at}: a group approver needs \`groupId\`.`);
+    }
+    if (step.rule === 'count' && (!Number.isInteger(step.count) || (step.count ?? 0) < 1)) throw new Error(`${at}: a count rule needs \`count\` of at least 1.`);
+  });
+}
+
+type Kept = FakeApprovals['requests'] extends Map<string, infer V> ? V : never;
+
+function fakeApprovals(requester: string) {
+  const requests: FakeApprovals['requests'] = new Map();
+  let next = 0;
+  const now = () => new Date().toISOString();
+  const person = (principalId: string) => ({ principalId, name: principalId, avatarUrl: null, kind: 'human' as const });
+
+  const view = (one: Kept): ApprovalState => {
+    const { record: _record, statusField: _field, ...state } = one;
+
+    return JSON.parse(JSON.stringify(state)) as ApprovalState;
+  };
+
+  const raise = (input: AppApprovalInput) => {
+    checkApprovalInput(input);
+    next += 1;
+    const id = `apr_test_${next}`;
+    const steps = input.steps.map((step, index) => {
+      const named = [...new Set(step.approvers.map(one => (one.type === 'person' ? one.principalId : FAKE_ADMIN)))];
+      // Never self-approval: the requester is left out, and a step with nobody left goes to the admins.
+      const kept = named.filter(one => one !== requester);
+      const who = kept.length ? kept : [FAKE_ADMIN];
+
+      return {
+        index,
+        name: step.name ?? null,
+        rule: step.rule,
+        count: step.rule === 'count' ? (step.count ?? 1) : null,
+        status: (index === 0 ? 'active' : 'waiting') as ApprovalState['steps'][number]['status'],
+        assignees: who.map(one => ({ person: person(one), status: 'waiting' as const, reason: kept.length ? 'named' : 'nobody_left', comment: null, decidedAt: null })),
+        note: kept.length ? null : 'Everyone named was the requester, so the workspace admins approve.',
+      };
+    });
+
+    requests.set(id, {
+      id,
+      title: input.title,
+      note: input.note ?? null,
+      fields: input.fields ?? [],
+      requester: person(requester),
+      status: 'pending',
+      currentStep: 0,
+      steps,
+      createdAt: now(),
+      decidedAt: null,
+      record: { ...input.record },
+      statusField: input.statusField ?? null,
+    });
+
+    return { id, status: 'pending' as const };
+  };
+
+  const decide = (id: string, by: string, decision: 'approve' | 'decline', comment?: string): ApprovalState => {
+    const one = requests.get(id);
+
+    if (!one) throw new Error(`There is no approval request ${id}.`);
+    if (one.status !== 'pending' || one.currentStep === null) throw new Error('That request is not pending.');
+    if (by === one.requester.principalId) throw new Error('Nobody approves their own request.');
+    const step = one.steps[one.currentStep]!;
+    const mine = step.assignees.find(assignee => assignee.person.principalId === by && assignee.status === 'waiting');
+
+    if (!mine) throw new Error(`${by} can't decide this step.`);
+    mine.status = decision === 'approve' ? 'approved' : 'declined';
+    mine.comment = comment ?? null;
+    mine.decidedAt = now();
+
+    if (decision === 'decline') {
+      step.status = 'declined';
+      one.status = 'declined';
+      one.currentStep = null;
+      one.decidedAt = now();
+
+      return view(one);
+    }
+
+    const yes = step.assignees.filter(assignee => assignee.status === 'approved').length;
+    const needed = step.rule === 'any' ? 1 : step.rule === 'all' ? step.assignees.length : Math.min(step.count ?? 1, step.assignees.length);
+
+    if (yes >= needed) {
+      step.status = 'approved';
+      const following = one.steps[one.currentStep + 1];
+
+      if (following) {
+        following.status = 'active';
+        one.currentStep += 1;
+      } else {
+        one.status = 'approved';
+        one.currentStep = null;
+        one.decidedAt = now();
+      }
+    }
+
+    return view(one);
+  };
+
+  const cancel = (id: string) => {
+    const one = typeof id === 'string' ? requests.get(id) : undefined;
+
+    if (!one || one.status !== 'pending') return { cancelled: false };
+    one.status = 'cancelled';
+    one.currentStep = null;
+    one.decidedAt = now();
+
+    return { cancelled: true };
+  };
+
+  return { requests, raise, view, decide, cancel };
 }
