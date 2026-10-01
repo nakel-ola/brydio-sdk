@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { baseManifestSchema, MANIFEST_LIMITS } from '../packages/manifest/src/base.ts';
+import { CONFIRM_LIMITS } from '../packages/manifest/src/confirm-email.ts';
 import { DOCUMENT_LIMITS } from '../packages/manifest/src/document-limits.ts';
 import { COLOUR_TOKENS, FIELD_LIMITS, LABEL_CHARS } from '../packages/manifest/src/field-types.ts';
 import { HOST_CAPABILITIES } from '../packages/manifest/src/grants.ts';
@@ -284,6 +285,20 @@ export function manifestDoc(): string {
     'instance. `publicSubmit: true` lets a visitor create records in it and do',
     'nothing else: no update, remove or batch, and no get or list unless',
     '`publicRead` is set too. A visitor never sees who made or changed a record.',
+    '',
+    '`confirmEmail` on a `publicSubmit` collection asks Brydio to email the',
+    'visitor once after they submit there: `{ "field": "email", "subject": "We got',
+    'your answer", "message": "Thanks.\\n\\nWe read every answer.", "link": true }`.',
+    "`field` names one of the collection's `string` fields, holding the visitor's",
+    'address (`data_confirm_field`); the collection must be `publicSubmit`',
+    `(\`data_confirm_submit\`). \`subject\` (at most ${CONFIRM_LIMITS.subjectChars} characters) and \`message\` (at`,
+    `most ${CONFIRM_LIMITS.messageChars}; a blank line starts a paragraph) are plain text with no links,`,
+    'addresses or markup (`data_confirm_text`). `link: true` adds one button back',
+    'to the public page. Brydio decides the rest: one email per record, only to',
+    "that field's address, only right after a successful submission, from the",
+    "workspace's name, within daily caps per page and per address, with an",
+    'unsubscribe link; a workspace admin can turn it off per page. Nothing the',
+    'visitor typed besides the address is put in the email.',
     '',
     '`openSchema: { "fields": "<companion>", "table": "<field>" }` gives a',
     'collection fields that people define at runtime, as records of its',

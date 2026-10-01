@@ -115,6 +115,15 @@ export {
   type OpenType,
 } from './open-schema.ts';
 
+export {
+  CONFIRM_LIMITS,
+  confirmEmailProblems,
+  confirmEmailSpec,
+  type ConfirmEmailDeclared,
+  type ConfirmEmailSpec,
+  type ConfirmProblemCode,
+} from './confirm-email.ts';
+
 export { DOCUMENT_LIMITS } from './document-limits.ts';
 
 export { HOST_CAPABILITIES, KNOWN_HOST_GRANTS, isHostCapability, unknownHostGrant } from './grants.ts';

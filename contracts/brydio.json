@@ -1,7 +1,7 @@
 {
   "brydio": {
-    "commit": "cb779d5e7d57edc846b7d7c8ac1b962398d2796e",
-    "dirty": false
+    "commit": "10fe992f28d5635713bafa2a6bf22ace1c064787",
+    "dirty": true
   },
   "contracts": {
     "bundle-files": {
@@ -6881,6 +6881,69 @@
         1,
         1,
         0
+      ]
+    ],
+    "confirm-email-problems": [
+      [],
+      [
+        {
+          "code": "data_confirm_submit",
+          "collection": "responses",
+          "message": "responses sends a confirmation email but visitors can't submit to it: mark it publicSubmit."
+        }
+      ],
+      [
+        {
+          "code": "data_confirm_field",
+          "collection": "responses",
+          "field": "nope",
+          "message": "responses.confirmEmail.field must name one of its string fields; nope is not."
+        }
+      ],
+      [
+        {
+          "code": "data_confirm_field",
+          "collection": "responses",
+          "field": "reviewer",
+          "message": "responses.confirmEmail.field must name one of its string fields; reviewer is not."
+        }
+      ],
+      [
+        {
+          "code": "data_confirm_field",
+          "collection": "responses",
+          "field": "count",
+          "message": "responses.confirmEmail.field must name one of its string fields; count is not."
+        }
+      ],
+      [],
+      [
+        {
+          "code": "data_confirm_text",
+          "collection": "responses",
+          "message": "responses.confirmEmail.message is plain text: no links, addresses or markup."
+        }
+      ],
+      [
+        {
+          "code": "data_confirm_text",
+          "collection": "responses",
+          "message": "responses.confirmEmail.subject is plain text: no links, addresses or markup."
+        }
+      ],
+      [
+        {
+          "code": "data_confirm_text",
+          "collection": "responses",
+          "message": "responses.confirmEmail.message is plain text: no links, addresses or markup."
+        }
+      ],
+      [
+        {
+          "code": "data_confirm_text",
+          "collection": "responses",
+          "message": "responses.confirmEmail.message is plain text: no links, addresses or markup."
+        }
       ]
     ],
     "contrast-gates": [

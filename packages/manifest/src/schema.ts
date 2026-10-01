@@ -15,6 +15,7 @@ import {
 } from './field-types.ts';
 import { migrationsSchema } from './migrations.ts';
 import { openSchemaProblems, type OpenProblemCode } from './open-schema.ts';
+import { confirmEmailProblems, confirmEmailSchema, type ConfirmProblemCode } from './confirm-email.ts';
 
 export {
   COLOUR_TOKENS,
@@ -170,6 +171,13 @@ const collectionSchema = z.object({
    * `publicRead` is set too (P3).
    */
   publicSubmit: z.boolean().optional(),
+  /**
+   * Brydio emails the visitor once after a public submission here (FO04):
+   * `field` names a `string` field holding their address; `subject` and
+   * `message` are short plain text; `link` adds a button back to the page.
+   * Needs `publicSubmit`. Brydio decides when, how often and from whom.
+   */
+  confirmEmail: confirmEmailSchema.optional(),
 });
 
 const screenSchema = z.object({
@@ -293,6 +301,7 @@ export interface DataProblem {
 export type DataProblemCode =
   | FieldTypeInvalid['code']
   | OpenProblemCode
+  | ConfirmProblemCode
   | 'data_too_many_collections'
   | 'data_too_many_fields'
   | 'data_collection_name_format'
@@ -487,6 +496,11 @@ export function dataProblems(additions: Additions, options: DataProblemOptions =
     }
 
     companions.set(declared.openSchema.fields, collection);
+  }
+
+  // A confirmation email names a string field of a collection visitors submit to (FO04).
+  for (const [collection, declared] of collections) {
+    problems.push(...confirmEmailProblems(collection, declared));
   }
 
   // What the app keeps must be what it asks to keep (A3-F06-S01): a

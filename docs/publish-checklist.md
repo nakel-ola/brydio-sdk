@@ -82,6 +82,9 @@ first.
 | `data_open_fields_unknown` | `<collection>.openSchema.fields names <companion>, which must be another collection of this app.` Also when the companion is open itself, or already defines another collection's fields. | yes | publish | Name a collection of its own that holds the field definitions. |
 | `data_open_fields_shape` | `<companion>.<field> is read by Brydio as <kind>; declare it so.` Also `<companion> defines <collection>'s fields, so it needs <field>: "<kind>".` when `key`, `name` or `type` is missing, and `<companion>.type offers "<value>", which is not an open field type; use some of <types>.` | yes | publish | Declare `key: "string?"`, `name: "string"`, `type` as a choice of open types, and the optional fields with the kinds Brydio reads. |
 | `data_open_table_unknown` | `<collection>.openSchema.table is <field>, so <name> needs <field>: "string", naming each record's table.` | yes | publish | Declare the table field as a required `string` on both collections, or leave `table` out. |
+| `data_confirm_submit` | `<collection> sends a confirmation email but visitors can't submit to it: mark it publicSubmit.` | yes | publish | Mark the collection `publicSubmit`, or take `confirmEmail` out. |
+| `data_confirm_field` | `<collection>.confirmEmail.field must name one of its string fields; <field> is not.` | yes | publish | Point `field` at a `string` field holding the visitor's address. |
+| `data_confirm_text` | `<collection>.confirmEmail.<subject or message> is plain text: no links, addresses or markup.` | yes | publish | Say it in plain words; `link: true` adds the one link back to the page. |
 | `manifest_sdk_overwritten` (warning, from `brydio build`) | The manifest says "sdk": `<value>`, which brydio build writes itself. The build says `<version>`; take the line out of the manifest. | build | no | Delete `sdk` from the manifest. |
 
 ## 1a. The app has a logo and an icon, and gives the assistant something to call
