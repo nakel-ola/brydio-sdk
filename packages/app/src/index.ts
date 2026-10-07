@@ -1,5 +1,5 @@
 import { defaultBridge, type Bridge } from './bridge.ts';
-import type { AppDocument, ApprovalDecision, ApprovalView, CopyTarget, DownloadType, DataChange, HostContext, ListQuery, ListResult, NavigateTarget, ToastAction, ToastTone, ToolResult } from './protocol.ts';
+import type { AppDocument, ApprovalDecision, ApprovalView, ViewerProfile, CopyTarget, DownloadType, DataChange, HostContext, ListQuery, ListResult, NavigateTarget, ToastAction, ToastTone, ToolResult } from './protocol.ts';
 import { createRoot, type RemoteRoot, type RootOptions } from './tree.ts';
 
 /**
@@ -35,6 +35,10 @@ export const host = {
   /** Approves or declines the waiting step as the viewer, with an optional comment. Needs the `approvals` host grant. */
   decideApproval(id: string, decision: ApprovalDecision, comment?: string): Promise<ApprovalView> {
     return defaultBridge().decideApproval(id, decision, comment);
+  },
+  /** The viewer's own directory profile, never anybody else's. Needs the `directory` host grant. */
+  profile(): Promise<ViewerProfile | null> {
+    return defaultBridge().profile();
   },
 };
 

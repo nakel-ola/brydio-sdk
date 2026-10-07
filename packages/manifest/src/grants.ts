@@ -9,8 +9,30 @@
 
 import { BUNDLE_MANIFEST } from './bundle.ts';
 
-/** The host grants with a name of their own. A connection's is `connection:<name>`. */
-export const HOST_CAPABILITIES = ['navigate', 'message', 'members', 'projects', 'files', 'chats', 'model', 'secrets', 'notify', 'approvals'] as const;
+/**
+ * The host grants with a name of their own. A connection's is `connection:<name>`.
+ *
+ * `chats` and `chat` differ: `chats` is the typed Brydio API's reach into the
+ * person's assistant conversations; `chat` is a handler's `chat.post`, the
+ * app posting one of its cards into a workspace room (FO03). `directory` is
+ * a handler's `directory.*` and a screen's `useProfile` (FO02); `webhooks`
+ * is a handler's `webhooks.send` (FO07).
+ */
+export const HOST_CAPABILITIES = [
+  'navigate',
+  'message',
+  'members',
+  'projects',
+  'files',
+  'chats',
+  'model',
+  'secrets',
+  'notify',
+  'approvals',
+  'chat',
+  'directory',
+  'webhooks',
+] as const;
 
 /** The older name for `HOST_CAPABILITIES`, kept for what already imports it. */
 export const KNOWN_HOST_GRANTS: readonly string[] = HOST_CAPABILITIES;

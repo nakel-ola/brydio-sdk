@@ -64,7 +64,9 @@ export {
 
 export {
   appManifestSchema,
+  appToolPrefix,
   collectionOf,
+  crossAppTool,
   collectionsOf,
   dataProblems,
   effectivePlacementKey,

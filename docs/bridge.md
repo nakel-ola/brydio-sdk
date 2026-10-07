@@ -42,6 +42,14 @@ and resolves with the request as it now stands. Both need the `approvals` host
 grant; without it they throw `GrantError` before anything leaves the worker.
 A screen that only shows a request can place `bry-approval` instead.
 
+### `host.profile()`
+
+Reads the viewer’s own directory profile, never anybody else’s: `{ id, name,
+email, title, team, manager }`, or `null` when the directory doesn’t know
+them. Prefill a form with it. Needs the `directory` host grant; without it,
+it throws `GrantError` before anything leaves the worker. A visitor on a
+public page is refused, as every `host/*` call is.
+
 ### `tools.call(tool, input)` and `tools.result(tool, input)`
 
 Calls one generated or custom tool. A write waits for Brydio to show an
@@ -153,6 +161,7 @@ A connection path is relative. `GET` and `HEAD` are reads. `POST`, `PUT`,
 | `host/projects` | app to Brydio | `{ ids }` plus the envelope id | `host/result` with visible project names, or `host/error`. |
 | `host/approval` | app to Brydio | `{ approval }` plus the envelope id; needs the `approvals` host grant | `host/result` with the approval request as the viewer sees it, or `host/error`. |
 | `host/approval/decide` | app to Brydio | `{ approval, decision, comment? }` plus the envelope id; `decision` is `approve` or `decline` | `host/result` with the request as it now stands, or `host/error`. |
+| `host/profile` | app to Brydio | `{}` plus the envelope id; needs the `directory` host grant | `host/result` with the viewer’s own profile or `null`, or `host/error`. |
 | `ui/message` | app to Brydio | `{ text, target? }` plus the envelope id | `ui/result` after Brydio opens or appends to a chat, or `ui/error`. |
 | `ui/copy` | app to Brydio | `{ text }` (up to 10,000 characters) or `{ route }`, one of the app's own routes | `ui/result` `{ copied }` once the clipboard took it or not, or `ui/error`. |
 | `ui/download` | app to Brydio | `{ name, text, type }`: a text file up to 5 MB, as CSV, plain text, Markdown or JSON | `ui/result` `{ saved: true }` once Brydio handed it to the person, or `ui/error`. |

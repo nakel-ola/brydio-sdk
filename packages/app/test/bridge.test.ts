@@ -512,3 +512,28 @@ test('the runtime reports the package’s own version', () => {
 
   expect(SDK_VERSION).toBe(pkg.version);
 });
+
+describe('the viewer’s own profile (host/profile, FO02)', () => {
+  test('asks under the directory grant and answers what the host said', async () => {
+    const { bridge, take, hostSays, connect } = harness({ app: { grants: { host: ['directory'] } } });
+
+    await connect();
+    take();
+
+    const read = bridge.profile();
+
+    expect(take()).toEqual([{ jsonrpc: '2.0', id: '1', method: 'host/profile', params: { id: '1' } }]);
+    hostSays('host/result', { id: '1', result: { id: 'user_1', name: 'Ada', email: null, title: null, team: null, manager: null } });
+    expect(await read).toEqual({ id: 'user_1', name: 'Ada', email: null, title: null, team: null, manager: null });
+  });
+
+  test('refuses without the directory grant and sends nothing', async () => {
+    const { bridge, take, connect } = harness({ app: { grants: { host: ['chat'] } } });
+
+    await connect();
+    take();
+
+    await expect(bridge.profile()).rejects.toThrow();
+    expect(take()).toEqual([]);
+  });
+});

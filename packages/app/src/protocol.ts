@@ -96,8 +96,11 @@ export type Op =
 /**
  * `project-tab` is retired (30 Sep 2026): a tab placed before then is drawn as a large widget.
  * `public-page` is a screen opened by people with no Brydio account (P3).
+ * `chat-card` is a screen drawn inside a chat message the app posted with
+ * `chat.post` (FO03), at the message column's width and a fixed height; its
+ * `placement.id` is `card:<key>` and `route` is the card's.
  */
-export type PlacementKind = 'project-widget' | 'project-tab' | 'project-sidebar' | 'workspace-sidebar' | 'home' | 'public-page';
+export type PlacementKind = 'project-widget' | 'project-tab' | 'project-sidebar' | 'workspace-sidebar' | 'home' | 'public-page' | 'chat-card';
 
 /** `public` is a public page's: its `instance.id` is the page's id and `name` its title. */
 export type InstanceScope = 'workspace' | 'project' | 'personal' | 'public';
@@ -206,6 +209,20 @@ export interface ApprovalPerson {
 
 /** Where an approval request stands. */
 export type ApprovalStatus = 'pending' | 'approved' | 'declined' | 'cancelled';
+
+/**
+ * `host/profile` (FO02): the viewer's own directory profile, with the
+ * `directory` host grant. Never anybody else's; null when the viewer is not
+ * one of the workspace's members.
+ */
+export interface ViewerProfile {
+  id: string;
+  name: string;
+  email: string | null;
+  title: string | null;
+  team: string | null;
+  manager: { id: string; name: string } | null;
+}
 
 /** What one approver can say. */
 export type ApprovalDecision = 'approve' | 'decline';
@@ -388,6 +405,7 @@ export const WORKER_METHODS = [
   'host/projects',
   'host/approval',
   'host/approval/decide',
+  'host/profile',
   'ui/message',
   'ui/copy',
   'ui/download',

@@ -111,8 +111,12 @@ const placementSchema = z.object({
    * `children` or `settings` (`placement_public_shape`), and it reaches only
    * collections marked `publicRead` or `publicSubmit` and tools marked
    * `public`.
+   * `chat-card`: a screen drawn inside a chat message the app posted with
+   * a handler's `chat.post` (FO03). Nobody places it by hand, so it has no
+   * `sizes`, `children` or `settings` (`placement_chat_card_shape`); its
+   * screen sees `placement.kind === 'chat-card'` and the card's `route`.
    */
-  kind: z.enum(['project-tab', 'project-widget', 'project-sidebar', 'workspace-sidebar', 'home', 'public-page']),
+  kind: z.enum(['project-tab', 'project-widget', 'project-sidebar', 'workspace-sidebar', 'home', 'public-page', 'chat-card']),
   screen: z.string().min(1).max(FIELD_LIMITS.nameChars),
   /** For `home` and `project-widget` only, and required there: the sizes the screen draws well at. */
   sizes: z.array(z.enum(HOME_CARD_SIZES)).max(3).optional(),
@@ -336,6 +340,8 @@ export type DataProblemCode =
   | 'placement_tab_retired'
   | 'placement_public_shape'
   | 'placement_public_nothing'
+  | 'placement_chat_card_shape'
+  | 'grant_tool_cross_app_self'
   | 'placement_children_too_deep'
   | 'placement_create_tool_unknown'
   | 'placement_create_not_write'
@@ -598,6 +604,15 @@ export function dataProblems(additions: Additions, options: DataProblemOptions =
         message: `The public page "${placement.screen}" can have no children or settings: it is one screen at its own address.`,
       });
     }
+
+    // A chat card is drawn at the message's own size, in a message nobody
+    // places by hand (FO03): nothing to size, configure or list.
+    if (placement.kind === 'chat-card' && (placement.sizes?.length || placement.children || placement.settings)) {
+      problems.push({
+        code: 'placement_chat_card_shape',
+        message: `The chat card "${placement.screen}" cannot have sizes, children or settings.`,
+      });
+    }
   }
 
   // A public page with nothing public could show a visitor nothing at all.
@@ -719,6 +734,22 @@ function customToolProblems(additions: Additions, options: { grants?: boolean })
         );
   const seen = new Set<string>();
   const granted = additions.grants?.tools ?? [];
+  // Another app's tool, asked for by its assistant name `<slug>__<tool>`
+  // (FO07): never an unknown custom tool of this app, but naming the app
+  // itself would be a way round its own grants.
+  const name = (additions as { name?: unknown }).name;
+  const own = typeof name === 'string' ? appToolPrefix(name) : null;
+
+  for (const grant of granted) {
+    const qualified = crossAppTool(grant);
+
+    if (qualified && own !== null && qualified.app === own) {
+      problems.push({
+        code: 'grant_tool_cross_app_self',
+        message: `${grant} names this app's own tool: ask for ${qualified.tool} instead.`,
+      });
+    }
+  }
 
   for (const tool of custom) {
     if (generated.has(tool.name) || seen.has(tool.name)) {
@@ -762,6 +793,26 @@ function customToolProblems(additions: Additions, options: { grants?: boolean })
 }
 
 /**
+ * Another installed app's tool, as `grants.tools` names it (FO07): the name
+ * the assistant knows it by, `<slug>__<tool>`. Null for anything else.
+ * A handler calls it with `tools.call('<slug>__<tool>', input)`.
+ */
+export function crossAppTool(name: string): { app: string; tool: string } | null {
+  const at = name.indexOf('__');
+
+  if (at <= 0 || at + 2 >= name.length) return null;
+
+  return { app: name.slice(0, at), tool: name.slice(at + 2) };
+}
+
+/** An app's name as the front of its tools' assistant names: `issue-tracker` → `issue_tracker`. */
+export const appToolPrefix = (name: string): string =>
+  name
+    .replace(/[^A-Za-z0-9_]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+/**
  * Each secret declared once, and asked for (ADR-A24): an app that declares
  * secrets without the `secrets` host grant could never read one.
  */
@@ -799,7 +850,7 @@ const refuse = (additions: Additions, ctx: z.RefinementCtx, options: DataProblem
     ctx.addIssue({
       code: 'custom',
       message: problem.message,
-      path: problem.code === 'grant_tool_missing'
+      path: problem.code === 'grant_tool_missing' || problem.code === 'grant_tool_cross_app_self'
         ? ['grants', 'tools']
         : problem.code === 'grant_secrets_missing'
         ? ['grants', 'host']

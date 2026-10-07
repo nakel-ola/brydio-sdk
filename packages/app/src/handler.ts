@@ -58,8 +58,9 @@ export interface MemberCaller {
  *   and never `update`, `remove` or `batch`. Records come back without who
  *   made or changed them.
  * - `tools.call` reaches only the app's other `public` tools.
- * - `connection`, `model`, `secrets`, `notify`, `members`, `approvals` and
- *   `files` refuse with the code `not_for_visitors`.
+ * - `connection`, `model`, `secrets`, `notify`, `members`, `approvals`,
+ *   `files`, `chat`, `directory`, `webhooks` and another app's tool refuse
+ *   with the code `not_for_visitors`.
  */
 export interface VisitorCaller {
   readonly userId: null;
@@ -95,7 +96,20 @@ export interface HandlerData {
   batch(collection: string, changes: unknown[]): Promise<unknown[]>;
 }
 
-/** One of the app's other tools, at most three deep, never itself. */
+/**
+ * One of the app's other tools, at most three deep, never itself.
+ *
+ * Another installed app's tool is called by the name the assistant knows it
+ * by, `<slug>__<tool>` (`tasks__create_numbered_issue`), when the manifest's
+ * `grants.tools` names it exactly so (`*` covers only the app's own tools)
+ * (FO07). Brydio finds that app's instance as the assistant would: the
+ * project in `input.project` when that project has its own (or shows one),
+ * else the workspace's one. It runs as the caller, with every check that app
+ * makes of a person, under that app's grants and admin switches; a write only
+ * from a write tool. Refusals end with their code: `cross_app_not_granted`,
+ * `cross_app_self`, `cross_app_unknown`, `cross_app_no_instance`,
+ * `cross_app_no_tool`, `cross_app_blocked`, `read_tool`.
+ */
 export interface HandlerTools {
   call<T = unknown>(tool: string, input?: Record<string, unknown>): Promise<T>;
 }
@@ -302,6 +316,110 @@ export interface HandlerApprovals {
   cancel(id: string): Promise<{ cancelled: boolean }>;
 }
 
+/** What `chat.post` takes: a room the caller can post in, plain text, and maybe one of the app's chat cards. */
+export interface ChatPost {
+  /** The room's id. */
+  room: string;
+  /** Plain text, up to 2000 characters. `@channel` and `@here` are never tags. */
+  text: string;
+  /** One of the manifest's `chat-card` placements, by key, opened at `route` (default `/`). */
+  card?: { placement: string; route?: string };
+}
+
+/**
+ * Posting in a workspace chat (`tasks/forms` FO03), with the `chat` host
+ * grant (not `chats`, which is the typed API's reach into a person's
+ * assistant conversations), from a write tool's handler, never a visitor's.
+ *
+ * The caller must be able to post in the room themselves (in an announcement
+ * channel, its managers and the people it names). The message is written by
+ * the app's own member, made the first time the instance posts and added to
+ * the room; in an announcement channel a manager must name it a poster. A
+ * direct message is refused. With `card`, people who can open this instance
+ * see the card's screen in the message, with `placement.kind === 'chat-card'`
+ * and the card's route; anybody else reads a plain line. 30 posts a minute
+ * per instance.
+ *
+ * `rooms` lists the caller's own rooms, at most 50, archived ones left out,
+ * matching `query` in their names when given, so a screen can let somebody
+ * pick where to post. `canPost` is whether `post` would take this app's post
+ * there. It needs only the `chat` grant, so a read tool may call it.
+ *
+ * Refusals end with their code: `chat_cannot_post`,
+ * `chat_app_not_poster`, `chat_card_unknown`, `chat_text_too_long`,
+ * `chat_invalid`, `chat_rate_limited`, `not_granted`, `read_tool`.
+ */
+export interface HandlerChat {
+  post(message: ChatPost): Promise<{ messageId: string }>;
+  rooms(query?: string): Promise<ChatRoom[]>;
+}
+
+/** One of the caller's rooms, as `chat.rooms` lists it. */
+export interface ChatRoom {
+  id: string;
+  /** A channel's name; a DM or group's is its other members' names. */
+  name: string;
+  kind: 'channel' | 'dm' | 'group';
+  /** Whether `chat.post` would take this app's post there. */
+  canPost: boolean;
+}
+
+/** A person as the directory shows them to the caller (FO02). Ids are user ids, as member fields hold them. */
+export interface DirectoryProfile {
+  id: string;
+  name: string;
+  email: string | null;
+  /** Job title. Null when unset, or kept to themselves (unless it is the caller's own). */
+  title: string | null;
+  /** Department, likewise. */
+  team: string | null;
+  /** Their manager, likewise. */
+  manager: { id: string; name: string } | null;
+}
+
+/** One of the workspace's directory groups. */
+export interface DirectoryGroup {
+  id: string;
+  name: string;
+  kind: 'team' | 'department' | 'location' | 'custom';
+}
+
+/**
+ * The workspace directory, read as the caller may see it (`tasks/forms`
+ * FO02), with the `directory` host grant, never a visitor's.
+ *
+ * - `profile` answers one member, or null for anybody who isn't one (a bot,
+ *   a guest, someone who left, an unknown id). A field a person keeps to
+ *   themselves is null to everyone but them.
+ * - `groups` lists the active groups.
+ * - `membersOf` answers a group's members' user ids; an unknown group has none.
+ */
+export interface HandlerDirectory {
+  profile(userId: string): Promise<DirectoryProfile | null>;
+  groups(): Promise<DirectoryGroup[]>;
+  membersOf(groupId: string): Promise<string[]>;
+}
+
+/**
+ * A signed webhook to another service (`tasks/forms` FO07), with the
+ * `webhooks` host grant, from a write tool's handler, never a visitor's.
+ *
+ * `body` is sent as JSON (at most 64 KB) in a POST to an https address only;
+ * a private, local or metadata address, or a redirect to one, is refused
+ * before anything is sent. The request carries `X-Brydio-Instance` and
+ * `X-Brydio-Signature: sha256=<hex HMAC-SHA256 of the exact body>`, keyed
+ * with the instance's signing secret, which a workspace admin reads from
+ * `GET /apps/instances/:id/webhook-secret`. Only the receiver's status comes
+ * back. 10 seconds to answer; 60 a minute per instance. Refusals end with
+ * their code: `webhook_not_https`, `webhook_private_address`,
+ * `webhook_url_refused`, `webhook_too_large`, `webhook_invalid`,
+ * `webhook_timeout`, `webhook_failed`, `webhook_rate_limited`,
+ * `not_granted`, `read_tool`.
+ */
+export interface HandlerWebhooks {
+  send(request: { url: string; body: unknown }): Promise<{ status: number }>;
+}
+
 /** Everything a handler is given beside its input. */
 export interface HandlerClient {
   readonly data: HandlerData;
@@ -312,6 +430,9 @@ export interface HandlerClient {
   readonly members: HandlerMembers;
   readonly notify: HandlerNotify;
   readonly approvals: HandlerApprovals;
+  readonly chat: HandlerChat;
+  readonly directory: HandlerDirectory;
+  readonly webhooks: HandlerWebhooks;
   readonly caller: HandlerCaller;
 }
 

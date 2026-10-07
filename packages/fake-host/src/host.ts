@@ -1,5 +1,5 @@
 import { TOOL_WRITES, collectionsOf, toolNames, type ManifestExtensions, type ToolVerb } from '@brydio/manifest';
-import type { ApprovalView } from '@brydio/app';
+import type { ApprovalView, ViewerProfile } from '@brydio/app';
 import { TEXT_NODE, type DetailOf, type ElementEvent, type ElementName } from '@brydio/ui';
 import { checkEvent, isElementName } from '@brydio/ui/validate';
 import { existsSync, readFileSync } from 'node:fs';
@@ -99,6 +99,12 @@ export interface FakeHostOptions {
    * id. Deciding one the viewer may decide settles it with that decision.
    */
   approvals?: Record<string, ApprovalView>;
+  /**
+   * The viewer's own directory profile, as `host/profile` answers it under
+   * the `directory` grant (FO02). Null, or left out, for a viewer the
+   * directory doesn't know.
+   */
+  profile?: ViewerProfile | null;
   /** Run Brydio's prelude before the screen. On unless a test needs it off. */
   prelude?: boolean;
   /**
@@ -632,6 +638,23 @@ export class FakeHost {
 
         this.#approval(message.id, message.method === 'host/approval/decide', params);
         break;
+      case 'host/profile': {
+        if (!this.app || message.id === undefined) break;
+
+        const host = this.#options.manifest?.grants?.host ?? [];
+
+        if (!host.includes('directory') && !host.includes('*')) {
+          this.#send({
+            jsonrpc: '2.0',
+            method: 'host/error',
+            params: { id: message.id, error: { code: -32000, message: `${this.#options.manifest?.name ?? this.app?.name} did not ask to read the directory: work profiles and groups.` } },
+          });
+          break;
+        }
+
+        this.#send({ jsonrpc: '2.0', method: 'host/result', params: { id: message.id, result: (this.#options.profile ?? null) as never } });
+        break;
+      }
       case 'ui/message':
         if (!this.app) break;
 

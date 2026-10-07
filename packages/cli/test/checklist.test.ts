@@ -285,7 +285,7 @@ describe('what the publish route refuses, found first', () => {
     const root = built(issues('0.2.0', { title: 'string' }, { grants: { tools: ['*'], collections: ['*'], host: ['camera'] } }));
 
     expect(found(validate(root).problems)).toEqual([
-      ['grant_unknown', 'app.json asks for "camera", which Brydio does not grant. An app may ask for navigate, message, members, projects, files, chats, model, secrets, notify, approvals or connection:<name>.'],
+      ['grant_unknown', 'app.json asks for "camera", which Brydio does not grant. An app may ask for navigate, message, members, projects, files, chats, model, secrets, notify, approvals, chat, directory, webhooks or connection:<name>.'],
     ]);
   });
 
@@ -413,5 +413,30 @@ describe('the owner’s rules, found before the publish route finds them (ADR-A2
       'brand/logo-mono.svg',
       'brand/logo.svg',
     ]);
+  });
+});
+
+describe('Forms host seams in the checklist (FO02, FO03, FO07)', () => {
+  test('counts a handler posting, reading the directory and sending a webhook as their own grants', () => {
+    const source =
+      "export default async function (input, { chat, directory, webhooks }) { await chat.post(input.post); await directory.profile(input.user); await directory.groups(); await directory.membersOf('g'); return webhooks.send(input.hook); }";
+
+    expect(callsOf('src/handlers/share.ts', source).map(call => [call.kind, call.name, call.sure])).toEqual([
+      ['host', 'chat', false],
+      ['host', 'directory', false],
+      ['host', 'directory', false],
+      ['host', 'directory', false],
+      ['host', 'webhooks', false],
+    ]);
+    // Another object's `post` or `send` is not one of them.
+    expect(callsOf('src/handlers/other.ts', 'http.post(x); socket.send(y); people.profile(z);')).toEqual([]);
+  });
+
+  test("another app's tool in grants.tools is not a grant that names nothing", () => {
+    const root = built(issues('0.2.0', { title: 'string' }, { grants: { tools: ['*', 'tasks__create_numbered_issue'], collections: ['*'] } }), {
+      'src/screens/board.tsx': 'const a = 1;',
+    });
+
+    expect(validate(root).problems.map(problem => problem.code)).not.toContain('grant_tool_unknown');
   });
 });

@@ -16,6 +16,9 @@ commands, see the [SDK documentation site](../docs-site/README.md).
 - [Catalogue](elements.md) lists every element and setting a screen may draw.
 - [Bridge](bridge.md) covers every public SDK call, protocol method, limit,
   and error.
+- [Chat cards, other apps' tools, the directory and webhooks](host-seams.md)
+  covers a handler's `chat`, `directory` and `webhooks` grants and calling
+  another installed app's tool.
 - [Brydio's AI](ai.md) covers calling Brydio's model: from a handler with
   the `model` grant, or from your own server with a developer API key.
 - [Publish checklist](publish-checklist.md) matches the checks and messages

@@ -1,5 +1,21 @@
-import type { AppApprovalInput, ApprovalState, Handler, HandlerCaller, HandlerClient, HandlerConnectionRequest, Notice, NoticeAt, NoticeKind } from '@brydio/app/handler';
-import { MAX_SECRET_CHARS, SECRET_NAME, type ManifestExtensions } from '@brydio/manifest';
+import { createHmac } from 'node:crypto';
+
+import type {
+  AppApprovalInput,
+  ApprovalState,
+  ChatPost,
+  ChatRoom,
+  DirectoryGroup,
+  DirectoryProfile,
+  Handler,
+  HandlerCaller,
+  HandlerClient,
+  HandlerConnectionRequest,
+  Notice,
+  NoticeAt,
+  NoticeKind,
+} from '@brydio/app/handler';
+import { MAX_SECRET_CHARS, SECRET_NAME, appToolPrefix, crossAppTool, effectivePlacementKey, type ManifestExtensions } from '@brydio/manifest';
 
 /**
  * A pretend Brydio for a custom tool's handler (`tasks/apps` A3-F08,
@@ -58,6 +74,45 @@ export interface FakeHandlerOptions {
    * say `cannot_see`.
    */
   canNotify?: (to: string, notice: Notice) => boolean | Promise<boolean>;
+  /**
+   * Whether the caller may post in a room, for `chat.post` (FO03): `true`,
+   * `false` (refused `chat_cannot_post`), or `'not_poster'` for an
+   * announcement channel that doesn't name the app (`chat_app_not_poster`).
+   * Without it, every room takes the post.
+   */
+  canPost?: (room: string) => boolean | 'not_poster' | Promise<boolean | 'not_poster'>;
+  /**
+   * The caller's rooms, for `chat.rooms`, and for `chat.post` when `canPost`
+   * is not given: a post into a room listed with `canPost: false` is refused
+   * `chat_cannot_post`.
+   */
+  chat?: { rooms?: ChatRoom[] };
+  /**
+   * The workspace directory, for `directory.*` (FO02), already as the caller
+   * may see it: profiles by user id, and groups with their members' user ids.
+   */
+  directory?: { profiles?: DirectoryProfile[]; groups?: (DirectoryGroup & { members?: string[] })[] };
+  /**
+   * The receiver's status for each `webhooks.send` (FO07). Without it, 200.
+   * The fake signs with `webhookSecret` (default `whsec_test`), as Brydio
+   * signs with the instance's secret.
+   */
+  webhook?: (request: { url: string; body: unknown }) => number | Promise<number>;
+  webhookSecret?: string;
+}
+
+/** A post a handler made with `chat.post`, as the fake host kept it. */
+export interface FakeChatPost extends ChatPost {
+  messageId: string;
+}
+
+/** A webhook a handler sent, as the receiver would have had it. */
+export interface FakeWebhook {
+  url: string;
+  /** The exact JSON sent. */
+  body: string;
+  headers: { 'content-type': 'application/json'; 'x-brydio-instance': string; 'x-brydio-signature': string };
+  status: number;
 }
 
 /** What a handler asked Brydio to tell people, as the fake host kept it. */
@@ -100,6 +155,10 @@ export interface HandlerRun<O> {
   notices: FakeNotices;
   /** What the handler asked people to approve. */
   approvals: FakeApprovals;
+  /** What it posted in chats. */
+  posts: FakeChatPost[];
+  /** The webhooks it sent. */
+  webhooks: FakeWebhook[];
 }
 
 const NOTICE_KINDS: readonly NoticeKind[] = ['assigned', 'mentioned', 'commented', 'status_changed', 'due_soon', 'overdue', 'reminder', 'updated'];
@@ -125,6 +184,8 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
   held: Set<string>;
   notices: FakeNotices;
   approvals: FakeApprovals;
+  posts: FakeChatPost[];
+  webhooks: FakeWebhook[];
 } {
   const secrets = new Map(Object.entries(options.secrets ?? {}));
   const calls: HandlerCall[] = [];
@@ -192,6 +253,19 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
   };
   const approvals = fakeApprovals(callerId);
 
+  // The three Forms seams (FO02, FO03, FO07), refused in Brydio's words, each ending with its code.
+  const hostGranted = (capability: string) => (manifest ? (manifest.grants?.host ?? []).some(grant => grant === capability || grant === '*') : true);
+  const seam = (capability: 'chat' | 'directory' | 'webhooks', words: string, writing: boolean) => (method: string, args: unknown[]) => {
+    notForVisitors(method);
+    if (!hostGranted(capability)) throw new Error(`${appName} did not ask to ${words}. (not_granted)`);
+    if (writing && options.write === false) throw new Error(`${tool} is a read tool, so its handler can't ${method === 'chat.post' ? 'post in a chat' : 'send a webhook'} (read_tool)`);
+    keeps(method, args);
+  };
+  const posts: FakeChatPost[] = [];
+  const sentHooks: FakeWebhook[] = [];
+  const profiles = new Map((options.directory?.profiles ?? []).map(one => [one.id, one]));
+  const groups = options.directory?.groups ?? [];
+
   // A visitor on a public page (P3): only what the app marks public.
   const visitor = options.caller?.role === 'anonymous' || options.caller?.origin === 'public';
   const caller: HandlerCaller = visitor
@@ -229,6 +303,19 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
       throw new NotForVisitors(`${name} is not open to visitors on a public page.`);
     }
   };
+  // Another app's tool by its assistant name (FO07): asked for by exactly that name, never the app itself.
+  const crossApp = (_method: string, args: unknown[]) => {
+    const name = String(args[0]);
+
+    if ((manifest?.tools?.custom ?? []).some(one => one.name === name)) return;
+
+    const qualified = crossAppTool(name);
+
+    if (!qualified) return;
+    if (visitor) throw new NotForVisitors(`${name} is another app's tool, which a visitor on a public page can't use. (not_for_visitors)`);
+    if (manifest?.name && qualified.app === appToolPrefix(manifest.name)) throw new Error(`${name} is ${appName}'s own tool: call ${qualified.tool} (cross_app_self)`);
+    if (manifest && !(manifest.grants?.tools ?? []).includes(name)) throw new Error(`${appName} did not ask to use ${name} (cross_app_not_granted)`);
+  };
   const both =
     (...checks: ((method: string, args: unknown[]) => void)[]) =>
     (method: string, args: unknown[]) => {
@@ -252,7 +339,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
       batch: recorded('data.batch', data.batch ?? unavailable('data.batch'), both(visitorData, writes)),
     }),
     tools: Object.freeze({
-      call: recorded('tools.call', (options.tools?.call ?? unavailable('tools.call')) as HandlerClient['tools']['call'], both(visitorTool, keeps)),
+      call: recorded('tools.call', (options.tools?.call ?? unavailable('tools.call')) as HandlerClient['tools']['call'], both(crossApp, visitorTool, keeps)),
     }) as HandlerClient['tools'],
     connection: (name: string) =>
       Object.freeze({
@@ -371,22 +458,137 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
       ),
       cancel: recorded('approvals.cancel', async (id: string) => approvals.cancel(id), asksApproval),
     }),
+    chat: Object.freeze({
+      post: recorded(
+        'chat.post',
+        async (message: ChatPost) => {
+          const refuse = (code: string, words: string): never => {
+            throw new Error(`${words} (${code})`);
+          };
+
+          if (!message || typeof message.room !== 'string' || !message.room) refuse('chat_invalid', 'chat.post takes the room to post in, by its id.');
+
+          const text = typeof message.text === 'string' ? message.text.trim() : '';
+
+          if (!text) refuse('chat_invalid', 'chat.post needs some text.');
+          if (text.length > 2000) refuse('chat_text_too_long', 'A post is at most 2000 characters.');
+          if (message.card) {
+            const known = (manifest?.placements ?? []).some(one => one.kind === 'chat-card' && effectivePlacementKey(one) === message.card!.placement);
+
+            if (manifest && !known) refuse('chat_card_unknown', `${appName} has no chat card "${String(message.card.placement)}".`);
+            if (message.card.route !== undefined && (typeof message.card.route !== 'string' || !message.card.route.startsWith('/'))) {
+              refuse('chat_invalid', 'A card’s route is one of the app’s own pages, starting with /.');
+            }
+          }
+
+          const listed = options.chat?.rooms?.find(one => one.id === message.room);
+          const allowed = options.canPost ? await options.canPost(message.room) : listed ? listed.canPost : true;
+
+          if (allowed === false) refuse('chat_cannot_post', 'You can’t post in that room.');
+          if (allowed === 'not_poster') refuse('chat_app_not_poster', `${appName} isn’t one of the posters this channel names, so it can’t post here.`);
+
+          const messageId = `message_test_${posts.length + 1}`;
+
+          posts.push({ ...message, text, ...(message.card ? { card: { placement: message.card.placement, route: message.card.route ?? '/' } } : {}), messageId });
+
+          return { messageId };
+        },
+        seam('chat', 'post its cards in chats', true),
+      ),
+      rooms: recorded(
+        'chat.rooms',
+        async (query?: string) => {
+          if (query !== undefined && query !== null && (typeof query !== 'string' || query.length > 100)) {
+            throw new Error('chat.rooms takes words to look for in a room’s name, up to 100 characters. (chat_invalid)');
+          }
+
+          const words = (query ?? '').trim().toLowerCase();
+
+          return (options.chat?.rooms ?? [])
+            .filter(one => !words || one.name.toLowerCase().includes(words))
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .slice(0, 50)
+            .map(one => ({ ...one }));
+        },
+        seam('chat', 'post its cards in chats', false),
+      ),
+    }),
+    directory: Object.freeze({
+      profile: recorded(
+        'directory.profile',
+        async (userId: string) => {
+          if (typeof userId !== 'string' || !userId) throw new Error('directory.profile takes a member’s id. (directory_invalid)');
+
+          return profiles.get(userId) ?? null;
+        },
+        seam('directory', 'read the directory: work profiles and groups', false),
+      ),
+      groups: recorded(
+        'directory.groups',
+        async () => groups.map(({ id, name, kind }) => ({ id, name, kind })),
+        seam('directory', 'read the directory: work profiles and groups', false),
+      ),
+      membersOf: recorded(
+        'directory.membersOf',
+        async (groupId: string) => {
+          if (typeof groupId !== 'string' || !groupId) throw new Error('directory.membersOf takes a group’s id. (directory_invalid)');
+
+          return [...(groups.find(one => one.id === groupId)?.members ?? [])].sort();
+        },
+        seam('directory', 'read the directory: work profiles and groups', false),
+      ),
+    }),
+    webhooks: Object.freeze({
+      send: recorded(
+        'webhooks.send',
+        async (request: { url: string; body: unknown }) => {
+          let url: URL;
+
+          try {
+            url = new URL(String(request?.url));
+          } catch {
+            throw new Error('That is not a web address. (webhook_invalid)');
+          }
+          if (url.protocol !== 'https:') throw new Error('A webhook goes only to an https address. (webhook_not_https)');
+          if (/^(localhost|127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1\]?$)/.test(url.hostname)) {
+            throw new Error('That address is on a private network, so Brydio will not call it. (webhook_private_address)');
+          }
+
+          const body = JSON.stringify(request.body ?? null);
+
+          if (new TextEncoder().encode(body).length > 64 * 1024) throw new Error('A webhook’s body is at most 64 KB. (webhook_too_large)');
+
+          const status = options.webhook ? await options.webhook({ url: url.toString(), body: request.body ?? null }) : 200;
+          const signature = `sha256=${createHmac('sha256', options.webhookSecret ?? 'whsec_test').update(body, 'utf8').digest('hex')}`;
+
+          sentHooks.push({
+            url: url.toString(),
+            body,
+            headers: { 'content-type': 'application/json', 'x-brydio-instance': 'inst_test', 'x-brydio-signature': signature },
+            status,
+          });
+
+          return { status };
+        },
+        seam('webhooks', 'send signed webhooks to other services', true),
+      ),
+    }),
     caller: Object.freeze(caller),
   });
 
-  return { client, secrets, calls, held, notices, approvals: { requests: approvals.requests, decide: approvals.decide } };
+  return { client, secrets, calls, held, notices, approvals: { requests: approvals.requests, decide: approvals.decide }, posts, webhooks: sentHooks };
 }
 
 /** Runs a handler against the fake client, and answers as Brydio would pass its answer on. */
 export async function runHandler<I, O>(handler: Handler<I, O>, input: I, options: FakeHandlerOptions = {}): Promise<HandlerRun<O>> {
-  const { client, secrets, calls, held, notices, approvals } = fakeHandlerClient(options);
+  const { client, secrets, calls, held, notices, approvals, posts, webhooks } = fakeHandlerClient(options);
 
   try {
     const result = await handler(input, client);
 
-    return { result: scrub(JSON.parse(JSON.stringify(result ?? null)) as O, held), secrets, calls, notices, approvals };
+    return { result: scrub(JSON.parse(JSON.stringify(result ?? null)) as O, held), secrets, calls, notices, approvals, posts, webhooks };
   } catch (error) {
-    return { error: scrub(error instanceof Error ? error.message : String(error), held), secrets, calls, notices, approvals };
+    return { error: scrub(error instanceof Error ? error.message : String(error), held), secrets, calls, notices, approvals, posts, webhooks };
   }
 }
 

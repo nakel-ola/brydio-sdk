@@ -8,6 +8,7 @@ import {
   type DataChange,
   type ApprovalDecision,
   type ApprovalView,
+  type ViewerProfile,
   type MemberName,
   type ProjectName,
   type DevUpdateParams,
@@ -514,6 +515,19 @@ export class Bridge {
     const params = { approval: id, decision, ...(typeof comment === 'string' && comment.trim() ? { comment: comment.trim() } : {}) };
 
     return this.request('host/approval/decide', params, true) as Promise<ApprovalView>;
+  }
+
+  /**
+   * The viewer's own directory profile (FO02): name, email, title, team and
+   * manager, to prefill a form, say. Never anybody else's. Needs the
+   * `directory` host grant.
+   */
+  profile(): Promise<ViewerProfile | null> {
+    const refused = this.#grant('host', 'directory');
+
+    if (refused) return Promise.reject(refused);
+
+    return this.request('host/profile', {}, true) as Promise<ViewerProfile | null>;
   }
 
   #hostCall(capability: 'members' | 'projects', ids: readonly string[]): Promise<unknown> {

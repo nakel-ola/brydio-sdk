@@ -7207,7 +7207,10 @@
         "model",
         "secrets",
         "notify",
-        "approvals"
+        "approvals",
+        "chat",
+        "directory",
+        "webhooks"
       ],
       "reads": [
         true,
@@ -7412,7 +7415,7 @@
       {
         "ok": false,
         "messages": [
-          "Invalid option: expected one of \"project-tab\"|\"project-widget\"|\"project-sidebar\"|\"workspace-sidebar\"|\"home\"|\"public-page\""
+          "Invalid option: expected one of \"project-tab\"|\"project-widget\"|\"project-sidebar\"|\"workspace-sidebar\"|\"home\"|\"public-page\"|\"chat-card\""
         ]
       },
       {

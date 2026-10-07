@@ -117,6 +117,10 @@ export function callsOf(file: string, text: string): ScreenCall[] {
         else if (method === 'members' || method === 'projects') add('host', method, callee, false);
         // A handler asking who can see a project uses the members grant too.
         else if (method === 'canSeeProject') add('host', 'members', callee, false);
+        // A handler's `chat.post`, `directory.*` and `webhooks.send` use their own grants (FO02, FO03, FO07).
+        else if ((method === 'post' || method === 'rooms') && /(^|\.)chat$/.test(object.getText(source))) add('host', 'chat', callee, false);
+        else if ((method === 'profile' || method === 'groups' || method === 'membersOf') && /(^|\.)directory$/.test(object.getText(source))) add('host', 'directory', callee, false);
+        else if (method === 'send' && /(^|\.)webhooks$/.test(object.getText(source))) add('host', 'webhooks', callee, false);
         // A handler's `notify.send`, `notify.at` and `notify.cancel` use the notify grant.
         else if ((method === 'send' || method === 'at' || method === 'cancel') && /(^|\.)notify$/.test(object.getText(source))) add('host', 'notify', callee, false);
       }

@@ -1,4 +1,4 @@
-import { KNOWN_HOST_GRANTS, collectionsOf, generatedToolsOf, toolNames, type AppManifestWithData } from '@brydio/manifest';
+import { KNOWN_HOST_GRANTS, collectionsOf, crossAppTool, generatedToolsOf, toolNames, type AppManifestWithData } from '@brydio/manifest';
 
 import type { Problem } from './project.ts';
 import type { ScreenCall } from './calls.ts';
@@ -48,6 +48,20 @@ export function grantProblems(manifest: AppManifestWithData, calls: readonly (Sc
   };
 
   const checkTool = (call: ScreenCall & { file: string }, tool: string) => {
+    // Another app's tool (FO07): granted by exactly that name, never by `*`.
+    if (!tools.has(tool) && crossAppTool(tool)) {
+      if (!grants.tools.includes(tool)) {
+        problems.push({
+          code: 'grant_tool_missing',
+          severity: 'error',
+          ...at(call),
+          message: `"${tool}" is another app's tool and is called here but not asked for: add "${tool}" to grants.tools.`,
+        });
+      }
+
+      return;
+    }
+
     if (!tools.has(tool)) {
       problems.push({
         code: 'tool_unknown',
@@ -108,7 +122,8 @@ export function grantProblems(manifest: AppManifestWithData, calls: readonly (Sc
   }
 
   for (const [index, grant] of grants.tools.entries()) {
-    if (grant !== '*' && !tools.has(grant) && !collections.has(grant)) {
+    // `<slug>__<tool>` is another app's tool (FO07), whatever this app has.
+    if (grant !== '*' && !tools.has(grant) && !collections.has(grant) && !crossAppTool(grant)) {
       problems.push({
         code: 'grant_tool_unknown',
         severity: 'warning',
