@@ -22,6 +22,14 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.39
+
+Record editors and read-only generated tools (DW06).
+
+- **Record editors.** A collection's `editors: "<field>"` names one of its `string[]` fields of user ids. A record that names anyone may be changed by those people only: anyone else's tool, handler or assistant change is refused with `not_granted` and `(not_an_editor)` in its words, and their co-edit connection is read-only. Everyone who may read it still does. Problems `data_editors_field` and `data_editors_anonymous`. `@brydio/manifest` exports `editorsOf` and `editorsProblems`; the fake host's `FixtureStore` refuses the same changes for anyone `viewer` isn't.
+- **`tools.generated: "read"`.** Only the generated get, list and search: no generated create, update, delete or batch, so every write goes through the app's own tools and its rules. The write names are free for custom tools. A fake-host screen reaches no generated write either.
+- **Readers and editors lists** hold up to 1000 ids (`READERS_LIMIT`); any other `string[]` holds 100 (`FieldType.maxEntries`).
+
 ## 0.1.0-alpha.38
 
 A page tree, comments on words, version history and record readers (DW03–DW05, P16).
