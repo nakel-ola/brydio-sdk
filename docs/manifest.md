@@ -225,6 +225,7 @@ the open field types, and how a retype moves values.
 | `string[]` | A list of at most 100 short strings. |
 | `token` | One of `neutral`, `brand`, `success`, `warn`, `danger`. |
 | `canvas` | A drawing several people make at once with `bry-whiteboard`. Always optional and co-edited; the record holds `{ elements, text }`, written by Brydio, and no tool may write it. |
+| `ref` | The id of another of the app's own records, such as a page's parent or the space it is in. Letters, digits, `_` and `-`, at most 128; kept in plain, so a list can filter and sort on it, which no words field allows. |
 
 Add `?` to a named type to make the field optional, such as `member?`.
 A field may also use `{ "type": ..., "optional": true, "default": ...,

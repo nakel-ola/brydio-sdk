@@ -30,7 +30,8 @@ export type FieldKind =
   | 'boolean'
   | 'string[]'
   | 'token'
-  | 'canvas';
+  | 'canvas'
+  | 'ref';
 
 export interface FieldType {
   kind: FieldKind;
@@ -137,12 +138,14 @@ const STRUCTURED: ReadonlySet<FieldKind> = new Set<FieldKind>([
   'number',
   'boolean',
   'token',
+  // Another of the app's records, by id (DW06): an id, never words, so a list can name it.
+  'ref',
 ]);
 
 /** Only the words in these may one day be searched (A3-F01-S02). */
 const SEARCHABLE: ReadonlySet<FieldKind> = new Set<FieldKind>(['string', 'text', 'string[]']);
 
-const SCALARS = new Set(['string', 'text', 'member', 'project', 'date', 'number', 'boolean', 'token', 'canvas']);
+const SCALARS = new Set(['string', 'text', 'member', 'project', 'date', 'number', 'boolean', 'token', 'canvas', 'ref']);
 
 /** A field type the manifest wrote that Brydio does not have, or a bad list. */
 export class FieldTypeInvalid extends Error {
@@ -167,6 +170,12 @@ export class FieldTypeInvalid extends Error {
     this.name = 'FieldTypeInvalid';
   }
 }
+
+/** The longest record id a `ref` field holds. */
+export const REF_CHARS = 128;
+
+/** What a record id looks like: letters, digits, `_` and `-`; never words. */
+export const REF_FORMAT = /^[A-Za-z0-9_-]+$/;
 
 /**
  * One field's manifest spelling, as a type.
@@ -406,6 +415,8 @@ export function valueSchema(type: FieldType): ZodType {
       return z.array(z.string().max(FIELD_LIMITS.stringChars)).max(type.maxEntries ?? FIELD_LIMITS.listEntries);
     case 'canvas':
       return z.object({ elements: z.number().int().min(0), text: z.string().max(CANVAS_SUMMARY_CHARS) }).strict();
+    case 'ref':
+      return z.string().min(1).max(REF_CHARS).regex(REF_FORMAT);
   }
 }
 
@@ -444,6 +455,8 @@ export function valueProblem(field: string, type: FieldType, value: unknown): st
         : `${field} must be a list of short texts, each at most ${FIELD_LIMITS.stringChars.toLocaleString('en-GB')} characters.`;
     case 'canvas':
       return `${field} is a drawing: it is changed on its board, never written.`;
+    case 'ref':
+      return `${field} must be the id of one of this app's records.`;
   }
 }
 
@@ -472,6 +485,8 @@ export function describeType(type: FieldType): string {
       return 'a list of short texts';
     case 'canvas':
       return 'a drawing, read only: how many shapes it has and the words on it';
+    case 'ref':
+      return "the id of another of this app's records";
   }
 }
 

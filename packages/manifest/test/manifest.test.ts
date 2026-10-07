@@ -359,7 +359,7 @@ describe('field types (contracts §5)', () => {
   });
 
   test('refuse with a code', () => {
-    expect(() => parseFieldType('ref')).toThrow(expect.objectContaining({ code: 'data_field_type_unknown' }));
+    expect(() => parseFieldType('pointer')).toThrow(expect.objectContaining({ code: 'data_field_type_unknown' }));
     expect(() => parseFieldType(['a', 'a'])).toThrow(expect.objectContaining({ code: 'data_enum_duplicate' }));
   });
 

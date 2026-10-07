@@ -137,6 +137,7 @@ const FIELD_TYPES = [
   ['`string[]`', `A list of at most ${FIELD_LIMITS.listEntries} short strings.`],
   ['`token`', `One of ${COLOUR_TOKENS.map(token => `\`${token}\``).join(', ')}.`],
   ['`canvas`', 'A drawing several people make at once with `bry-whiteboard`. Always optional and co-edited; the record holds `{ elements, text }`, written by Brydio, and no tool may write it.'],
+  ['`ref`', 'The id of another of the app\'s own records, such as a page\'s parent or the space it is in. Letters, digits, `_` and `-`, at most 128; kept in plain, so a list can filter and sort on it, which no words field allows.'],
 ] as const;
 
 const MIGRATION_DOCS = {

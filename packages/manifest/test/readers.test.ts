@@ -59,3 +59,12 @@ describe('editors and generated reads (DW06)', () => {
     expect(refused(wiki({ custom }))).toContain('custom_name_taken');
   });
 });
+
+describe('ref fields (DW06)', () => {
+  test('hold another record’s id, kept in plain so a list can filter on it', () => {
+    const spec = collectionsOf(appManifestSchema.parse(pages('readers', { space: 'ref', parent: 'ref?' }))).find(one => one.name === 'pages')!;
+
+    expect(spec.structured).toEqual(expect.arrayContaining(['space', 'parent']));
+    expect(refused(pages('readers', { space: 'ref' }))).toEqual([]);
+  });
+});
