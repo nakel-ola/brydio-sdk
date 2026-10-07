@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { baseManifestSchema, MANIFEST_LIMITS } from '../packages/manifest/src/base.ts';
+import { ANONYMOUS_LIMITS } from '../packages/manifest/src/anonymous.ts';
 import { CONFIRM_LIMITS } from '../packages/manifest/src/confirm-email.ts';
 import { DOCUMENT_LIMITS } from '../packages/manifest/src/document-limits.ts';
 import { COLOUR_TOKENS, FIELD_LIMITS, LABEL_CHARS } from '../packages/manifest/src/field-types.ts';
@@ -299,6 +300,29 @@ export function manifestDoc(): string {
     "workspace's name, within daily caps per page and per address, with an",
     'unsubscribe link; a workspace admin can turn it off per page. Nothing the',
     'visitor typed besides the address is put in the email.',
+    '',
+    '`anonymous: { "group": "<field>", "minimum": 5 }` keeps answers nobody can',
+    'tie back to who gave them. `group` names one of the collection\'s structured',
+    'fields (a number, choice, date, boolean, token or project; never words or a',
+    'member) that sorts answers into groups, such as a form and its round',
+    `(\`data_anonymous_group\`); \`minimum\` is at least ${ANONYMOUS_LIMITS.minimum}, the default, and at most ${ANONYMOUS_LIMITS.maximum}`,
+    '(`data_anonymous_minimum`). The collection may not have a `member` field',
+    '(`data_anonymous_member`) or a field written together, `coedit` or',
+    '`canvas` (`data_anonymous_coedit`); it may be `publicSubmit`. Brydio keeps',
+    'every record with `createdBy` `anonymous`, no `updatedBy` or',
+    '`updatedOrigin`, and its times cut to the start of the UTC day, and the',
+    'tools never show who made one. A create carrying the writer\'s own id or',
+    'address anywhere is refused (`anonymous_names_writer`); an update or a',
+    'batch is refused (`anonymous_immutable`), a remove is not; a screen\'s watch',
+    'ends at once (`anonymous_no_watch`). A `list` or `search` must filter the',
+    'group to one value (`anonymous_needs_group`) and answers only when at',
+    'least `minimum` records match the whole query, filters and words',
+    'included; a `get` only when the record\'s group holds that many. Otherwise',
+    'it is refused with `too_few_answers`, carrying no records and no count.',
+    'A kept collection never becomes anonymous, stops being, or changes its',
+    'group (`migration_anonymous_changed`): keep anonymous answers in a new',
+    'collection. Each refusal\'s message ends with its code in brackets, such',
+    'as `(too_few_answers)`, so a screen can tell them apart.',
     '',
     '`openSchema: { "fields": "<companion>", "table": "<field>" }` gives a',
     'collection fields that people define at runtime, as records of its',

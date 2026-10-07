@@ -70,6 +70,25 @@ reads never say who made or changed them.
 Mark only what you mean a stranger to see or send. A handler that does more
 for an admin should check `caller.role` before trusting `caller.userId`.
 
+## Anonymous answers
+
+A collection marked `anonymous` (a survey, a pulse check) keeps answers that
+nobody, the app and its publisher included, can tie back to who gave them.
+Brydio enforces it in its store, not the app: each record's `createdBy` is
+`anonymous`, with no `updatedBy` or `updatedOrigin`, and its times are cut to
+the start of the UTC day. An answer is never changed (`anonymous_immutable`),
+never told to a watching screen (`anonymous_no_watch`), and refused when it
+carries the writer's own id or address (`anonymous_names_writer`). Answers are
+read one whole group at a time, and only once at least `minimum` (5 or more)
+match the whole query; otherwise the read says `too_few_answers` and nothing
+else, not even how many there are. The audit keeps that somebody answered,
+never which answer. Handlers' `data` client and `@brydio/fake-host` follow the
+same rules.
+
+What it does not hide: what the answer itself says. Don't ask for a name or a
+detail only one person would know, and don't attach files to an anonymous
+answer. A way to link an anonymous answer to its writer is worth reporting.
+
 ## What is worth reporting
 
 - A way for an app's code to reach outside its worker: the page, the network,

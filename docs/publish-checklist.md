@@ -84,6 +84,10 @@ first.
 | `data_open_table_unknown` | `<collection>.openSchema.table is <field>, so <name> needs <field>: "string", naming each record's table.` | yes | publish | Declare the table field as a required `string` on both collections, or leave `table` out. |
 | `data_confirm_submit` | `<collection> sends a confirmation email but visitors can't submit to it: mark it publicSubmit.` | yes | publish | Mark the collection `publicSubmit`, or take `confirmEmail` out. |
 | `data_confirm_field` | `<collection>.confirmEmail.field must name one of its string fields; <field> is not.` | yes | publish | Point `field` at a `string` field holding the visitor's address. |
+| `data_anonymous_group` | `<collection>.anonymous.group must name one of its structured fields (a number, choice, date, boolean, token or project); <field> is not.` | yes | publish | Group by a number, a choice or a date: words are never kept in plain, and a member names a person. |
+| `data_anonymous_member` | `<collection> is anonymous, so it can't name a member: <field> would.` | yes | publish | Take the `member` field out, or keep it in another collection. |
+| `data_anonymous_coedit` | `<collection> is anonymous, so its answers can't be written together: <field> would be.` | yes | publish | Drop `coedit: true` or the `canvas` field. |
+| `data_anonymous_minimum` | `<collection>.anonymous.minimum is at least 5: fewer answers than that can be told apart.` | yes | publish | Leave `minimum` out (5) or raise it. |
 | `data_confirm_text` | `<collection>.confirmEmail.<subject or message> is plain text: no links, addresses or markup.` | yes | publish | Say it in plain words; `link: true` adds the one link back to the page. |
 | `manifest_sdk_overwritten` (warning, from `brydio build`) | The manifest says "sdk": `<value>`, which brydio build writes itself. The build says `<version>`; take the line out of the manifest. | build | no | Delete `sdk` from the manifest. |
 
@@ -216,6 +220,7 @@ Brydio's `migrations.ts`:
 |---|---|---|---|---|
 | `migration_unexplained` | `<collection>.<field>` is new; add it with a step (and a default, when the field is required). Or: `<collection>.<field>` is gone; drop it or rename it with a step. Or: `<collection>` is no longer declared; say dropCollection to remove its records. | with a previous version | publish | `{ "op": "add" }`, `"rename"`, `"drop"` or `"dropCollection"`. |
 | `migration_type_changed` | `<collection>.<field>` changed type; drop `` `<field>` `` and add it again under a new name. Or: `<collection>.<field>` became required, and records without it would not be readable; add a new field with a default instead. | with a previous version | publish | Drop the field and add a new one. |
+| `migration_anonymous_changed` | `<collection> already keeps records with their writers, so it can't become anonymous; keep anonymous answers in a new collection.` Also `<collection> keeps anonymous answers, so it stays anonymous.` and `<collection>'s anonymous answers stay grouped by <field>.` | with a previous version | publish | Declare a new collection for anonymous answers; keep an anonymous one as it is. |
 | `migration_value_removed` | `<collection>.<field>` no longer allows "`<value>`"; say which value replaces each. | with a previous version | publish | `{ "op": "replace", "from": …, "to": … }`. |
 | `migration_default_missing` | add `<collection>.<field>`: a required field needs a default for the records already kept. | with a previous version | publish | Give the `add` step a `default`. |
 | `migration_default_invalid` | add `<collection>.<field>`: the default is not valid; `<why>` | with a previous version | publish | Fix the default. |

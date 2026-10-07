@@ -16,6 +16,7 @@ import {
 import { migrationsSchema } from './migrations.ts';
 import { openSchemaProblems, type OpenProblemCode } from './open-schema.ts';
 import { confirmEmailProblems, confirmEmailSchema, type ConfirmProblemCode } from './confirm-email.ts';
+import { anonymousProblems, anonymousSchema, anonymousSpec, type AnonymousProblemCode, type AnonymousSpec } from './anonymous.ts';
 
 export {
   COLOUR_TOKENS,
@@ -178,6 +179,15 @@ const collectionSchema = z.object({
    * Needs `publicSubmit`. Brydio decides when, how often and from whom.
    */
   confirmEmail: confirmEmailSchema.optional(),
+  /**
+   * Answers nobody can tie to who gave them (P13): `group` names a
+   * structured field (a number, choice, date, boolean, token or project)
+   * the answers are read by, a whole group at a time and only once it holds
+   * `minimum` answers (at least 5, the default). Brydio keeps no writer,
+   * cuts times to the day, tells no live change, and refuses an update, a
+   * batch, a watch and a create naming its own writer.
+   */
+  anonymous: anonymousSchema.optional(),
 });
 
 const screenSchema = z.object({
@@ -302,6 +312,7 @@ export type DataProblemCode =
   | FieldTypeInvalid['code']
   | OpenProblemCode
   | ConfirmProblemCode
+  | AnonymousProblemCode
   | 'data_too_many_collections'
   | 'data_too_many_fields'
   | 'data_collection_name_format'
@@ -501,6 +512,11 @@ export function dataProblems(additions: Additions, options: DataProblemOptions =
   // A confirmation email names a string field of a collection visitors submit to (FO04).
   for (const [collection, declared] of collections) {
     problems.push(...confirmEmailProblems(collection, declared));
+  }
+
+  // An anonymous collection groups its answers by one of its structured fields, names nobody (P13).
+  for (const [collection, declared] of collections) {
+    problems.push(...anonymousProblems(collection, declared));
   }
 
   // What the app keeps must be what it asks to keep (A3-F06-S01): a
@@ -851,6 +867,8 @@ export interface CollectionSpec {
   openSchema?: { fields: string; table: string | null };
   /** On a companion: the open collection whose fields its records define (P5). */
   definesFieldsOf?: string;
+  /** Answers kept with no writer, read only a whole group of at least `minimum` at a time (P13). */
+  anonymous?: AnonymousSpec;
 }
 
 /**
@@ -905,6 +923,7 @@ export function collectionsOf(manifest: { data?: ManifestExtensions['data'] }): 
         ? { openSchema: { fields: declared.openSchema.fields, table: declared.openSchema.table ?? null } }
         : {}),
       ...(owner ? { definesFieldsOf: owner.name } : {}),
+      ...(declared.anonymous ? { anonymous: anonymousSpec(declared.anonymous) } : {}),
     };
   });
 }

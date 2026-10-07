@@ -1,4 +1,5 @@
 import {
+  ANONYMOUS_WRITER,
   FIELD_LIMITS,
   OPEN_LIMITS,
   coeditedFields,
@@ -59,6 +60,8 @@ export interface StoredDocument {
   /** Who last wrote it, and through which door (Brydio `569a36c`): a screen, the assistant, a migration. */
   updatedBy: string | null;
   updatedOrigin: 'screen' | 'assistant' | 'migration' | null;
+  /** From an anonymous collection (P13): handed out with no writer. */
+  anonymous?: true;
 }
 
 export type Fixtures = Record<string, Record<string, unknown>[]>;
@@ -140,6 +143,11 @@ export class FixtureStore {
         };
         const body = this.#created(spec, fields);
 
+        if (spec.anonymous) {
+          this.#records.get(spec.name)!.push(this.#anonymous(typeof id === 'string' ? id : this.#id(spec), body));
+          continue;
+        }
+
         this.#records.get(spec.name)!.push({
           id: typeof id === 'string' ? id : this.#id(spec),
           version: typeof version === 'number' ? version : 1,
@@ -179,6 +187,16 @@ export class FixtureStore {
     const current = typeof id === 'string' ? records.find(record => record.id === id) : undefined;
 
     try {
+      if (spec.anonymous) {
+        if (current) throw immutable(spec);
+
+        const made = this.#anonymous(typeof id === 'string' ? id : this.#id(spec), this.#created(spec, changes));
+
+        records.push(made);
+
+        return flat(made);
+      }
+
       if (current) {
         current.body = this.#changed(spec, current, changes).body;
         current.version += 1;
@@ -225,12 +243,25 @@ export class FixtureStore {
     this.#emit(spec, found, 'delete');
   }
 
+  /**
+   * Why a screen can't watch this collection, or null: an anonymous one's
+   * answers are never told as they arrive (P13, `anonymous_no_watch`).
+   */
+  unwatchable(collection: string): string | null {
+    const spec = this.#specs.find(one => one.name === collection);
+
+    return spec?.anonymous ? `${spec.plural} are anonymous, so their changes aren’t told as they happen. Read them again instead. (anonymous_no_watch)` : null;
+  }
+
   /** Whether the manifest declares this collection. */
   has(collection: string): boolean {
     return this.#specs.some(one => one.name === collection);
   }
 
   #emit(spec: CollectionSpec, doc: StoredDocument, op: StoreChange['op']): void {
+    // An anonymous answer's arrival or removal is told to nobody (P13).
+    if (spec.anonymous) return;
+
     const change: StoreChange = { collection: spec.name, id: doc.id, op, version: doc.version };
 
     for (const listener of [...this.#listeners]) listener(change);
@@ -275,6 +306,8 @@ export class FixtureStore {
   #batch(spec: CollectionSpec, input: Record<string, unknown>): ToolResultShape {
     const changes = (input ?? {}).changes;
     const plural = spec.plural;
+
+    if (spec.anonymous) return refusal(immutable(spec).message, { error: 'anonymous_immutable' });
 
     if (!Array.isArray(changes) || changes.length < 1 || changes.length > 50) {
       return refusal(`changes: ${Array.isArray(changes) && changes.length > 50 ? 'Too big: expected array to have <=50 items' : 'Too small: expected array to have >=1 items'}.`);
@@ -352,6 +385,21 @@ export class FixtureStore {
 
     switch (verb) {
       case 'create': {
+        if (spec.anonymous) {
+          const body = this.#created(spec, input);
+
+          // An answer never carries who gave it: here, the person testing.
+          if (JSON.stringify(body).toLowerCase().includes(FIXTURE_USER)) {
+            throw new Refused('This answer is anonymous, so it can’t carry who is giving it. (anonymous_names_writer)', { error: 'anonymous_names_writer' });
+          }
+
+          const made = this.#anonymous(this.#id(spec), body);
+
+          records.push(made);
+
+          return answer(`Created ${label} ${made.id}.`, flat(made), `Created ${article} ${label}`);
+        }
+
         const made: StoredDocument = {
           id: this.#id(spec),
           version: 1,
@@ -368,6 +416,8 @@ export class FixtureStore {
         return answer(`Created ${label} ${made.id}.`, flat(made), `Created ${article} ${label}`);
       }
       case 'update': {
+        if (spec.anonymous) throw immutable(spec);
+
         const { id, version, ...changes } = input;
         const current = this.#find(spec, String(id));
 
@@ -406,7 +456,16 @@ export class FixtureStore {
         );
       }
       case 'get': {
-        const found = flat(this.#find(spec, String(input.id)));
+        const record = this.#find(spec, String(input.id));
+
+        // Only once its group holds enough answers to hide it among (P13).
+        if (spec.anonymous) {
+          const group = spec.anonymous.group;
+
+          if (records.filter(one => one.body[group] === record.body[group]).length < spec.anonymous.minimum) throw tooFew(spec);
+        }
+
+        const found = flat(record);
 
         return answer(JSON.stringify(found), found, `Read ${article} ${label}`);
       }
@@ -449,6 +508,15 @@ export class FixtureStore {
       });
     }
 
+    // One whole group at a time, named before anything is read (P13).
+    if (spec.anonymous) {
+      const value = filter[spec.anonymous.group];
+
+      if (!(typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') || value === '') {
+        throw new Refused(`${spec.plural} are anonymous: name one ${spec.anonymous.group} in the filter to read them. (anonymous_needs_group)`, { error: 'anonymous_needs_group' });
+      }
+    }
+
     const dir = sort.dir ?? (time ? 'desc' : 'asc');
     // The store's paging: 50 unless asked, never more than 200.
     const limit = input.limit === undefined ? 50 : Math.min(Number(input.limit), 200);
@@ -474,6 +542,9 @@ export class FixtureStore {
 
         return dir === 'asc' ? order : -order;
       });
+
+    // Every filter must match enough answers to hide each among; else nothing, not even how many (P13).
+    if (spec.anonymous && matching.length < spec.anonymous.minimum) throw tooFew(spec);
 
     const items = matching.slice(offset, offset + limit);
     const more = matching.length > offset + limit;
@@ -700,8 +771,9 @@ export class FixtureStore {
 
       row.body = next;
       row.version += 1;
-      row.updatedOrigin = 'migration';
-      row.updatedBy = 'user_fixture';
+      // An anonymous answer's move keeps no mover (P13); #emit tells nobody.
+      row.updatedOrigin = owner.anonymous ? null : 'migration';
+      row.updatedBy = owner.anonymous ? null : 'user_fixture';
       this.#emit(owner, row, 'update');
     }
 
@@ -735,6 +807,14 @@ export class FixtureStore {
     return id;
   }
 
+  /** An anonymous answer as Brydio keeps it (P13): by nobody, from nowhere, at the start of its day. */
+  #anonymous(id: string, body: Record<string, unknown>): StoredDocument {
+    const at = new Date((this.#clock += 1));
+    const day = new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate())).toISOString();
+
+    return { id, version: 1, body, createdBy: ANONYMOUS_WRITER, updatedBy: null, updatedOrigin: null, createdAt: day, updatedAt: day, anonymous: true };
+  }
+
   /** Every write a millisecond after the last, so "newest first" is never a tie. */
   #stamp(): { createdAt: string; updatedAt: string } {
     const at = new Date((this.#clock += 1)).toISOString();
@@ -743,8 +823,22 @@ export class FixtureStore {
   }
 }
 
-/** A record as the tools hand it out: the kept fields beside the body's, flat. */
+/** Who the person testing a screen is, to the store. */
+const FIXTURE_USER = 'user_fixture';
+
+const immutable = (spec: CollectionSpec) =>
+  new Refused(`Anonymous ${spec.label} answers are never changed once given; only removed. (anonymous_immutable)`, { error: 'anonymous_immutable' });
+
+const tooFew = (spec: CollectionSpec) =>
+  new Refused(
+    `There aren’t enough ${spec.plural} to show yet: anonymous answers are read only ${spec.anonymous!.minimum} or more at a time. (too_few_answers)`,
+    { error: 'too_few_answers' },
+  );
+
+/** A record as the tools hand it out: the kept fields beside the body's, flat. An anonymous answer says when (to the day), never who. */
 function flat(doc: StoredDocument): Record<string, unknown> {
+  if (doc.anonymous) return { id: doc.id, version: doc.version, ...doc.body, createdAt: doc.createdAt, updatedAt: doc.updatedAt };
+
   return {
     id: doc.id,
     version: doc.version,

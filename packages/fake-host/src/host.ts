@@ -1012,6 +1012,8 @@ export class FakeHost {
     this.#send({ jsonrpc: '2.0', method: 'data/result', params: { id, result: { watching: true } } });
 
     if (!this.store.has(collection)) this.endWatch(collection, 'There is no such collection.');
+    // Brydio refuses an anonymous collection's watch when the stream opens (P13, `anonymous_no_watch`).
+    else if (this.store.unwatchable(collection)) this.endWatch(collection, this.store.unwatchable(collection)!);
   }
 
   /** A change the store made, gathered for `COALESCE_MS`, each record once at its latest. */

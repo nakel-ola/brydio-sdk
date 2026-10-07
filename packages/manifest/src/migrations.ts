@@ -154,7 +154,8 @@ export type MigrationCode =
   | 'migration_default_invalid'
   | 'migration_unexplained'
   | 'migration_type_changed'
-  | 'migration_value_removed';
+  | 'migration_value_removed'
+  | 'migration_anonymous_changed';
 
 export interface MigrationProblem {
   code: MigrationCode;
@@ -235,8 +236,44 @@ export function migrationProblems(from: unknown, to: unknown, steps: readonly Mi
     }
   }
 
+  problems.push(...anonymityChanges(from, to));
+
   return problems;
 }
+
+/**
+ * A kept collection that becomes anonymous, stops being, or moves its group
+ * (P13): no step can say what its records become. Records kept before kept
+ * their writers and times, and records kept since were read only by group.
+ */
+function anonymityChanges(from: unknown, to: unknown): MigrationProblem[] {
+  const before = record(record(from).data);
+  const after = record(record(to).data);
+  const problems: MigrationProblem[] = [];
+
+  for (const [name, declared] of Object.entries(after)) {
+    if (!(name in before)) continue;
+
+    const was = record(record(before[name]).anonymous).group;
+    const now = record(record(declared).anonymous).group;
+
+    if (was === now) continue;
+
+    problems.push({
+      code: 'migration_anonymous_changed',
+      collection: name,
+      message:
+        was === undefined
+          ? `${name} already keeps records with their writers, so it can't become anonymous; keep anonymous answers in a new collection.`
+          : now === undefined
+            ? `${name} keeps anonymous answers, so it stays anonymous.`
+            : `${name}'s anonymous answers stay grouped by ${String(was)}.`,
+    });
+  }
+
+  return problems;
+}
+
 
 /** The old schema with the steps applied, and every step that could not apply or changed nothing. */
 function run(start: Schema, target: Schema, steps: readonly MigrationStep[]): { schema: Schema; problems: MigrationProblem[] } {

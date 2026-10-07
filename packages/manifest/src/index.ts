@@ -124,6 +124,16 @@ export {
   type ConfirmProblemCode,
 } from './confirm-email.ts';
 
+export {
+  ANONYMOUS_LIMITS,
+  ANONYMOUS_WRITER,
+  anonymousProblems,
+  anonymousSpec,
+  type AnonymousDeclared,
+  type AnonymousProblemCode,
+  type AnonymousSpec,
+} from './anonymous.ts';
+
 export { DOCUMENT_LIMITS } from './document-limits.ts';
 
 export { HOST_CAPABILITIES, KNOWN_HOST_GRANTS, isHostCapability, unknownHostGrant } from './grants.ts';

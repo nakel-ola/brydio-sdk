@@ -1,9 +1,119 @@
 {
   "brydio": {
-    "commit": "10fe992f28d5635713bafa2a6bf22ace1c064787",
-    "dirty": true
+    "commit": "8e34fd01a8a3bcb9d21379b3239fcbda4a06acba",
+    "dirty": false
   },
   "contracts": {
+    "anonymous-problems": {
+      "problems": [
+        [],
+        [],
+        [
+          {
+            "code": "data_anonymous_group",
+            "collection": "answers",
+            "field": "nope",
+            "message": "answers.anonymous.group must name one of its structured fields (a number, choice, date, boolean, token or project); nope is not."
+          }
+        ],
+        [
+          {
+            "code": "data_anonymous_group",
+            "collection": "answers",
+            "field": "title",
+            "message": "answers.anonymous.group must name one of its structured fields (a number, choice, date, boolean, token or project); title is not."
+          }
+        ],
+        [
+          {
+            "code": "data_anonymous_group",
+            "collection": "answers",
+            "field": "comment",
+            "message": "answers.anonymous.group must name one of its structured fields (a number, choice, date, boolean, token or project); comment is not."
+          }
+        ],
+        [
+          {
+            "code": "data_anonymous_group",
+            "collection": "answers",
+            "field": "who",
+            "message": "answers.anonymous.group must name one of its structured fields (a number, choice, date, boolean, token or project); who is not."
+          },
+          {
+            "code": "data_anonymous_member",
+            "collection": "answers",
+            "field": "who",
+            "message": "answers is anonymous, so it can't name a member: who would."
+          }
+        ],
+        [
+          {
+            "code": "data_anonymous_member",
+            "collection": "answers",
+            "field": "owner",
+            "message": "answers is anonymous, so it can't name a member: owner would."
+          }
+        ],
+        [
+          {
+            "code": "data_anonymous_coedit",
+            "collection": "answers",
+            "field": "notes",
+            "message": "answers is anonymous, so its answers can't be written together: notes would be."
+          }
+        ],
+        [
+          {
+            "code": "data_anonymous_coedit",
+            "collection": "answers",
+            "field": "board",
+            "message": "answers is anonymous, so its answers can't be written together: board would be."
+          }
+        ],
+        [
+          {
+            "code": "data_anonymous_minimum",
+            "collection": "answers",
+            "message": "answers.anonymous.minimum is at least 5: fewer answers than that can be told apart."
+          }
+        ]
+      ],
+      "specs": [
+        {
+          "group": "round",
+          "minimum": 5
+        },
+        {
+          "group": "mood",
+          "minimum": 12
+        }
+      ],
+      "migrations": [
+        [
+          {
+            "code": "migration_anonymous_changed",
+            "collection": "answers",
+            "message": "answers already keeps records with their writers, so it can't become anonymous; keep anonymous answers in a new collection."
+          }
+        ],
+        [
+          {
+            "code": "migration_anonymous_changed",
+            "collection": "answers",
+            "message": "answers keeps anonymous answers, so it stays anonymous."
+          }
+        ],
+        [
+          {
+            "code": "migration_anonymous_changed",
+            "collection": "answers",
+            "message": "answers's anonymous answers stay grouped by round."
+          }
+        ],
+        [],
+        []
+      ]
+    },
     "bundle-files": {
       "hashes": [
         "c768e89b620eebcd47e353e1d79567883428fcb562017f7ca2b51484523659c7",
