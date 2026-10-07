@@ -40,3 +40,22 @@ describe('readers on a collection (P16)', () => {
     expect(readersOf(undefined, { readers: ['user_a'] })).toBeNull();
   });
 });
+
+describe('editors and generated reads (DW06)', () => {
+  const wiki = (tools: Record<string, unknown>) => ({ ...pages('readers', { editors: 'string[]' }, { editors: 'editors' }), tools });
+
+  test('names a string[] field, and lets a readers or editors list hold a thousand', () => {
+    const spec = collectionsOf(appManifestSchema.parse(wiki({}))).find(one => one.name === 'pages')!;
+
+    expect(spec.editors).toBe('editors');
+    expect(spec.fields.readers!.maxEntries).toBe(1000);
+    expect(refused({ ...pages('readers', {}, { editors: 'owner' }) })).toEqual(['data_editors_field']);
+  });
+
+  test('with `generated: "read"`, leaves the write names to the app’s own tools', () => {
+    const custom = [{ name: 'create_page', description: 'Make a page.', handler: 'handlers/create-page.js', input: { title: 'string' }, write: true }];
+
+    expect(refused(wiki({ generated: 'read', custom }))).toEqual([]);
+    expect(refused(wiki({ custom }))).toContain('custom_name_taken');
+  });
+});

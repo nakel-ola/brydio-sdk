@@ -269,10 +269,16 @@ export class FakeHost {
     };
     this.#context = { ...(options.visitor ? VISITOR_CONTEXT : DEFAULT_CONTEXT), ...options.context };
     this.store = options.manifest ? new FixtureStore(options.manifest, options.fixtures) : null;
-    this.#tools = { ...this.store?.tools(), ...options.tools };
+    // With only generated reads (DW06), a screen reaches no generated write: the app's own tools change records.
+    const readsOnly = options.manifest?.tools?.generated === 'read';
+    const generated = Object.fromEntries(
+      Object.entries(this.store?.tools() ?? {}).filter(([name]) => !readsOnly || !/^(create|update|delete|batch)_/.test(name)),
+    );
+
+    this.#tools = { ...generated, ...options.tools };
     this.store?.onChange(change => this.#gather(change));
     this.#writes = new Set(
-      options.manifest && options.manifest.tools?.generated !== false
+      options.manifest && options.manifest.tools?.generated !== false && options.manifest.tools?.generated !== 'read'
         ? collectionsOf(options.manifest).flatMap(spec =>
             [
               ...Object.entries(toolNames(spec))

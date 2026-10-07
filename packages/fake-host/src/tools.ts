@@ -26,6 +26,7 @@ import {
   type OpenFieldChange,
   type ToolVerb,
   readersOf,
+  editorsOf,
 } from '@brydio/manifest';
 import { z, type ZodType } from 'zod';
 
@@ -429,6 +430,8 @@ export class FixtureStore {
         const { id, version, ...changes } = input;
         const current = this.#find(spec, String(id));
 
+        this.#mustEdit(spec, current);
+
         // A field's key and table, and a row's table, never change (P5):
         // refused before the version is looked at, as in Brydio.
         this.#settled(spec, current, changes);
@@ -486,6 +489,8 @@ export class FixtureStore {
       }
       case 'delete': {
         const found = this.#find(spec, String(input.id));
+
+        this.#mustEdit(spec, found);
 
         this.#removed(spec, found);
         records.splice(records.indexOf(found), 1);
@@ -794,6 +799,15 @@ export class FixtureStore {
     const readers = readersOf(spec.readers, record.body);
 
     return !readers || (this.viewer !== null && readers.includes(this.viewer));
+  }
+
+  /** Refuses a change to a record whose editors name others than the viewer, as Brydio does (DW06). */
+  #mustEdit(spec: CollectionSpec, record: StoredDocument): void {
+    const editors = editorsOf(spec.editors, record.body);
+
+    if (editors && !(this.viewer !== null && editors.includes(this.viewer))) {
+      throw new Refused(`Only the people this ${spec.label} names may change it. (not_an_editor)`, { error: 'not_granted' });
+    }
   }
 
   #find(spec: CollectionSpec, id: string): StoredDocument {

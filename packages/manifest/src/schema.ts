@@ -17,7 +17,7 @@ import { migrationsSchema } from './migrations.ts';
 import { openSchemaProblems, type OpenProblemCode } from './open-schema.ts';
 import { confirmEmailProblems, confirmEmailSchema, type ConfirmProblemCode } from './confirm-email.ts';
 import { anonymousProblems, anonymousSchema, anonymousSpec, type AnonymousProblemCode, type AnonymousSpec } from './anonymous.ts';
-import { readersProblems, readersSchema, type ReadersProblemCode } from './readers.ts';
+import { editorsProblems, editorsSchema, READERS_LIMIT, readersProblems, readersSchema, type EditorsProblemCode, type ReadersProblemCode } from './readers.ts';
 
 export {
   COLOUR_TOKENS,
@@ -195,6 +195,8 @@ const collectionSchema = z.object({
   anonymous: anonymousSchema.optional(),
   /** One of its string[] fields: the user ids who alone may read a record, when it names any (P16). */
   readers: readersSchema.optional(),
+  /** One of its string[] fields: the user ids who alone may change a record, when it names any (DW06). */
+  editors: editorsSchema.optional(),
 });
 
 const screenSchema = z.object({
@@ -247,7 +249,12 @@ export type CustomToolSpec = z.infer<typeof customToolSchema>;
 
 const toolsSchema = z.object({
   /** Off only when the app supplies every tool itself (A3-F08). */
-  generated: z.boolean().optional(),
+  /**
+   * Off only when the app supplies every tool itself. `"read"` keeps the
+   * generated reads (get, list, search) and leaves every write to the app's
+   * own tools, where its rules about who may change what live (DW06).
+   */
+  generated: z.union([z.boolean(), z.literal('read')]).optional(),
   custom: z.array(customToolSchema).max(MAX_CUSTOM_TOOLS).optional(),
 });
 
@@ -321,6 +328,7 @@ export type DataProblemCode =
   | ConfirmProblemCode
   | AnonymousProblemCode
   | ReadersProblemCode
+  | EditorsProblemCode
   | 'data_too_many_collections'
   | 'data_too_many_fields'
   | 'data_collection_name_format'
@@ -532,6 +540,7 @@ export function dataProblems(additions: Additions, options: DataProblemOptions =
   // A collection whose records name their readers names a list of user ids to keep them in (P16).
   for (const [collection, declared] of collections) {
     problems.push(...readersProblems(collection, declared));
+    problems.push(...editorsProblems(collection, declared));
   }
 
   // What the app keeps must be what it asks to keep (A3-F06-S01): a
@@ -652,7 +661,7 @@ function folderProblems(additions: Additions): DataProblem[] {
   const problems: DataProblem[] = [];
   const custom = new Map((additions.tools?.custom ?? []).map(tool => [tool.name, tool]));
   const generatedWrites =
-    additions.tools?.generated === false
+    additions.tools?.generated === false || additions.tools?.generated === 'read'
       ? new Set<string>()
       : new Set(
           Object.entries(additions.data ?? {}).flatMap(([name, declared]) => {
@@ -730,15 +739,12 @@ function customToolProblems(additions: Additions, options: { grants?: boolean })
             const label = labelOf(name, declared.label);
             const plural = `${label}s`;
 
-            return [
-              `create_${label}`,
-              `update_${label}`,
-              `get_${label}`,
-              `delete_${label}`,
-              `list_${plural}`,
-              `search_${plural}`,
-              `batch_${plural}`,
-            ];
+            const reads = [`get_${label}`, `list_${plural}`, `search_${plural}`];
+
+            // With only reads generated, the write names are the app's to use.
+            return additions.tools?.generated === 'read'
+              ? reads
+              : [...reads, `create_${label}`, `update_${label}`, `delete_${label}`, `batch_${plural}`];
           })
         );
   const seen = new Set<string>();
@@ -931,6 +937,8 @@ export interface CollectionSpec {
   anonymous?: AnonymousSpec;
   /** The string[] field naming who alone may read a record, when it names anyone (P16). */
   readers?: string;
+  /** The string[] field naming who alone may change a record, when it names anyone (DW06). */
+  editors?: string;
 }
 
 /**
@@ -966,7 +974,13 @@ export function collectionsOf(manifest: { data?: ManifestExtensions['data'] }): 
       Object.entries(declared.schema).map(([field, raw]) => {
         const type = parseFieldType(raw);
 
-        return [field, field === tableField ? { ...type, plain: true } : type];
+        if (field === tableField) return [field, { ...type, plain: true }];
+
+        // A record's readers or editors may name a whole team (P16, DW06).
+        return [
+          field,
+          (field === declared.readers || field === declared.editors) && type.kind === 'string[]' ? { ...type, maxEntries: READERS_LIMIT } : type,
+        ];
       })
     );
     const label = labelOf(name, declared.label);
@@ -987,6 +1001,7 @@ export function collectionsOf(manifest: { data?: ManifestExtensions['data'] }): 
       ...(owner ? { definesFieldsOf: owner.name } : {}),
       ...(declared.anonymous ? { anonymous: anonymousSpec(declared.anonymous) } : {}),
       ...(declared.readers ? { readers: declared.readers } : {}),
+      ...(declared.editors ? { editors: declared.editors } : {}),
     };
   });
 }

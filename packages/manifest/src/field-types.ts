@@ -59,6 +59,12 @@ export interface FieldType {
    * row's table. Set by the host only, never parsed from a manifest.
    */
   plain?: boolean;
+  /**
+   * The most entries a `string[]` holds, when not `FIELD_LIMITS.listEntries`:
+   * a collection's readers or editors field takes `READERS_LIMIT` (P16,
+   * DW06). Set by the host only, never parsed from a manifest.
+   */
+  maxEntries?: number;
 }
 
 /**
@@ -397,7 +403,7 @@ export function valueSchema(type: FieldType): ZodType {
     case 'boolean':
       return z.boolean();
     case 'string[]':
-      return z.array(z.string().max(FIELD_LIMITS.stringChars)).max(FIELD_LIMITS.listEntries);
+      return z.array(z.string().max(FIELD_LIMITS.stringChars)).max(type.maxEntries ?? FIELD_LIMITS.listEntries);
     case 'canvas':
       return z.object({ elements: z.number().int().min(0), text: z.string().max(CANVAS_SUMMARY_CHARS) }).strict();
   }
@@ -433,8 +439,8 @@ export function valueProblem(field: string, type: FieldType, value: unknown): st
     case 'boolean':
       return `${field} must be true or false.`;
     case 'string[]':
-      return Array.isArray(value) && value.length > FIELD_LIMITS.listEntries
-        ? `${field} may hold at most ${FIELD_LIMITS.listEntries} entries.`
+      return Array.isArray(value) && value.length > (type.maxEntries ?? FIELD_LIMITS.listEntries)
+        ? `${field} may hold at most ${type.maxEntries ?? FIELD_LIMITS.listEntries} entries.`
         : `${field} must be a list of short texts, each at most ${FIELD_LIMITS.stringChars.toLocaleString('en-GB')} characters.`;
     case 'canvas':
       return `${field} is a drawing: it is changed on its board, never written.`;

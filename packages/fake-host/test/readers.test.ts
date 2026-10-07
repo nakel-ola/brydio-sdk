@@ -38,3 +38,22 @@ describe('record readers in the fixture store', () => {
     expect(await titles()).toEqual(['Roadmap']);
   });
 });
+
+describe('record editors in the fixture store (DW06)', () => {
+  const POLICY = {
+    data: { pages: { schema: { title: 'string', editors: 'string[]' }, label: 'page', editors: 'editors' } },
+    tools: { generated: true },
+  } as never;
+
+  test('lets everyone read a record, and only the people it names change it', async () => {
+    const store = new FixtureStore(POLICY, { pages: [{ id: 'p', title: 'Policy', editors: ['user_ada'] }] });
+    const tools = store.tools();
+
+    expect(error(await tools.get_page!({ id: 'p' }))).toBeNull();
+    expect(error(await tools.update_page!({ id: 'p', version: 1, title: 'Mine' }))).toBe('not_granted');
+    expect(error(await tools.delete_page!({ id: 'p' }))).toBe('not_granted');
+
+    store.viewer = 'user_ada';
+    expect(error(await tools.update_page!({ id: 'p', version: 1, title: 'Ada’s' }))).toBeNull();
+  });
+});

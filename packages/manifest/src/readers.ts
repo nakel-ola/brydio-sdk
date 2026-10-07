@@ -71,3 +71,51 @@ export function readersOf(field: string | undefined, body: Record<string, unknow
 
   return ids.length ? ids.sort() : null;
 }
+
+/**
+ * Record editors (DW06): a record only the people it names may change. The
+ * same shape as readers: one of the collection's own `string[]` fields of
+ * user ids, kept in plain beside the record (`app_document.editors`). Empty,
+ * and anyone who may write the instance may change it; naming anyone, and
+ * only they may — through a tool, a handler, the assistant or the co-edit
+ * socket, where anyone else's connection is read-only. Everyone who may read
+ * the record still reads it.
+ */
+export const editorsSchema = readersSchema;
+
+export type EditorsProblemCode = 'data_editors_field' | 'data_editors_anonymous';
+
+export function editorsProblems(
+  collection: string,
+  declared: { schema: Record<string, unknown>; editors?: string; anonymous?: unknown }
+): { code: EditorsProblemCode; collection: string; field?: string; message: string }[] {
+  if (!declared.editors) return [];
+
+  const problems: ReturnType<typeof editorsProblems> = [];
+  const raw = declared.schema[declared.editors];
+  let listed = false;
+
+  try {
+    listed = raw !== undefined && parseFieldType(raw).kind === 'string[]';
+  } catch {
+    // Refused as a field type already.
+  }
+
+  if (!listed) {
+    problems.push({
+      code: 'data_editors_field',
+      collection,
+      field: declared.editors,
+      message: `"${collection}" names "${declared.editors}" as its editors, which must be one of its own string[] fields holding user ids.`,
+    });
+  }
+
+  if (declared.anonymous) {
+    problems.push({ code: 'data_editors_anonymous', collection, message: `"${collection}" can't be anonymous and name its editors.` });
+  }
+
+  return problems;
+}
+
+/** The plain list a record is kept with: its editors, or null for anyone who may write the instance. */
+export const editorsOf = readersOf;
