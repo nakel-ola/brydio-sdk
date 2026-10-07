@@ -22,6 +22,12 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.40
+
+Ref fields (DW06).
+
+- **`ref`.** A field type for another of the app's own records, by id: `"ref"` or `"ref?"`. Letters, digits, `_` and `-`, at most 128 (`REF_CHARS`, `REF_FORMAT`). Kept in plain, so a list can filter and sort on it — a page's `parent`, the `space` it is in, the page a comment is on — where a `string` id could only be found by reading everything.
+
 ## 0.1.0-alpha.39
 
 Record editors and read-only generated tools (DW06).
