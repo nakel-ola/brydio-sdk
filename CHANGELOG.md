@@ -22,6 +22,14 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.36
+
+Anonymous collections (P13).
+
+- **Manifest.** A collection may say `anonymous: { group, minimum? }`: answers nobody can tie to who gave them, read one group at a time and only when at least `minimum` (5 or more, default 5) match. `group` names a structured field (a number, choice, date, boolean, token or project). New codes: `data_anonymous_group` (the group is not a structured field, or is a member), `data_anonymous_member` (the collection has a `member` field), `data_anonymous_coedit` (a `coedit` or `canvas` field), `data_anonymous_minimum` (under 5), and `migration_anonymous_changed` (a kept collection becomes anonymous, stops being, or changes its group). See [the manifest](docs/manifest.md#collections-and-schema-types) and [security](docs/security.md#anonymous-answers).
+- **Brydio's store, and the fake host.** Records are kept with `createdBy` `anonymous`, no `updatedBy` or `updatedOrigin`, and times cut to the UTC day; the tools never show who. Refusals, each with its code in brackets at the end of its message: `anonymous_immutable` (update or batch), `anonymous_names_writer` (a create carrying the writer's id), `anonymous_needs_group` (a list or search not naming one group), `too_few_answers` (fewer than `minimum` match, with no records and no count), and a watch ends with `anonymous_no_watch`. A remove still works.
+- **`@brydio/manifest`.** New exports: `ANONYMOUS_LIMITS`, `ANONYMOUS_WRITER`, `anonymousProblems`, `anonymousSpec`, `AnonymousDeclared`, `AnonymousProblemCode`, `AnonymousSpec`; `CollectionSpec.anonymous`. Nothing to change in existing apps.
+
 ## 0.1.0-alpha.35
 
 Confirmation emails for public forms (FO04).
