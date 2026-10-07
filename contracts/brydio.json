@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "f96741dbde2780bfcb989e32e2948be4d3df0bec",
+    "commit": "4580a9068f6afce327239ab07dff2a5675c00f2c",
     "dirty": true
   },
   "contracts": {
@@ -6366,6 +6366,9 @@
                   "label": {
                     "kind": "text",
                     "max": 200
+                  },
+                  "create": {
+                    "kind": "boolean"
                   }
                 },
                 "required": [
@@ -6461,7 +6464,8 @@
             "submit",
             "comment",
             "focuscomment",
-            "anchors"
+            "anchors",
+            "createreference"
           ],
           "children": false
         },

@@ -1470,7 +1470,7 @@ Holds nothing: it is drawn from its settings alone.
 | `error` | text, at most 200 characters | no |
 | `attachments` | `true` or `false` | no |
 | `mentionAll` | `true` or `false` | no |
-| `references` | a list of at most 500: a record of `value`, `label` (needs `value`, `label`) | no |
+| `references` | a list of at most 500: a record of `value`, `label`, `create` (needs `value`, `label`) | no |
 | `bind` | a record of `collection`, `id`, `field` (needs `collection`, `id`, `field`) | no |
 | `hide` | a list of at most 13: `headings`, `lists`, `tasks`, `quote`, `code`, `table`, `maths`, `callout`, `toggle`, `divider`, `highlight`, `scripts`, `align` | no |
 | `comments` | `true` or `false` | no |
@@ -1478,7 +1478,7 @@ Holds nothing: it is drawn from its settings alone.
 | `resolvedComments` | a list of at most 1,000: text, at most 128 characters | no |
 | `removedComments` | a list of at most 1,000: text, at most 128 characters | no |
 
-Tells the app: `change`, `blur`, `submit`, `comment`, `focuscomment`, `anchors`.
+Tells the app: `change`, `blur`, `submit`, `comment`, `focuscomment`, `anchors`, `createreference`.
 
 ## `bry-whiteboard`
 

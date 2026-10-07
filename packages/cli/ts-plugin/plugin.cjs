@@ -1804,7 +1804,11 @@ var CATALOGUE = {
       references: {
         kind: "list",
         max: 500,
-        of: { kind: "shape", fields: { value: { kind: "text", max: KEY_MAX }, label: { kind: "text", max: LABEL_MAX } }, required: ["value", "label"] }
+        of: {
+          kind: "shape",
+          fields: { value: { kind: "text", max: KEY_MAX }, label: { kind: "text", max: LABEL_MAX }, create: { kind: "boolean" } },
+          required: ["value", "label"]
+        }
       },
       bind: {
         kind: "shape",
@@ -1817,7 +1821,7 @@ var CATALOGUE = {
       resolvedComments: { kind: "list", max: COMMENT_IDS, of: { kind: "text", max: KEY_MAX } },
       removedComments: { kind: "list", max: COMMENT_IDS, of: { kind: "text", max: KEY_MAX } }
     },
-    events: ["change", "blur", "submit", "comment", "focuscomment", "anchors"],
+    events: ["change", "blur", "submit", "comment", "focuscomment", "anchors", "createreference"],
     children: false
   },
   "bry-whiteboard": {

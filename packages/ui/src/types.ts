@@ -412,6 +412,8 @@ export interface ElementEventDetails {
     focuscomment: { commentId: string };
     /** With `comments`: the thread ids still on words in the text, whenever that changes. */
     anchors: { ids: string[] };
+    /** A `create` reference was chosen: its `value` is written; make what it names from `text`, what was typed after `#`. */
+    createreference: { value: string; text: string };
   };
   'bry-whiteboard': {
     /** The board once drawing settles: how many shapes, and the words on them. */
