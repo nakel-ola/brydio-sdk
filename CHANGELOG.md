@@ -22,6 +22,18 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.37
+
+Chat cards, other apps' tools, the directory and webhooks (FO02, FO03, FO07).
+
+- **Chat cards.** A new placement kind, `chat-card` (`{ key, kind, screen, label?, icon? }`, with no sizes, children or settings: `placement_chat_card_shape`), and a handler's `chat.post({ room, text, card? })` → `{ messageId }` under the new `chat` host grant. This is not `chats`. A post needs a write tool. The app's own member writes it, in a room where the caller can post. People who can open the instance see the card's screen in the message, with `placement.kind === 'chat-card'`. `chat.rooms(query?)` lists the caller's rooms with `canPost`. `PlacementKind` gains `'chat-card'`.
+- **Other apps' tools.** A handler's `tools.call('<slug>__<tool>', input)` reaches another installed app's tool when `grants.tools` names it exactly so. `*` covers only the app's own tools. It runs as the caller, under that app's grants and admin switches. New code: `grant_tool_cross_app_self`. `brydio validate` no longer calls such a grant unknown.
+- **Directory.** A handler's `directory.profile(userId)`, `directory.groups()` and `directory.membersOf(groupId)` work under the new `directory` host grant. A screen's `host.profile()` (`host/profile`) returns the viewer's own profile only.
+- **Webhooks.** A handler's `webhooks.send({ url, body })` → `{ status }` works under the new `webhooks` host grant. It sends to https addresses only, never a private one, with a JSON body of up to 64 KB, signed `X-Brydio-Signature: sha256=<hmac>` with the instance's secret.
+- **Refusals** end with their code in brackets. See [chat cards, other apps' tools, the directory and webhooks](docs/host-seams.md).
+- **`@brydio/fake-host`.** `runHandler` takes `chat: { rooms }`, `canPost`, `directory: { profiles, groups }`, `webhook` and `webhookSecret`, and returns `posts` and `webhooks`. A screen's `profile` option answers `host/profile`.
+- **`@brydio/manifest`.** New exports: `crossAppTool` and `appToolPrefix`. `HOST_CAPABILITIES` gains `chat`, `directory` and `webhooks`.
+
 ## 0.1.0-alpha.36
 
 Anonymous collections (P13).
