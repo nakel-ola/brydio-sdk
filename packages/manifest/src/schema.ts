@@ -17,6 +17,7 @@ import { migrationsSchema } from './migrations.ts';
 import { openSchemaProblems, type OpenProblemCode } from './open-schema.ts';
 import { confirmEmailProblems, confirmEmailSchema, type ConfirmProblemCode } from './confirm-email.ts';
 import { anonymousProblems, anonymousSchema, anonymousSpec, type AnonymousProblemCode, type AnonymousSpec } from './anonymous.ts';
+import { readersProblems, readersSchema, type ReadersProblemCode } from './readers.ts';
 
 export {
   COLOUR_TOKENS,
@@ -192,6 +193,8 @@ const collectionSchema = z.object({
    * batch, a watch and a create naming its own writer.
    */
   anonymous: anonymousSchema.optional(),
+  /** One of its string[] fields: the user ids who alone may read a record, when it names any (P16). */
+  readers: readersSchema.optional(),
 });
 
 const screenSchema = z.object({
@@ -317,6 +320,7 @@ export type DataProblemCode =
   | OpenProblemCode
   | ConfirmProblemCode
   | AnonymousProblemCode
+  | ReadersProblemCode
   | 'data_too_many_collections'
   | 'data_too_many_fields'
   | 'data_collection_name_format'
@@ -523,6 +527,11 @@ export function dataProblems(additions: Additions, options: DataProblemOptions =
   // An anonymous collection groups its answers by one of its structured fields, names nobody (P13).
   for (const [collection, declared] of collections) {
     problems.push(...anonymousProblems(collection, declared));
+  }
+
+  // A collection whose records name their readers names a list of user ids to keep them in (P16).
+  for (const [collection, declared] of collections) {
+    problems.push(...readersProblems(collection, declared));
   }
 
   // What the app keeps must be what it asks to keep (A3-F06-S01): a
@@ -920,6 +929,8 @@ export interface CollectionSpec {
   definesFieldsOf?: string;
   /** Answers kept with no writer, read only a whole group of at least `minimum` at a time (P13). */
   anonymous?: AnonymousSpec;
+  /** The string[] field naming who alone may read a record, when it names anyone (P16). */
+  readers?: string;
 }
 
 /**
@@ -975,6 +986,7 @@ export function collectionsOf(manifest: { data?: ManifestExtensions['data'] }): 
         : {}),
       ...(owner ? { definesFieldsOf: owner.name } : {}),
       ...(declared.anonymous ? { anonymous: anonymousSpec(declared.anonymous) } : {}),
+      ...(declared.readers ? { readers: declared.readers } : {}),
     };
   });
 }

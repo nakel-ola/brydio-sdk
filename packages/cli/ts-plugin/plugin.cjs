@@ -243,10 +243,13 @@ var ROW_MENU_ITEMS = 60;
 var PROPERTY_OPTIONS = 200;
 var FILTER_OPTIONS = 200;
 var ISO_TIME = 40;
-var GANTT_ZOOMS = ["day", "week", "month"];
+var GANTT_ZOOMS = ["day", "week", "month", "quarter"];
 var GANTT_ROWS = 500;
 var ACTIVITY_MARKS = ["status", "priority", "assignee", "date", "title", "description", "duplicate", "created", "comment"];
 var COMMENT_ACTIONS = ["reply", "quote", "edit", "resolve", "copy", "copyLink", "subIssue", "delete"];
+var PAGE_TREE_ACTIONS = ["open", "newChild", "rename", "duplicate", "move", "copyLink", "export", "delete"];
+var PAGE_TREE_ROWS = 2000;
+var COMMENT_IDS = 1000;
 var EMOJI_MAX = 16;
 var SPREADSHEET_COLUMNS = 16;
 var RICH_TEXT_MAX = 50000;
@@ -1573,16 +1576,22 @@ var CATALOGUE = {
             priority: { kind: "enum", values: PRIORITIES },
             assignee: { kind: "text", max: LABEL_MAX },
             start: { kind: "text", max: ISO_DATE },
-            end: { kind: "text", max: ISO_DATE }
+            end: { kind: "text", max: ISO_DATE },
+            group: { kind: "text", max: LABEL_MAX },
+            progress: { kind: "int", min: 0, max: 100 }
           },
           required: ["id", "title"]
         }
       },
       showCompleted: { kind: "boolean" },
       empty: { kind: "text", max: LABEL_MAX },
-      loading: { kind: "boolean" }
+      loading: { kind: "boolean" },
+      zooms: { kind: "list", max: GANTT_ZOOMS.length, of: { kind: "enum", values: GANTT_ZOOMS } },
+      editable: { kind: "boolean" },
+      paneLabel: { kind: "text", max: LABEL_MAX },
+      completedLabel: { kind: "text", max: LABEL_MAX }
     },
-    events: ["press", "navigate", "zoom", "completed"],
+    events: ["press", "navigate", "zoom", "completed", "reschedule"],
     children: false
   },
   "bry-timeline": {
@@ -1628,10 +1637,64 @@ var CATALOGUE = {
       },
       actions: { kind: "list", max: COMMENT_ACTIONS.length, of: { kind: "enum", values: COMMENT_ACTIONS } },
       highlighted: { kind: "boolean" },
-      loading: { kind: "boolean" }
+      loading: { kind: "boolean" },
+      anchor: { kind: "text", max: KEY_MAX },
+      quote: { kind: "text", max: PARAGRAPH_MAX },
+      orphaned: { kind: "boolean" }
     },
     events: ["action", "toggle"],
     children: true
+  },
+  "bry-page-tree": {
+    props: {
+      label: { kind: "text", max: LABEL_MAX },
+      items: {
+        kind: "list",
+        max: PAGE_TREE_ROWS,
+        of: {
+          kind: "shape",
+          fields: {
+            id: { kind: "text", max: KEY_MAX },
+            parent: { kind: "text", max: KEY_MAX },
+            label: { kind: "text", max: LABEL_MAX },
+            emoji: { kind: "text", max: 16 },
+            hasChildren: { kind: "boolean" },
+            muted: { kind: "boolean" }
+          },
+          required: ["id", "label"]
+        }
+      },
+      selected: { kind: "text", max: KEY_MAX },
+      keep: { kind: "text", max: KEY_MAX },
+      draggable: { kind: "boolean" },
+      actions: { kind: "list", max: PAGE_TREE_ACTIONS.length, of: { kind: "enum", values: PAGE_TREE_ACTIONS } },
+      addable: { kind: "boolean" },
+      settled: { kind: "text", max: KEY_MAX },
+      loading: { kind: "boolean" },
+      empty: { kind: "text", max: LABEL_MAX }
+    },
+    events: ["select", "expand", "move", "action", "add"],
+    children: false
+  },
+  "bry-comment-margin": {
+    props: {},
+    events: [],
+    children: true
+  },
+  "bry-history": {
+    props: {
+      bind: {
+        kind: "shape",
+        fields: { collection: { kind: "text", max: 40 }, id: { kind: "text", max: KEY_MAX } },
+        required: ["collection", "id"]
+      },
+      field: { kind: "text", max: 40 },
+      label: { kind: "text", max: LABEL_MAX },
+      forkable: { kind: "boolean" }
+    },
+    required: ["bind"],
+    events: ["restored", "fork"],
+    children: false
   },
   "bry-reactions": {
     props: {
@@ -1748,9 +1811,13 @@ var CATALOGUE = {
         fields: { collection: { kind: "text", max: 40 }, id: { kind: "text", max: KEY_MAX }, field: { kind: "text", max: 40 } },
         required: ["collection", "id", "field"]
       },
-      hide: { kind: "list", max: 13, of: { kind: "enum", values: [...RICH_TEXT_HIDEABLE] } }
+      hide: { kind: "list", max: 13, of: { kind: "enum", values: [...RICH_TEXT_HIDEABLE] } },
+      comments: { kind: "boolean" },
+      activeComment: { kind: "text", max: KEY_MAX },
+      resolvedComments: { kind: "list", max: COMMENT_IDS, of: { kind: "text", max: KEY_MAX } },
+      removedComments: { kind: "list", max: COMMENT_IDS, of: { kind: "text", max: KEY_MAX } }
     },
-    events: ["change", "blur", "submit"],
+    events: ["change", "blur", "submit", "comment", "focuscomment", "anchors"],
     children: false
   },
   "bry-whiteboard": {

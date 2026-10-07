@@ -18,7 +18,7 @@ A toast is not an element: it is said, not placed. A screen shows one with
 `toast(text, tone)` from `@brydio/app`, which Brydio draws in its own
 toaster; see [the bridge](bridge.md).
 
-There are 96 elements.
+There are 99 elements.
 
 - [`bry-stack`](#bry-stack)
 - [`bry-heading`](#bry-heading)
@@ -103,6 +103,9 @@ There are 96 elements.
 - [`bry-timeline`](#bry-timeline)
 - [`bry-timeline-item`](#bry-timeline-item)
 - [`bry-comment`](#bry-comment)
+- [`bry-page-tree`](#bry-page-tree)
+- [`bry-comment-margin`](#bry-comment-margin)
+- [`bry-history`](#bry-history)
 - [`bry-reactions`](#bry-reactions)
 - [`bry-peek`](#bry-peek)
 - [`bry-spreadsheet`](#bry-spreadsheet)
@@ -1272,13 +1275,17 @@ Holds nothing: it is drawn from its settings alone.
 | Setting | Takes | Needed |
 |---|---|---|
 | `start` | text, at most 10 characters | no |
-| `zoom` | `day`, `week`, `month` | no |
-| `rows` | a list of at most 500: a record of `id`, `title`, `identifier`, `mark`, `tone`, `priority`, `assignee`, `start`, `end` (needs `id`, `title`) | no |
+| `zoom` | `day`, `week`, `month`, `quarter` | no |
+| `rows` | a list of at most 500: a record of `id`, `title`, `identifier`, `mark`, `tone`, `priority`, `assignee`, `start`, `end`, `group`, `progress` (needs `id`, `title`) | no |
 | `showCompleted` | `true` or `false` | no |
 | `empty` | text, at most 200 characters | no |
 | `loading` | `true` or `false` | no |
+| `zooms` | a list of at most 4: `day`, `week`, `month`, `quarter` | no |
+| `editable` | `true` or `false` | no |
+| `paneLabel` | text, at most 200 characters | no |
+| `completedLabel` | text, at most 200 characters | no |
 
-Tells the app: `press`, `navigate`, `zoom`, `completed`.
+Tells the app: `press`, `navigate`, `zoom`, `completed`, `reschedule`.
 
 ## `bry-timeline`
 
@@ -1329,8 +1336,51 @@ Holds other elements or text.
 | `actions` | a list of at most 8: `reply`, `quote`, `edit`, `resolve`, `copy`, `copyLink`, `subIssue`, `delete` | no |
 | `highlighted` | `true` or `false` | no |
 | `loading` | `true` or `false` | no |
+| `anchor` | text, at most 128 characters | no |
+| `quote` | text, at most 4,000 characters | no |
+| `orphaned` | `true` or `false` | no |
 
 Tells the app: `action`, `toggle`.
+
+## `bry-page-tree`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `label` | text, at most 200 characters | no |
+| `items` | a list of at most 2,000: a record of `id`, `parent`, `label`, `emoji`, `hasChildren`, `muted` (needs `id`, `label`) | no |
+| `selected` | text, at most 128 characters | no |
+| `keep` | text, at most 128 characters | no |
+| `draggable` | `true` or `false` | no |
+| `actions` | a list of at most 8: `open`, `newChild`, `rename`, `duplicate`, `move`, `copyLink`, `export`, `delete` | no |
+| `addable` | `true` or `false` | no |
+| `settled` | text, at most 128 characters | no |
+| `loading` | `true` or `false` | no |
+| `empty` | text, at most 200 characters | no |
+
+Tells the app: `select`, `expand`, `move`, `action`, `add`.
+
+## `bry-comment-margin`
+
+Holds other elements or text.
+
+No settings.
+
+Tells the app nothing.
+
+## `bry-history`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `bind` | a record of `collection`, `id` (needs `collection`, `id`) | yes |
+| `field` | text, at most 40 characters | no |
+| `label` | text, at most 200 characters | no |
+| `forkable` | `true` or `false` | no |
+
+Tells the app: `restored`, `fork`.
 
 ## `bry-reactions`
 
@@ -1423,8 +1473,12 @@ Holds nothing: it is drawn from its settings alone.
 | `references` | a list of at most 500: a record of `value`, `label` (needs `value`, `label`) | no |
 | `bind` | a record of `collection`, `id`, `field` (needs `collection`, `id`, `field`) | no |
 | `hide` | a list of at most 13: `headings`, `lists`, `tasks`, `quote`, `code`, `table`, `maths`, `callout`, `toggle`, `divider`, `highlight`, `scripts`, `align` | no |
+| `comments` | `true` or `false` | no |
+| `activeComment` | text, at most 128 characters | no |
+| `resolvedComments` | a list of at most 1,000: text, at most 128 characters | no |
+| `removedComments` | a list of at most 1,000: text, at most 128 characters | no |
 
-Tells the app: `change`, `blur`, `submit`.
+Tells the app: `change`, `blur`, `submit`, `comment`, `focuscomment`, `anchors`.
 
 ## `bry-whiteboard`
 

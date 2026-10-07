@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 import { css, html, nothing } from '../base.ts';
-import { ACTIVITY_MARKS, BUTTON_ICONS, COMMENT_ACTIONS, GANTT_ZOOMS, MARKS, PRIORITIES } from '../../catalogue.ts';
+import { ACTIVITY_MARKS, BUTTON_ICONS, COMMENT_ACTIONS, GANTT_ZOOMS, MARKS, PAGE_TREE_ACTIONS, PRIORITIES } from '../../catalogue.ts';
 import { drawAs } from '../define.ts';
 import { draftOf, keptOf, type El } from './catalogue-b-shared.ts';
 import {
@@ -86,11 +86,11 @@ type Zoom = (typeof GANTT_ZOOMS)[number];
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ROW_PX = 36;
 const PANE_PX = 280;
-const DAY_PX: Record<Zoom, number> = { day: 36, week: 14, month: 6 };
-const SPAN: Record<Zoom, number> = { day: 28, week: 84, month: 182 };
-const STEP: Record<Zoom, number> = { day: 7, week: 28, month: 91 };
-const LEAD: Record<Zoom, number> = { day: 3, week: 7, month: 14 };
-const ZOOM_LABEL: Record<Zoom, string> = { day: 'Day', week: 'Week', month: 'Month' };
+const DAY_PX: Record<Zoom, number> = { day: 36, week: 14, month: 6, quarter: 2 };
+const SPAN: Record<Zoom, number> = { day: 28, week: 84, month: 182, quarter: 364 };
+const STEP: Record<Zoom, number> = { day: 7, week: 28, month: 91, quarter: 91 };
+const LEAD: Record<Zoom, number> = { day: 3, week: 7, month: 14, quarter: 30 };
+const ZOOM_LABEL: Record<Zoom, string> = { day: 'Day', week: 'Week', month: 'Month', quarter: 'Quarter' };
 
 /** A bar in each tone: its border, fill and ink. */
 const BAR: Record<Tone, string> = {
@@ -989,6 +989,12 @@ drawAs(
             : nothing}
         </div>
       </header>
+      ${!deleted && (str(element.quote) || element.orphaned === true)
+        ? html`<div class="anchored">
+            ${str(element.quote) ? html`<blockquote class=${element.orphaned === true ? 'gone' : ''}>${str(element.quote)}</blockquote>` : nothing}
+            ${element.orphaned === true ? html`<p class="small faint">The text was removed</p>` : nothing}
+          </div>`
+        : nothing}
       ${hasBody ? html`<div class="body"><slot></slot></div>` : nothing}
       ${collapsed && replies > 0
         ? html`<button type="button" class="replies" aria-expanded="false" @click=${() => host.emit('toggle', { collapsed: false })}>
@@ -1006,6 +1012,9 @@ drawAs(
         display: block;
         min-width: 0;
       }
+      .anchored { padding: 0 1rem 0.5rem 2.875rem; }
+      .anchored blockquote { margin: 0; padding-inline-start: 0.5rem; border-inline-start: 2px solid var(--warn-line, var(--line)); font-size: 0.75rem; color: var(--fg-muted); }
+      .anchored blockquote.gone { text-decoration: line-through; }
       .comment.thread {
         overflow: clip;
         border: 1px solid var(--line);
@@ -2417,6 +2426,186 @@ drawAs(
       :host {
         display: none;
       }
+    `,
+  ],
+);
+
+// bry-page-tree (DW03)
+
+const PAGE_ACTION_LABEL: Record<(typeof PAGE_TREE_ACTIONS)[number], string> = {
+  open: 'Open',
+  newChild: 'Add a subpage',
+  rename: 'Rename',
+  duplicate: 'Duplicate',
+  move: 'Move…',
+  copyLink: 'Copy link',
+  export: 'Export',
+  delete: 'Move to trash',
+};
+
+interface PageRow {
+  id: string;
+  parent: string | null;
+  label: string;
+  emoji: string;
+  hasChildren: boolean;
+}
+
+// Brydio drags rows and keeps which are open for each viewer; this preview
+// opens, selects and adds with the platform's own controls, raising the same
+// events, and moves a row with Alt and the arrow keys.
+drawAs(
+  'bry-page-tree',
+  element => {
+    const host = as(element);
+    const state = keptOf(host, () => ({ open: new Set<string>(), revealed: '' }));
+
+    if (element.loading === true) return html`<div role="status" aria-label="Loading"><div class="bone"></div><div class="bone"></div></div>`;
+
+    const rows: PageRow[] = records(element.items).map(one => ({
+      id: str(one.id),
+      parent: str(one.parent) || null,
+      label: str(one.label) || 'Untitled',
+      emoji: str(one.emoji),
+      hasChildren: one.hasChildren === true,
+    }));
+    const ids = new Set(rows.map(row => row.id));
+    const under = (parent: string | null) => rows.filter(row => (row.parent && ids.has(row.parent) ? row.parent : null) === parent);
+    const given = new Set(strings(element.actions));
+    const actions = PAGE_TREE_ACTIONS.filter(action => given.has(action));
+    const selected = str(element.selected);
+
+    // The rows above the one chosen open themselves, once for each choice, as Brydio's do.
+    if (selected && state.revealed !== selected) {
+      state.revealed = selected;
+      for (let at = rows.find(row => row.id === selected)?.parent; at; at = rows.find(row => row.id === at)?.parent) state.open.add(at);
+    }
+    const addable = element.addable === true;
+    const toggle = (row: PageRow, expanded: boolean) => {
+      if (expanded) state.open.add(row.id);
+      else state.open.delete(row.id);
+      host.emit('expand', { id: row.id, expanded });
+      host.requestUpdate();
+    };
+    const moveBy = (row: PageRow, step: -1 | 1) => {
+      const siblings = under(row.parent).filter(one => one.id !== row.id);
+      const index = under(row.parent).findIndex(one => one.id === row.id) + step;
+
+      if (index < 0 || index > siblings.length) return;
+      host.emit('move', { id: row.id, parent: row.parent, index, before: siblings[index - 1]?.id ?? null, after: siblings[index]?.id ?? null });
+    };
+    const draw = (parent: string | null, depth: number): unknown[] =>
+      under(parent).flatMap(row => {
+        const opens = row.hasChildren || under(row.id).length > 0;
+        const open = opens && state.open.has(row.id);
+
+        return [
+          html`<div
+            role="treeitem"
+            class="row ${row.id === selected ? 'selected' : ''}"
+            tabindex="0"
+            aria-level=${depth + 1}
+            aria-expanded=${opens ? (open ? 'true' : 'false') : nothing}
+            aria-selected=${row.id === selected ? 'true' : 'false'}
+            style="padding-inline-start: ${depth * 14 + 4}px"
+            @click=${() => host.emit('select', { id: row.id })}
+            @keydown=${(event: KeyboardEvent) => {
+              if (event.target !== event.currentTarget) return;
+              if (event.altKey && element.draggable === true && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+                event.preventDefault();
+                moveBy(row, event.key === 'ArrowUp' ? -1 : 1);
+              } else if (event.key === 'Enter') host.emit('select', { id: row.id });
+              else if (event.key === 'ArrowRight' && opens && !open) toggle(row, true);
+              else if (event.key === 'ArrowLeft' && open) toggle(row, false);
+            }}
+          >
+            ${opens
+              ? html`<span class="chevron flip-rtl ${open ? 'open' : ''}" aria-hidden="true" @click=${(event: Event) => (event.stopPropagation(), toggle(row, !open))}
+                  >${icon('chevronRight', 14)}</span
+                >`
+              : html`<span class="chevron" aria-hidden="true"></span>`}
+            <span class="glyph" aria-hidden="true">${row.emoji || icon('docs', 14)}</span>
+            <span class="truncate grow">${row.label}</span>
+            ${actions.length
+              ? html`<select
+                  class="row-menu"
+                  aria-label=${`Actions for ${row.label}`}
+                  @click=${(event: Event) => event.stopPropagation()}
+                  @change=${(event: Event) => {
+                    const chosen = (event.target as HTMLSelectElement).value;
+
+                    (event.target as HTMLSelectElement).value = '';
+                    if (chosen) host.emit('action', { id: row.id, action: chosen });
+                  }}
+                >
+                  <option value="">⋯</option>
+                  ${actions.map(action => html`<option value=${action}>${PAGE_ACTION_LABEL[action]}</option>`)}
+                </select>`
+              : nothing}
+            ${addable
+              ? html`<button type="button" class="tool" aria-label=${`Add a page inside ${row.label}`} @click=${(event: Event) => (event.stopPropagation(), host.emit('add', { parent: row.id }))}>
+                  ${icon('add', 14)}
+                </button>`
+              : nothing}
+          </div>`,
+          ...(open ? (under(row.id).length ? draw(row.id, depth + 1) : [html`<div class="bone" style="margin-inline-start: ${(depth + 1) * 14 + 28}px"></div>`]) : []),
+        ];
+      });
+
+    return html`<div class="tree">
+      ${str(element.label) || addable
+        ? html`<div class="head small faint">
+            <span class="truncate grow">${str(element.label)}</span>
+            ${addable ? html`<button type="button" class="tool" aria-label="New page" @click=${() => host.emit('add', {})}>${icon('add', 14)}</button>` : nothing}
+          </div>`
+        : nothing}
+      ${rows.length === 0
+        ? html`<p class="small faint">${str(element.empty) || 'No pages yet.'}</p>`
+        : html`<div role="tree" aria-label=${str(element.label) || 'Pages'}>${draw(null, 0)}</div>`}
+    </div>`;
+  },
+  [
+    FOCUS,
+    PLAN,
+    css`
+      :host { display: block; min-width: 0; }
+      .head { display: flex; align-items: center; gap: 0.25rem; height: 1.75rem; padding: 0 0.5rem; }
+      .row { display: flex; align-items: center; gap: 0.25rem; height: 2rem; border-radius: 9999px; cursor: pointer; padding-inline-end: 0.25rem; }
+      .row:hover { background: var(--layer-hover); }
+      .row.selected { background: var(--layer-selected); font-weight: 500; }
+      .chevron { display: inline-flex; width: 1.25rem; justify-content: center; color: var(--fg-muted); }
+      .chevron.open { transform: rotate(90deg); }
+      .glyph { display: inline-flex; width: 1rem; justify-content: center; }
+      .row-menu { appearance: none; width: 1.25rem; padding: 0; border: none; background: transparent; color: var(--fg-muted); border-radius: 9999px; text-align: center; cursor: pointer; }
+      .tool { display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; padding: 0; border: none; border-radius: 9999px; background: transparent; color: var(--fg-muted); cursor: pointer; }
+      .tool:hover, .row-menu:hover { background: var(--layer-hover); color: var(--fg); }
+      .row .row-menu, .row .tool { opacity: 0.4; }
+      .row:hover .row-menu, .row:hover .tool, .row:focus-within .row-menu, .row:focus-within .tool { opacity: 1; }
+      .bone { height: 0.75rem; margin: 0.6rem 0; border-radius: 9999px; background: var(--layer-hover); }
+    `,
+  ],
+);
+
+// bry-comment-margin (DW04): Brydio lines each thread up with its words; this preview stacks them.
+drawAs('bry-comment-margin', () => html`<div class="margin"><slot></slot></div>`, [
+  css`
+    :host { display: block; min-width: 0; }
+    .margin { display: flex; flex-direction: column; gap: 0.5rem; }
+  `,
+]);
+
+// bry-history (DW05): versions live in Brydio's co-editing store; outside
+// Brydio there are none to list, so the preview says what would be there.
+drawAs(
+  'bry-history',
+  element => html`<div class="history type-body" role="group" aria-label=${str(element.label) || 'Versions'}>
+    Version history of this record: kept by Brydio as people write
+  </div>`,
+  [
+    TYPE,
+    css`
+      :host { display: block; }
+      .history { display: flex; align-items: center; justify-content: center; min-height: 10rem; border: 1px dashed var(--line); border-radius: 1rem; color: var(--fg-muted); }
     `,
   ],
 );

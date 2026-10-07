@@ -162,6 +162,10 @@ describe('the catalogue as a whole', () => {
       'bry-timeline',
       'bry-timeline-item',
       'bry-comment',
+      // DW03–DW05
+      'bry-page-tree',
+      'bry-comment-margin',
+      'bry-history',
       'bry-reactions',
       'bry-peek',
       'bry-spreadsheet',
@@ -189,7 +193,7 @@ describe('the catalogue as a whole', () => {
   test('keeps free text to the settings that are words for a person', () => {
     for (const name of ELEMENT_NAMES) {
       for (const [prop, spec] of Object.entries(CATALOGUE[name].props) as [string, PropSpec][]) {
-        if (spec.kind === 'text') expect(['text', 'label', 'title', 'value', 'placeholder', 'error', 'name', 'description', 'meta', 'action', 'empty', 'selected', 'cancel', 'min', 'max', 'settled', 'search', 'month', 'filter', 'current', 'prefix', 'suffix', 'identifier', 'toggle', 'heading', 'addLabel', 'trigger', 'hint', 'subtitle', 'tab', 'dateRange', 'statusLabel', 'due', 'project', 'updated', 'start', 'collapsedLabel', 'actor', 'actorId', 'time', 'author', 'authorId', 'position', 'openLabel', 'quote', 'memberId', 'find', 'request']).toContain(prop);
+        if (spec.kind === 'text') expect(['text', 'label', 'title', 'value', 'placeholder', 'error', 'name', 'description', 'meta', 'action', 'empty', 'selected', 'cancel', 'min', 'max', 'settled', 'search', 'month', 'filter', 'current', 'prefix', 'suffix', 'identifier', 'toggle', 'heading', 'addLabel', 'trigger', 'hint', 'subtitle', 'tab', 'dateRange', 'statusLabel', 'due', 'project', 'updated', 'start', 'collapsedLabel', 'actor', 'actorId', 'time', 'author', 'authorId', 'position', 'openLabel', 'quote', 'memberId', 'find', 'request', 'group', 'paneLabel', 'completedLabel', 'anchor', 'keep', 'activeComment', 'field']).toContain(prop);
       }
     }
   });

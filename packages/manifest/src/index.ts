@@ -136,6 +136,8 @@ export {
   type AnonymousSpec,
 } from './anonymous.ts';
 
+export { READERS_LIMIT, readersOf, readersProblems, type ReadersProblemCode } from './readers.ts';
+
 export { DOCUMENT_LIMITS } from './document-limits.ts';
 
 export { HOST_CAPABILITIES, KNOWN_HOST_GRANTS, isHostCapability, unknownHostGrant } from './grants.ts';

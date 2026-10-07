@@ -90,6 +90,8 @@ first.
 | `data_anonymous_member` | `<collection> is anonymous, so it can't name a member: <field> would.` | yes | publish | Take the `member` field out, or keep it in another collection. |
 | `data_anonymous_coedit` | `<collection> is anonymous, so its answers can't be written together: <field> would be.` | yes | publish | Drop `coedit: true` or the `canvas` field. |
 | `data_anonymous_minimum` | `<collection>.anonymous.minimum is at least 5: fewer answers than that can be told apart.` | yes | publish | Leave `minimum` out (5) or raise it. |
+| `data_readers_field` | `"<collection>" names "<field>" as its readers, which must be one of its own string[] fields holding user ids.` | yes | publish | Add a `string[]` field for the ids (`"readers": "string[]"`) and name it. |
+| `data_readers_anonymous` | `"<collection>" can't be anonymous and name its readers.` | yes | publish | Keep anonymous answers and named readers in different collections. |
 | `data_confirm_text` | `<collection>.confirmEmail.<subject or message> is plain text: no links, addresses or markup.` | yes | publish | Say it in plain words; `link: true` adds the one link back to the page. |
 | `manifest_sdk_overwritten` (warning, from `brydio build`) | The manifest says "sdk": `<value>`, which brydio build writes itself. The build says `<version>`; take the line out of the manifest. | build | no | Delete `sdk` from the manifest. |
 

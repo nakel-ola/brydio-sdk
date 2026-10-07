@@ -1,7 +1,7 @@
 {
   "brydio": {
-    "commit": "8e34fd01a8a3bcb9d21379b3239fcbda4a06acba",
-    "dirty": false
+    "commit": "8da0b8653ef6d6623512c8ee82c12943ac36460e",
+    "dirty": true
   },
   "contracts": {
     "anonymous-problems": {
@@ -5600,7 +5600,8 @@
               "values": [
                 "day",
                 "week",
-                "month"
+                "month",
+                "quarter"
               ]
             },
             "rows": {
@@ -5671,6 +5672,15 @@
                   "end": {
                     "kind": "text",
                     "max": 10
+                  },
+                  "group": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "progress": {
+                    "kind": "int",
+                    "min": 0,
+                    "max": 100
                   }
                 },
                 "required": [
@@ -5688,13 +5698,38 @@
             },
             "loading": {
               "kind": "boolean"
+            },
+            "zooms": {
+              "kind": "list",
+              "max": 4,
+              "of": {
+                "kind": "enum",
+                "values": [
+                  "day",
+                  "week",
+                  "month",
+                  "quarter"
+                ]
+              }
+            },
+            "editable": {
+              "kind": "boolean"
+            },
+            "paneLabel": {
+              "kind": "text",
+              "max": 200
+            },
+            "completedLabel": {
+              "kind": "text",
+              "max": 200
             }
           },
           "events": [
             "press",
             "navigate",
             "zoom",
-            "completed"
+            "completed",
+            "reschedule"
           ],
           "children": false
         },
@@ -5856,6 +5891,17 @@
             },
             "loading": {
               "kind": "boolean"
+            },
+            "anchor": {
+              "kind": "text",
+              "max": 128
+            },
+            "quote": {
+              "kind": "text",
+              "max": 4000
+            },
+            "orphaned": {
+              "kind": "boolean"
             }
           },
           "events": [
@@ -5863,6 +5909,144 @@
             "toggle"
           ],
           "children": true
+        },
+        "bry-page-tree": {
+          "props": {
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "items": {
+              "kind": "list",
+              "max": 2000,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "parent": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "emoji": {
+                    "kind": "text",
+                    "max": 16
+                  },
+                  "hasChildren": {
+                    "kind": "boolean"
+                  },
+                  "muted": {
+                    "kind": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            },
+            "selected": {
+              "kind": "text",
+              "max": 128
+            },
+            "keep": {
+              "kind": "text",
+              "max": 128
+            },
+            "draggable": {
+              "kind": "boolean"
+            },
+            "actions": {
+              "kind": "list",
+              "max": 8,
+              "of": {
+                "kind": "enum",
+                "values": [
+                  "open",
+                  "newChild",
+                  "rename",
+                  "duplicate",
+                  "move",
+                  "copyLink",
+                  "export",
+                  "delete"
+                ]
+              }
+            },
+            "addable": {
+              "kind": "boolean"
+            },
+            "settled": {
+              "kind": "text",
+              "max": 128
+            },
+            "loading": {
+              "kind": "boolean"
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "events": [
+            "select",
+            "expand",
+            "move",
+            "action",
+            "add"
+          ],
+          "children": false
+        },
+        "bry-comment-margin": {
+          "props": {},
+          "events": [],
+          "children": true
+        },
+        "bry-history": {
+          "props": {
+            "bind": {
+              "kind": "shape",
+              "fields": {
+                "collection": {
+                  "kind": "text",
+                  "max": 40
+                },
+                "id": {
+                  "kind": "text",
+                  "max": 128
+                }
+              },
+              "required": [
+                "collection",
+                "id"
+              ]
+            },
+            "field": {
+              "kind": "text",
+              "max": 40
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "forkable": {
+              "kind": "boolean"
+            }
+          },
+          "required": [
+            "bind"
+          ],
+          "events": [
+            "restored",
+            "fork"
+          ],
+          "children": false
         },
         "bry-reactions": {
           "props": {
@@ -6246,12 +6430,38 @@
                   "align"
                 ]
               }
+            },
+            "comments": {
+              "kind": "boolean"
+            },
+            "activeComment": {
+              "kind": "text",
+              "max": 128
+            },
+            "resolvedComments": {
+              "kind": "list",
+              "max": 1000,
+              "of": {
+                "kind": "text",
+                "max": 128
+              }
+            },
+            "removedComments": {
+              "kind": "list",
+              "max": 1000,
+              "of": {
+                "kind": "text",
+                "max": 128
+              }
             }
           },
           "events": [
             "change",
             "blur",
-            "submit"
+            "submit",
+            "comment",
+            "focuscomment",
+            "anchors"
           ],
           "children": false
         },

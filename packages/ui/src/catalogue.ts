@@ -299,13 +299,22 @@ export const FILTER_OPTIONS = 200;
 /** An ISO moment, with room for an offset: `2026-09-16T09:30:00.000+05:30`. */
 export const ISO_TIME = 40;
 /** How wide a day is drawn in a Gantt chart: a column per day, per week or per month. */
-export const GANTT_ZOOMS = ['day', 'week', 'month'] as const;
+export const GANTT_ZOOMS = ['day', 'week', 'month', 'quarter'] as const;
 /** The most rows one Gantt chart draws. */
 export const GANTT_ROWS = 500;
 /** What an activity changed, each drawn with its own mark. */
 export const ACTIVITY_MARKS = ['status', 'priority', 'assignee', 'date', 'title', 'description', 'duplicate', 'created', 'comment'] as const;
 /** What can be done to a comment, in the order its menu lists them. */
 export const COMMENT_ACTIONS = ['reply', 'quote', 'edit', 'resolve', 'copy', 'copyLink', 'subIssue', 'delete'] as const;
+
+/** What can be done to a page from its `bry-page-tree` row, in the order its menu lists them (DW03). */
+export const PAGE_TREE_ACTIONS = ['open', 'newChild', 'rename', 'duplicate', 'move', 'copyLink', 'export', 'delete'] as const;
+
+/** The most rows one `bry-page-tree` is sent: a space's open levels, never the whole space at once. */
+export const PAGE_TREE_ROWS = 2_000;
+
+/** The most comment threads one `bry-rich-text` names at once (DW04). */
+export const COMMENT_IDS = 1_000;
 /** An emoji is one character to a person, and a few to a string: a flag, a family. */
 export const EMOJI_MAX = 16;
 /** The most columns a spreadsheet has. */
@@ -1862,6 +1871,13 @@ export const CATALOGUE = {
     // `start` is the first day shown. The toolbar raises `zoom` with
     // `{ zoom }`, `navigate` with `{ start }` and `completed` with
     // `{ show }`; pressing a row or its bar raises `press` with `{ id }`.
+    //
+    // For a roadmap: `zooms` picks the toolbar's zooms (`quarter` shows a
+    // year); a row's `group` heads a run of rows with that name and its
+    // `progress` (0-100) fills that much of its bar. With `editable` a bar's
+    // end is a handle: dragging it (or its arrow keys) raises `reschedule`
+    // with `{ id, end }` once let go; save it and send the row back.
+    // `paneLabel` names the rows' column, `completedLabel` the switch.
     props: {
       start: { kind: 'text', max: ISO_DATE },
       zoom: { kind: 'enum', values: GANTT_ZOOMS },
@@ -1880,6 +1896,8 @@ export const CATALOGUE = {
             assignee: { kind: 'text', max: LABEL_MAX },
             start: { kind: 'text', max: ISO_DATE },
             end: { kind: 'text', max: ISO_DATE },
+            group: { kind: 'text', max: LABEL_MAX },
+            progress: { kind: 'int', min: 0, max: 100 },
           },
           required: ['id', 'title'],
         },
@@ -1887,8 +1905,12 @@ export const CATALOGUE = {
       showCompleted: { kind: 'boolean' },
       empty: { kind: 'text', max: LABEL_MAX },
       loading: { kind: 'boolean' },
+      zooms: { kind: 'list', max: GANTT_ZOOMS.length, of: { kind: 'enum', values: GANTT_ZOOMS } },
+      editable: { kind: 'boolean' },
+      paneLabel: { kind: 'text', max: LABEL_MAX },
+      completedLabel: { kind: 'text', max: LABEL_MAX },
     },
-    events: ['press', 'navigate', 'zoom', 'completed'],
+    events: ['press', 'navigate', 'zoom', 'completed', 'reschedule'],
     children: false,
   },
   'bry-timeline': {
@@ -1944,9 +1966,83 @@ export const CATALOGUE = {
       actions: { kind: 'list', max: COMMENT_ACTIONS.length, of: { kind: 'enum', values: COMMENT_ACTIONS } },
       highlighted: { kind: 'boolean' },
       loading: { kind: 'boolean' },
+      // DW04: the comment id the editor gave its words, the words, and whether they were deleted since.
+      anchor: { kind: 'text', max: KEY_MAX },
+      quote: { kind: 'text', max: PARAGRAPH_MAX },
+      orphaned: { kind: 'boolean' },
     },
     events: ['action', 'toggle'],
     children: true,
+  },
+  'bry-page-tree': {
+    // Pages nested under pages, as a wiki's sidebar draws a space (DW03).
+    // `items` come flat, each naming its `parent`; a row with `hasChildren`
+    // and none sent raises `expand` with `{ id, expanded }` when opened, so a
+    // space is sent one open level at a time. Which rows are open is the
+    // viewer's own, kept by Brydio under `keep`. Pressing a row raises
+    // `select` with `{ id }`. With `draggable`, dragging (or Alt and the
+    // arrows) raises `move` with `{ id, parent, index, before, after }`; the
+    // app confirms by sending the row under its new parent, or refuses with
+    // `settled`. `actions` fill each row's "⋯" menu (`action` with
+    // `{ id, action }`); `addable` puts a "+" on rows and the header (`add`
+    // with `{ parent }`).
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      items: {
+        kind: 'list',
+        max: PAGE_TREE_ROWS,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            parent: { kind: 'text', max: KEY_MAX },
+            label: { kind: 'text', max: LABEL_MAX },
+            emoji: { kind: 'text', max: 16 },
+            hasChildren: { kind: 'boolean' },
+            muted: { kind: 'boolean' },
+          },
+          required: ['id', 'label'],
+        },
+      },
+      selected: { kind: 'text', max: KEY_MAX },
+      keep: { kind: 'text', max: KEY_MAX },
+      draggable: { kind: 'boolean' },
+      actions: { kind: 'list', max: PAGE_TREE_ACTIONS.length, of: { kind: 'enum', values: PAGE_TREE_ACTIONS } },
+      addable: { kind: 'boolean' },
+      settled: { kind: 'text', max: KEY_MAX },
+      loading: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+    },
+    events: ['select', 'expand', 'move', 'action', 'add'],
+    children: false,
+  },
+  'bry-comment-margin': {
+    // The threads on a co-edited text, beside it (DW04): its children are
+    // `bry-comment`s with `anchor`; wide, each sits level with its words in
+    // the bound `bry-rich-text`; narrow, they stack in the text's order.
+    props: {},
+    events: [],
+    children: true,
+  },
+  'bry-history': {
+    // A co-edited record's versions (DW05), drawn and kept by Brydio:
+    // `bind` names the record (`{ collection, id }`); versions by day with
+    // who wrote in each, a preview of `field`, compare, name and restore
+    // (raises `restored` with `{ snapshot }`). With `forkable`, Fork raises
+    // `fork` with `{ snapshot, fields }`.
+    props: {
+      bind: {
+        kind: 'shape',
+        fields: { collection: { kind: 'text', max: 40 }, id: { kind: 'text', max: KEY_MAX } },
+        required: ['collection', 'id'],
+      },
+      field: { kind: 'text', max: 40 },
+      label: { kind: 'text', max: LABEL_MAX },
+      forkable: { kind: 'boolean' },
+    },
+    required: ['bind'],
+    events: ['restored', 'fork'],
+    children: false,
   },
   'bry-reactions': {
     // A chip per emoji with its `count`, marked when `mine`, then "Add
@@ -2092,8 +2188,13 @@ export const CATALOGUE = {
       },
       // Menu entries and buttons taken away; what a document holds is the same in every app.
       hide: { kind: 'list', max: 13, of: { kind: 'enum', values: [...RICH_TEXT_HIDEABLE] } },
+      // DW04: threads on words of a bound text.
+      comments: { kind: 'boolean' },
+      activeComment: { kind: 'text', max: KEY_MAX },
+      resolvedComments: { kind: 'list', max: COMMENT_IDS, of: { kind: 'text', max: KEY_MAX } },
+      removedComments: { kind: 'list', max: COMMENT_IDS, of: { kind: 'text', max: KEY_MAX } },
     },
-    events: ['change', 'blur', 'submit'],
+    events: ['change', 'blur', 'submit', 'comment', 'focuscomment', 'anchors'],
     children: false,
   },
   'bry-whiteboard': {

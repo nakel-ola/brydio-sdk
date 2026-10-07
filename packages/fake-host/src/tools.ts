@@ -25,6 +25,7 @@ import {
   type OpenField,
   type OpenFieldChange,
   type ToolVerb,
+  readersOf,
 } from '@brydio/manifest';
 import { z, type ZodType } from 'zod';
 
@@ -112,6 +113,13 @@ export class FixtureStore {
   #next = 0;
   /** The most rows one open-schema table may hold (P5); an option so a test can lower it. */
   readonly #rowsPerTable: number;
+  /**
+   * Who is reading, as Brydio's store knows the session (P16): a record whose
+   * collection names its readers, and whose list names others, is not found
+   * for anyone it leaves out. `user_test`, the fake caller, unless a test
+   * sets another; null reads as a visitor, who never finds such a record.
+   */
+  viewer: string | null = 'user_test';
 
   constructor(
     manifest: Pick<ManifestExtensions, 'data' | 'tools'>,
@@ -525,6 +533,7 @@ export class FixtureStore {
 
     const matching = this.#records
       .get(spec.name)!
+      .filter(record => this.#readable(spec, record))
       .map(flat)
       .filter(record =>
         Object.entries(filter).every(([field, want]) => {
@@ -780,8 +789,15 @@ export class FixtureStore {
     return report;
   }
 
+  /** Whether the viewer may read the record: everyone, unless its collection's readers name others (P16). */
+  #readable(spec: CollectionSpec, record: StoredDocument): boolean {
+    const readers = readersOf(spec.readers, record.body);
+
+    return !readers || (this.viewer !== null && readers.includes(this.viewer));
+  }
+
   #find(spec: CollectionSpec, id: string): StoredDocument {
-    const found = this.#records.get(spec.name)!.find(record => record.id === id);
+    const found = this.#records.get(spec.name)!.find(record => record.id === id && this.#readable(spec, record));
 
     if (!found) throw new Refused(`There is no such ${spec.label}.`, { error: 'not_found' });
 

@@ -322,9 +322,11 @@ export interface ElementEventDetails {
     /** Previous, Today or Next: the first day to show now, an ISO date. */
     navigate: { start: string };
     /** The zoom chosen. */
-    zoom: { zoom: 'day' | 'week' | 'month' };
+    zoom: { zoom: 'day' | 'week' | 'month' | 'quarter' };
     /** Whether "Show completed" is on now. */
     completed: { checked: boolean };
+    /** With `editable`: a bar's end was dragged to `end`, an ISO date. */
+    reschedule: { id: string; end: string };
   };
   'bry-timeline': {
     /** The folded line was pressed: send the block again, unfolded. */
@@ -347,6 +349,24 @@ export interface ElementEventDetails {
     action: { id: 'reply' | 'quote' | 'edit' | 'resolve' | 'copy' | 'copyLink' | 'subIssue' | 'delete' };
     /** Whether the thread's replies are asked to be folded now. */
     toggle: { collapsed: boolean };
+  };
+  'bry-page-tree': {
+    /** The row pressed, or chosen with Enter. */
+    select: { id: string };
+    /** A row opened or closed; opened with none of its pages sent, the app sends them. */
+    expand: { id: string; expanded: boolean };
+    /** Where a row was dropped: its new parent (null at the top), its index there, and the siblings either side. */
+    move: { id: string; parent: string | null; index: number; before: string | null; after: string | null };
+    /** The row and what was chosen from its menu. */
+    action: { id: string; action: 'open' | 'newChild' | 'rename' | 'duplicate' | 'move' | 'copyLink' | 'export' | 'delete' };
+    /** "+" on a row (its id as `parent`) or beside the tree's label (no parent). */
+    add: { parent?: string };
+  };
+  'bry-history': {
+    /** A version was put back into the live document. */
+    restored: { snapshot: string };
+    /** The version's fields, as the record kept them then, for the app to make a new record of. */
+    fork: { snapshot: string; fields: Record<string, unknown> };
   };
   'bry-reactions': {
     /** The emoji pressed or chosen: add the person's reaction, or take it away. */
@@ -386,6 +406,12 @@ export interface ElementEventDetails {
     blur: { value: string };
     /** The markdown, on Mod+Enter. */
     submit: { value: string };
+    /** With `comments`: words marked for a new thread, under this id. */
+    comment: { commentId: string; quote: string };
+    /** With `comments`: marked words pressed. */
+    focuscomment: { commentId: string };
+    /** With `comments`: the thread ids still on words in the text, whenever that changes. */
+    anchors: { ids: string[] };
   };
   'bry-whiteboard': {
     /** The board once drawing settles: how many shapes, and the words on them. */

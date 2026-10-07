@@ -183,6 +183,19 @@ group (`migration_anonymous_changed`): keep anonymous answers in a new
 collection. Each refusal's message ends with its code in brackets, such
 as `(too_few_answers)`, so a screen can tell them apart.
 
+`readers: "<field>"` lets a record name who alone may read it. The field is
+one of the collection's own `string[]` fields holding user ids
+(`data_readers_field`); a collection can't be `anonymous` too
+(`data_readers_anonymous`). While a record's list is empty, everyone who can
+read the instance reads it, as before. Once it names anyone, nobody else
+finds it: not on a screen, through a tool, through the assistant, on the
+co-edit socket, in a watch or in a notice. They get "not found", never a
+refusal, so an id says nothing about whether the record exists. There is no
+admin past the list: an app that wants its admins in puts them in it, and
+keeps it right as people come and go (a wiki writes a private space's
+members into each page). In `@brydio/fake-host`, `FixtureStore.viewer` is
+who is reading (`user_test` unless a test sets another).
+
 `openSchema: { "fields": "<companion>", "table": "<field>" }` gives a
 collection fields that people define at runtime, as records of its
 companion collection, up to 200 per table and 50,000 rows per table.
