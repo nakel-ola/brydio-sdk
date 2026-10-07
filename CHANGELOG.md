@@ -22,6 +22,13 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.41
+
+Making a page from `#` (DW08).
+
+- **`bry-rich-text` `references[].create`.** A reference with `create: true` is offered last once something is typed after `#`, as "label “what was typed”". Choosing it writes its `value` and raises the new **`createreference`** event with `{ value, text }`, for the app to make the thing under that identifier. Give it a fresh identifier each time one is used. Nothing changes for references without it.
+- A co-edited `bry-rich-text` now says when its connection drops, and keeps the person typing; what they type is sent when it is back. Nothing to change.
+
 ## 0.1.0-alpha.40
 
 Ref fields (DW06).
