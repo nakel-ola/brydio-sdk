@@ -22,6 +22,16 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.38
+
+A page tree, comments on words, version history and record readers (DW03–DW05, P16).
+
+- **`bry-page-tree`.** Pages nested under pages. Rows come flat with a `parent`; a folded row with `hasChildren` raises `expand` with `{ id, expanded }`, so a space is sent one open level at a time. Which rows are open is the viewer's own, kept by Brydio under `keep`. Pressing a row raises `select`. With `draggable`, a drag or Alt and the arrow keys raises `move` with `{ id, parent, index, before, after }`; the app confirms by sending the row under its new parent, or refuses with `settled`. `actions` fill each row's "⋯" menu (`action`), and `addable` puts a "+" on rows and the header (`add` with `{ parent }`).
+- **Comments on words.** On a bound `bry-rich-text`, `comments` adds a Comment button over a selection: Brydio marks the words in the shared document and raises `comment` with `{ commentId, quote }`. The mark stays on its words while anyone types, and when the assistant or a handler writes the field. Pressing marked words raises `focuscomment`. `activeComment` and `resolvedComments` are only drawn; `removedComments` takes deleted threads' marks out. `anchors` with `{ ids }` says which threads still have words in the text. `bry-comment` gains `anchor`, `quote` and `orphaned`. New `bry-comment-margin` lines comments up beside their words.
+- **`bry-history`.** A co-edited record's versions, by day, with who wrote in each. It previews and compares two versions, and someone who can edit may name or restore one; today's text is kept first, and `restored` with `{ snapshot }` is raised. With `forkable`, Fork raises `fork` with `{ snapshot, fields }`. Restoring a drawing restores its shapes.
+- **Record readers.** A collection's `readers: "<field>"` names one of its `string[]` fields of user ids. A record that names anyone is found by those people and nobody else, on every path: screens, tools, the assistant, the co-edit socket, watches and notices. Others get "not found". Problems `data_readers_field` and `data_readers_anonymous`. `@brydio/manifest` exports `readersOf`, `readersProblems`, `READERS_LIMIT`; in `@brydio/fake-host`, `FixtureStore.viewer` is who is reading (`user_test` by default).
+- **`bry-gantt`** (mirrors Brydio's TK14 change, missed until now). A `quarter` zoom, `zooms`, a row's `group` and `progress`, and with `editable` an end handle raising `reschedule` with `{ id, end }`; `paneLabel` and `completedLabel`.
+
 ## 0.1.0-alpha.37
 
 Chat cards, other apps' tools, the directory and webhooks (FO02, FO03, FO07).
