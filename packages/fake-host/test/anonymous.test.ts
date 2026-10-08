@@ -108,3 +108,42 @@ describe('a screen watching an anonymous collection', () => {
     expect(host.watching).toEqual(['notes']);
   });
 });
+
+describe('removing a whole anonymous group, unread (P13 delete-only)', () => {
+  test('takes every answer of the group, even under five, and says the same however many', async () => {
+    const store = new FixtureStore(SURVEY);
+    const heard: StoreChange[] = [];
+
+    store.onChange(change => void heard.push(change));
+    for (const mood of ['good', 'bad', 'good'] as const) await store.tools().create_answer!({ round: 2, mood });
+    await store.tools().create_answer!({ round: 3, mood: 'good' });
+
+    expect(error(await store.tools().list_answers!({ filter: { round: 2 } }))).toBe('too_few_answers');
+    expect(store.removeGroup('answers', 2)).toEqual({ removedGroup: 2 });
+    expect(store.records('answers').map(one => one.round)).toEqual([3]);
+    expect(store.removeGroup('answers', 9)).toEqual({ removedGroup: 9 });
+    expect(heard).toEqual([]);
+  });
+
+  test('refuses outside an anonymous collection, and without one group', () => {
+    const store = new FixtureStore({ data: { ...((SURVEY as { data: object }).data), notes: { schema: { text: 'string' }, label: 'note' } }, tools: { generated: true } } as never);
+
+    expect(() => store.removeGroup('notes', 'x')).toThrow('(not_anonymous)');
+    expect(() => store.removeGroup('answers', '')).toThrow('(anonymous_needs_group)');
+    expect(() => store.removeGroup('answers', { round: 1 })).toThrow('(anonymous_needs_group)');
+  });
+
+  test('reaches a handler as data.removeGroup, from a write tool and never a visitor', async () => {
+    const { runHandler } = await import('../src/index.ts');
+    const store = new FixtureStore(SURVEY);
+    const data = { removeGroup: async (collection: string, group: string | number | boolean) => store.removeGroup(collection, group) as never };
+    const clear = async ({ round }: { round: number }, client: { data: { removeGroup: (c: string, g: number) => Promise<unknown> } }) => client.data.removeGroup('answers', round);
+
+    await store.tools().create_answer!({ round: 4, mood: 'good' });
+
+    expect((await runHandler(clear as never, { round: 4 }, { data: data as never })).result).toEqual({ removedGroup: 4 });
+    expect(store.records('answers')).toEqual([]);
+    expect((await runHandler(clear as never, { round: 4 }, { data: data as never, write: false })).error).toContain('read tool');
+    expect((await runHandler(clear as never, { round: 4 }, { data: data as never, caller: { origin: 'public' } })).error).toContain('never change or remove');
+  });
+});

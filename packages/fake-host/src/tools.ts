@@ -253,6 +253,26 @@ export class FixtureStore {
   }
 
   /**
+   * Removes every answer of one anonymous group unread, as Brydio's
+   * `data.removeGroup` does (P13): nothing told, nothing counted.
+   */
+  removeGroup(collection: string, group: unknown): { removedGroup: unknown } {
+    const spec = this.#spec(collection);
+
+    if (!spec.anonymous) throw new Error(`${spec.plural} aren’t anonymous: remove them one at a time. (not_anonymous)`);
+    if (!(typeof group === 'string' || typeof group === 'number' || typeof group === 'boolean') || group === '') {
+      throw new Error(`${spec.plural} are anonymous: name one ${spec.anonymous.group} to remove. (anonymous_needs_group)`);
+    }
+
+    const field = spec.anonymous.group;
+    const records = this.#records.get(spec.name)!;
+
+    this.#records.set(spec.name, records.filter(record => record.body[field] !== group));
+
+    return { removedGroup: group };
+  }
+
+  /**
    * Why a screen can't watch this collection, or null: an anonymous one's
    * answers are never told as they arrive (P13, `anonymous_no_watch`).
    */

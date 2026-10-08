@@ -309,7 +309,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
     const declared = manifest?.data?.[collection];
     const read = method === 'data.get' || method === 'data.list';
 
-    if (method === 'data.update' || method === 'data.remove' || method === 'data.batch') {
+    if (method === 'data.update' || method === 'data.remove' || method === 'data.removeGroup' || method === 'data.batch') {
       throw new NotForVisitors(`A visitor on a public page can only add records, never change or remove them.`);
     }
     if (manifest && !(read ? declared?.publicRead : declared?.publicSubmit)) {
@@ -358,6 +358,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
       create: recorded('data.create', hidden('data.create', data.create ?? unavailable('data.create')) as HandlerClient['data']['create'], both(visitorData, writes)),
       update: recorded('data.update', data.update ?? unavailable('data.update'), both(visitorData, writes)),
       remove: recorded('data.remove', data.remove ?? unavailable('data.remove'), both(visitorData, writes)),
+      removeGroup: recorded('data.removeGroup', data.removeGroup ?? unavailable('data.removeGroup'), both(visitorData, writes)),
       batch: recorded('data.batch', data.batch ?? unavailable('data.batch'), both(visitorData, writes)),
     }),
     tools: Object.freeze({

@@ -96,6 +96,15 @@ export interface HandlerData {
   create(collection: string, fields: Record<string, unknown>): Promise<HandlerRecord>;
   update(collection: string, id: string, version: number, fields: Record<string, unknown>): Promise<HandlerRecord>;
   remove(collection: string, id: string): Promise<{ removed: string }>;
+  /**
+   * Every answer of one group of an anonymous collection, removed for good
+   * without being read (P13): how a form, or one of its rounds, takes its
+   * anonymous answers with it, even a group under the minimum that can't be
+   * listed. The answer is the same however many there were, none included.
+   * From a write tool only. Refused `not_anonymous` for any other
+   * collection, and `anonymous_needs_group` without one group value.
+   */
+  removeGroup(collection: string, group: string | number | boolean): Promise<{ removedGroup: string | number | boolean }>;
   batch(collection: string, changes: unknown[]): Promise<unknown[]>;
 }
 
