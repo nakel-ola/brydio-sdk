@@ -22,6 +22,12 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.43
+
+Anonymous groups, removed unread (P13, owner 7 Oct).
+
+- **`data.removeGroup(collection, group)`.** A write tool's handler removes every answer of one group of an anonymous collection for good, without reading one: how a form, or one of its rounds, takes its anonymous answers with it, even a group under the minimum that can't be listed. The answer is `{ removedGroup }` however many there were. Refused `not_anonymous` on any other collection and `anonymous_needs_group` without one group value. `FixtureStore.removeGroup` does the same in tests. Nothing to change unless you keep anonymous answers.
+
 ## 0.1.0-alpha.42
 
 Timers for apps (PJ01).
