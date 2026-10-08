@@ -19,6 +19,8 @@ commands, see the [SDK documentation site](../docs-site/README.md).
 - [Chat cards, other apps' tools, the directory and webhooks](host-seams.md)
   covers a handler's `chat`, `directory` and `webhooks` grants and calling
   another installed app's tool.
+- [Timers](timers.md) covers a handler's `timers` grant: running one of the
+  app's own tools at a time or on a repeat.
 - [Brydio's AI](ai.md) covers calling Brydio's model: from a handler with
   the `model` grant, or from your own server with a developer API key.
 - [Publish checklist](publish-checklist.md) matches the checks and messages

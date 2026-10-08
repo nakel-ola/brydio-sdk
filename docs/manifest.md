@@ -293,6 +293,7 @@ app that declares secrets must ask for the `secrets` host grant.
 - `chat`
 - `directory`
 - `webhooks`
+- `timers`
 
 A named connection grant is `connection:<name>`. `*` never grants a
 connection. A collection the app keeps must appear in `grants.collections`,

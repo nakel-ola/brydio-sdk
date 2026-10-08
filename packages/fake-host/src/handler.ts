@@ -11,6 +11,7 @@ import type {
   HandlerCaller,
   HandlerClient,
   HandlerConnectionRequest,
+  HandlerTimer,
   Notice,
   NoticeAt,
   NoticeKind,
@@ -99,6 +100,15 @@ export interface FakeHandlerOptions {
    */
   webhook?: (request: { url: string; body: unknown }) => number | Promise<number>;
   webhookSecret?: string;
+  /** Timers the instance already holds (PJ01), by key, as `timers.list` would show them. */
+  timers?: FakeTimer[];
+  /** "Now", for a timer's `next`; without it, the real clock. */
+  now?: Date;
+}
+
+/** A timer as the fake host keeps it (PJ01): what `timers.list` shows, with the input the tool will get. */
+export interface FakeTimer extends HandlerTimer {
+  input: Record<string, unknown>;
 }
 
 /** A post a handler made with `chat.post`, as the fake host kept it. */
@@ -159,6 +169,8 @@ export interface HandlerRun<O> {
   posts: FakeChatPost[];
   /** The webhooks it sent. */
   webhooks: FakeWebhook[];
+  /** The instance's timers as they stand after the run, by key (set, moved and cancelled ones applied). */
+  timers: Map<string, FakeTimer>;
 }
 
 const NOTICE_KINDS: readonly NoticeKind[] = ['assigned', 'mentioned', 'commented', 'status_changed', 'due_soon', 'overdue', 'reminder', 'updated'];
@@ -186,6 +198,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
   approvals: FakeApprovals;
   posts: FakeChatPost[];
   webhooks: FakeWebhook[];
+  timers: Map<string, FakeTimer>;
 } {
   const secrets = new Map(Object.entries(options.secrets ?? {}));
   const calls: HandlerCall[] = [];
@@ -255,12 +268,18 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
 
   // The three Forms seams (FO02, FO03, FO07), refused in Brydio's words, each ending with its code.
   const hostGranted = (capability: string) => (manifest ? (manifest.grants?.host ?? []).some(grant => grant === capability || grant === '*') : true);
-  const seam = (capability: 'chat' | 'directory' | 'webhooks', words: string, writing: boolean) => (method: string, args: unknown[]) => {
+  const seam = (capability: 'chat' | 'directory' | 'webhooks' | 'timers', words: string, writing: boolean) => (method: string, args: unknown[]) => {
     notForVisitors(method);
     if (!hostGranted(capability)) throw new Error(`${appName} did not ask to ${words}. (not_granted)`);
-    if (writing && options.write === false) throw new Error(`${tool} is a read tool, so its handler can't ${method === 'chat.post' ? 'post in a chat' : 'send a webhook'} (read_tool)`);
+    if (writing && options.write === false) {
+      const what = method === 'chat.post' ? 'post in a chat' : method.startsWith('timers.') ? 'set or cancel a timer' : 'send a webhook';
+
+      throw new Error(`${tool} is a read tool, so its handler can't ${what} (read_tool)`);
+    }
     keeps(method, args);
   };
+  const timers = new Map((options.timers ?? []).map(one => [one.key, { ...one }]));
+  const appTools = manifest ? new Set((manifest.tools?.custom ?? []).map(one => one.name)) : null;
   const posts: FakeChatPost[] = [];
   const sentHooks: FakeWebhook[] = [];
   const profiles = new Map((options.directory?.profiles ?? []).map(one => [one.id, one]));
@@ -274,6 +293,9 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
         userId: options.caller?.userId ?? 'user_test',
         origin: (options.caller?.origin as Exclude<HandlerCaller['origin'], 'public'> | undefined) ?? 'assistant',
         role: (options.caller?.role as Exclude<HandlerCaller['role'], 'anonymous'> | undefined) ?? 'owner',
+        ...((options.caller as { timer?: { key: string; due: string } } | undefined)?.timer
+          ? { timer: (options.caller as { timer: { key: string; due: string } }).timer }
+          : {}),
       };
   const notForVisitors = (method: string) => {
     if (visitor) throw new NotForVisitors(`${tool} runs for a visitor on a public page, who can't use ${method.split('.')[0]}.`);
@@ -573,22 +595,88 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
         seam('webhooks', 'send signed webhooks to other services', true),
       ),
     }),
+    // PJ01. The fake checks what Brydio checks on set, but does not expand a rule: a repeat's `next` is its start.
+    timers: Object.freeze({
+      set: recorded(
+        'timers.set',
+        async (raw: Record<string, unknown>) => {
+          const now = options.now ?? new Date();
+          const key = raw?.key;
+          const tool = raw?.tool;
+
+          if (typeof key !== 'string' || !NOTICE_KEY.test(key)) {
+            throw new Error('timers.set needs a `key` (letters, digits, : _ . -, up to 120) to move or cancel it by. (timer_invalid)');
+          }
+          if (typeof tool !== 'string' || (appTools && !appTools.has(tool))) {
+            throw new Error(`${appName} has no tool named ${String(tool)} for a timer to run. (timer_unknown_tool)`);
+          }
+          if ((raw.at === undefined) === (raw.rrule === undefined)) {
+            throw new Error('timers.set takes either `at` (one run) or `rrule` (a repeat), not both or neither. (timer_invalid)');
+          }
+          const input = (raw.input ?? {}) as Record<string, unknown>;
+
+          if (JSON.stringify(input).length > 8_192) throw new Error('A timer’s input may be at most 8192 characters as JSON. (timer_too_large)');
+          if (!timers.has(key) && timers.size >= 100) throw new Error(`This ${appName} already has 100 timers, the most one may hold. Cancel one to make room. (timer_limit)`);
+
+          const when = new Date(String(raw.at ?? raw.start ?? now.toISOString()));
+
+          if (Number.isNaN(when.getTime())) throw new Error('A timer’s `at` is an ISO date and time. (timer_invalid)');
+
+          const timer: FakeTimer = {
+            key,
+            tool,
+            input,
+            at: raw.at === undefined ? null : when.toISOString(),
+            rrule: raw.rrule === undefined ? null : String(raw.rrule),
+            zone: typeof raw.zone === 'string' ? raw.zone : 'UTC',
+            next: when.toISOString(),
+            status: 'active',
+            reason: null,
+            setBy: caller.userId ?? 'user_test',
+            runs: timers.get(key)?.runs ?? 0,
+            lastRunAt: timers.get(key)?.lastRunAt ?? null,
+            lastOutcome: timers.get(key)?.lastOutcome ?? null,
+          };
+
+          timers.set(key, timer);
+
+          const { input: _input, ...shown } = timer;
+
+          return shown;
+        },
+        seam('timers', 'run its own tools on a schedule, as the person who set them', true),
+      ),
+      cancel: recorded(
+        'timers.cancel',
+        async (key: string) => {
+          if (typeof key !== 'string' || !NOTICE_KEY.test(key)) throw new Error('timers.cancel takes the key the timer was set with. (timer_invalid)');
+
+          return { cancelled: timers.delete(key) };
+        },
+        seam('timers', 'run its own tools on a schedule, as the person who set them', true),
+      ),
+      list: recorded(
+        'timers.list',
+        async () => ({ items: [...timers.values()].map(({ input: _input, ...shown }) => shown) }),
+        seam('timers', 'run its own tools on a schedule, as the person who set them', false),
+      ),
+    }),
     caller: Object.freeze(caller),
   });
 
-  return { client, secrets, calls, held, notices, approvals: { requests: approvals.requests, decide: approvals.decide }, posts, webhooks: sentHooks };
+  return { client, secrets, calls, held, notices, approvals: { requests: approvals.requests, decide: approvals.decide }, posts, webhooks: sentHooks, timers };
 }
 
 /** Runs a handler against the fake client, and answers as Brydio would pass its answer on. */
 export async function runHandler<I, O>(handler: Handler<I, O>, input: I, options: FakeHandlerOptions = {}): Promise<HandlerRun<O>> {
-  const { client, secrets, calls, held, notices, approvals, posts, webhooks } = fakeHandlerClient(options);
+  const { client, secrets, calls, held, notices, approvals, posts, webhooks, timers } = fakeHandlerClient(options);
 
   try {
     const result = await handler(input, client);
 
-    return { result: scrub(JSON.parse(JSON.stringify(result ?? null)) as O, held), secrets, calls, notices, approvals, posts, webhooks };
+    return { result: scrub(JSON.parse(JSON.stringify(result ?? null)) as O, held), secrets, calls, notices, approvals, posts, webhooks, timers };
   } catch (error) {
-    return { error: scrub(error instanceof Error ? error.message : String(error), held), secrets, calls, notices, approvals, posts, webhooks };
+    return { error: scrub(error instanceof Error ? error.message : String(error), held), secrets, calls, notices, approvals, posts, webhooks, timers };
   }
 }
 

@@ -30,9 +30,10 @@
 
 /**
  * Where a call came from: the assistant, the app's screen, a sidebar folder
- * listing its rows, or a visitor on one of the app's public pages (P3).
+ * listing its rows, a visitor on one of the app's public pages (P3), or one
+ * of the app's timers (PJ01).
  */
-export type HandlerOrigin = 'assistant' | 'screen' | 'folder' | 'public';
+export type HandlerOrigin = 'assistant' | 'screen' | 'folder' | 'public' | 'timer';
 
 /** The caller's place in the workspace: its creator, an admin, or anyone else. */
 export type WorkspaceRole = 'owner' | 'admin' | 'member';
@@ -44,6 +45,8 @@ export interface MemberCaller {
   readonly origin: Exclude<HandlerOrigin, 'public'>;
   /** Their role in the workspace, so a handler can let an admin do more (delete others' comments). */
   readonly role: WorkspaceRole;
+  /** On a timer's run (`origin: 'timer'`): its key and the time it was due (ISO). The caller is who set it. */
+  readonly timer?: { readonly key: string; readonly due: string };
 }
 
 /**
@@ -420,6 +423,63 @@ export interface HandlerWebhooks {
   send(request: { url: string; body: unknown }): Promise<{ status: number }>;
 }
 
+/** A timer as Brydio keeps it (PJ01). */
+export interface HandlerTimer {
+  readonly key: string;
+  readonly tool: string;
+  /** A one-off's time (ISO), or null for a repeat. */
+  readonly at: string | null;
+  /** A repeat's rule, or null for a one-off. */
+  readonly rrule: string | null;
+  readonly zone: string;
+  /** When it runs next (ISO); null while paused. */
+  readonly next: string | null;
+  readonly status: 'active' | 'paused';
+  /** Why it is paused, in words. */
+  readonly reason: string | null;
+  /** Who set it: it runs as them. */
+  readonly setBy: string;
+  readonly runs: number;
+  readonly lastRunAt: string | null;
+  /** `ok`, `error: …` or `paused`. */
+  readonly lastOutcome: string | null;
+}
+
+/**
+ * One of the app's own tools run later (`tasks/database` PJ01), with the
+ * `timers` host grant; `set` and `cancel` from a write tool's handler,
+ * never a visitor's.
+ *
+ * - `set({ key, tool, input?, at })` runs `tool` once at `at`;
+ *   `set({ key, tool, input?, rrule, start?, zone? })` runs it on an RFC 5545
+ *   rule (no DTSTART) read on the wall clock of `zone` (IANA, default UTC),
+ *   counted from `start` (default now, whole minutes). Setting a key again
+ *   moves that timer, and makes it the new caller's.
+ * - It runs as the person whose call set it, as they are then: a member
+ *   still, with their access today, through the same checks as a click on
+ *   the app's screen. Their handler sees `caller.origin === 'timer'` and
+ *   `caller.timer`. Someone who left, an app switched off or a tool blocked
+ *   pauses it (set it again to resume); a tool the app no longer has ends it.
+ * - A repeat missed while Brydio was down runs once, then keeps its times.
+ *   Three failed runs in a row pause it. A one-off goes once it has run.
+ * - Limits: 100 timers an instance, a repeat at most every 15 minutes, at
+ *   most 400 days ahead, input at most 8 KB as JSON, 20 runs a minute an
+ *   instance (the rest wait a minute). Removing the instance or the app
+ *   removes its timers.
+ * - Refusals end with their code: `timer_invalid`, `timer_too_often`,
+ *   `timer_too_far`, `timer_too_large`, `timer_unknown_tool`, `timer_limit`,
+ *   `timer_unavailable`, `not_granted`, `read_tool`.
+ */
+export interface HandlerTimers {
+  set(
+    timer:
+      | { key: string; tool: string; input?: Record<string, unknown>; at: string }
+      | { key: string; tool: string; input?: Record<string, unknown>; rrule: string; start?: string; zone?: string }
+  ): Promise<HandlerTimer>;
+  cancel(key: string): Promise<{ cancelled: boolean }>;
+  list(): Promise<{ items: HandlerTimer[] }>;
+}
+
 /** Everything a handler is given beside its input. */
 export interface HandlerClient {
   readonly data: HandlerData;
@@ -433,6 +493,7 @@ export interface HandlerClient {
   readonly chat: HandlerChat;
   readonly directory: HandlerDirectory;
   readonly webhooks: HandlerWebhooks;
+  readonly timers: HandlerTimers;
   readonly caller: HandlerCaller;
 }
 

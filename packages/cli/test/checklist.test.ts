@@ -285,7 +285,7 @@ describe('what the publish route refuses, found first', () => {
     const root = built(issues('0.2.0', { title: 'string' }, { grants: { tools: ['*'], collections: ['*'], host: ['camera'] } }));
 
     expect(found(validate(root).problems)).toEqual([
-      ['grant_unknown', 'app.json asks for "camera", which Brydio does not grant. An app may ask for navigate, message, members, projects, files, chats, model, secrets, notify, approvals, chat, directory, webhooks or connection:<name>.'],
+      ['grant_unknown', 'app.json asks for "camera", which Brydio does not grant. An app may ask for navigate, message, members, projects, files, chats, model, secrets, notify, approvals, chat, directory, webhooks, timers or connection:<name>.'],
     ]);
   });
 
