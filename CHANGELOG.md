@@ -22,6 +22,13 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.42
+
+Timers for apps (PJ01).
+
+- **`timers` host grant and `client.timers`.** A handler can run one of the app's own tools later: `timers.set({ key, tool, input?, at })` once, or `timers.set({ key, tool, input?, rrule, start?, zone? })` on an RFC 5545 rule read in a time zone; `timers.cancel(key)` and `timers.list()`. The tool runs as the person whose call set it, as they are then, through the same checks as a click on the app's screen. Its handler sees `caller.origin === 'timer'` and `caller.timer` (`{ key, due }`); `HandlerOrigin` gains `'timer'`. Limits and codes are in [Timers](docs/timers.md). Nothing to change unless you want one.
+- `@brydio/fake-host`: `runHandler` keeps `run.timers` (by key) and takes `timers` and `now` options; a caller can be a timer's run.
+
 ## 0.1.0-alpha.41
 
 Making a page from `#` (DW08).
