@@ -93,7 +93,11 @@ export function fakeCalendar(
   state: FakeBookingState = bookingStateOf(options),
   visitor = false
 ): HandlerCalendar {
-  let serial = 0;
+  // Ids carry on from what the run starts with, so a second run never reuses one.
+  let serial = Math.max(
+    0,
+    ...[...events.keys(), ...state.bookings.keys()].map(id => Number(/_fake_(\d+)$/.exec(id)?.[1] ?? 0))
+  );
   const people = new Map((options.people ?? []).map(one => [one.member, one]));
   const members = new Set(options.members ?? [callerId, ...people.keys(), ...Object.values(options.offers ?? {}).flat(), ...[...events.values()].flatMap(one => [one.owner, ...(one.attendees ?? []).flatMap(a => (a.member ? [a.member] : []))])]);
 
