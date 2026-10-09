@@ -254,6 +254,7 @@ test('a screen asking to open something hears whether it opened, in the host’s
     navigate: to => {
       if (to.kind !== 'route' && to.id === 'note_gone') throw new Error('There is no such note.');
       if (to.kind !== 'route' && to.id === 'proj_hidden') throw new Error('There is no such project.');
+      if (to.kind !== 'route' && to.id === 'room_hidden') throw new Error('There is no such room.');
     },
   });
 
@@ -268,10 +269,13 @@ test('a screen asking to open something hears whether it opened, in the host’s
     // A project's page, which the host opens only when the person can (Brydio `24d7144`).
     'project proj_1: opened',
     'project proj_hidden: There is no such project.',
+    // A room the person is in, and its call (Brydio CA08: a meeting's Join).
+    'room room_1: opened',
+    'room room_hidden: There is no such room.',
     'route /plan//plan_1/details/: opened',
     'selected nothing',
-    'route //example.com: An app can open one of its own routes, or a chat, file, project or item by id.',
-    'url https://example.com: An app can open one of its own routes, or a chat, file, project or item by id.',
+    'route //example.com: An app can open one of its own routes, or a chat, file, project, room or item by id.',
+    'url https://example.com: An app can open one of its own routes, or a chat, file, project, room or item by id.',
     'item note_a: opened',
     // Opening one of the app's own items makes it the screen's selection, as Brydio's screen does.
     'selected {"kind":"item","id":"note_a"}',
@@ -284,6 +288,8 @@ test('a screen asking to open something hears whether it opened, in the host’s
     { kind: 'item', id: 'note_gone', opened: false, error: 'There is no such note.' },
     { kind: 'project', id: 'proj_1', opened: true },
     { kind: 'project', id: 'proj_hidden', opened: false, error: 'There is no such project.' },
+    { kind: 'room', id: 'room_1', call: true, opened: true },
+    { kind: 'room', id: 'room_hidden', opened: false, error: 'There is no such room.' },
     { kind: 'route', path: '/plan/plan_1/details', opened: true },
     { kind: 'item', id: 'note_a', opened: true },
   ]);

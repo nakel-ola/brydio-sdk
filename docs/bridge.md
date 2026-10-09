@@ -73,6 +73,11 @@ access. One open app may watch at most 5 collections.
 Opens a chat, file, project, or app item and resolves with `{ opened }`. It
 needs `navigate` in `grants.host`.
 
+`navigate({ kind: 'room', id, call: true })` opens a Brydio room the person is
+in and starts or joins its call there, as the room's own call button does. A
+room they aren't in is refused as not found. The Calendar app's Join uses it
+with the room from `calendar.call(id)`.
+
 ### `toast(text, tone)`
 
 Shows one Brydio toast in the `info`, `success`, or `danger` tone. Text is cut at 200 characters.
@@ -155,7 +160,7 @@ A connection path is relative. `GET` and `HEAD` are reads. `POST`, `PUT`,
 | `data/list` | app to Brydio | `{ collection, filter?, sort?, limit?, cursor? }` plus the envelope id | `data/result` with one page, or `data/error`. |
 | `data/subscribe` | app to Brydio | `DataWatchParams`: collection, plus the envelope id | `data/result` starts the watch; changes arrive as `data/changed`. |
 | `data/unsubscribe` | app to Brydio | `DataWatchParams`: collection, plus the envelope id | `data/result` after the host stops that watch. |
-| `ui/navigate` | app to Brydio | `UiNavigateParams`: an app-local route, chat, file, project, or app item target | `ui/result` with `{ opened }`, or `ui/error`. |
+| `ui/navigate` | app to Brydio | `UiNavigateParams`: an app-local route, chat, file, project, room, or app item target | `ui/result` with `{ opened }`, or `ui/error`. |
 | `ui/toast` | app to Brydio | `UiToastParams`: text and optional tone | No reply. Brydio shows the sentence in its own toast. |
 | `host/members` | app to Brydio | `{ ids? }` plus the envelope id | `host/result` with visible member names, or `host/error`. |
 | `host/projects` | app to Brydio | `{ ids }` plus the envelope id | `host/result` with visible project names, or `host/error`. |

@@ -22,6 +22,8 @@ void mount(async root => {
   await said({ kind: 'item', id: 'note_gone' });
   await said({ kind: 'project', id: 'proj_1' });
   await said({ kind: 'project', id: 'proj_hidden' });
+  await said({ kind: 'room', id: 'room_1', call: true });
+  await said({ kind: 'room', id: 'room_hidden' });
   await said({ kind: 'route', path: '/plan//plan_1/details/' });
   await said({ kind: 'route', path: '//example.com' });
   await said({ kind: 'url' as never, id: 'https://example.com' });

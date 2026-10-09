@@ -131,6 +131,7 @@ export interface FakeHostOptions {
 /** What a screen may ask Brydio to open. */
 export type NavigateTo =
   | { kind: 'chat' | 'file' | 'item' | 'project'; id: string }
+  | { kind: 'room'; id: string; call?: boolean }
   | { kind: 'route'; path: string; newTab?: boolean };
 
 /** One `@brydio/api` call a screen sent to the pretend host. */
@@ -993,10 +994,10 @@ export class FakeHost {
 
     if (
       !target ||
-      (target.kind !== 'route' && target.kind !== 'chat' && target.kind !== 'file' && target.kind !== 'item' && target.kind !== 'project') ||
+      (target.kind !== 'route' && target.kind !== 'chat' && target.kind !== 'file' && target.kind !== 'item' && target.kind !== 'project' && target.kind !== 'room') ||
       (target.kind === 'route' ? route === null : !closing && (typeof target.id !== 'string' || !target.id))
     ) {
-      fail({ code: -32602, message: 'An app can open one of its own routes, or a chat, file, project or item by id.' });
+      fail({ code: -32602, message: 'An app can open one of its own routes, or a chat, file, project, room or item by id.' });
 
       return;
     }
@@ -1012,7 +1013,9 @@ export class FakeHost {
     const asked: NavigateTo =
       target.kind === 'route'
         ? { kind: 'route', path: route!, ...((target as { newTab?: unknown }).newTab === true ? { newTab: true } : {}) }
-        : { kind: target.kind as 'chat' | 'file' | 'item' | 'project', id: target.id as string };
+        : target.kind === 'room'
+          ? { kind: 'room', id: target.id as string, ...((target as { call?: unknown }).call === true ? { call: true } : {}) }
+          : { kind: target.kind as 'chat' | 'file' | 'item' | 'project', id: target.id as string };
 
     this.#busy += 1;
 

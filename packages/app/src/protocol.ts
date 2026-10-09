@@ -279,6 +279,8 @@ export interface ProjectName {
  */
 export type NavigateTarget =
   | { kind: 'chat' | 'file' | 'item' | 'project'; id: string }
+  /** A Brydio room the person is in; with `call`, its call is started or joined there (a meeting's Join). */
+  | { kind: 'room'; id: string; call?: boolean }
   | { kind: 'item'; id: null }
   /** One of the app's own pages; `newTab` opens it in a Brydio tab of its own. */
   | { kind: 'route'; path: string; newTab?: boolean };
