@@ -584,7 +584,9 @@ export interface CalendarEventInput {
  * Reads work from any tool; `create`, `update`, `cancel` and `respond` need a
  * write tool. Never for a visitor. Refusals end with a code:
  * `(not_granted)`, `(read_tool)`, `(calendar_invalid)`, `(calendar_not_found)`,
- * `(calendar_forbidden)`, `(calendar_unavailable)`.
+ * `(calendar_forbidden)`, `(calendar_unavailable)`, and for booking links
+ * `(calendar_not_offered)` and `(calendar_taken)`. A visitor on a public
+ * page may call only `free`, `book`, `booking`, `rebook` and `unbook`.
  */
 export interface HandlerCalendar {
   /** Events overlapping [from, to) (62 days at most): the caller's, or each named member's. */
@@ -605,6 +607,63 @@ export interface HandlerCalendar {
   cancel(id: string, options?: { scope?: 'this' | 'all'; originalStart?: string; notify?: boolean }): Promise<{ cancelled: string }>;
   /** The caller answers an invitation they are on (a series answers as a whole). */
   respond(id: string, response: CalendarResponse): Promise<CalendarOccurrence | null>;
+
+  // Booking links (CA05). `link` is the app's own key for a link, e.g. its record id.
+
+  /** The caller says yes (or with `on: false`, no longer) to being booked through `link`. Write tool; members only. */
+  offer(query: { link: string; on?: boolean }): Promise<{ link: string; offered: boolean }>;
+  /** The members who said yes to `link`. */
+  offers(query: { link: string }): Promise<{ link: string; members: string[] }>;
+  /**
+   * The busy times and working windows of `link`'s hosts (those who said yes),
+   * with the starts of what they already have through it. Times only, never
+   * what fills them. A visitor may call it.
+   */
+  free(query: { link: string; from: string; to: string; people?: string[] }): Promise<{
+    people: {
+      member: string;
+      timeZone: string;
+      timeZoneHidden?: true;
+      busy: { start: string; end: string }[];
+      working: { start: string; end: string }[];
+      booked: string[];
+      lastBookedAt: string | null;
+    }[];
+  }>;
+  /**
+   * Books a host who said yes to `link`: an event on their calendar with the
+   * booker as a guest, and an email to the booker with the invite and a
+   * one-time link (`?booking=<secret>` on the public page) to move or cancel
+   * it. Refused `(calendar_taken)` when the host is busy then, buffers
+   * included. Write tool; a visitor may call it.
+   */
+  book(booking: {
+    link: string;
+    host: string;
+    title: string;
+    start: string;
+    end: string;
+    timeZone: string;
+    guest: { email: string; name?: string };
+    description?: string;
+    location?: string;
+    buffer?: { before?: number; after?: number };
+  }): Promise<{ booking: string; event: string; host: string; start: string; end: string }>;
+  /** A booking named by the secret from its email, or null. */
+  booking(query: { token: string }): Promise<{
+    booking: string;
+    link: string;
+    host: string;
+    status: 'booked' | 'cancelled';
+    start: string | null;
+    end: string | null;
+    timeZone: string | null;
+    title: string | null;
+  } | null>;
+  /** Moves a booking by its secret to a time its host is free. Write tool. */
+  rebook(change: { token: string; start: string; end: string; buffer?: { before?: number; after?: number } }): Promise<{ booking: string; start: string; end: string }>;
+  /** Cancels a booking by its secret; the booker is told. Write tool. */
+  unbook(query: { token: string }): Promise<{ booking: string; cancelled: true }>;
 }
 
 /** Everything a handler is given beside its input. */

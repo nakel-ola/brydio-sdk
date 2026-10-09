@@ -88,4 +88,38 @@ describe('calendar in the fake host (CA02)', () => {
     expect((await runHandler(write, {}, { manifest: manifest() as never, caller: { userId: 'user_sam' }, calendar: { events: [STANDUP] } })).error).toContain('(calendar_forbidden)');
     expect((await runHandler(stranger, WEEK, { manifest: manifest() as never, caller: { userId: 'user_ada' } })).error).toContain('(calendar_not_found)');
   });
+
+  it('books through a link only hosts who said yes, for a visitor too, and moves and cancels by the secret', async () => {
+    const offer: Handler<Record<string, never>, unknown> = async (_input, { calendar }) => calendar.offer({ link: 'intro' });
+    const offered = await runHandler(offer, {}, { manifest: manifest() as never, caller: { userId: 'user_ada' } });
+
+    expect(offered.booking.offers.get('intro')).toEqual(new Set(['user_ada']));
+
+    const book: Handler<{ host: string }, unknown> = async ({ host }, { calendar }) =>
+      calendar.book({ link: 'intro', host, title: 'Intro', start: '2026-10-13T09:00:00Z', end: '2026-10-13T09:30:00Z', timeZone: 'UTC', guest: { email: 'G@x.io' } });
+    const visitor = { manifest: manifest() as never, caller: { role: 'anonymous', origin: 'public' } as never, calendar: { offers: { intro: ['user_ada'] }, events: [{ ...STANDUP, start: '2026-10-13T10:00:00.000Z', end: '2026-10-13T11:00:00.000Z' }] } };
+
+    expect((await runHandler(book, { host: 'user_sam' }, visitor)).error).toContain('(calendar_not_offered)');
+    const booked = await runHandler(book, { host: 'user_ada' }, visitor);
+
+    expect(booked.error).toBeUndefined();
+    const [made] = [...booked.booking.bookings.values()];
+    expect(made).toMatchObject({ host: 'user_ada', status: 'booked', guest: { email: 'g@x.io' } });
+    expect(booked.calendar.get(made!.event)).toMatchObject({ owner: 'user_ada', title: 'Intro' });
+
+    const free: Handler<Record<string, never>, unknown> = async (_input, { calendar }) => calendar.free({ link: 'intro', from: '2026-10-13T00:00:00Z', to: '2026-10-14T00:00:00Z' });
+    const after = { ...visitor, calendar: { offers: { intro: ['user_ada'] }, events: [...booked.calendar.values()], bookings: [...booked.booking.bookings.values()] } };
+    expect(((await runHandler(free, {}, after)).result as { people: { booked: string[]; busy: unknown[] }[] }).people[0]).toMatchObject({ booked: ['2026-10-13T09:00:00.000Z'] });
+
+    const move: Handler<Record<string, never>, unknown> = async (_input, { calendar }) => calendar.rebook({ token: made!.token, start: '2026-10-13T10:30:00Z', end: '2026-10-13T11:00:00Z' });
+    expect((await runHandler(move, {}, after)).error).toContain('(calendar_taken)');
+
+    const cancel: Handler<Record<string, never>, unknown> = async (_input, { calendar }) => calendar.unbook({ token: made!.token });
+    const cancelled = await runHandler(cancel, {}, after);
+    expect(cancelled.result).toEqual({ booking: made!.id, cancelled: true });
+    expect(cancelled.calendar.has(made!.event)).toBe(false);
+
+    const range: Handler<Record<string, never>, unknown> = async (_input, { calendar }) => calendar.range({ from: '2026-10-13T00:00:00Z', to: '2026-10-14T00:00:00Z' });
+    expect((await runHandler(range, {}, visitor)).error).toContain('runs for a visitor on a public page');
+  });
 });

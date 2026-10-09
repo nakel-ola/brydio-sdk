@@ -17,7 +17,7 @@ import type {
   NoticeAt,
   NoticeKind,
 } from '@brydio/app/handler';
-import { fakeCalendar, type FakeCalendarEvent, type FakeCalendarOptions } from './calendar.ts';
+import { bookingStateOf, fakeCalendar, type FakeBookingState, type FakeCalendarEvent, type FakeCalendarOptions } from './calendar.ts';
 import { MAX_SECRET_CHARS, SECRET_NAME, appToolPrefix, crossAppTool, effectivePlacementKey, type ManifestExtensions } from '@brydio/manifest';
 
 /**
@@ -177,11 +177,16 @@ export interface HandlerRun<O> {
   timers: Map<string, FakeTimer>;
   /** The calendar's events after the run, by id (created, changed and cancelled ones applied). */
   calendar: Map<string, FakeCalendarEvent>;
+  /** Booking links' offers and bookings after the run (CA05), secrets included. */
+  booking: FakeBookingState;
 }
 
 const NOTICE_KINDS: readonly NoticeKind[] = ['assigned', 'mentioned', 'commented', 'status_changed', 'due_soon', 'overdue', 'reminder', 'updated'];
 /** Kinds a caller may set for themselves with `notify.at`, as Brydio allows. */
 const OWN_REMINDERS: readonly NoticeKind[] = ['reminder', 'due_soon', 'overdue'];
+/** The calendar calls a visitor on a public page may make (CA05). */
+const CALENDAR_VISITOR_CALLS = new Set(['free', 'book', 'booking', 'rebook', 'unbook']);
+
 const NOTICE_KEY = /^[A-Za-z0-9:_.-]{1,120}$/;
 
 /** What a visitor's client refuses with (P3): a plain sentence, and `code: 'not_for_visitors'`. */
@@ -206,6 +211,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
   webhooks: FakeWebhook[];
   timers: Map<string, FakeTimer>;
   calendar: Map<string, FakeCalendarEvent>;
+  booking: FakeBookingState;
 } {
   const secrets = new Map(Object.entries(options.secrets ?? {}));
   const calls: HandlerCall[] = [];
@@ -286,7 +292,8 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
     keeps(method, args);
   };
   const calendarEvents = new Map((options.calendar?.events ?? []).map(one => [one.id, { ...one }]));
-  const calendar = fakeCalendar(options.calendar ?? {}, options.caller?.userId ?? 'user_test', calendarEvents);
+  const bookingState = bookingStateOf(options.calendar ?? {});
+  const calendar = fakeCalendar(options.calendar ?? {}, options.caller?.userId ?? 'user_test', calendarEvents, bookingState, options.caller?.role === 'anonymous' || options.caller?.origin === 'public');
   const timers = new Map((options.timers ?? []).map(one => [one.key, { ...one }]));
   const appTools = manifest ? new Set((manifest.tools?.custom ?? []).map(one => one.name)) : null;
   const posts: FakeChatPost[] = [];
@@ -674,12 +681,19 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
     // CA02. An in-memory event layer with Brydio's rules for sharing, owners and invitations.
     calendar: Object.freeze(
       Object.fromEntries(
-        (['range', 'busy', 'event', 'calendars', 'create', 'update', 'cancel', 'respond'] as const).map(name => [
+        (['range', 'busy', 'event', 'calendars', 'create', 'update', 'cancel', 'respond', 'offer', 'offers', 'free', 'book', 'booking', 'rebook', 'unbook'] as const).map(name => [
           name,
           recorded(
             `calendar.${name}`,
             (...args: unknown[]) => (calendar[name] as (...a: unknown[]) => Promise<unknown>)(...args),
-            seam('calendar', 'read and change your calendar', ['create', 'update', 'cancel', 'respond'].includes(name)),
+            CALENDAR_VISITOR_CALLS.has(name)
+              ? (method: string, args: unknown[]) => {
+                  // A visitor may book through a link (CA05); the rest of the calendar is closed to them.
+                  if (!hostGranted('calendar')) throw new Error(`${appName} did not ask to read and change your calendar. (not_granted)`);
+                  if (name !== 'free' && name !== 'booking' && options.write === false) throw new Error(`${tool} is a read tool, so its handler can't change the calendar (read_tool)`);
+                  keeps(method, args);
+                }
+              : seam('calendar', 'read and change your calendar', ['create', 'update', 'cancel', 'respond', 'offer'].includes(name)),
           ),
         ]),
       ) as unknown as HandlerCalendar,
@@ -687,19 +701,19 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
     caller: Object.freeze(caller),
   });
 
-  return { client, secrets, calls, held, notices, approvals: { requests: approvals.requests, decide: approvals.decide }, posts, webhooks: sentHooks, timers, calendar: calendarEvents };
+  return { client, secrets, calls, held, notices, approvals: { requests: approvals.requests, decide: approvals.decide }, posts, webhooks: sentHooks, timers, calendar: calendarEvents, booking: bookingState };
 }
 
 /** Runs a handler against the fake client, and answers as Brydio would pass its answer on. */
 export async function runHandler<I, O>(handler: Handler<I, O>, input: I, options: FakeHandlerOptions = {}): Promise<HandlerRun<O>> {
-  const { client, secrets, calls, held, notices, approvals, posts, webhooks, timers, calendar } = fakeHandlerClient(options);
+  const { client, secrets, calls, held, notices, approvals, posts, webhooks, timers, calendar, booking } = fakeHandlerClient(options);
 
   try {
     const result = await handler(input, client);
 
-    return { result: scrub(JSON.parse(JSON.stringify(result ?? null)) as O, held), secrets, calls, notices, approvals, posts, webhooks, timers, calendar };
+    return { result: scrub(JSON.parse(JSON.stringify(result ?? null)) as O, held), secrets, calls, notices, approvals, posts, webhooks, timers, calendar, booking };
   } catch (error) {
-    return { error: scrub(error instanceof Error ? error.message : String(error), held), secrets, calls, notices, approvals, posts, webhooks, timers, calendar };
+    return { error: scrub(error instanceof Error ? error.message : String(error), held), secrets, calls, notices, approvals, posts, webhooks, timers, calendar, booking };
   }
 }
 

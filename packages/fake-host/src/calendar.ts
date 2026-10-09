@@ -48,7 +48,34 @@ export interface FakeCalendarOptions {
   calendars?: Awaited<ReturnType<HandlerCalendar['calendars']>>['items'];
   /** Members of the workspace; others are refused. Default: everyone named anywhere above, plus the caller. */
   members?: string[];
+  /** Booking links' hosts who said yes, by link key (CA05). */
+  offers?: Record<string, string[]>;
+  /** Bookings already made, e.g. to test a manage link. */
+  bookings?: FakeBooking[];
 }
+
+/** A booking as the fake host keeps it (CA05), with the secret Brydio would only ever email. */
+export interface FakeBooking {
+  id: string;
+  link: string;
+  host: string;
+  event: string;
+  token: string;
+  status: 'booked' | 'cancelled';
+  guest: { email: string; name?: string };
+  createdAt: string;
+}
+
+/** The booking state a run starts with and ends with. */
+export interface FakeBookingState {
+  offers: Map<string, Set<string>>;
+  bookings: Map<string, FakeBooking>;
+}
+
+export const bookingStateOf = (options: FakeCalendarOptions): FakeBookingState => ({
+  offers: new Map(Object.entries(options.offers ?? {}).map(([link, members]) => [link, new Set(members)])),
+  bookings: new Map((options.bookings ?? []).map(one => [one.id, { ...one }])),
+});
 
 const MAX_RANGE_DAYS = 62;
 const DAY = 86_400_000;
@@ -59,10 +86,16 @@ const refuse = (code: string, words: string): never => {
 };
 
 /** The calendar a handler gets from the fake host, over `events`. */
-export function fakeCalendar(options: FakeCalendarOptions, callerId: string, events: Map<string, FakeCalendarEvent>): HandlerCalendar {
+export function fakeCalendar(
+  options: FakeCalendarOptions,
+  callerId: string,
+  events: Map<string, FakeCalendarEvent>,
+  state: FakeBookingState = bookingStateOf(options),
+  visitor = false
+): HandlerCalendar {
   let serial = 0;
   const people = new Map((options.people ?? []).map(one => [one.member, one]));
-  const members = new Set(options.members ?? [callerId, ...people.keys(), ...[...events.values()].flatMap(one => [one.owner, ...(one.attendees ?? []).flatMap(a => (a.member ? [a.member] : []))])]);
+  const members = new Set(options.members ?? [callerId, ...people.keys(), ...Object.values(options.offers ?? {}).flat(), ...[...events.values()].flatMap(one => [one.owner, ...(one.attendees ?? []).flatMap(a => (a.member ? [a.member] : []))])]);
 
   const member = (id: unknown) => {
     if (typeof id !== 'string' || !members.has(id)) refuse('calendar_not_found', 'One of those people is not a member here.');
@@ -262,6 +295,97 @@ export function fakeCalendar(options: FakeCalendarOptions, callerId: string, eve
       }
       return { cancelled: event.id };
     },
+    async offer(query) {
+      if (visitor) refuse('calendar_forbidden', 'Only a member says yes to being booked.');
+      const link = linkKey(query.link);
+      const hosts = state.offers.get(link) ?? new Set<string>();
+      if (query.on === false) hosts.delete(callerId);
+      else hosts.add(callerId);
+      state.offers.set(link, hosts);
+      return { link, offered: query.on !== false };
+    },
+    async offers(query) {
+      const link = linkKey(query.link);
+      return { link, members: [...(state.offers.get(link) ?? [])].sort() };
+    },
+    async free(query) {
+      const link = linkKey(query.link);
+      const { from, to } = span(query);
+      const hosts = [...(state.offers.get(link) ?? [])].filter(one => !query.people || query.people.includes(one));
+      const mine = [...state.bookings.values()].filter(one => one.link === link && one.status === 'booked');
+      return {
+        people: hosts.map(host => ({
+          member: host,
+          timeZone: personOf(host).timeZone,
+          busy: occurrences(from, to, [host])
+            .filter(o => o.showAs !== 'free')
+            .map(o => ({ start: o.start, end: o.end })),
+          working: [],
+          booked: mine.filter(one => one.host === host).flatMap(one => (events.get(one.event) ? [events.get(one.event)!.start] : [])).sort(),
+          lastBookedAt: mine.filter(one => one.host === host).map(one => one.createdAt).sort().at(-1) ?? null,
+        })),
+      };
+    },
+    async book(input) {
+      const link = linkKey(input.link);
+      if (!state.offers.get(link)?.has(input.host)) refuse('calendar_not_offered', 'That person can’t be booked through this link.');
+      const start = Date.parse(input.start);
+      const end = Date.parse(input.end);
+      if (Number.isNaN(start) || Number.isNaN(end) || end <= start) refuse('calendar_invalid', 'A booking runs forward, a day at most.');
+      const before = (input.buffer?.before ?? 0) * 60_000;
+      const after = (input.buffer?.after ?? 0) * 60_000;
+      if (occurrences(start - before, end + after, [input.host]).some(o => o.showAs !== 'free')) refuse('calendar_taken', 'That time was just taken. Pick another.');
+      const email = String(input.guest?.email ?? '').trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+$/.test(email)) refuse('calendar_invalid', 'guest.email is the booker’s email address.');
+      const event = `evt_fake_${++serial}`;
+      events.set(event, {
+        id: event,
+        owner: input.host,
+        title: input.title,
+        start: new Date(start).toISOString(),
+        end: new Date(end).toISOString(),
+        timeZone: input.timeZone,
+        description: input.description ?? null,
+        location: input.location ?? null,
+        attendees: [{ kind: 'email', email, ...(input.guest.name ? { name: input.guest.name } : {}), response: 'accepted' }],
+      });
+      const id = `bkg_fake_${++serial}`;
+      state.bookings.set(id, { id, link, host: input.host, event, token: `tok_${id}_secret_secret`, status: 'booked', guest: { email, ...(input.guest.name ? { name: input.guest.name } : {}) }, createdAt: new Date().toISOString() });
+      return { booking: id, event, host: input.host, start: new Date(start).toISOString(), end: new Date(end).toISOString() };
+    },
+    async booking(query) {
+      const found = [...state.bookings.values()].find(one => one.token === query?.token);
+      if (!found) return null;
+      const event = events.get(found.event);
+      return {
+        booking: found.id,
+        link: found.link,
+        host: found.host,
+        status: found.status,
+        start: event?.start ?? null,
+        end: event?.end ?? null,
+        timeZone: event?.timeZone ?? null,
+        title: event?.title ?? null,
+      };
+    },
+    async rebook(change) {
+      const found = [...state.bookings.values()].find(one => one.token === change?.token);
+      if (!found || found.status !== 'booked' || !events.get(found.event)) refuse('calendar_not_found', 'That booking is no longer there.');
+      if (!state.offers.get(found!.link)?.has(found!.host)) refuse('calendar_not_offered', 'That person can’t be booked through this link any more.');
+      const start = Date.parse(change.start);
+      const end = Date.parse(change.end);
+      const clash = occurrences(start, end, [found!.host]).some(o => o.event !== found!.event && o.showAs !== 'free');
+      if (clash) refuse('calendar_taken', 'That time was just taken. Pick another.');
+      events.set(found!.event, { ...events.get(found!.event)!, start: new Date(start).toISOString(), end: new Date(end).toISOString() });
+      return { booking: found!.id, start: new Date(start).toISOString(), end: new Date(end).toISOString() };
+    },
+    async unbook(query) {
+      const found = [...state.bookings.values()].find(one => one.token === query?.token);
+      if (!found || found.status !== 'booked') refuse('calendar_not_found', 'That booking is no longer there.');
+      events.delete(found!.event);
+      found!.status = 'cancelled';
+      return { booking: found!.id, cancelled: true as const };
+    },
     async respond(id, response) {
       if (!RESPONSES.includes(response)) refuse('calendar_invalid', `calendar.respond takes one of ${RESPONSES.join(', ')}.`);
       const raw = String(id);
@@ -271,6 +395,11 @@ export function fakeCalendar(options: FakeCalendarOptions, callerId: string, eve
       return one(event!.id);
     },
   };
+}
+
+function linkKey(raw: unknown): string {
+  if (typeof raw !== 'string' || !/^[A-Za-z0-9:_.-]{1,120}$/.test(raw)) refuse('calendar_invalid', 'link is the app’s own key for the booking link (letters, digits, : _ . -, up to 120).');
+  return raw as string;
 }
 
 const WEEKDAYS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
