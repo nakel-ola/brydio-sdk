@@ -236,6 +236,15 @@ export function fakeCalendar(
     };
   };
 
+  /** A room holds one meeting at a time (CA06). */
+  const roomFree = (input: CalendarEventInput, except?: string) => {
+    if (!input.room) return;
+    const start = Date.parse(input.start);
+    const end = Date.parse(input.end);
+    const clash = [...events.values()].some(one => one.id !== except && one.room === input.room && one.status !== 'cancelled' && Date.parse(one.start) < end && Date.parse(one.end) > start);
+    if (clash) refuse('calendar_room_taken', 'That room is booked then. Pick another room or time.');
+  };
+
   const one = (id: string) => {
     const at = id.lastIndexOf('@');
     const event = events.get(at >= 0 ? id.slice(0, at) : id);
@@ -272,12 +281,14 @@ export function fakeCalendar(
       return { items: options.calendars ?? [] };
     },
     async create(input) {
+      roomFree(input);
       const id = `evt_fake_${++serial}`;
       events.set(id, { id, owner: callerId, ...shaped(input) });
       return one(id);
     },
     async update(id, input, options) {
       const { event, originalStart } = editable(id);
+      roomFree(input, event.id);
       const scope = options?.scope ?? 'all';
       const at = options?.originalStart ?? originalStart;
       if (scope === 'this' && event.rrule) {
@@ -298,6 +309,21 @@ export function fakeCalendar(
         events.delete(event.id);
       }
       return { cancelled: event.id };
+    },
+    async rooms(query) {
+      const { from, to } = span(query);
+      const taken = (room: string) =>
+        [...events.values()]
+          .filter(one => one.room === room && one.status !== 'cancelled' && one.showAs !== 'free')
+          .flatMap(one => {
+            const start = Date.parse(one.start);
+            const length = Date.parse(one.end) - start;
+            return (one.rrule ? expand(one.rrule, start, to) : [start]).map(at => ({ start: at, end: at + length }));
+          })
+          .filter(one => one.start < to && one.end > from)
+          .sort((a, b) => a.start - b.start)
+          .map(one => ({ start: new Date(one.start).toISOString(), end: new Date(one.end).toISOString() }));
+      return { rooms: query.rooms.map(room => ({ room, busy: taken(room) })) };
     },
     async offer(query) {
       if (visitor) refuse('calendar_forbidden', 'Only a member says yes to being booked.');

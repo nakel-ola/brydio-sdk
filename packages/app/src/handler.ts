@@ -608,6 +608,13 @@ export interface HandlerCalendar {
   /** The caller answers an invitation they are on (a series answers as a whole). */
   respond(id: string, response: CalendarResponse): Promise<CalendarOccurrence | null>;
 
+  /**
+   * When each room or resource (the app's own ids, as events carry them in
+   * `room`) is taken in [from, to), across the whole workspace: times only.
+   * An event that books a room taken then is refused `(calendar_room_taken)`.
+   */
+  rooms(query: { rooms: string[]; from: string; to: string }): Promise<{ rooms: { room: string; busy: { start: string; end: string }[] }[] }>;
+
   // Booking links (CA05). `link` is the app's own key for a link, e.g. its record id.
 
   /** The caller says yes (or with `on: false`, no longer) to being booked through `link`. Write tool; members only. */
