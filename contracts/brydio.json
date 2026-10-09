@@ -1,7 +1,7 @@
 {
   "brydio": {
-    "commit": "f16e3222252c71cfa7a0137a48e9e14f23f3a9bc",
-    "dirty": true
+    "commit": "34fdd90ead264bd04553f700d3eb2762907f4740",
+    "dirty": false
   },
   "contracts": {
     "anonymous-problems": {
@@ -6877,6 +6877,189 @@
           "events": [
             "press",
             "remove"
+          ],
+          "children": false
+        },
+        "bry-calendar-view": {
+          "props": {
+            "view": {
+              "kind": "enum",
+              "values": [
+                "day",
+                "week",
+                "month",
+                "agenda"
+              ]
+            },
+            "date": {
+              "kind": "text",
+              "max": 10
+            },
+            "zone": {
+              "kind": "text",
+              "max": 64
+            },
+            "secondzone": {
+              "kind": "text",
+              "max": 64
+            },
+            "events": {
+              "kind": "list",
+              "max": 2000,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "title": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "start": {
+                    "kind": "text",
+                    "max": 32
+                  },
+                  "end": {
+                    "kind": "text",
+                    "max": 32
+                  },
+                  "allday": {
+                    "kind": "boolean"
+                  },
+                  "hue": {
+                    "kind": "enum",
+                    "values": [
+                      "gray",
+                      "red",
+                      "orange",
+                      "yellow",
+                      "green",
+                      "teal",
+                      "blue",
+                      "indigo",
+                      "purple",
+                      "pink"
+                    ]
+                  },
+                  "editable": {
+                    "kind": "boolean"
+                  },
+                  "busy": {
+                    "kind": "boolean"
+                  },
+                  "tentative": {
+                    "kind": "boolean"
+                  },
+                  "cancelled": {
+                    "kind": "boolean"
+                  },
+                  "meta": {
+                    "kind": "text",
+                    "max": 200
+                  }
+                },
+                "required": [
+                  "id",
+                  "start",
+                  "end"
+                ]
+              }
+            },
+            "shaded": {
+              "kind": "list",
+              "max": 500,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "start": {
+                    "kind": "text",
+                    "max": 32
+                  },
+                  "end": {
+                    "kind": "text",
+                    "max": 32
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "hue": {
+                    "kind": "enum",
+                    "values": [
+                      "gray",
+                      "red",
+                      "orange",
+                      "yellow",
+                      "green",
+                      "teal",
+                      "blue",
+                      "indigo",
+                      "purple",
+                      "pink"
+                    ]
+                  }
+                },
+                "required": [
+                  "start",
+                  "end"
+                ]
+              }
+            },
+            "workday": {
+              "kind": "shape",
+              "fields": {
+                "days": {
+                  "kind": "list",
+                  "max": 7,
+                  "of": {
+                    "kind": "int",
+                    "min": 0,
+                    "max": 6
+                  }
+                },
+                "start": {
+                  "kind": "text",
+                  "max": 5
+                },
+                "end": {
+                  "kind": "text",
+                  "max": 5
+                }
+              },
+              "required": [
+                "start",
+                "end"
+              ]
+            },
+            "creatable": {
+              "kind": "boolean"
+            },
+            "slotminutes": {
+              "kind": "int",
+              "min": 5,
+              "max": 60
+            },
+            "settled": {
+              "kind": "text",
+              "max": 128
+            },
+            "loading": {
+              "kind": "boolean"
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "events": [
+            "select",
+            "create",
+            "move",
+            "resize",
+            "navigate",
+            "pick"
           ],
           "children": false
         }

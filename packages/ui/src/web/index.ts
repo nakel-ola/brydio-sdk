@@ -30,6 +30,8 @@ import './draw/a23-overlays.ts';
 // Plan fidelity
 import './draw/plan.ts';
 import './draw/tracker.ts';
+// CA02
+import './draw/calendar-view.ts';
 import { defineCatalogue } from './define.ts';
 
 export { BryElement } from './base.ts';

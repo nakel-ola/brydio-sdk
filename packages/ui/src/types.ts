@@ -443,6 +443,24 @@ export interface ElementEventDetails {
     /** Its cross was pressed. */
     remove: undefined;
   };
+  'bry-calendar-view': {
+    /** An event was pressed, or Enter pressed on it. */
+    select: { id: string };
+    /**
+     * With `creatable`: empty time was dragged across, or New event pressed.
+     * UTC instants (`2026-10-07T09:00:00Z`), or ISO dates when `allday`, the
+     * end the day after the last.
+     */
+    create: { start: string; end: string; allday: boolean };
+    /** An `editable` event was dragged or Alt+arrowed elsewhere. Answer with `events`, or `settled` with its id. */
+    move: { id: string; start: string; end: string; allday: boolean };
+    /** An `editable` event's end was dragged, or Alt+Shift+arrowed. Answer as for `move`. */
+    resize: { id: string; start: string; end: string };
+    /** Today, Previous, Next or a view pill: what is shown now, `date` an ISO date in it. */
+    navigate: { view: 'day' | 'week' | 'month' | 'agenda'; date: string };
+    /** A day's name or number was pressed: the ISO date. */
+    pick: { date: string };
+  };
 }
 
 /** What an element's event carries: its own detail if it has one, else the shared one. */

@@ -18,7 +18,7 @@ A toast is not an element: it is said, not placed. A screen shows one with
 `toast(text, tone)` from `@brydio/app`, which Brydio draws in its own
 toaster; see [the bridge](bridge.md).
 
-There are 99 elements.
+There are 100 elements.
 
 - [`bry-stack`](#bry-stack)
 - [`bry-heading`](#bry-heading)
@@ -119,6 +119,7 @@ There are 99 elements.
 - [`bry-property-row`](#bry-property-row)
 - [`bry-keys`](#bry-keys)
 - [`bry-filter-chip`](#bry-filter-chip)
+- [`bry-calendar-view`](#bry-calendar-view)
 
 ## `bry-stack`
 
@@ -1567,3 +1568,24 @@ Holds nothing: it is drawn from its settings alone.
 | `marks` | a list of at most 4: a record of `mark`, `tone`, `hue`, `name` (needs `mark`) | no |
 
 Tells the app: `press`, `remove`.
+
+## `bry-calendar-view`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `view` | `day`, `week`, `month`, `agenda` | no |
+| `date` | text, at most 10 characters | no |
+| `zone` | text, at most 64 characters | no |
+| `secondzone` | text, at most 64 characters | no |
+| `events` | a list of at most 2,000: a record of `id`, `title`, `start`, `end`, `allday`, `hue`, `editable`, `busy`, `tentative`, `cancelled`, `meta` (needs `id`, `start`, `end`) | no |
+| `shaded` | a list of at most 500: a record of `start`, `end`, `label`, `hue` (needs `start`, `end`) | no |
+| `workday` | a record of `days`, `start`, `end` (needs `start`, `end`) | no |
+| `creatable` | `true` or `false` | no |
+| `slotminutes` | a whole number from 5 to 60 | no |
+| `settled` | text, at most 128 characters | no |
+| `loading` | `true` or `false` | no |
+| `empty` | text, at most 200 characters | no |
+
+Tells the app: `select`, `create`, `move`, `resize`, `navigate`, `pick`.

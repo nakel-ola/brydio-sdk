@@ -300,6 +300,19 @@ export const FILTER_OPTIONS = 200;
 export const ISO_TIME = 40;
 /** How wide a day is drawn in a Gantt chart: a column per day, per week or per month. */
 export const GANTT_ZOOMS = ['day', 'week', 'month', 'quarter'] as const;
+
+/** `bry-calendar-view`'s views: a day, a week, a month, or the days' events as a list. */
+export const CALENDAR_VIEWS = ['day', 'week', 'month', 'agenda'] as const;
+/** The most events one calendar view draws. */
+export const CALENDAR_VIEW_EVENTS = 2_000;
+/** The most shaded spans one calendar view draws. */
+export const CALENDAR_VIEW_SHADED = 500;
+/** An ISO instant with an offset and milliseconds: `2026-10-07T09:00:00.000+05:30`. */
+const INSTANT = 32;
+/** The longest IANA time zone name, with room to spare. */
+const ZONE = 64;
+/** A time of day, `HH:MM`. */
+const CLOCK = 5;
 /** The most rows one Gantt chart draws. */
 export const GANTT_ROWS = 500;
 /** What an activity changed, each drawn with its own mark. */
@@ -2308,6 +2321,94 @@ export const CATALOGUE = {
     },
     required: ['label'],
     events: ['press', 'remove'],
+    children: false,
+  },
+  'bry-calendar-view': {
+    // A day, week or month of events on a time grid, or the same events as
+    // an agenda (CA02). `view` is what is shown and `date` an ISO date in it
+    // (today without one); the toolbar's Today, Previous, Next and view
+    // pills move it at once and raise `navigate` with `{ view, date }`:
+    // answer with the new range's events. `zone` is the IANA zone the grid
+    // is drawn in (the viewer's without one); `secondzone` adds a second
+    // column of hours in the day and week views.
+    //
+    // Each of `events` runs from `start` to `end`: ISO instants, or ISO
+    // dates with `allday` (`end` the day after the last). `hue` tints it,
+    // `meta` is a small line under its title, `busy` draws a hatched "Busy"
+    // block without its title, `tentative` a dashed edge, `cancelled` a
+    // strike. Overlapping events sit side by side. Pressing one, or Enter
+    // on it, raises `select` with `{ id }`.
+    //
+    // An `editable` event dragged elsewhere raises `move` with
+    // `{ id, start, end, allday }`; its end dragged, `resize` with
+    // `{ id, start, end }`. Alt with the arrow keys moves it a slot or a
+    // day, Alt+Shift with Up or Down changes its end. Times come back as UTC
+    // instants, or dates when all day. It is drawn there at once: confirm by
+    // sending `events` again, or refuse by sending `settled` with its id and
+    // it goes back. A move with no answer goes back after fifteen seconds.
+    //
+    // With `creatable`, dragging across empty time (or New event) raises
+    // `create` with `{ start, end, allday }`. Pressing a day's name or
+    // number raises `pick` with `{ date }`. `shaded` spans are drawn behind
+    // the events (`label`, `hue`); `workday` shades the hours outside
+    // `start`-`end` on its `days` (0 is Sunday) in the day and week views.
+    // `slotminutes` is one grid row's length.
+    props: {
+      view: { kind: 'enum', values: CALENDAR_VIEWS },
+      date: { kind: 'text', max: ISO_DATE },
+      zone: { kind: 'text', max: ZONE },
+      secondzone: { kind: 'text', max: ZONE },
+      events: {
+        kind: 'list',
+        max: CALENDAR_VIEW_EVENTS,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            title: { kind: 'text', max: LABEL_MAX },
+            start: { kind: 'text', max: INSTANT },
+            end: { kind: 'text', max: INSTANT },
+            allday: { kind: 'boolean' },
+            hue: { kind: 'enum', values: HUES },
+            editable: { kind: 'boolean' },
+            busy: { kind: 'boolean' },
+            tentative: { kind: 'boolean' },
+            cancelled: { kind: 'boolean' },
+            meta: { kind: 'text', max: LABEL_MAX },
+          },
+          required: ['id', 'start', 'end'],
+        },
+      },
+      shaded: {
+        kind: 'list',
+        max: CALENDAR_VIEW_SHADED,
+        of: {
+          kind: 'shape',
+          fields: {
+            start: { kind: 'text', max: INSTANT },
+            end: { kind: 'text', max: INSTANT },
+            label: { kind: 'text', max: LABEL_MAX },
+            hue: { kind: 'enum', values: HUES },
+          },
+          required: ['start', 'end'],
+        },
+      },
+      workday: {
+        kind: 'shape',
+        fields: {
+          days: { kind: 'list', max: 7, of: { kind: 'int', min: 0, max: 6 } },
+          start: { kind: 'text', max: CLOCK },
+          end: { kind: 'text', max: CLOCK },
+        },
+        required: ['start', 'end'],
+      },
+      creatable: { kind: 'boolean' },
+      slotminutes: { kind: 'int', min: 5, max: 60 },
+      settled: { kind: 'text', max: KEY_MAX },
+      loading: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+    },
+    events: ['select', 'create', 'move', 'resize', 'navigate', 'pick'],
     children: false,
   },
 } as const satisfies Readonly<Record<`bry-${string}`, ElementSpec>>;

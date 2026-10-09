@@ -57,10 +57,10 @@ const $dirty = Symbol('dirty');
 
 /**
  * Settings that are an answer rather than a state, so saying the same again
- * is sent again: a board's `settled` puts a card back each time it arrives,
- * even when it names the card it named last time.
+ * is sent again: a board's `settled` puts a card back, and a calendar view's
+ * an event, each time it arrives, even when it names the one it named last time.
  */
-const ANSWERS: Partial<Record<ElementName, readonly string[]>> = { 'bry-board': ['settled'] };
+const ANSWERS: Partial<Record<ElementName, readonly string[]>> = { 'bry-board': ['settled'], 'bry-calendar-view': ['settled'] };
 
 let lastId = 0;
 

@@ -2241,3 +2241,124 @@ describe('the issue tracker drawings', () => {
     expect(selected).toEqual([{ id: 'todo' }]);
   });
 });
+
+describe('bry-calendar-view (CA02)', () => {
+  const EVENTS = [
+    { id: 'standup', title: 'Standup', start: '2026-10-07T09:00:00Z', end: '2026-10-07T09:30:00Z', hue: 'teal', editable: true },
+    { id: 'review', title: 'Design review', start: '2026-10-07T09:00:00Z', end: '2026-10-07T10:00:00Z', meta: 'Room 4' },
+    { id: 'busy', title: 'Doctor', start: '2026-10-08T10:00:00Z', end: '2026-10-08T11:00:00Z', busy: true },
+    { id: 'maybe', title: 'Lunch', start: '2026-10-08T12:00:00Z', end: '2026-10-08T13:00:00Z', tentative: true },
+    { id: 'off', title: 'Retro', start: '2026-10-09T15:00:00Z', end: '2026-10-09T16:00:00Z', cancelled: true },
+    { id: 'offsite', title: 'Offsite', start: '2026-10-06', end: '2026-10-07', allday: true },
+  ];
+  const json = (value: unknown) => JSON.stringify(value).replace(/"/g, '&quot;');
+  const press = (element: Element, key: string, init: KeyboardEventInit = {}) =>
+    element.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, composed: true, cancelable: true, ...init }));
+  const calendar = (settings = '') =>
+    page(`<bry-calendar-view id="cal" view="week" date="2026-10-07" zone="UTC" events="${json(EVENTS)}" ${settings}></bry-calendar-view>`);
+  const event = (id: string) => shadowOf('#cal').querySelector<HTMLElement>(`[data-event="${id}"]`);
+  const heard = (name: string) => {
+    const all: unknown[] = [];
+
+    document.querySelector('#cal')!.addEventListener(name, found => all.push((found as CustomEvent).detail));
+
+    return all;
+  };
+
+  test('draws a week of events side by side, busy without its title, tentative and cancelled marked', async () => {
+    await calendar();
+
+    const standup = event('standup')!;
+    const review = event('review')!;
+
+    // The longer one first, as FullCalendar orders them.
+    expect(review.getAttribute('style')).toContain('inset-inline-start: 0%; width: 50%');
+    expect(standup.getAttribute('style')).toContain('inset-inline-start: 50%; width: 50%');
+    expect(standup.classList.contains('hue-teal')).toBe(true);
+    expect(event('busy')!.textContent).toContain('Busy');
+    expect(event('busy')!.textContent).not.toContain('Doctor');
+    expect(event('maybe')!.classList.contains('tentative')).toBe(true);
+    expect(event('off')!.getAttribute('aria-label')).toContain('cancelled');
+    expect(event('offsite')!.closest('.all-day')).not.toBeNull();
+  });
+
+  test('draws the day, month and agenda views', async () => {
+    for (const view of ['day', 'month', 'agenda']) {
+      await page(`<bry-calendar-view id="cal" view="${view}" date="2026-10-07" zone="UTC" events="${json(EVENTS)}"></bry-calendar-view>`);
+      expect(shadowOf('#cal').querySelector('.calendar')!.getAttribute('data-view')).toBe(view);
+      expect(event('standup')).not.toBeNull();
+    }
+
+    expect(shadowOf('#cal').querySelectorAll('.agenda-day').length).toBe(4);
+  });
+
+  test('shades the app spans and the hours outside the working day', async () => {
+    await calendar(
+      `shaded="${json([{ start: '2026-10-08T14:00:00Z', end: '2026-10-08T16:00:00Z', label: 'Grace is busy' }])}" workday="${json({ days: [1, 2, 3, 4, 5], start: '09:00', end: '17:00' })}"`,
+    );
+
+    expect(shadowOf('#cal').querySelector('[data-shade="Grace is busy"]')).not.toBeNull();
+    // Two spans on each working day, one whole day on each of the weekend's.
+    expect(shadowOf('#cal').querySelectorAll('[data-off]').length).toBe(5 * 2 + 2);
+  });
+
+  test('says select, navigate, pick and create with the same details as Brydio', async () => {
+    await calendar('creatable');
+
+    const selected = heard('select');
+    const navigated = heard('navigate');
+    const picked = heard('pick');
+    const created = heard('create');
+
+    event('standup')!.click();
+    expect(selected).toEqual([{ id: 'standup' }]);
+
+    shadowOf('#cal').querySelector<HTMLElement>('[data-day="2026-10-07"]')!.click();
+    expect(picked).toEqual([{ date: '2026-10-07' }]);
+
+    shadowOf('#cal').querySelector<HTMLElement>('[aria-label="Next"]')!.click();
+    expect(navigated).toEqual([{ view: 'week', date: '2026-10-14' }]);
+
+    await settle();
+    Array.from(shadowOf('#cal').querySelectorAll<HTMLElement>('.view')).find(one => one.textContent!.trim() === 'Month')!.click();
+    expect(navigated.at(-1)).toEqual({ view: 'month', date: '2026-10-14' });
+
+    await settle();
+    shadowOf('#cal').querySelector<HTMLElement>('.new')!.click();
+    expect(created).toEqual([{ start: '2026-10-14T09:00:00Z', end: '2026-10-14T09:30:00Z', allday: false }]);
+  });
+
+  test('moves an event from the keyboard, draws it there, and puts it back when the app sends settled', async () => {
+    await page(`<bry-calendar-view id="cal" view="day" date="2026-10-07" zone="UTC" events="${json(EVENTS)}"></bry-calendar-view>`);
+
+    const moved = heard('move');
+    const element = document.querySelector('#cal') as HTMLElement & { updateComplete: Promise<unknown> };
+    const top = () => event('standup')!.style.top;
+    const before = top();
+
+    press(event('standup')!, 'ArrowDown', { altKey: true });
+    await element.updateComplete;
+    expect(moved).toEqual([{ id: 'standup', start: '2026-10-07T09:30:00Z', end: '2026-10-07T10:00:00Z', allday: false }]);
+    expect(top()).not.toBe(before);
+
+    element.setAttribute('settled', 'standup');
+    await element.updateComplete;
+    expect(top()).toBe(before);
+
+    // The same refusal again, for a second move, is still heard.
+    press(event('standup')!, 'ArrowDown', { altKey: true });
+    await element.updateComplete;
+    expect(top()).not.toBe(before);
+    element.setAttribute('settled', 'standup');
+    await element.updateComplete;
+    expect(top()).toBe(before);
+  });
+
+  test('says the app empty words when there are no events, and is a placeholder while loading', async () => {
+    await page('<bry-calendar-view id="cal" view="week" date="2026-10-07" events="[]" empty="A quiet week"></bry-calendar-view>');
+    expect(shadowOf('#cal').querySelector('.empty')!.textContent).toContain('A quiet week');
+
+    await page('<bry-calendar-view id="cal" loading></bry-calendar-view>');
+    expect(shadowOf('#cal').querySelector('[role="status"]')).not.toBeNull();
+  });
+});

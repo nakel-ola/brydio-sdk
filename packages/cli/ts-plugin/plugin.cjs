@@ -61,7 +61,7 @@ var __export = (target, all) => {
     });
 };
 
-// packages/cli/src/ts-plugin.ts
+// src/ts-plugin.ts
 var exports_ts_plugin = {};
 __export(exports_ts_plugin, {
   default: () => ts_plugin_default,
@@ -73,7 +73,7 @@ module.exports = __toCommonJS(exports_ts_plugin);
 var import_node_fs = require("node:fs");
 var import_node_path2 = require("node:path");
 
-// packages/ui/src/basics.ts
+// ../ui/src/basics.ts
 var PARAGRAPH_MAX = 4000;
 var TEXT_NODE = "#text";
 var FORBIDDEN_PROPS = {
@@ -91,7 +91,7 @@ function eventOfHandler(name) {
     return null;
   return name.slice(2).toLowerCase();
 }
-// packages/ui/src/catalogue.ts
+// ../ui/src/catalogue.ts
 var LABEL_MAX = 200;
 var GAPS = ["1", "2", "3", "4", "5", "6", "7", "8"];
 var PADDINGS = ["2", "3", "4", "5", "6"];
@@ -244,6 +244,12 @@ var PROPERTY_OPTIONS = 200;
 var FILTER_OPTIONS = 200;
 var ISO_TIME = 40;
 var GANTT_ZOOMS = ["day", "week", "month", "quarter"];
+var CALENDAR_VIEWS = ["day", "week", "month", "agenda"];
+var CALENDAR_VIEW_EVENTS = 2000;
+var CALENDAR_VIEW_SHADED = 500;
+var INSTANT = 32;
+var ZONE = 64;
+var CLOCK = 5;
 var GANTT_ROWS = 500;
 var ACTIVITY_MARKS = ["status", "priority", "assignee", "date", "title", "description", "duplicate", "created", "comment"];
 var COMMENT_ACTIONS = ["reply", "quote", "edit", "resolve", "copy", "copyLink", "subIssue", "delete"];
@@ -1908,10 +1914,69 @@ var CATALOGUE = {
     required: ["label"],
     events: ["press", "remove"],
     children: false
+  },
+  "bry-calendar-view": {
+    props: {
+      view: { kind: "enum", values: CALENDAR_VIEWS },
+      date: { kind: "text", max: ISO_DATE },
+      zone: { kind: "text", max: ZONE },
+      secondzone: { kind: "text", max: ZONE },
+      events: {
+        kind: "list",
+        max: CALENDAR_VIEW_EVENTS,
+        of: {
+          kind: "shape",
+          fields: {
+            id: { kind: "text", max: KEY_MAX },
+            title: { kind: "text", max: LABEL_MAX },
+            start: { kind: "text", max: INSTANT },
+            end: { kind: "text", max: INSTANT },
+            allday: { kind: "boolean" },
+            hue: { kind: "enum", values: HUES },
+            editable: { kind: "boolean" },
+            busy: { kind: "boolean" },
+            tentative: { kind: "boolean" },
+            cancelled: { kind: "boolean" },
+            meta: { kind: "text", max: LABEL_MAX }
+          },
+          required: ["id", "start", "end"]
+        }
+      },
+      shaded: {
+        kind: "list",
+        max: CALENDAR_VIEW_SHADED,
+        of: {
+          kind: "shape",
+          fields: {
+            start: { kind: "text", max: INSTANT },
+            end: { kind: "text", max: INSTANT },
+            label: { kind: "text", max: LABEL_MAX },
+            hue: { kind: "enum", values: HUES }
+          },
+          required: ["start", "end"]
+        }
+      },
+      workday: {
+        kind: "shape",
+        fields: {
+          days: { kind: "list", max: 7, of: { kind: "int", min: 0, max: 6 } },
+          start: { kind: "text", max: CLOCK },
+          end: { kind: "text", max: CLOCK }
+        },
+        required: ["start", "end"]
+      },
+      creatable: { kind: "boolean" },
+      slotminutes: { kind: "int", min: 5, max: 60 },
+      settled: { kind: "text", max: KEY_MAX },
+      loading: { kind: "boolean" },
+      empty: { kind: "text", max: LABEL_MAX }
+    },
+    events: ["select", "create", "move", "resize", "navigate", "pick"],
+    children: false
   }
 };
 var ELEMENT_NAMES = Object.keys(CATALOGUE);
-// packages/ui/src/checks.ts
+// ../ui/src/checks.ts
 function isElementName(value) {
   return typeof value === "string" && Object.prototype.hasOwnProperty.call(CATALOGUE, value);
 }
@@ -2017,7 +2082,7 @@ function checkEvent(element, event) {
     return null;
   return events.length ? `${element} raises ${events.join(", ")}, not "${event}".` : `${element} raises no events, so it takes no ${handlerName(event)}.`;
 }
-// packages/cli/src/source-checks.ts
+// src/source-checks.ts
 var import_node_path = require("node:path");
 var import_typescript = __toESM(require("typescript"));
 var PAGE = { code: "dom_global", why: "A screen has no page: it runs in a worker and draws only with the catalogue." };
@@ -2414,14 +2479,14 @@ function dedupe(problems) {
   });
 }
 
-// packages/cli/src/screen-sources.ts
+// src/screen-sources.ts
 var SOURCE_EXTENSIONS = [".tsx", ".ts", ".jsx", ".js"];
 function isScreenSource(path) {
   const normal = path.replace(/\\/g, "/");
   return /^src\//.test(normal) && SOURCE_EXTENSIONS.some((extension) => normal.endsWith(extension)) && !normal.endsWith(".d.ts") && !/(^|\/)(test|tests|__tests__)\/|\.(test|spec)\.[jt]sx?$/.test(normal);
 }
 
-// packages/cli/src/ts-plugin.ts
+// src/ts-plugin.ts
 var PLUGIN_SOURCE = "brydio";
 var PLUGIN_CODE = 91000;
 function appRootOf(file) {
