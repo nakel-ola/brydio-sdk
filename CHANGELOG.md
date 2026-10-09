@@ -22,6 +22,15 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.45
+
+The Calendar app's platform pieces (tasks/calendar CA02–CA06).
+
+- **`calendar` host grant and `client.calendar`.** A handler reads and writes the caller's calendar on Brydio's event layer (their own events and their Google, Outlook and CalDAV mirrors), always as the caller: `range`, `busy`, `event`, `calendars`, `rooms` from any tool; `create`, `update` (`scope: 'this' | 'all'`), `cancel`, `respond` from a write tool. Colleagues read busy-only unless they share details; only an event's owner changes it; outside guests get an email invite with an ICS unless `notify: false`. Booking links: `offer`/`offers` (a member's own yes to being booked through a link), and `free`, `book`, `booking`, `rebook`, `unbook`, which a visitor on the app's public page may call. See [Calendar](docs/calendar.md). Nothing to change unless you want it.
+- **New element `bry-calendar-view`.** Day, week, month and agenda over `events` (hue per calendar, busy-only, tentative and cancelled looks), `shaded` spans, `workday` shading, a second time zone; raises `select`, `create`, `move`, `resize`, `navigate`, `pick`; a drag is drawn at once and `settled` puts it back.
+- `@brydio/fake-host`: an in-memory event layer with Brydio's rules for sharing, owners, invitations, rooms and booking links (`calendar` option; `run.calendar`, `run.booking`). The fake expands DAILY and WEEKLY rules on UTC days.
+- `@brydio/app`: `bry-calendar-view` answers with `settled` like `bry-board` (a second refusal of the same item reaches the host).
+
 ## 0.1.0-alpha.44
 
 - `@brydio/fake-host`: `FixtureStore` lists answer P5's range and set operators on open tables as Brydio's store does: `gt`, `gte`, `lt`, `lte`, `between`, `empty`, `anyOf`, `noneOf`, `containsAny`, `containsAll`, `is`, `in` (`{ amount: { gte: 50 } }`, `{ links: { in: [id] } }`). An unknown operator is refused in words. Tests that used them against the fake now see the same rows as in a workspace.
