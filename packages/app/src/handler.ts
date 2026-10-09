@@ -570,6 +570,8 @@ export interface CalendarEventInput {
   visibility?: 'default' | 'private';
   project?: string | null;
   room?: string | null;
+  /** Email outside guests an invitation with an ICS (and a change or cancellation later). Default true. */
+  notify?: boolean;
 }
 
 /**
@@ -600,7 +602,7 @@ export interface HandlerCalendar {
   create(event: CalendarEventInput): Promise<CalendarOccurrence | null>;
   /** `scope` `this` changes one occurrence (an occurrence id names it); `all` the event or series. */
   update(id: string, event: CalendarEventInput, options?: { scope?: 'this' | 'all'; originalStart?: string }): Promise<CalendarOccurrence | null>;
-  cancel(id: string, options?: { scope?: 'this' | 'all'; originalStart?: string }): Promise<{ cancelled: string }>;
+  cancel(id: string, options?: { scope?: 'this' | 'all'; originalStart?: string; notify?: boolean }): Promise<{ cancelled: string }>;
   /** The caller answers an invitation they are on (a series answers as a whole). */
   respond(id: string, response: CalendarResponse): Promise<CalendarOccurrence | null>;
 }

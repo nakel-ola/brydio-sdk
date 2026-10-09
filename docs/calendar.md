@@ -66,6 +66,12 @@ await calendar.cancel('evt_1@2026-10-27T14:00:00.000Z', { scope: 'this' });
 await calendar.respond('evt_9', 'accepted'); // needs_action | accepted | tentative | declined
 ```
 
+Outside guests (attendees by `email`) get an invitation by email with an ICS
+attached, then the change or cancellation when it happens; a guest taken off
+the event gets a cancellation. Pass `notify: false` (on the event, or in
+`cancel`'s options) to write without mailing. Brydio people are not mailed:
+post your own card to them with the `chat` grant.
+
 Only the event's owner changes or cancels it. `respond` is for a Brydio
 person invited to a Brydio event; a series answers as a whole.
 
@@ -94,4 +100,4 @@ run.calendar; // the events after the run, by id
 ```
 
 The fake expands `DAILY` and `WEEKLY` rules on UTC days; Brydio expands every
-rule in the event's own zone, keeping DST.
+rule in the event's own zone, keeping DST. The fake sends no mail.
