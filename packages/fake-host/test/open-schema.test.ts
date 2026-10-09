@@ -159,3 +159,43 @@ describe('an open-schema collection in the fake host (P5)', () => {
     expect(row('row_1')).toMatchObject({ amount: '1,200', version: 1 });
   });
 });
+
+describe('range and set operators in the fixture store (P5)', () => {
+  test('filter an open table as Brydio does', async () => {
+    const { FixtureStore } = await import('../src/index.ts');
+    const store = new FixtureStore({
+      data: {
+        columns: { schema: { table: 'string', key: 'string?', name: 'string', type: ['number', 'date', 'select', 'multi_select', 'person', 'link', 'checkbox', 'text'], choices: 'string[]' } },
+        rows: { schema: { table: 'string' }, openSchema: { fields: 'columns', table: 'table' } },
+      },
+      tools: { generated: true },
+    } as never);
+    const tools = store.tools();
+
+    for (const [name, type, choices] of [['Amount', 'number', []], ['Due', 'date', []], ['Stage', 'select', ['won', 'lost', 'open']], ['Tags', 'multi_select', ['vip', 'new']], ['Owner', 'person', []], ['Links', 'link', []], ['Paid', 'checkbox', []]] as const) {
+      await tools.create_column!({ table: 't', name, type, choices: [...choices] });
+    }
+    const rows = [
+      { amount: 5, due: '2026-10-01', stage: 'won', tags: ['vip'], owner: 'user_a', links: ['r1', 'r2'], paid: true },
+      { amount: 50, due: '2026-10-20', stage: 'lost', tags: ['vip', 'new'], owner: 'user_b', links: ['r3'], paid: false },
+      { amount: 500, stage: 'open', tags: [], links: [] },
+    ];
+
+    for (const row of rows) await tools.create_row!({ table: 't', ...row });
+    const amounts = async (filter: Record<string, unknown>) =>
+      ((await tools.list_rows!({ filter: { table: 't', ...filter }, sort: { field: 'amount', dir: 'asc' } })).structuredContent as { items: { amount: number }[] }).items.map(one => one.amount);
+
+    expect(await amounts({ amount: { gte: 50 } })).toEqual([50, 500]);
+    expect(await amounts({ amount: { between: [1, 60] } })).toEqual([5, 50]);
+    expect(await amounts({ due: { lt: '2026-10-10' } })).toEqual([5]);
+    expect(await amounts({ due: { empty: true } })).toEqual([500]);
+    expect(await amounts({ stage: { anyOf: ['won', 'open'] } })).toEqual([5, 500]);
+    expect(await amounts({ stage: { noneOf: ['won'] } })).toEqual([50, 500]);
+    expect(await amounts({ tags: { containsAll: ['vip', 'new'] } })).toEqual([50]);
+    expect(await amounts({ tags: { containsAny: ['new'] } })).toEqual([50]);
+    expect(await amounts({ owner: { in: ['user_a', 'user_z'] } })).toEqual([5]);
+    expect(await amounts({ links: { in: ['r3', 'r9'] } })).toEqual([50]);
+    expect(await amounts({ paid: { is: true } })).toEqual([5]);
+    expect((await tools.list_rows!({ filter: { table: 't', amount: { near: 3 } } })).isError).toBe(true);
+  });
+});

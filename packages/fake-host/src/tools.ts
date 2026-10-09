@@ -564,6 +564,7 @@ export class FixtureStore {
         Object.entries(filter).every(([field, want]) => {
           const have = record[field];
 
+          if (want !== null && typeof want === 'object' && !Array.isArray(want)) return matchesOperators(field, have, want as Record<string, unknown>);
           if (want === null) return have === undefined || have === null || (Array.isArray(have) && !have.length);
           if (Array.isArray(have)) return (Array.isArray(want) ? want : [want]).every(one => have.includes(one));
 
@@ -1050,4 +1051,62 @@ function inputFor(verb: ToolVerb, spec: CollectionSpec): z.ZodObject {
     case 'search':
       return z.object({ q: z.string().min(1).max(200), filter: filterSchema(spec), limit: limitSchema });
   }
+}
+
+/** P5's range and set operators, as Brydio's store answers them (`apps/data/open-filter.ts`). */
+export const OPEN_OPERATORS = ['gt', 'gte', 'lt', 'lte', 'between', 'empty', 'anyOf', 'noneOf', 'containsAny', 'containsAll', 'is', 'in'] as const;
+
+const isEmptyValue = (value: unknown) => value === undefined || value === null || value === '' || (Array.isArray(value) && !value.length);
+
+/**
+ * Whether a value meets a filter's operators: `{ gte: 5 }`, `{ between: [a, b] }`,
+ * `{ anyOf: [...] }`, `{ in: [...] }`, `{ empty: true }`. Numbers compare as
+ * numbers and dates as their ISO text; `in` matches a person by id or a link
+ * holding any of the ids.
+ */
+function matchesOperators(field: string, have: unknown, operators: Record<string, unknown>): boolean {
+  return Object.entries(operators).every(([operator, want]) => {
+    if (!(OPEN_OPERATORS as readonly string[]).includes(operator)) {
+      throw new Refused(`${field} takes ${OPEN_OPERATORS.join(', ')}, or a value to equal; ${operator} isn’t one.`, { error: 'invalid', field });
+    }
+    const list = Array.isArray(want) ? want : [want];
+    const values = Array.isArray(have) ? have : isEmptyValue(have) ? [] : [have];
+
+    switch (operator) {
+      case 'empty':
+        return isEmptyValue(have) === (want === true);
+      case 'is':
+        return (have === true) === (want === true);
+      case 'anyOf':
+        return !isEmptyValue(have) && list.includes(have);
+      case 'noneOf':
+        return isEmptyValue(have) || !list.includes(have);
+      case 'containsAny':
+      case 'in':
+        return values.some(one => list.includes(one));
+      case 'containsAll':
+        return list.every(one => values.includes(one));
+      case 'between': {
+        if (!Array.isArray(want) || want.length !== 2) throw new Refused(`${field}'s between takes two values, [from, to].`, { error: 'invalid', field });
+
+        return !isEmptyValue(have) && compare(have, want[0]) >= 0 && compare(have, want[1]) <= 0;
+      }
+      default: {
+        if (isEmptyValue(have)) return false;
+        const order = compare(have, want);
+
+        return operator === 'gt' ? order > 0 : operator === 'gte' ? order >= 0 : operator === 'lt' ? order < 0 : order <= 0;
+      }
+    }
+  });
+}
+
+function compare(a: unknown, b: unknown): number {
+  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  const [x, y] = [String(a), String(b)];
+
+  // A whole day as a bound takes in that day of a date-time (as Brydio's).
+  if (/^\d{4}-\d{2}-\d{2}$/.test(y) && x.length > 10) return x.slice(0, 10) < y ? -1 : x.slice(0, 10) > y ? 1 : 0;
+
+  return x < y ? -1 : x > y ? 1 : 0;
 }
