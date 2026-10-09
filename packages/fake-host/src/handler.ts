@@ -681,7 +681,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
     // CA02. An in-memory event layer with Brydio's rules for sharing, owners and invitations.
     calendar: Object.freeze(
       Object.fromEntries(
-        (['range', 'busy', 'event', 'calendars', 'create', 'update', 'cancel', 'respond', 'offer', 'offers', 'free', 'book', 'booking', 'rebook', 'unbook'] as const).map(name => [
+        (['range', 'busy', 'event', 'calendars', 'create', 'update', 'cancel', 'respond', 'rooms', 'offer', 'offers', 'free', 'book', 'booking', 'rebook', 'unbook'] as const).map(name => [
           name,
           recorded(
             `calendar.${name}`,
