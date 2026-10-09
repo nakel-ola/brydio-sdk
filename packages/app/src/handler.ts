@@ -661,13 +661,21 @@ export interface HandlerCalendar {
      * call (a call-only pass, CA-Q4).
      */
     call?: boolean;
-  }): Promise<{ booking: string; event: string; host: string; start: string; end: string }>;
+    /** The host confirms each booking: it waits as tentative and the booker is told it was asked for (CA05). */
+    confirm?: boolean;
+  }): Promise<{ booking: string; event: string; host: string; start: string; end: string; pending?: true }>;
+  /**
+   * The host answers a booking that waits for them: accepted, it is booked
+   * and the booker gets the invite; declined, it goes and they are told.
+   * Write tool; the host only.
+   */
+  confirm(answer: { booking: string; accept: boolean }): Promise<{ booking: string; status: 'booked' | 'cancelled' }>;
   /** A booking named by the secret from its email, or null. */
   booking(query: { token: string }): Promise<{
     booking: string;
     link: string;
     host: string;
-    status: 'booked' | 'cancelled';
+    status: 'booked' | 'pending' | 'cancelled';
     start: string | null;
     end: string | null;
     timeZone: string | null;

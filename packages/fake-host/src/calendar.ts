@@ -61,7 +61,7 @@ export interface FakeBooking {
   host: string;
   event: string;
   token: string;
-  status: 'booked' | 'cancelled';
+  status: 'booked' | 'pending' | 'cancelled';
   guest: { email: string; name?: string };
   createdAt: string;
 }
@@ -353,7 +353,7 @@ export function fakeCalendar(
       const link = linkKey(query.link);
       const { from, to } = span(query);
       const hosts = [...(state.offers.get(link) ?? [])].filter(one => !query.people || query.people.includes(one));
-      const mine = [...state.bookings.values()].filter(one => one.link === link && one.status === 'booked');
+      const mine = [...state.bookings.values()].filter(one => one.link === link && one.status !== 'cancelled');
       return {
         people: hosts.map(host => ({
           member: host,
@@ -389,11 +389,26 @@ export function fakeCalendar(
         description: input.description ?? null,
         location: input.location ?? null,
         attendees: [{ kind: 'email', email, ...(input.guest.name ? { name: input.guest.name } : {}), response: 'accepted' }],
+        ...(input.confirm ? { showAs: 'tentative' as const } : {}),
       });
       const id = `bkg_fake_${++serial}`;
-      state.bookings.set(id, { id, link, host: input.host, event, token: `tok_${id}_secret_secret`, status: 'booked', guest: { email, ...(input.guest.name ? { name: input.guest.name } : {}) }, createdAt: new Date().toISOString() });
+      state.bookings.set(id, { id, link, host: input.host, event, token: `tok_${id}_secret_secret`, status: input.confirm ? 'pending' : 'booked', guest: { email, ...(input.guest.name ? { name: input.guest.name } : {}) }, createdAt: new Date().toISOString() });
       if (input.call === true) state.passes.push({ event, email, via: 'booking' });
-      return { booking: id, event, host: input.host, start: new Date(start).toISOString(), end: new Date(end).toISOString() };
+      return { booking: id, event, host: input.host, start: new Date(start).toISOString(), end: new Date(end).toISOString(), ...(input.confirm ? { pending: true as const } : {}) };
+    },
+    async confirm(answer) {
+      if (visitor) refuse('calendar_forbidden', 'Only a member says yes to being booked.');
+      const found = state.bookings.get(answer?.booking);
+      if (!found || found.host !== callerId) refuse('calendar_not_found', 'There is no such booking request.');
+      if (found!.status !== 'pending') refuse('calendar_invalid', 'That booking isn’t waiting for an answer.');
+      if (answer.accept) {
+        events.set(found!.event, { ...events.get(found!.event)!, showAs: 'busy' });
+        found!.status = 'booked';
+      } else {
+        events.delete(found!.event);
+        found!.status = 'cancelled';
+      }
+      return { booking: found!.id, status: found!.status as 'booked' | 'cancelled' };
     },
     async booking(query) {
       const found = [...state.bookings.values()].find(one => one.token === query?.token);
@@ -423,7 +438,7 @@ export function fakeCalendar(
     },
     async unbook(query) {
       const found = [...state.bookings.values()].find(one => one.token === query?.token);
-      if (!found || found.status !== 'booked') refuse('calendar_not_found', 'That booking is no longer there.');
+      if (!found || found.status === 'cancelled') refuse('calendar_not_found', 'That booking is no longer there.');
       events.delete(found!.event);
       found!.status = 'cancelled';
       return { booking: found!.id, cancelled: true as const };

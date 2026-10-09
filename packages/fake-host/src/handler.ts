@@ -681,7 +681,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
     // CA02. An in-memory event layer with Brydio's rules for sharing, owners and invitations.
     calendar: Object.freeze(
       Object.fromEntries(
-        (['range', 'busy', 'event', 'calendars', 'create', 'update', 'cancel', 'respond', 'rooms', 'offer', 'offers', 'free', 'book', 'booking', 'rebook', 'unbook', 'call', 'pass'] as const).map(name => [
+        (['range', 'busy', 'event', 'calendars', 'create', 'update', 'cancel', 'respond', 'rooms', 'offer', 'offers', 'free', 'book', 'booking', 'rebook', 'unbook', 'call', 'pass', 'confirm'] as const).map(name => [
           name,
           recorded(
             `calendar.${name}`,
@@ -693,7 +693,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
                   if (name !== 'free' && name !== 'booking' && options.write === false) throw new Error(`${tool} is a read tool, so its handler can't change the calendar (read_tool)`);
                   keeps(method, args);
                 }
-              : seam('calendar', 'read and change your calendar', ['create', 'update', 'cancel', 'respond', 'offer', 'call', 'pass'].includes(name)),
+              : seam('calendar', 'read and change your calendar', ['create', 'update', 'cancel', 'respond', 'offer', 'call', 'pass', 'confirm'].includes(name)),
           ),
         ]),
       ) as unknown as HandlerCalendar,

@@ -144,4 +144,22 @@ describe('calendar in the fake host (CA02)', () => {
     const booked = await runHandler(book, {}, { manifest: manifest() as never, caller: { role: 'anonymous', origin: 'public' } as never, calendar: { offers: { intro: ['user_ada'] } } });
     expect(booked.booking.passes).toEqual([{ event: booked.result!.event, email: 'g@x.io', via: 'booking' }]);
   });
+
+  it('holds a booking that needs confirming, and the host answers it', async () => {
+    const book: Handler<Record<string, never>, unknown> = async (_input, { calendar }) =>
+      calendar.book({ link: 'intro', host: 'user_ada', title: 'Intro', start: '2026-10-13T09:00:00Z', end: '2026-10-13T09:30:00Z', timeZone: 'UTC', guest: { email: 'g@x.io' }, confirm: true });
+    const asked = await runHandler(book, {}, { manifest: manifest() as never, caller: { role: 'anonymous', origin: 'public' } as never, calendar: { offers: { intro: ['user_ada'] } } });
+    const [made] = [...asked.booking.bookings.values()];
+
+    expect(asked.result).toMatchObject({ pending: true });
+    expect(made!.status).toBe('pending');
+    expect(asked.calendar.get(made!.event)!.showAs).toBe('tentative');
+
+    const answer: Handler<{ accept: boolean }, unknown> = async ({ accept }, { calendar }) => calendar.confirm({ booking: made!.id, accept });
+    const options = (caller: string) => ({ manifest: manifest() as never, caller: { userId: caller }, calendar: { offers: { intro: ['user_ada'] }, events: [...asked.calendar.values()], bookings: [...asked.booking.bookings.values()] } });
+    expect((await runHandler(answer, { accept: true }, options('user_sam'))).error).toContain('(calendar_not_found)');
+    const yes = await runHandler(answer, { accept: true }, options('user_ada'));
+    expect(yes.result).toEqual({ booking: made!.id, status: 'booked' });
+    expect(yes.calendar.get(made!.event)!.showAs).toBe('busy');
+  });
 });
