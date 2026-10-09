@@ -21,6 +21,8 @@ commands, see the [SDK documentation site](../docs-site/README.md).
   another installed app's tool.
 - [Timers](timers.md) covers a handler's `timers` grant: running one of the
   app's own tools at a time or on a repeat.
+- [Calendar](calendar.md) covers a handler's `calendar` grant: the caller's
+  events on Brydio's event layer, colleagues' free time, and writing events.
 - [Brydio's AI](ai.md) covers calling Brydio's model: from a handler with
   the `model` grant, or from your own server with a developer API key.
 - [Publish checklist](publish-checklist.md) matches the checks and messages

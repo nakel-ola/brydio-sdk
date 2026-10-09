@@ -489,6 +489,122 @@ export interface HandlerTimers {
   list(): Promise<{ items: HandlerTimer[] }>;
 }
 
+/** An attendee as a handler reads and writes them (CA02): members by user id, bots by id, outsiders by address. */
+export interface CalendarAttendee {
+  kind: 'person' | 'bot' | 'email';
+  member?: string;
+  bot?: string;
+  email?: string;
+  name?: string;
+  response: CalendarResponse;
+  optional?: boolean;
+  organizer?: boolean;
+}
+
+export type CalendarResponse = 'needs_action' | 'accepted' | 'tentative' | 'declined';
+
+/** One occurrence on the event layer. Times are ISO strings; a busy-only one has no words. */
+export interface CalendarOccurrence {
+  /** `event` for a single event; `event@<original start ISO>` for an occurrence of a series. */
+  id: string;
+  event: string;
+  series: string | null;
+  originalStart: string | null;
+  /** Whose calendar it sits on (user id), and who organised it. */
+  on: string | null;
+  owner: string | null;
+  source: 'brydio' | 'google' | 'outlook' | 'caldav';
+  /** The connected calendar it came from, if any. */
+  calendar: string | null;
+  calendarName: string | null;
+  start: string;
+  end: string;
+  allDay: boolean;
+  timeZone: string;
+  status: 'confirmed' | 'tentative' | 'cancelled';
+  showAs: 'busy' | 'free' | 'tentative' | 'away';
+  /** The viewer may see only that the time is taken. */
+  busyOnly: boolean;
+  private: boolean;
+  title?: string;
+  description?: string | null;
+  location?: string | null;
+  attendees?: CalendarAttendee[];
+  conferenceUrl?: string | null;
+  webLink?: string | null;
+  room: string | null;
+  call: string | null;
+  project: string | null;
+  recurring: boolean;
+  rrule: string | null;
+  /** On the viewer's own calendar, so they may change it. */
+  editable: boolean;
+}
+
+/** One person's calendar as the viewer may see it. */
+export interface CalendarPerson {
+  member: string;
+  timeZone: string;
+  /** Their zone is kept from the viewer: use `working` from `busy`. */
+  timeZoneHidden?: true;
+  workingHours: { days: number[]; start: string; end: string };
+  sharing: 'busy' | 'details';
+  freshness: { state: 'ok'; syncedAt: string | null } | { state: 'none' } | { state: 'failed'; calendars: string[] };
+}
+
+/** What `calendar.create` and `calendar.update` take. */
+export interface CalendarEventInput {
+  title: string;
+  start: string;
+  end: string;
+  /** IANA. All-day events are dates in this zone. */
+  timeZone: string;
+  allDay?: boolean;
+  description?: string | null;
+  location?: string | null;
+  /** RFC 5545 RRULE value without `RRULE:` or DTSTART, e.g. `FREQ=WEEKLY;BYDAY=MO`. */
+  rrule?: string | null;
+  exdates?: string[];
+  attendees?: (({ member: string } | { bot: string } | { email: string; name?: string }) & { optional?: boolean })[];
+  showAs?: 'busy' | 'free' | 'tentative' | 'away';
+  visibility?: 'default' | 'private';
+  project?: string | null;
+  room?: string | null;
+}
+
+/**
+ * The caller's calendar on Brydio's event layer (CA02), for an app with the
+ * `calendar` host grant. Everything is done as the caller: reads show what
+ * their colleagues' sharing allows (busy-only by default), and writes change
+ * only the caller's own events. A write goes on to the caller's Google
+ * calendar when they have one; the app never talks to Google or Microsoft.
+ *
+ * Reads work from any tool; `create`, `update`, `cancel` and `respond` need a
+ * write tool. Never for a visitor. Refusals end with a code:
+ * `(not_granted)`, `(read_tool)`, `(calendar_invalid)`, `(calendar_not_found)`,
+ * `(calendar_forbidden)`, `(calendar_unavailable)`.
+ */
+export interface HandlerCalendar {
+  /** Events overlapping [from, to) (62 days at most): the caller's, or each named member's. */
+  range(query: { from: string; to: string; people?: string[]; project?: string; cancelled?: boolean }): Promise<{ people: CalendarPerson[]; events: CalendarOccurrence[] }>;
+  /** Busy spans and working windows of the people named (the caller by default). */
+  busy(query: { from: string; to: string; people?: string[] }): Promise<{
+    people: (CalendarPerson & { busy: { start: string; end: string }[]; working: { start: string; end: string }[] })[];
+  }>;
+  /** One event or occurrence (by its id), or null. */
+  event(id: string): Promise<(CalendarOccurrence & { exdates: string[]; seriesEndsAt: string | null }) | null>;
+  /** The caller's connected calendars. */
+  calendars(): Promise<{
+    items: { id: string; provider: 'google' | 'outlook' | 'caldav'; name: string; color: string | null; primary: boolean; enabled: boolean; canWrite: boolean; writeDefault: boolean; status: string }[];
+  }>;
+  create(event: CalendarEventInput): Promise<CalendarOccurrence | null>;
+  /** `scope` `this` changes one occurrence (an occurrence id names it); `all` the event or series. */
+  update(id: string, event: CalendarEventInput, options?: { scope?: 'this' | 'all'; originalStart?: string }): Promise<CalendarOccurrence | null>;
+  cancel(id: string, options?: { scope?: 'this' | 'all'; originalStart?: string }): Promise<{ cancelled: string }>;
+  /** The caller answers an invitation they are on (a series answers as a whole). */
+  respond(id: string, response: CalendarResponse): Promise<CalendarOccurrence | null>;
+}
+
 /** Everything a handler is given beside its input. */
 export interface HandlerClient {
   readonly data: HandlerData;
@@ -503,6 +619,7 @@ export interface HandlerClient {
   readonly directory: HandlerDirectory;
   readonly webhooks: HandlerWebhooks;
   readonly timers: HandlerTimers;
+  readonly calendar: HandlerCalendar;
   readonly caller: HandlerCaller;
 }
 

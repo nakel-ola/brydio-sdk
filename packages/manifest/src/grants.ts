@@ -17,7 +17,8 @@ import { BUNDLE_MANIFEST } from './bundle.ts';
  * app posting one of its cards into a workspace room (FO03). `directory` is
  * a handler's `directory.*` and a screen's `useProfile` (FO02); `webhooks`
  * is a handler's `webhooks.send` (FO07); `timers` is a handler's
- * `timers.*`, running one of the app's own tools later (PJ01).
+ * `timers.*`, running one of the app's own tools later (PJ01); `calendar`
+ * is a handler's `calendar.*`, the caller's events on the event layer (CA02).
  */
 export const HOST_CAPABILITIES = [
   'navigate',
@@ -34,6 +35,7 @@ export const HOST_CAPABILITIES = [
   'directory',
   'webhooks',
   'timers',
+  'calendar',
 ] as const;
 
 /** The older name for `HOST_CAPABILITIES`, kept for what already imports it. */

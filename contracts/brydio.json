@@ -1,7 +1,7 @@
 {
   "brydio": {
-    "commit": "f59a83e9c6f5770ceeb20dc9f5766e09f3b694a2",
-    "dirty": false
+    "commit": "f16e3222252c71cfa7a0137a48e9e14f23f3a9bc",
+    "dirty": true
   },
   "contracts": {
     "anonymous-problems": {
@@ -7425,7 +7425,8 @@
         "chat",
         "directory",
         "webhooks",
-        "timers"
+        "timers",
+        "calendar"
       ],
       "reads": [
         true,

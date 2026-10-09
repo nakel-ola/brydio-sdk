@@ -11,11 +11,13 @@ import type {
   HandlerCaller,
   HandlerClient,
   HandlerConnectionRequest,
+  HandlerCalendar,
   HandlerTimer,
   Notice,
   NoticeAt,
   NoticeKind,
 } from '@brydio/app/handler';
+import { fakeCalendar, type FakeCalendarEvent, type FakeCalendarOptions } from './calendar.ts';
 import { MAX_SECRET_CHARS, SECRET_NAME, appToolPrefix, crossAppTool, effectivePlacementKey, type ManifestExtensions } from '@brydio/manifest';
 
 /**
@@ -100,6 +102,8 @@ export interface FakeHandlerOptions {
    */
   webhook?: (request: { url: string; body: unknown }) => number | Promise<number>;
   webhookSecret?: string;
+  /** The event layer as the caller sees it (CA02): events by id, sharing per member. */
+  calendar?: FakeCalendarOptions;
   /** Timers the instance already holds (PJ01), by key, as `timers.list` would show them. */
   timers?: FakeTimer[];
   /** "Now", for a timer's `next`; without it, the real clock. */
@@ -171,6 +175,8 @@ export interface HandlerRun<O> {
   webhooks: FakeWebhook[];
   /** The instance's timers as they stand after the run, by key (set, moved and cancelled ones applied). */
   timers: Map<string, FakeTimer>;
+  /** The calendar's events after the run, by id (created, changed and cancelled ones applied). */
+  calendar: Map<string, FakeCalendarEvent>;
 }
 
 const NOTICE_KINDS: readonly NoticeKind[] = ['assigned', 'mentioned', 'commented', 'status_changed', 'due_soon', 'overdue', 'reminder', 'updated'];
@@ -199,6 +205,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
   posts: FakeChatPost[];
   webhooks: FakeWebhook[];
   timers: Map<string, FakeTimer>;
+  calendar: Map<string, FakeCalendarEvent>;
 } {
   const secrets = new Map(Object.entries(options.secrets ?? {}));
   const calls: HandlerCall[] = [];
@@ -268,16 +275,18 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
 
   // The three Forms seams (FO02, FO03, FO07), refused in Brydio's words, each ending with its code.
   const hostGranted = (capability: string) => (manifest ? (manifest.grants?.host ?? []).some(grant => grant === capability || grant === '*') : true);
-  const seam = (capability: 'chat' | 'directory' | 'webhooks' | 'timers', words: string, writing: boolean) => (method: string, args: unknown[]) => {
+  const seam = (capability: 'chat' | 'directory' | 'webhooks' | 'timers' | 'calendar', words: string, writing: boolean) => (method: string, args: unknown[]) => {
     notForVisitors(method);
     if (!hostGranted(capability)) throw new Error(`${appName} did not ask to ${words}. (not_granted)`);
     if (writing && options.write === false) {
-      const what = method === 'chat.post' ? 'post in a chat' : method.startsWith('timers.') ? 'set or cancel a timer' : 'send a webhook';
+      const what = method === 'chat.post' ? 'post in a chat' : method.startsWith('timers.') ? 'set or cancel a timer' : method.startsWith('calendar.') ? 'change the calendar' : 'send a webhook';
 
       throw new Error(`${tool} is a read tool, so its handler can't ${what} (read_tool)`);
     }
     keeps(method, args);
   };
+  const calendarEvents = new Map((options.calendar?.events ?? []).map(one => [one.id, { ...one }]));
+  const calendar = fakeCalendar(options.calendar ?? {}, options.caller?.userId ?? 'user_test', calendarEvents);
   const timers = new Map((options.timers ?? []).map(one => [one.key, { ...one }]));
   const appTools = manifest ? new Set((manifest.tools?.custom ?? []).map(one => one.name)) : null;
   const posts: FakeChatPost[] = [];
@@ -662,22 +671,35 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
         seam('timers', 'run its own tools on a schedule, as the person who set them', false),
       ),
     }),
+    // CA02. An in-memory event layer with Brydio's rules for sharing, owners and invitations.
+    calendar: Object.freeze(
+      Object.fromEntries(
+        (['range', 'busy', 'event', 'calendars', 'create', 'update', 'cancel', 'respond'] as const).map(name => [
+          name,
+          recorded(
+            `calendar.${name}`,
+            (...args: unknown[]) => (calendar[name] as (...a: unknown[]) => Promise<unknown>)(...args),
+            seam('calendar', 'read and change your calendar', ['create', 'update', 'cancel', 'respond'].includes(name)),
+          ),
+        ]),
+      ) as unknown as HandlerCalendar,
+    ),
     caller: Object.freeze(caller),
   });
 
-  return { client, secrets, calls, held, notices, approvals: { requests: approvals.requests, decide: approvals.decide }, posts, webhooks: sentHooks, timers };
+  return { client, secrets, calls, held, notices, approvals: { requests: approvals.requests, decide: approvals.decide }, posts, webhooks: sentHooks, timers, calendar: calendarEvents };
 }
 
 /** Runs a handler against the fake client, and answers as Brydio would pass its answer on. */
 export async function runHandler<I, O>(handler: Handler<I, O>, input: I, options: FakeHandlerOptions = {}): Promise<HandlerRun<O>> {
-  const { client, secrets, calls, held, notices, approvals, posts, webhooks, timers } = fakeHandlerClient(options);
+  const { client, secrets, calls, held, notices, approvals, posts, webhooks, timers, calendar } = fakeHandlerClient(options);
 
   try {
     const result = await handler(input, client);
 
-    return { result: scrub(JSON.parse(JSON.stringify(result ?? null)) as O, held), secrets, calls, notices, approvals, posts, webhooks, timers };
+    return { result: scrub(JSON.parse(JSON.stringify(result ?? null)) as O, held), secrets, calls, notices, approvals, posts, webhooks, timers, calendar };
   } catch (error) {
-    return { error: scrub(error instanceof Error ? error.message : String(error), held), secrets, calls, notices, approvals, posts, webhooks, timers };
+    return { error: scrub(error instanceof Error ? error.message : String(error), held), secrets, calls, notices, approvals, posts, webhooks, timers, calendar };
   }
 }
 
