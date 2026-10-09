@@ -122,4 +122,26 @@ describe('calendar in the fake host (CA02)', () => {
     const range: Handler<Record<string, never>, unknown> = async (_input, { calendar }) => calendar.range({ from: '2026-10-13T00:00:00Z', to: '2026-10-14T00:00:00Z' });
     expect((await runHandler(range, {}, visitor)).error).toContain('runs for a visitor on a public page');
   });
+
+  it('answers a meeting’s call with a fake room and no way in, and records guests’ passes (CA08, CA-Q4)', async () => {
+    const REVIEW = { ...STANDUP, attendees: [{ kind: 'person' as const, member: 'user_sam', response: 'needs_action' as const }, { kind: 'email' as const, email: 'g@x.io', response: 'needs_action' as const }] };
+    const meet: Handler<Record<string, never>, unknown> = async (_input, { calendar }) => calendar.call('evt_1');
+    const send: Handler<{ email: string }, unknown> = async ({ email }, { calendar }) => calendar.pass({ event: 'evt_1', email });
+    const options = (userId: string) => ({ manifest: manifest() as never, caller: { userId }, calendar: { events: [REVIEW], members: ['user_ada', 'user_sam', 'user_kim'] } });
+
+    expect((await runHandler(meet, {}, options('user_sam'))).result).toEqual({ room: 'room_fake_evt_1', call: null, join: null });
+    expect((await runHandler(meet, {}, options('user_kim'))).error).toContain('(calendar_not_found)');
+    expect((await runHandler(meet, {}, { ...options('user_ada'), write: false })).error).toContain('(read_tool)');
+
+    const sent = await runHandler(send, { email: 'G@x.io' }, options('user_ada'));
+    expect(sent.result).toEqual({ event: 'evt_1', email: 'g@x.io', sent: true, until: STANDUP.end });
+    expect(sent.booking.passes).toEqual([{ event: 'evt_1', email: 'g@x.io', via: 'pass' }]);
+    expect((await runHandler(send, { email: 'g@x.io' }, options('user_sam'))).error).toContain('(calendar_forbidden)');
+    expect((await runHandler(send, { email: 'nobody@x.io' }, options('user_ada'))).error).toContain('(calendar_not_found)');
+
+    const book: Handler<Record<string, never>, { event: string }> = async (_input, { calendar }) =>
+      calendar.book({ link: 'intro', host: 'user_ada', title: 'Intro', start: '2026-10-13T09:00:00Z', end: '2026-10-13T09:30:00Z', timeZone: 'UTC', guest: { email: 'g@x.io' }, call: true });
+    const booked = await runHandler(book, {}, { manifest: manifest() as never, caller: { role: 'anonymous', origin: 'public' } as never, calendar: { offers: { intro: ['user_ada'] } } });
+    expect(booked.booking.passes).toEqual([{ event: booked.result!.event, email: 'g@x.io', via: 'booking' }]);
+  });
 });

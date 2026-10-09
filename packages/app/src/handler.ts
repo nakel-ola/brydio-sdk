@@ -655,6 +655,12 @@ export interface HandlerCalendar {
     description?: string;
     location?: string;
     buffer?: { before?: number; after?: number };
+    /**
+     * Held as a Brydio call (CA08): the host gets the meeting's room, and
+     * the booker's invite carries their own join link, good only for that
+     * call (a call-only pass, CA-Q4).
+     */
+    call?: boolean;
   }): Promise<{ booking: string; event: string; host: string; start: string; end: string }>;
   /** A booking named by the secret from its email, or null. */
   booking(query: { token: string }): Promise<{
@@ -671,6 +677,28 @@ export interface HandlerCalendar {
   rebook(change: { token: string; start: string; end: string; buffer?: { before?: number; after?: number } }): Promise<{ booking: string; start: string; end: string }>;
   /** Cancels a booking by its secret; the booker is told. Write tool. */
   unbook(query: { token: string }): Promise<{ booking: string; cancelled: true }>;
+  /**
+   * The meeting's call (CA08), as the caller, who must be its organiser or
+   * invited: started, ringing the others, or joined if it is already on.
+   * The meeting's room, a group DM of the organiser and the Brydio people
+   * invited, is made the first time and reused after; a series has one.
+   * `join` is LiveKit's address and a token for the caller alone, or null
+   * where calls are not set up. Only events made in Brydio have a call
+   * (`calendar_not_brydio`). Write tool.
+   */
+  call(id: string): Promise<{
+    room: string;
+    call: { id: string; status: 'ringing' | 'active'; mode: 'audio' | 'video'; startedAt: string | null } | null;
+    join: { url: string; token: string } | null;
+  }>;
+  /**
+   * Emails an outside guest on the invite their own way into the meeting's
+   * call (CA-Q4): a link that opens that call and nothing else, from ten
+   * minutes before the start until the end. The link goes by email only and
+   * is never returned. Organiser only; for a series, name one occurrence.
+   * Write tool.
+   */
+  pass(query: { event: string; email: string }): Promise<{ event: string; email: string; sent: boolean; until: string }>;
 }
 
 /** Everything a handler is given beside its input. */

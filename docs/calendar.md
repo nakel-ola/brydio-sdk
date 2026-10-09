@@ -75,6 +75,30 @@ post your own card to them with the `chat` grant.
 Only the event's owner changes or cancels it. `respond` is for a Brydio
 person invited to a Brydio event; a series answers as a whole.
 
+## Calls
+
+A Brydio event has a call. `calendar.call(id)` starts it as the caller, ringing
+the other Brydio people invited, or joins it if it is already on. The caller
+must be the organiser or invited. The first call makes the meeting's room, a
+group DM of the organiser and the people invited, and every later call reuses
+it; a series has one room. Brydio also rings everyone in that room when an
+occurrence begins, once per occurrence.
+
+```ts
+const { room, call, join } = await calendar.call(eventId);
+// join: { url, token } for LiveKit, or null where calls are not set up
+```
+
+`calendar.pass({ event, email })` emails an outside guest on the invite a link
+of their own that opens the call and nothing else, from ten minutes before the
+start until the end. The answer says whether it was sent and never contains
+the link. Only the organiser can send one, and for a series you name one
+occurrence. A booking made with `call: true` does the same for the booker: the
+host gets the room, and the invite carries the link.
+
+Both are for write tools. Only events made in Brydio have a call: anything else
+is refused with `(calendar_not_brydio)`.
+
 ## Refusals
 
 Each ends with a code: `(not_granted)` without the grant, `(read_tool)` for a
@@ -101,3 +125,7 @@ run.calendar; // the events after the run, by id
 
 The fake expands `DAILY` and `WEEKLY` rules on UTC days; Brydio expands every
 rule in the event's own zone, keeping DST. The fake sends no mail.
+
+In the fake, `call` answers `{ room: 'room_fake_<event>', call: null, join: null }`
+and `pass` records `{ event, email, via }` in `run.booking.passes` without
+sending anything.

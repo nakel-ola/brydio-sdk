@@ -66,15 +66,26 @@ export interface FakeBooking {
   createdAt: string;
 }
 
+/** A call-only pass the fake host sent (CA-Q4): to whom, for which meeting. Brydio would email the link. */
+export interface FakeCallPass {
+  event: string;
+  email: string;
+  /** `pass` from the organiser, or `booking` for a booking held as a call. */
+  via: 'pass' | 'booking';
+}
+
 /** The booking state a run starts with and ends with. */
 export interface FakeBookingState {
   offers: Map<string, Set<string>>;
   bookings: Map<string, FakeBooking>;
+  /** Call-only passes sent in this run, in order. */
+  passes: FakeCallPass[];
 }
 
 export const bookingStateOf = (options: FakeCalendarOptions): FakeBookingState => ({
   offers: new Map(Object.entries(options.offers ?? {}).map(([link, members]) => [link, new Set(members)])),
   bookings: new Map((options.bookings ?? []).map(one => [one.id, { ...one }])),
+  passes: [],
 });
 
 const MAX_RANGE_DAYS = 62;
@@ -381,6 +392,7 @@ export function fakeCalendar(
       });
       const id = `bkg_fake_${++serial}`;
       state.bookings.set(id, { id, link, host: input.host, event, token: `tok_${id}_secret_secret`, status: 'booked', guest: { email, ...(input.guest.name ? { name: input.guest.name } : {}) }, createdAt: new Date().toISOString() });
+      if (input.call === true) state.passes.push({ event, email, via: 'booking' });
       return { booking: id, event, host: input.host, start: new Date(start).toISOString(), end: new Date(end).toISOString() };
     },
     async booking(query) {
@@ -415,6 +427,24 @@ export function fakeCalendar(
       events.delete(found!.event);
       found!.status = 'cancelled';
       return { booking: found!.id, cancelled: true as const };
+    },
+    // CA08: no LiveKit here; the room is named after the event, and nobody gets a way in.
+    async call(id) {
+      const raw = String(id ?? '');
+      const event = events.get(raw.includes('@') ? raw.slice(0, raw.lastIndexOf('@')) : raw);
+      if (!event || (event.owner !== callerId && !(event.attendees ?? []).some(a => a.member === callerId))) refuse('calendar_not_found', 'That isn’t a meeting you are in.');
+      return { room: `room_fake_${event!.id}`, call: null, join: null };
+    },
+    // CA-Q4: recorded, never mailed; the link is not returned, as in Brydio.
+    async pass(query) {
+      const raw = String(query?.event ?? '');
+      const event = events.get(raw.includes('@') ? raw.slice(0, raw.lastIndexOf('@')) : raw);
+      if (!event) refuse('calendar_not_found', 'There is no such event.');
+      if (event!.owner !== callerId) refuse('calendar_forbidden', 'Only the organiser sends a guest a way into the call.');
+      const email = String(query?.email ?? '').trim().toLowerCase();
+      if (!(event!.attendees ?? []).some(a => a.kind === 'email' && a.email?.toLowerCase() === email)) refuse('calendar_not_found', 'That address isn’t on the invite. Add them as a guest first.');
+      state.passes.push({ event: event!.id, email, via: 'pass' });
+      return { event: raw, email, sent: true, until: event!.end };
     },
     async respond(id, response) {
       if (!RESPONSES.includes(response)) refuse('calendar_invalid', `calendar.respond takes one of ${RESPONSES.join(', ')}.`);
