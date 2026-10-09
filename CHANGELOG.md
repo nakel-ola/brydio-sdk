@@ -22,6 +22,10 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.44
+
+- `@brydio/fake-host`: `FixtureStore` lists answer P5's range and set operators on open tables as Brydio's store does: `gt`, `gte`, `lt`, `lte`, `between`, `empty`, `anyOf`, `noneOf`, `containsAny`, `containsAll`, `is`, `in` (`{ amount: { gte: 50 } }`, `{ links: { in: [id] } }`). An unknown operator is refused in words. Tests that used them against the fake now see the same rows as in a workspace.
+
 ## 0.1.0-alpha.43
 
 Anonymous groups, removed unread (P13, owner 7 Oct).
