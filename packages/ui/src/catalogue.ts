@@ -330,6 +330,14 @@ export const PAGE_TREE_ROWS = 2_000;
 export const COMMENT_IDS = 1_000;
 /** An emoji is one character to a person, and a few to a string: a flag, a family. */
 export const EMOJI_MAX = 16;
+/** `bry-datagrid` (Database DB02): the most columns (a table's fields) and rows sent at once. */
+export const DATAGRID_COLUMNS = 200;
+export const DATAGRID_ROWS = 500;
+export const DATAGRID_TYPES = [
+  'text', 'long_text', 'number', 'currency', 'percent', 'rating', 'date', 'datetime', 'checkbox',
+  'select', 'multi_select', 'person', 'link', 'attachment', 'url', 'email', 'phone',
+] as const;
+
 /** The most columns a spreadsheet has. */
 export const SPREADSHEET_COLUMNS = 16;
 /** The longest document a rich-text editor holds: the same as `bry-markdown`'s. */
@@ -2134,6 +2142,88 @@ export const CATALOGUE = {
     required: ['columns'],
     events: ['sort', 'hide', 'all', 'reorder'],
     children: true,
+  },
+  'bry-datagrid': {
+    // An Airtable-style grid drawn from data (Database DB02). A cell is text:
+    // a number as digits, a date YYYY-MM-DD, a date-time ISO, a checkbox
+    // `true` or empty, a select its choice, a list a JSON list of labels.
+    // `rows` are the window from `offset` of `total`; scrolling to rows not
+    // sent raises `range` with `{ from, to }`. With `editable`: typing,
+    // pasting from a spreadsheet, the fill handle and Delete raise `edit` with
+    // `{ edits: [{ row, key, value }] }`; a paste past the end raises `add`
+    // with `{ rows }`; people, links, attachments and long text raise `open`
+    // with `{ row, key }`. Copy writes TSV and an HTML table.
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      columns: {
+        kind: 'list',
+        max: DATAGRID_COLUMNS,
+        of: {
+          kind: 'shape',
+          fields: {
+            key: { kind: 'text', max: KEY_MAX },
+            heading: { kind: 'text', max: LABEL_MAX },
+            type: { kind: 'enum', values: [...DATAGRID_TYPES] },
+            width: { kind: 'enum', values: ['sm', 'md', 'lg', 'xl'] },
+            readOnly: { kind: 'boolean' },
+            primary: { kind: 'boolean' },
+            precision: { kind: 'int', min: 0, max: 5 },
+            symbol: { kind: 'text', max: 8 },
+            max: { kind: 'int', min: 1, max: 10 },
+            choices: {
+              kind: 'list',
+              max: 200,
+              of: { kind: 'shape', fields: { value: { kind: 'text', max: LABEL_MAX }, hue: { kind: 'enum', values: [...HUES] } }, required: ['value'] },
+            },
+            statistic: { kind: 'text', max: LABEL_MAX },
+            description: { kind: 'text', max: LABEL_MAX },
+          },
+          required: ['key', 'heading', 'type'],
+        },
+      },
+      rows: {
+        kind: 'list',
+        max: DATAGRID_ROWS,
+        of: {
+          kind: 'shape',
+          fields: { id: { kind: 'text', max: KEY_MAX }, cells: { kind: 'list', max: DATAGRID_COLUMNS, of: { kind: 'text', max: 2_000 } } },
+          required: ['id', 'cells'],
+        },
+      },
+      offset: { kind: 'int', min: 0, max: 50_000 },
+      total: { kind: 'int', min: 0, max: 50_000 },
+      groups: {
+        kind: 'list',
+        max: DATAGRID_ROWS,
+        of: {
+          kind: 'shape',
+          fields: {
+            at: { kind: 'int', min: 0, max: DATAGRID_ROWS },
+            label: { kind: 'text', max: LABEL_MAX },
+            count: { kind: 'int', min: 0, max: 50_000 },
+            depth: { kind: 'int', min: 0, max: 2 },
+          },
+          required: ['at', 'label'],
+        },
+      },
+      frozen: { kind: 'int', min: 0, max: 10 },
+      lines: { kind: 'enum', values: ['one', 'two', 'three', 'four'] },
+      editable: { kind: 'boolean' },
+      addable: { kind: 'boolean' },
+      selectable: { kind: 'boolean' },
+      selected: { kind: 'list', max: DATAGRID_ROWS, of: { kind: 'text', max: KEY_MAX } },
+      sort: {
+        kind: 'shape',
+        fields: { key: { kind: 'text', max: KEY_MAX }, direction: { kind: 'enum', values: ['asc', 'desc'] } },
+        required: ['key', 'direction'],
+      },
+      search: { kind: 'text', max: LABEL_MAX },
+      loading: { kind: 'boolean' },
+      empty: { kind: 'text', max: LABEL_MAX },
+    },
+    required: ['columns'],
+    events: ['edit', 'add', 'open', 'expand', 'select', 'column', 'sort', 'reorder', 'delete', 'range'],
+    children: false,
   },
   'bry-spreadsheet-row': {
     // One row; its children are its cells. Its box raises `toggle` with

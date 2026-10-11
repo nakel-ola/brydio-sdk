@@ -169,6 +169,7 @@ describe('the catalogue as a whole', () => {
       'bry-reactions',
       'bry-peek',
       'bry-spreadsheet',
+      'bry-datagrid',
       'bry-spreadsheet-row',
       'bry-spreadsheet-group',
       'bry-rich-text',

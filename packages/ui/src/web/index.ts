@@ -22,6 +22,7 @@ import './draw/catalogue-b-controls.ts';
 import './draw/catalogue-b-menus.ts';
 import './draw/calendar.ts';
 import './draw/data-table.ts';
+import './draw/datagrid.ts';
 import './draw/questionnaire.ts';
 // ADR-A23 (catalogue-a)
 import './draw/a23-content.ts';

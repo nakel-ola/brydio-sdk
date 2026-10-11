@@ -389,6 +389,26 @@ export interface ElementEventDetails {
     /** The corner box: every row chosen, or none. */
     all: { checked: boolean };
   };
+  'bry-datagrid': {
+    /** Cells a person changed: typed, picked, pasted, filled or cleared. Values are cell text. */
+    edit: { edits: { row: string; key: string; value: string }[] };
+    /** New rows: the last row's "New row", or a paste longer than the rows below. */
+    add: { rows: Record<string, string>[] };
+    /** A cell the grid doesn't edit itself (long text, people, links, attachments). */
+    open: { row: string; key: string };
+    /** Open one row as a record page. */
+    expand: { row: string };
+    /** The rows chosen now. */
+    select: { rows: string[] };
+    /** A field's menu, from its heading. */
+    column: { key: string };
+    sort: { key: string; direction: 'asc' | 'desc' };
+    /** Every column's key, in the order the person dragged them to. */
+    reorder: { keys: string[] };
+    delete: { rows: string[] };
+    /** The rows the person scrolled to and the grid wasn't sent: from, up to and not including to. */
+    range: { from: number; to: number };
+  };
   'bry-spreadsheet-row': {
     /** Whether the row's box is ticked now. */
     toggle: { checked: boolean };

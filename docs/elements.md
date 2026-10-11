@@ -109,6 +109,7 @@ There are 100 elements.
 - [`bry-reactions`](#bry-reactions)
 - [`bry-peek`](#bry-peek)
 - [`bry-spreadsheet`](#bry-spreadsheet)
+- [`bry-datagrid`](#bry-datagrid)
 - [`bry-spreadsheet-row`](#bry-spreadsheet-row)
 - [`bry-spreadsheet-group`](#bry-spreadsheet-group)
 - [`bry-rich-text`](#bry-rich-text)
@@ -1425,6 +1426,31 @@ Holds other elements or text.
 | `empty` | text, at most 200 characters | no |
 
 Tells the app: `sort`, `hide`, `all`, `reorder`.
+
+## `bry-datagrid`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `label` | text, at most 200 characters | no |
+| `columns` | a list of at most 200: a record of `key`, `heading`, `type`, `width`, `readOnly`, `primary`, `precision`, `symbol`, `max`, `choices`, `statistic`, `description` (needs `key`, `heading`, `type`) | yes |
+| `rows` | a list of at most 500: a record of `id`, `cells` (needs `id`, `cells`) | no |
+| `offset` | a whole number from 0 to 50000 | no |
+| `total` | a whole number from 0 to 50000 | no |
+| `groups` | a list of at most 500: a record of `at`, `label`, `count`, `depth` (needs `at`, `label`) | no |
+| `frozen` | a whole number from 0 to 10 | no |
+| `lines` | `one`, `two`, `three`, `four` | no |
+| `editable` | `true` or `false` | no |
+| `addable` | `true` or `false` | no |
+| `selectable` | `true` or `false` | no |
+| `selected` | a list of at most 500: text, at most 128 characters | no |
+| `sort` | a record of `key`, `direction` (needs `key`, `direction`) | no |
+| `search` | text, at most 200 characters | no |
+| `loading` | `true` or `false` | no |
+| `empty` | text, at most 200 characters | no |
+
+Tells the app: `edit`, `add`, `open`, `expand`, `select`, `column`, `sort`, `reorder`, `delete`, `range`.
 
 ## `bry-spreadsheet-row`
 
