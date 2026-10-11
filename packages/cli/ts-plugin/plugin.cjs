@@ -61,7 +61,7 @@ var __export = (target, all) => {
     });
 };
 
-// src/ts-plugin.ts
+// packages/cli/src/ts-plugin.ts
 var exports_ts_plugin = {};
 __export(exports_ts_plugin, {
   default: () => ts_plugin_default,
@@ -73,7 +73,7 @@ module.exports = __toCommonJS(exports_ts_plugin);
 var import_node_fs = require("node:fs");
 var import_node_path2 = require("node:path");
 
-// ../ui/src/basics.ts
+// packages/ui/src/basics.ts
 var PARAGRAPH_MAX = 4000;
 var TEXT_NODE = "#text";
 var FORBIDDEN_PROPS = {
@@ -91,7 +91,7 @@ function eventOfHandler(name) {
     return null;
   return name.slice(2).toLowerCase();
 }
-// ../ui/src/catalogue.ts
+// packages/ui/src/catalogue.ts
 var LABEL_MAX = 200;
 var GAPS = ["1", "2", "3", "4", "5", "6", "7", "8"];
 var PADDINGS = ["2", "3", "4", "5", "6"];
@@ -257,6 +257,27 @@ var PAGE_TREE_ACTIONS = ["open", "newChild", "rename", "duplicate", "move", "cop
 var PAGE_TREE_ROWS = 2000;
 var COMMENT_IDS = 1000;
 var EMOJI_MAX = 16;
+var DATAGRID_COLUMNS = 200;
+var DATAGRID_ROWS = 500;
+var DATAGRID_TYPES = [
+  "text",
+  "long_text",
+  "number",
+  "currency",
+  "percent",
+  "rating",
+  "date",
+  "datetime",
+  "checkbox",
+  "select",
+  "multi_select",
+  "person",
+  "link",
+  "attachment",
+  "url",
+  "email",
+  "phone"
+];
 var SPREADSHEET_COLUMNS = 16;
 var RICH_TEXT_MAX = 50000;
 var RICH_TEXT_HIDEABLE = ["headings", "lists", "tasks", "quote", "code", "table", "maths", "callout", "toggle", "divider", "highlight", "scripts", "align"];
@@ -1767,6 +1788,79 @@ var CATALOGUE = {
     events: ["sort", "hide", "all", "reorder"],
     children: true
   },
+  "bry-datagrid": {
+    props: {
+      label: { kind: "text", max: LABEL_MAX },
+      columns: {
+        kind: "list",
+        max: DATAGRID_COLUMNS,
+        of: {
+          kind: "shape",
+          fields: {
+            key: { kind: "text", max: KEY_MAX },
+            heading: { kind: "text", max: LABEL_MAX },
+            type: { kind: "enum", values: [...DATAGRID_TYPES] },
+            width: { kind: "enum", values: ["sm", "md", "lg", "xl"] },
+            readOnly: { kind: "boolean" },
+            primary: { kind: "boolean" },
+            precision: { kind: "int", min: 0, max: 5 },
+            symbol: { kind: "text", max: 8 },
+            max: { kind: "int", min: 1, max: 10 },
+            choices: {
+              kind: "list",
+              max: 200,
+              of: { kind: "shape", fields: { value: { kind: "text", max: LABEL_MAX }, hue: { kind: "enum", values: [...HUES] } }, required: ["value"] }
+            },
+            statistic: { kind: "text", max: LABEL_MAX },
+            description: { kind: "text", max: LABEL_MAX }
+          },
+          required: ["key", "heading", "type"]
+        }
+      },
+      rows: {
+        kind: "list",
+        max: DATAGRID_ROWS,
+        of: {
+          kind: "shape",
+          fields: { id: { kind: "text", max: KEY_MAX }, cells: { kind: "list", max: DATAGRID_COLUMNS, of: { kind: "text", max: 2000 } } },
+          required: ["id", "cells"]
+        }
+      },
+      offset: { kind: "int", min: 0, max: 50000 },
+      total: { kind: "int", min: 0, max: 50000 },
+      groups: {
+        kind: "list",
+        max: DATAGRID_ROWS,
+        of: {
+          kind: "shape",
+          fields: {
+            at: { kind: "int", min: 0, max: DATAGRID_ROWS },
+            label: { kind: "text", max: LABEL_MAX },
+            count: { kind: "int", min: 0, max: 50000 },
+            depth: { kind: "int", min: 0, max: 2 }
+          },
+          required: ["at", "label"]
+        }
+      },
+      frozen: { kind: "int", min: 0, max: 10 },
+      lines: { kind: "enum", values: ["one", "two", "three", "four"] },
+      editable: { kind: "boolean" },
+      addable: { kind: "boolean" },
+      selectable: { kind: "boolean" },
+      selected: { kind: "list", max: DATAGRID_ROWS, of: { kind: "text", max: KEY_MAX } },
+      sort: {
+        kind: "shape",
+        fields: { key: { kind: "text", max: KEY_MAX }, direction: { kind: "enum", values: ["asc", "desc"] } },
+        required: ["key", "direction"]
+      },
+      search: { kind: "text", max: LABEL_MAX },
+      loading: { kind: "boolean" },
+      empty: { kind: "text", max: LABEL_MAX }
+    },
+    required: ["columns"],
+    events: ["edit", "add", "open", "expand", "select", "column", "sort", "reorder", "delete", "range"],
+    children: false
+  },
   "bry-spreadsheet-row": {
     props: {
       label: { kind: "text", max: LABEL_MAX },
@@ -1976,7 +2070,7 @@ var CATALOGUE = {
   }
 };
 var ELEMENT_NAMES = Object.keys(CATALOGUE);
-// ../ui/src/checks.ts
+// packages/ui/src/checks.ts
 function isElementName(value) {
   return typeof value === "string" && Object.prototype.hasOwnProperty.call(CATALOGUE, value);
 }
@@ -2082,7 +2176,7 @@ function checkEvent(element, event) {
     return null;
   return events.length ? `${element} raises ${events.join(", ")}, not "${event}".` : `${element} raises no events, so it takes no ${handlerName(event)}.`;
 }
-// src/source-checks.ts
+// packages/cli/src/source-checks.ts
 var import_node_path = require("node:path");
 var import_typescript = __toESM(require("typescript"));
 var PAGE = { code: "dom_global", why: "A screen has no page: it runs in a worker and draws only with the catalogue." };
@@ -2479,14 +2573,14 @@ function dedupe(problems) {
   });
 }
 
-// src/screen-sources.ts
+// packages/cli/src/screen-sources.ts
 var SOURCE_EXTENSIONS = [".tsx", ".ts", ".jsx", ".js"];
 function isScreenSource(path) {
   const normal = path.replace(/\\/g, "/");
   return /^src\//.test(normal) && SOURCE_EXTENSIONS.some((extension) => normal.endsWith(extension)) && !normal.endsWith(".d.ts") && !/(^|\/)(test|tests|__tests__)\/|\.(test|spec)\.[jt]sx?$/.test(normal);
 }
 
-// src/ts-plugin.ts
+// packages/cli/src/ts-plugin.ts
 var PLUGIN_SOURCE = "brydio";
 var PLUGIN_CODE = 91000;
 function appRootOf(file) {

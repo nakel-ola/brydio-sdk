@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "1c7e4ec401cffb6dd40d3c0ce95e87435f8c5207",
+    "commit": "a672bc364386fccd5edecfffec096b2bfc7b864d",
     "dirty": true
   },
   "contracts": {
@@ -6224,6 +6224,271 @@
             "reorder"
           ],
           "children": true
+        },
+        "bry-datagrid": {
+          "props": {
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "columns": {
+              "kind": "list",
+              "max": 200,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "key": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "heading": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "type": {
+                    "kind": "enum",
+                    "values": [
+                      "text",
+                      "long_text",
+                      "number",
+                      "currency",
+                      "percent",
+                      "rating",
+                      "date",
+                      "datetime",
+                      "checkbox",
+                      "select",
+                      "multi_select",
+                      "person",
+                      "link",
+                      "attachment",
+                      "url",
+                      "email",
+                      "phone"
+                    ]
+                  },
+                  "width": {
+                    "kind": "enum",
+                    "values": [
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl"
+                    ]
+                  },
+                  "readOnly": {
+                    "kind": "boolean"
+                  },
+                  "primary": {
+                    "kind": "boolean"
+                  },
+                  "precision": {
+                    "kind": "int",
+                    "min": 0,
+                    "max": 5
+                  },
+                  "symbol": {
+                    "kind": "text",
+                    "max": 8
+                  },
+                  "max": {
+                    "kind": "int",
+                    "min": 1,
+                    "max": 10
+                  },
+                  "choices": {
+                    "kind": "list",
+                    "max": 200,
+                    "of": {
+                      "kind": "shape",
+                      "fields": {
+                        "value": {
+                          "kind": "text",
+                          "max": 200
+                        },
+                        "hue": {
+                          "kind": "enum",
+                          "values": [
+                            "gray",
+                            "red",
+                            "orange",
+                            "yellow",
+                            "green",
+                            "teal",
+                            "blue",
+                            "indigo",
+                            "purple",
+                            "pink"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "value"
+                      ]
+                    }
+                  },
+                  "statistic": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "description": {
+                    "kind": "text",
+                    "max": 200
+                  }
+                },
+                "required": [
+                  "key",
+                  "heading",
+                  "type"
+                ]
+              }
+            },
+            "rows": {
+              "kind": "list",
+              "max": 500,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "cells": {
+                    "kind": "list",
+                    "max": 200,
+                    "of": {
+                      "kind": "text",
+                      "max": 2000
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "cells"
+                ]
+              }
+            },
+            "offset": {
+              "kind": "int",
+              "min": 0,
+              "max": 50000
+            },
+            "total": {
+              "kind": "int",
+              "min": 0,
+              "max": 50000
+            },
+            "groups": {
+              "kind": "list",
+              "max": 500,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "at": {
+                    "kind": "int",
+                    "min": 0,
+                    "max": 500
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "count": {
+                    "kind": "int",
+                    "min": 0,
+                    "max": 50000
+                  },
+                  "depth": {
+                    "kind": "int",
+                    "min": 0,
+                    "max": 2
+                  }
+                },
+                "required": [
+                  "at",
+                  "label"
+                ]
+              }
+            },
+            "frozen": {
+              "kind": "int",
+              "min": 0,
+              "max": 10
+            },
+            "lines": {
+              "kind": "enum",
+              "values": [
+                "one",
+                "two",
+                "three",
+                "four"
+              ]
+            },
+            "editable": {
+              "kind": "boolean"
+            },
+            "addable": {
+              "kind": "boolean"
+            },
+            "selectable": {
+              "kind": "boolean"
+            },
+            "selected": {
+              "kind": "list",
+              "max": 500,
+              "of": {
+                "kind": "text",
+                "max": 128
+              }
+            },
+            "sort": {
+              "kind": "shape",
+              "fields": {
+                "key": {
+                  "kind": "text",
+                  "max": 128
+                },
+                "direction": {
+                  "kind": "enum",
+                  "values": [
+                    "asc",
+                    "desc"
+                  ]
+                }
+              },
+              "required": [
+                "key",
+                "direction"
+              ]
+            },
+            "search": {
+              "kind": "text",
+              "max": 200
+            },
+            "loading": {
+              "kind": "boolean"
+            },
+            "empty": {
+              "kind": "text",
+              "max": 200
+            }
+          },
+          "required": [
+            "columns"
+          ],
+          "events": [
+            "edit",
+            "add",
+            "open",
+            "expand",
+            "select",
+            "column",
+            "sort",
+            "reorder",
+            "delete",
+            "range"
+          ],
+          "children": false
         },
         "bry-spreadsheet-row": {
           "props": {

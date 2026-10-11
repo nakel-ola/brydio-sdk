@@ -18,7 +18,7 @@ A toast is not an element: it is said, not placed. A screen shows one with
 `toast(text, tone)` from `@brydio/app`, which Brydio draws in its own
 toaster; see [the bridge](bridge.md).
 
-There are 100 elements.
+There are 101 elements.
 
 - [`bry-stack`](#bry-stack)
 - [`bry-heading`](#bry-heading)
