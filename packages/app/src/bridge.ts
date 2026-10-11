@@ -499,6 +499,25 @@ export class Bridge {
   }
 
   /**
+   * The projects the viewer can open in this workspace, for a picker: most
+   * recently active first, at most `limit` (1–50, 50 unless said), matching
+   * `query` by name whatever the case when given. Never a project the viewer
+   * couldn't open. Needs the `projects` host grant.
+   */
+  listProjects(options: { query?: string; limit?: number } = {}): Promise<ProjectName[]> {
+    const refused = this.#grant('host', 'projects');
+
+    if (refused) return Promise.reject(refused);
+
+    const params = {
+      ...(typeof options.query === 'string' && options.query ? { query: options.query } : {}),
+      ...(Number.isInteger(options.limit) ? { limit: options.limit } : {}),
+    };
+
+    return this.request('host/projects', params, true).then(result => namesIn<ProjectName>(result, 'projects'));
+  }
+
+  /**
    * One approval request the viewer may see, by id: its title, steps, who
    * approves each and whether the viewer may decide now. Rejects with a
    * `HostError` when it is not one they may see. Needs the `approvals` host grant.

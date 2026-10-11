@@ -159,6 +159,23 @@ describe('answering events and listing people', () => {
     void bridge.listMembers();
     expect(take()).toEqual([{ jsonrpc: '2.0', id: '2', method: 'host/members', params: { id: '2' } }]);
   });
+
+  test('lists the projects the viewer can open for a picker, with a query and a limit, under the projects grant', async () => {
+    const { bridge, take, hostSays, connect } = harness({ app: { grants: { host: ['projects'] } } });
+
+    await connect();
+    take();
+
+    const listed = bridge.listProjects({ query: 'lau', limit: 5 });
+
+    expect(take()).toEqual([{ jsonrpc: '2.0', id: '1', method: 'host/projects', params: { id: '1', query: 'lau', limit: 5 } }]);
+    hostSays('host/result', { id: '1', result: { projects: [{ id: 'prj_launch', name: 'Launch' }] } });
+    expect(await listed).toEqual([{ id: 'prj_launch', name: 'Launch' }]);
+
+    void bridge.listProjects();
+    expect(take()).toEqual([{ jsonrpc: '2.0', id: '2', method: 'host/projects', params: { id: '2' } }]);
+    await expect(bridge.listMembers()).rejects.toThrow();
+  });
 });
 
 describe('approvals (host/approval, host/approval/decide)', () => {

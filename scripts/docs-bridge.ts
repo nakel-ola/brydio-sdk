@@ -90,8 +90,8 @@ const PROTOCOL_DOCS: Record<WorkerMethod | HostMethod, ProtocolDoc> = {
     result: '`host/result` with the viewer’s own profile or `null`, or `host/error`.',
   },
   'host/projects': {
-    payload: '`{ ids }` plus the envelope id',
-    result: '`host/result` with visible project names, or `host/error`.',
+    payload: '`{ ids }`, or `{ query?, limit? }` to list them for a picker, plus the envelope id',
+    result: '`host/result` with project names the viewer can open, or `host/error`.',
   },
   'ui/message': {
     payload: '`{ text, target? }` plus the envelope id',

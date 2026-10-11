@@ -358,6 +358,16 @@ test('host/members with no ids lists the people the app may name, by name, filte
   expect(host.findAll(node => node.type === 'bry-text').map(node => node.props.text)).toEqual(['Ada Lovelace, Adam Smith, Cy Twombly', 'Ada Lovelace (AL)']);
 });
 
+test('host/projects with no ids lists the projects the viewer can open, in order, filtered and capped', async () => {
+  const directory = { projects: [{ id: 'p_new', name: 'Launch plan' }, { id: 'p_mid', name: 'Hiring' }, { id: 'p_old', name: 'Launch review' }] };
+
+  host = FakeHost.start({ entry: screen('project-list'), manifest: { ...manifest, grants: { ...manifest.grants, host: ['projects'] } }, directory });
+  await host.mounted();
+  await host.waitFor(() => host!.findAll(node => node.type === 'bry-text').length === 2, { what: 'both lists' });
+
+  expect(host.findAll(node => node.type === 'bry-text').map(node => node.props.text)).toEqual(['Launch plan, Hiring, Launch review', 'p_new']);
+});
+
 test('host/members lists workspace bots after people, marked as bots', async () => {
   const directory = { members: [{ id: 'principal_pm', name: 'Aardvark Bot', bot: true }, { id: 'u_c', name: 'Cy Twombly' }, { id: 'u_a', name: 'Ada Lovelace' }] };
 

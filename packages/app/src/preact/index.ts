@@ -364,6 +364,31 @@ export function useMemberList(query = '', limit = 50): { members: MemberName[]; 
   return state;
 }
 
+/**
+ * The projects the viewer can open, for a picker, most recently active first:
+ * asked when the screen draws and again whenever `query` changes. Empty until
+ * Brydio answers. Needs the `projects` host grant.
+ */
+export function useProjectList(query = '', limit = 50): { projects: ProjectName[]; loading: boolean; error: Error | null } {
+  const bridge = useBridge();
+  const [state, setState] = useState<{ projects: ProjectName[]; loading: boolean; error: Error | null }>({ projects: [], loading: true, error: null });
+
+  useLayoutEffect(() => {
+    let current = true;
+
+    bridge.listProjects({ query, limit }).then(
+      projects => current && setState({ projects, loading: false, error: null }),
+      error => current && setState(previous => ({ ...previous, loading: false, error: error instanceof Error ? error : new Error(String(error)) })),
+    );
+
+    return () => {
+      current = false;
+    };
+  }, [bridge, query, limit]);
+
+  return state;
+}
+
 /** The names of projects whose ids the screen holds, by id. Needs the `projects` host grant. */
 export function useProjects(ids: readonly (string | null | undefined)[]): Map<string, ProjectName> {
   return useProjectNames(useBridge(), ids);

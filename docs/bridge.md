@@ -158,7 +158,7 @@ A connection path is relative. `GET` and `HEAD` are reads. `POST`, `PUT`,
 | `ui/navigate` | app to Brydio | `UiNavigateParams`: an app-local route, chat, file, project, or app item target | `ui/result` with `{ opened }`, or `ui/error`. |
 | `ui/toast` | app to Brydio | `UiToastParams`: text and optional tone | No reply. Brydio shows the sentence in its own toast. |
 | `host/members` | app to Brydio | `{ ids? }` plus the envelope id | `host/result` with visible member names, or `host/error`. |
-| `host/projects` | app to Brydio | `{ ids }` plus the envelope id | `host/result` with visible project names, or `host/error`. |
+| `host/projects` | app to Brydio | `{ ids }`, or `{ query?, limit? }` to list them for a picker, plus the envelope id | `host/result` with project names the viewer can open, or `host/error`. |
 | `host/approval` | app to Brydio | `{ approval }` plus the envelope id; needs the `approvals` host grant | `host/result` with the approval request as the viewer sees it, or `host/error`. |
 | `host/approval/decide` | app to Brydio | `{ approval, decision, comment? }` plus the envelope id; `decision` is `approve` or `decline` | `host/result` with the request as it now stands, or `host/error`. |
 | `host/profile` | app to Brydio | `{}` plus the envelope id; needs the `directory` host grant | `host/result` with the viewer’s own profile or `null`, or `host/error`. |

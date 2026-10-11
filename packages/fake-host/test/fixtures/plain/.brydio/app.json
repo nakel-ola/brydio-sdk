@@ -52,6 +52,9 @@
     "listed": {
       "entry": "screens/listed.js"
     },
+    "project-list": {
+      "entry": "screens/project-list.js"
+    },
     "asks": {
       "entry": "screens/asks.js"
     },

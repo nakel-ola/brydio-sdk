@@ -635,8 +635,10 @@ export class FakeHost {
       case 'host/projects':
         if (!this.app || message.id === undefined) break;
 
-        // `host/members` without ids lists the people the app may name, for a picker.
+        // Without ids, `host/members` lists the people the app may name, for a
+        // picker, and `host/projects` the projects the viewer can open.
         if (message.method === 'host/members' && params.ids === undefined) this.#listMembers(message.id, params);
+        else if (params.ids === undefined) this.#listProjects(message.id, params);
         else this.#names(message.id, message.method === 'host/members' ? 'members' : 'projects', params.ids);
         break;
       case 'host/approval':
@@ -911,6 +913,26 @@ export class FakeHost {
 
     this.namesAsked.push({ kind: 'members', ids: [] });
     this.#send({ jsonrpc: '2.0', method: 'host/result', params: { id, result: { members } } as never });
+  }
+
+  /**
+   * `host/projects` without ids, as Brydio lists them for a picker: the
+   * directory's projects in the order given (standing for most recently
+   * active first), matching the query by name whatever the case, at most
+   * `limit` (1–50).
+   */
+  #listProjects(id: string | number, params: Record<string, unknown>): void {
+    if (!this.#namesGranted(id, 'projects')) return;
+
+    const query = typeof params.query === 'string' ? params.query.trim().toLowerCase() : '';
+    const limit = Number.isInteger(params.limit) ? Math.max(1, Math.min(50, params.limit as number)) : 50;
+    const projects = (this.#options.directory?.projects ?? [])
+      .filter(one => !query || one.name.toLowerCase().includes(query))
+      .slice(0, limit)
+      .map(one => ({ id: one.id, name: one.name }));
+
+    this.namesAsked.push({ kind: 'projects', ids: [] });
+    this.#send({ jsonrpc: '2.0', method: 'host/result', params: { id, result: { projects } } as never });
   }
 
   /**
