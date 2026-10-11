@@ -165,7 +165,14 @@ describe('the secret scan', () => {
   });
 
   test('finds what Brydio’s secret-scan.ts finds, in its words', async () => {
-    const manifest = { name: 'x', grants: { host: ['navigate'] }, settings: [{ token: 'live-abc' }, { password: '<yours>' }] };
+    // Field definitions and tool inputs are declarations, never values (an open-schema companion must declare `key`).
+    const manifest = {
+      name: 'x',
+      grants: { host: ['navigate'] },
+      settings: [{ token: 'live-abc' }, { password: '<yours>' }],
+      data: { fields: { schema: { table: 'string', key: 'string?' } } },
+      tools: { custom: [{ name: 'connect', input: { token: 'string' } }] },
+    };
     const server = await brydioAnswers('secret-scan', [SERVER_SECRETS, SERVER_CODES], async () => {
       const theirs = await import(inBrydio(SERVER_SECRETS));
       const codes = await import(inBrydio(SERVER_CODES));

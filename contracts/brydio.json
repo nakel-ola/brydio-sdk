@@ -1,7 +1,7 @@
 {
   "brydio": {
-    "commit": "a672bc364386fccd5edecfffec096b2bfc7b864d",
-    "dirty": true
+    "commit": "27f361ba0ccffb528ae84d75d8806df37c351bbc",
+    "dirty": false
   },
   "contracts": {
     "anonymous-problems": {

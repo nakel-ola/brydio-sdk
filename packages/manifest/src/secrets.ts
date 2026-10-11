@@ -79,10 +79,22 @@ function walk(
 export function secretsInJson(document: unknown, at: string): SecretFound[] {
   const found: SecretFound[] = [];
 
-  walk(document, at, found, path => /(?:^|\.)placements\[\d+\]\.key$/.test(path));
+  walk(document, at, found, path => DECLARATIONS.some(declared => declared.test(path)));
 
   return found;
 }
+
+/**
+ * Names in an app.json that read like credentials but are declarations: a
+ * placement's identity, a collection's field definition (an open-schema
+ * companion must declare `key`), and a tool's input field. Their values are
+ * types and names, never secrets.
+ */
+const DECLARATIONS = [
+  /(?:^|\.)placements\[\d+\]\.key$/,
+  /(?:^|\.)data\.[^.[\]]+\.schema\.[^.[\]]+$/,
+  /(?:^|\.)tools\.custom\[\d+\]\.input\.[^.[\]]+$/,
+];
 
 /** Every secret declared in a bundle's files, as the server finds them. */
 export function findSecrets(files: ReadonlyMap<string, Uint8Array>, root = ''): SecretFound[] {
