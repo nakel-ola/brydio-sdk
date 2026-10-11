@@ -119,6 +119,10 @@ const FIELD_DOCS: Record<ManifestField, FieldDoc> = {
     takes: 'an ordered list of versioned migration steps',
     description: 'How existing records move when a later version changes a collection schema.',
   },
+  instances: {
+    takes: '`"one-per-workspace"`',
+    description: 'One instance for the whole workspace, added from its sidebar and shown on projects as a view of each project’s records; never a project’s or a person’s own. Left out, people make as many as they like.',
+  },
   sdk: {
     takes: 'semver text',
     description: 'Written by `brydio build`. Do not add or edit it in `.brydio/app.json`.',

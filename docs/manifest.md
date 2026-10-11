@@ -83,6 +83,7 @@ two screens, collection grants, tool grants, and host grants.
 | `screens` | a record of `{ entry }` values | no | The screen names and their compiled `.js` or `.mjs` entries inside the bundle. |
 | `grants` | `{ tools?, collections?, host? }` | no | Everything the app asks a workspace to let it read, call, or open. |
 | `secrets` | a list of at most 20 `{ name, label, description?, required?, scope? }` | no | The secrets the app’s handlers read. Names only: a value is entered in the app’s settings, never shipped. |
+| `instances` | `"one-per-workspace"` | no | One instance for the whole workspace, added from its sidebar and shown on projects as a view of each project’s records; never a project’s or a person’s own. Left out, people make as many as they like. |
 | `migrations` | an ordered list of versioned migration steps | no | How existing records move when a later version changes a collection schema. |
 | `sdk` | semver text | no | Written by `brydio build`. Do not add or edit it in `.brydio/app.json`. |
 

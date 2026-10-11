@@ -292,6 +292,11 @@ const grantsSchema = z.object({
   host: z.array(z.string().max(60)).max(20).optional(),
 });
 
+/** The `instances` rules an app may declare (CA10). */
+export const INSTANCE_RULES = ['one-per-workspace'] as const;
+
+export type InstanceRule = (typeof INSTANCE_RULES)[number];
+
 const extensionShape = {
   placements: z.array(placementSchema).max(20).optional(),
   data: z.record(z.string(), collectionSchema).optional(),
@@ -300,6 +305,13 @@ const extensionShape = {
   grants: grantsSchema.optional(),
   /** The secrets its handlers read (ADR-A24): names only, never values. */
   secrets: z.array(secretSchema).max(MAX_APP_SECRETS).optional(),
+  /**
+   * How many instances a workspace may keep (CA10). `"one-per-workspace"`:
+   * a single workspace instance, shown in the sidebar and on any project as
+   * a view of that project's records; never a project's or a person's own.
+   * Left out, as many as people make.
+   */
+  instances: z.enum(INSTANCE_RULES).optional(),
   /**
    * How records move when the schema changes between versions (A3-F07).
    * Checked against the previous version when a version is published, and
@@ -358,7 +370,8 @@ export type DataProblemCode =
   | 'placement_create_tool_unknown'
   | 'placement_create_not_write'
   | 'secret_name_taken'
-  | 'grant_secrets_missing';
+  | 'grant_secrets_missing'
+  | 'instances_needs_sidebar';
 
 type Additions = z.infer<z.ZodObject<typeof extensionShape>>;
 
@@ -562,6 +575,7 @@ export function dataProblems(additions: Additions, options: DataProblemOptions =
 
   problems.push(...customToolProblems(additions, options));
   problems.push(...secretProblems(additions, options));
+  problems.push(...instanceRuleProblems(additions));
 
   const screens = new Set(Object.keys(additions.screens ?? {}));
   const placementKeys = new Set<string>();
@@ -831,6 +845,23 @@ export const appToolPrefix = (name: string): string =>
  * Each secret declared once, and asked for (ADR-A24): an app that declares
  * secrets without the `secrets` host grant could never read one.
  */
+/**
+ * One instance per workspace is added once, from the workspace sidebar
+ * (CA10): an app that says so and offers no sidebar item could never be
+ * added at all.
+ */
+function instanceRuleProblems(additions: Additions): DataProblem[] {
+  if (additions.instances !== 'one-per-workspace') return [];
+  if ((additions.placements ?? []).some(one => one.kind === 'workspace-sidebar')) return [];
+
+  return [
+    {
+      code: 'instances_needs_sidebar',
+      message: 'An app kept once per workspace is added from the workspace sidebar: add a "workspace-sidebar" placement.',
+    },
+  ];
+}
+
 function secretProblems(additions: Additions, options: { grants?: boolean }): DataProblem[] {
   const problems: DataProblem[] = [];
   const secrets = additions.secrets ?? [];
@@ -871,6 +902,8 @@ const refuse = (additions: Additions, ctx: z.RefinementCtx, options: DataProblem
         ? ['grants', 'host']
         : problem.code === 'secret_name_taken'
         ? ['secrets']
+        : problem.code === 'instances_needs_sidebar'
+        ? ['instances']
         : problem.code.startsWith('grant_')
         ? ['grants', 'collections']
         : problem.code.startsWith('custom_')
