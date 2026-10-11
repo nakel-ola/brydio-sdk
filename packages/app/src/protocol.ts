@@ -286,7 +286,7 @@ export type NavigateTarget =
 /** What `copy` puts on the clipboard: text, or a link to one of the app's own routes. */
 export type CopyTarget = string | { route: string };
 /** The kinds of file an app may hand the person to save: plain data only. */
-export type DownloadType = 'text/csv' | 'text/plain' | 'text/markdown' | 'application/json';
+export type DownloadType = 'text/csv' | 'text/plain' | 'text/markdown' | 'application/json' | 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 export type ToastTone = 'info' | 'success' | 'danger';
 
 // --- Worker → host ------------------------------------------------------------

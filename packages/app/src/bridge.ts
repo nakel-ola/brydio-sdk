@@ -424,9 +424,18 @@ export class Bridge {
 
   /**
    * Hands the person a file the app made, to save ("Export CSV"): a name, its
-   * text (up to 5 MB) and a plain kind (CSV, text, Markdown or JSON).
+   * text (up to 5 MB) and a plain kind (CSV, text, Markdown or JSON), or an
+   * Excel workbook's bytes, sent as base64.
    */
-  download(name: string, text: string, type: DownloadType = 'text/plain'): Promise<void> {
+  download(name: string, text: string | Uint8Array, type: DownloadType = 'text/plain'): Promise<void> {
+    if (typeof text !== 'string') {
+      let binary = '';
+
+      for (let at = 0; at < text.length; at += 0x8000) binary += String.fromCharCode(...text.subarray(at, at + 0x8000));
+
+      return this.request('ui/download', { name, base64: btoa(binary), type }).then(() => undefined);
+    }
+
     return this.request('ui/download', { name, text, type }).then(() => undefined);
   }
 

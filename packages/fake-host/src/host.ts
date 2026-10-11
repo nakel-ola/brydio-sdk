@@ -225,7 +225,7 @@ export class FakeHost {
   /** What the screen put on the clipboard: text, or a link to one of its routes. */
   readonly copied: ({ text: string } | { route: string })[] = [];
   /** Files the screen handed the person to save. */
-  readonly downloads: { name: string; text: string; type: string }[] = [];
+  readonly downloads: { name: string; text: string; type: string; bytes?: Uint8Array }[] = [];
   readonly toasts: { text: string; tone: 'info' | 'success' | 'danger'; action?: { label: string; route: string } }[] = [];
   /** Each names request the screen made: which kind, and the ids. */
   readonly namesAsked: { kind: 'members' | 'projects'; ids: string[] }[] = [];
@@ -690,17 +690,35 @@ export class FakeHost {
           this.copied.push(route !== null ? { route } : { text });
           answer({ copied: true });
         } else {
-          const types = ['text/csv', 'text/plain', 'text/markdown', 'application/json'];
-          const name = typeof params.name === 'string' ? params.name.replace(/[^\w .()-]+/g, '-').replace(/^[.\s-]+/, '').trim().slice(0, 100) : '';
+          const xlsx = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          const types = ['text/csv', 'text/plain', 'text/markdown', 'application/json', xlsx];
+          let name = typeof params.name === 'string' ? params.name.replace(/[^\w .()-]+/g, '-').replace(/^[.\s-]+/, '').trim().slice(0, 100) : '';
           const type = params.type === undefined ? 'text/plain' : String(params.type);
+          let bytes: Uint8Array | undefined;
 
-          if (!name || !types.includes(type) || typeof params.text !== 'string' || params.text.length > 5 * 1024 * 1024) {
-            said = `An app can hand over a named text file up to 5 MB, as ${types.join(', ')}.`;
+          // As Brydio: a workbook comes as base64 and must start as a zip ("PK\x03\x04"); text kinds come as text.
+          if (type === xlsx && typeof params.base64 === 'string' && params.base64.length <= Math.ceil((5 * 1024 * 1024) / 3) * 4) {
+            try {
+              bytes = Uint8Array.from(atob(params.base64), character => character.charCodeAt(0));
+            } catch {
+              bytes = undefined;
+            }
+            if (bytes && ![0x50, 0x4b, 0x03, 0x04].every((byte, index) => bytes![index] === byte)) bytes = undefined;
+          }
+
+          if (!name || !types.includes(type) || (type === xlsx ? !bytes : typeof params.text !== 'string' || params.text.length > 5 * 1024 * 1024)) {
+            said = `An app can hand over a named file up to 5 MB, as ${types.join(', ')} (an Excel workbook as base64).`;
             answer(null);
             break;
           }
 
-          this.downloads.push({ name, text: params.text, type });
+          if (bytes) {
+            if (!name.toLowerCase().endsWith('.xlsx')) name = `${name.slice(0, 95)}.xlsx`;
+            this.downloads.push({ name, text: '', type, bytes });
+            answer({ saved: true });
+            break;
+          }
+          this.downloads.push({ name, text: String(params.text), type });
           answer({ saved: true });
         }
         break;

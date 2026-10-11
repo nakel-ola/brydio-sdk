@@ -115,9 +115,10 @@ export function copy(what: CopyTarget): Promise<boolean> {
 
 /**
  * Hands the person a file the app made, to save: `download('issues.csv',
- * csv, 'text/csv')`. Text only, up to 5 MB, as CSV, text, Markdown or JSON.
+ * csv, 'text/csv')`. Up to 5 MB: text as CSV, text, Markdown or JSON, or an
+ * Excel workbook's bytes (`download('deals.xlsx', bytes, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')`).
  */
-export function download(name: string, text: string, type?: DownloadType): Promise<void> {
+export function download(name: string, text: string | Uint8Array, type?: DownloadType): Promise<void> {
   return defaultBridge().download(name, text, type);
 }
 

@@ -289,23 +289,27 @@ describe('asking the host to open something, and toasts', () => {
     const link = bridge.copy({ route: '/issues/iss_1' });
     const file = bridge.download('issues.csv', 'id\n1', 'text/csv');
     const tab = bridge.navigate({ kind: 'route', path: '/issues/iss_1', newTab: true });
+    const book = bridge.download('deals', new Uint8Array([0x50, 0x4b, 3, 4]), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
     expect(take()).toEqual([
       { jsonrpc: '2.0', id: '1', method: 'ui/copy', params: { text: 'TQ-2' } },
       { jsonrpc: '2.0', id: '2', method: 'ui/copy', params: { route: '/issues/iss_1' } },
       { jsonrpc: '2.0', id: '3', method: 'ui/download', params: { name: 'issues.csv', text: 'id\n1', type: 'text/csv' } },
       { jsonrpc: '2.0', id: '4', method: 'ui/navigate', params: { to: { kind: 'route', path: '/issues/iss_1', newTab: true } } },
+      { jsonrpc: '2.0', id: '5', method: 'ui/download', params: { name: 'deals', base64: 'UEsDBA==', type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' } },
     ]);
 
     hostSays('ui/result', { id: '1', result: { copied: true } });
     hostSays('ui/result', { id: '2', result: { copied: false } });
     hostSays('ui/result', { id: '3', result: { saved: true } });
     hostSays('ui/result', { id: '4', result: { opened: true } });
+    hostSays('ui/result', { id: '5', result: { saved: true } });
 
     expect(await text).toBe(true);
     expect(await link).toBe(false);
     expect(await file).toBeUndefined();
     expect(await tab).toEqual({ opened: true });
+    expect(await book).toBeUndefined();
   });
 
   test('the host context reaches subscribers each time it is sent', async () => {
