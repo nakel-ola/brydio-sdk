@@ -27,8 +27,11 @@ const share: Handler<{ room: string; form: string }> = ({ room, form }, { chat }
   people it names.
 - The app's own member writes the message. Brydio makes that member the first
   time the instance posts and adds it to the room. In an announcement channel,
-  a manager must name it as a poster (`chat_app_not_poster`). Apps can't post
-  in direct messages.
+  a manager must name it as a poster (`chat_app_not_poster`).
+- A direct message takes a post too. Name it by `room`, or pass `to` (a
+  member's user id) instead and the post goes in the caller's DM with them,
+  opened as the caller would open it. The DM keeps its name and face: the
+  app's member never counts as one of its people.
 - `text` is plain text of up to 2000 characters. A post never tags anyone:
   `@channel` and `@here` stay as plain text.
 - `card` names a `chat-card` placement by key and a route (default `/`).

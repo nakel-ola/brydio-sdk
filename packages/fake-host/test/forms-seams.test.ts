@@ -33,6 +33,19 @@ describe('chat.post (FO03)', () => {
   });
 });
 
+describe('chat.post in a DM', () => {
+  const dm: Handler<{ to?: string; room?: string }> = (input, { chat }) => chat.post({ ...input, text: 'You’re invited', card: { placement: 'answer-card' } });
+
+  test('posts `to` a member in the caller’s DM with them, asked about as `dm:<user id>`', async () => {
+    const run = await runHandler(dm, { to: 'user_sam' }, { manifest });
+
+    expect(run.posts).toEqual([{ to: 'user_sam', text: 'You’re invited', card: { placement: 'answer-card', route: '/' }, messageId: 'message_test_1' }]);
+    expect((await runHandler(dm, { to: 'user_sam' }, { manifest, canPost: room => room !== 'dm:user_sam' })).error).toEndWith('(chat_cannot_post)');
+    expect((await runHandler(dm, { to: 'user_sam', room: 'room_1' }, { manifest })).error).toEndWith('(chat_invalid)');
+    expect((await runHandler(dm, {}, { manifest })).error).toEndWith('(chat_invalid)');
+  });
+});
+
 describe('directory (FO02)', () => {
   const look: Handler<{ user: string }> = async ({ user }, { directory }) => ({
     me: await directory.profile(user),

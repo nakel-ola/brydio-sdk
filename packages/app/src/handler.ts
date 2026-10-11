@@ -330,8 +330,10 @@ export interface HandlerApprovals {
 
 /** What `chat.post` takes: a room the caller can post in, plain text, and maybe one of the app's chat cards. */
 export interface ChatPost {
-  /** The room's id. */
-  room: string;
+  /** The room's id. Give this or `to`. */
+  room?: string;
+  /** A member's user id: the post goes in the caller's DM with them, opened as the caller would open it. */
+  to?: string;
   /** Plain text, up to 2000 characters. `@channel` and `@here` are never tags. */
   text: string;
   /** One of the manifest's `chat-card` placements, by key, opened at `route` (default `/`). */
@@ -347,7 +349,9 @@ export interface ChatPost {
  * channel, its managers and the people it names). The message is written by
  * the app's own member, made the first time the instance posts and added to
  * the room; in an announcement channel a manager must name it a poster. A
- * direct message is refused. With `card`, people who can open this instance
+ * direct message takes a post too: name it by `room`, or name the person with
+ * `to` and the post goes in the caller's DM with them. The DM keeps its name
+ * and face: the app's member is never counted as one of its people. With `card`, people who can open this instance
  * see the card's screen in the message, with `placement.kind === 'chat-card'`
  * and the card's route; anybody else reads a plain line. 30 posts a minute
  * per instance.

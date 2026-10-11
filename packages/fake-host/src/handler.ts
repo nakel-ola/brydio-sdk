@@ -81,7 +81,8 @@ export interface FakeHandlerOptions {
    * Whether the caller may post in a room, for `chat.post` (FO03): `true`,
    * `false` (refused `chat_cannot_post`), or `'not_poster'` for an
    * announcement channel that doesn't name the app (`chat_app_not_poster`).
-   * Without it, every room takes the post.
+   * A post `to` a member asks about `dm:<their user id>`. Without it, every
+   * room takes the post.
    */
   canPost?: (room: string) => boolean | 'not_poster' | Promise<boolean | 'not_poster'>;
   /**
@@ -505,7 +506,10 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
             throw new Error(`${words} (${code})`);
           };
 
-          if (!message || typeof message.room !== 'string' || !message.room) refuse('chat_invalid', 'chat.post takes the room to post in, by its id.');
+          const byRoom = typeof message?.room === 'string' && message.room !== '';
+          const byPerson = typeof message?.to === 'string' && message.to !== '';
+
+          if (!message || byRoom === byPerson) refuse('chat_invalid', 'chat.post takes the room to post in, by its id, or `to`: a member to message.');
 
           const text = typeof message.text === 'string' ? message.text.trim() : '';
 
@@ -520,8 +524,10 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
             }
           }
 
-          const listed = options.chat?.rooms?.find(one => one.id === message.room);
-          const allowed = options.canPost ? await options.canPost(message.room) : listed ? listed.canPost : true;
+          // A post `to` somebody goes in the caller's DM with them, `dm:<user id>` here.
+          const where = byRoom ? message.room! : `dm:${message.to}`;
+          const listed = options.chat?.rooms?.find(one => one.id === where);
+          const allowed = options.canPost ? await options.canPost(where) : listed ? listed.canPost : true;
 
           if (allowed === false) refuse('chat_cannot_post', 'You can’t post in that room.');
           if (allowed === 'not_poster') refuse('chat_app_not_poster', `${appName} isn’t one of the posters this channel names, so it can’t post here.`);
