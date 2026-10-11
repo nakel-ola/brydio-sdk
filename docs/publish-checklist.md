@@ -79,6 +79,7 @@ first.
 | `custom_collection_unknown` | `tools.custom`: <name> works on <collection>, which the app does not keep. | yes | publish | Name a collection in `data`, or leave `collection` out. |
 | `custom_input_invalid` | `tools.custom`: <name>'s input <field>: not a field type. | yes | publish | Write the input in the field-type grammar. |
 | `secret_name_taken` | `secrets`: The secret <name> is declared twice; keep one. | yes | publish | Declare each secret once. |
+| `instances_needs_sidebar` | `instances`: An app kept once per workspace is added from the workspace sidebar: add a "workspace-sidebar" placement. | yes | publish | Add a `workspace-sidebar` placement, or leave out `instances`. |
 | `data_search_unknown_field` | `<collection>` searches `<field>`, which is not one of its fields. | yes | publish | Search only declared fields. |
 | `data_search_not_text` | `<collection>.<field>` cannot be searched: only text fields can. | yes | publish | Search only text fields. |
 | `data_open_fields_unknown` | `<collection>.openSchema.fields names <companion>, which must be another collection of this app.` Also when the companion is open itself, or already defines another collection's fields. | yes | publish | Name a collection of its own that holds the field definitions. |
