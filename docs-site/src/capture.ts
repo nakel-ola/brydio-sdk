@@ -175,8 +175,13 @@ function serveSite(outDir: string) {
 }
 
 async function capture(chrome: string, route: string, output: string): Promise<void> {
+  // A throwaway profile: never the person's own Chrome, its sync or its apps.
+  const profile = await mkdtemp(join(tmpdir(), 'brydio-docs-chrome-'));
   const process = Bun.spawn([
     chrome,
+    `--user-data-dir=${profile}`,
+    '--no-first-run',
+    '--no-default-browser-check',
     '--headless=new',
     '--disable-gpu',
     '--hide-scrollbars',
@@ -194,7 +199,11 @@ async function capture(chrome: string, route: string, output: string): Promise<v
     process.exited,
   ]);
 
-  if (exitCode !== 0) {
+  await rm(profile, { force: true, recursive: true });
+  // Chrome sometimes writes the picture and then trips its own teardown watchdog; the picture stands.
+  const tornDown = exitCode !== 0 && stderr.includes('Teardown watchdog expired') && stdout.includes('data-capture-ready="true"');
+
+  if (exitCode !== 0 && !tornDown) {
     const details = [stdout.trim(), stderr.trim()].filter(Boolean).join('\n');
     throw new Error(`Chrome capture failed for ${route} with exit code ${exitCode}${details ? `:\n${details}` : ''}`);
   }
