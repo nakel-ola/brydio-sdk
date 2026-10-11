@@ -22,6 +22,18 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.47
+
+The Calendar app's platform pieces (tasks/calendar CA05, CA08, CA10).
+
+- **Calls for events.** Handlers gain `calendar.call(id)` (the event's meeting room, one per series) and `calendar.pass({ event, email })` (a one-time link for a call-only guest). Needs a Brydio with the matching host change.
+- **Bookings can wait for the host.** `calendar.book({ …, call?, confirm? })`; with `confirm` the booking is `pending` until `calendar.confirm({ booking, accept })`.
+- **Screens can go to a room.** `navigate({ kind: 'room', id, call?: true })` opens a room the viewer is in, and with `call` starts or joins its call.
+- **One instance per workspace.** Manifest top-level `instances: "one-per-workspace"` (needs a sidebar placement, else `instances_needs_sidebar`); Brydio keeps one workspace instance and projects show it filtered.
+- **Events take their room's project.** `calendar.create({ …, fromRoom })` links the event to the project of a room the caller is in, unless `project` is given.
+- **Project picker.** `bridge.listProjects({ query, limit })` and Preact `useProjectList(query, limit)` list the projects the viewer can open (needs the `projects` grant); the fake host lists `directory.projects`.
+- **Secret scan reads declarations as declarations.** `data.<c>.schema.<field>`, `placements[n].key` and custom tool inputs are no longer read as shipped secrets, so open-schema apps pass `brydio validate`.
+
 ## 0.1.0-alpha.46
 
 The Database app's platform pieces (tasks/database DB02, DB06).
