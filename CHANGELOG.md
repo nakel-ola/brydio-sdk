@@ -22,6 +22,14 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.46
+
+The Database app's platform pieces (tasks/database DB02, DB06).
+
+- **New element `bry-datagrid`.** An Airtable-style grid drawn from data: `columns` (`key`, `heading`, 17 `type`s, `width` sm/md/lg/xl, `readOnly`, `primary`, `precision`, `symbol`, `max`, `choices` with hues, `statistic`, `description`) and `rows` (`id`, `cells` as text, lists as JSON), with `offset`/`total` for paging, `groups`, `frozen`, `lines` one..four, `editable`, `addable`, `selectable`, `selected`, `sort`, `search`, `loading`, `empty`. Raises `edit` (a batch of `{row,key,value}`), `add`, `open`, `expand`, `select`, `column`, `sort`, `reorder`, `delete` and `range`. A width the person drags is theirs, kept and never sent. Nothing to change unless you want it.
+- **`download` takes bytes.** `download(name, bytes, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')` hands over an Excel workbook (sent as base64; the host checks it is a workbook and names it `.xlsx`). Text downloads are unchanged. Needs a Brydio with the matching host change; an older one refuses the type in words.
+- **Docs images** are captured in a throwaway Chrome profile.
+
 ## 0.1.0-alpha.45
 
 The Calendar app's platform pieces (tasks/calendar CA02–CA06).
