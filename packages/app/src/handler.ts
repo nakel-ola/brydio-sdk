@@ -366,6 +366,19 @@ export interface HandlerChat {
   rooms(query?: string): Promise<ChatRoom[]>;
 }
 
+/** One of the workspace's Google rooms or resources, as `calendar.resources()` lists it (CA06). */
+export interface GoogleRoom {
+  /** `google:<address>`: what an event's `room` takes to book it. */
+  id: string;
+  email: string;
+  name: string;
+  kind: 'room' | 'resource';
+  capacity: number | null;
+  building: string | null;
+  floor: string | null;
+  equipment: string[];
+}
+
 /** One of the caller's rooms, as `chat.rooms` lists it. */
 export interface ChatRoom {
   id: string;
@@ -616,6 +629,17 @@ export interface HandlerCalendar {
    * An event that books a room taken then is refused `(calendar_room_taken)`.
    */
   rooms(query: { rooms: string[]; from: string; to: string }): Promise<{ rooms: { room: string; busy: { start: string; end: string }[] }[] }>;
+
+  /**
+   * The workspace's Google room resources (CA06), listed by its Google
+   * directory: `status` is `ok`, `not_connected` (no Google directory),
+   * `needs_permission` (the room scope isn't delegated yet) or `unavailable`.
+   * Put an item's `id` (`google:<address>`) in an event's `room` to book it as
+   * a resource attendee; that needs the caller's Google calendar to be where
+   * Brydio's events go (`bookable`), else `(calendar_room_needs_google)`.
+   * `rooms()` answers a Google room's busy times as Google knows them too.
+   */
+  resources(): Promise<{ status: 'ok' | 'not_connected' | 'needs_permission' | 'unavailable'; bookable: boolean; items: GoogleRoom[] }>;
 
   // Booking links (CA05). `link` is the app's own key for a link, e.g. its record id.
 

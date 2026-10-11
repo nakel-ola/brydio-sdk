@@ -52,6 +52,8 @@ export interface FakeCalendarOptions {
   offers?: Record<string, string[]>;
   /** Bookings already made, e.g. to test a manage link. */
   bookings?: FakeBooking[];
+  /** The workspace's Google rooms, as `calendar.resources()` answers (CA06). Default: none, `not_connected`. */
+  resources?: Partial<Awaited<ReturnType<HandlerCalendar['resources']>>>;
 }
 
 /** A booking as the fake host keeps it (CA05), with the secret Brydio would only ever email. */
@@ -250,6 +252,10 @@ export function fakeCalendar(
   /** A room holds one meeting at a time (CA06). */
   const roomFree = (input: CalendarEventInput, except?: string) => {
     if (!input.room) return;
+    if (input.room.startsWith('google:')) {
+      if (!(options.resources?.items ?? []).some(one => one.id === input.room)) refuse('calendar_invalid', 'That isn’t one of this workspace’s Google rooms.');
+      if (!options.resources?.bookable) refuse('calendar_room_needs_google', 'Booking a Google room needs your Google calendar connected to Brydio, with Brydio’s events going to it.');
+    }
     const start = Date.parse(input.start);
     const end = Date.parse(input.end);
     const clash = [...events.values()].some(one => one.id !== except && one.room === input.room && one.status !== 'cancelled' && Date.parse(one.start) < end && Date.parse(one.end) > start);
@@ -320,6 +326,11 @@ export function fakeCalendar(
         events.delete(event.id);
       }
       return { cancelled: event.id };
+    },
+    async resources() {
+      const given = options.resources ?? {};
+      const items = given.items ?? [];
+      return { status: given.status ?? (items.length ? 'ok' : 'not_connected'), bookable: given.bookable ?? false, items };
     },
     async rooms(query) {
       const { from, to } = span(query);

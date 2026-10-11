@@ -75,6 +75,26 @@ post your own card to them with the `chat` grant.
 Only the event's owner changes or cancels it. `respond` is for a Brydio
 person invited to a Brydio event; a series answers as a whole.
 
+## Rooms
+
+An event's `room` is your app's own id for a room or resource, and
+`calendar.rooms({ rooms, from, to })` says when each is taken across the
+workspace (times only). An event that books a room taken then is refused with
+`(calendar_room_taken)`.
+
+`calendar.resources()` lists the workspace's Google room resources, read from
+its Google directory. Each item's `id` is `google:<address>`; put it in an
+event's `room` and Brydio books the room as a resource attendee on the event it
+writes to the caller's Google calendar. That needs Brydio's events to go to a
+Google calendar of theirs (`bookable`), else `(calendar_room_needs_google)`.
+`rooms()` answers a Google room's busy times as Google knows them, so a room
+booked outside Brydio counts as taken.
+
+```ts
+const { status, bookable, items } = await calendar.resources();
+// status: ok | not_connected | needs_permission | unavailable
+```
+
 ## Calls
 
 A Brydio event has a call. `calendar.call(id)` starts it as the caller, ringing
@@ -103,7 +123,8 @@ is refused with `(calendar_not_brydio)`.
 
 Each ends with a code: `(not_granted)` without the grant, `(read_tool)` for a
 write from a read tool, `(calendar_invalid)`, `(calendar_not_found)`,
-`(calendar_forbidden)` and `(calendar_unavailable)`. A visitor on a public
+`(calendar_forbidden)`, `(calendar_room_taken)`, `(calendar_room_needs_google)` and
+`(calendar_unavailable)`. A visitor on a public
 page never reaches the calendar.
 
 ## Testing

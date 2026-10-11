@@ -123,6 +123,19 @@ describe('calendar in the fake host (CA02)', () => {
     expect((await runHandler(range, {}, visitor)).error).toContain('runs for a visitor on a public page');
   });
 
+  it('lists the Google rooms it is given, and books one only when the caller can (CA06)', async () => {
+    const ROOM = { id: 'google:c_board@resource.calendar.google.com', email: 'c_board@resource.calendar.google.com', name: 'Boardroom', kind: 'room' as const, capacity: 8, building: null, floor: null, equipment: [] };
+    const list: Handler<Record<string, never>, unknown> = async (_input, { calendar }) => calendar.resources();
+    const book: Handler<{ room: string }, unknown> = async ({ room }, { calendar }) => calendar.create({ title: 'Review', start: '2026-10-13T09:00:00Z', end: '2026-10-13T10:00:00Z', timeZone: 'UTC', room });
+    const options = (bookable: boolean) => ({ manifest: manifest() as never, caller: { userId: 'user_ada' }, calendar: { resources: { items: [ROOM], bookable } } });
+
+    expect((await runHandler(list, {}, { manifest: manifest() as never, caller: { userId: 'user_ada' } })).result).toEqual({ status: 'not_connected', bookable: false, items: [] });
+    expect((await runHandler(list, {}, options(true))).result).toEqual({ status: 'ok', bookable: true, items: [ROOM] });
+    expect((await runHandler(book, { room: ROOM.id }, options(true))).result).toMatchObject({ room: ROOM.id });
+    expect((await runHandler(book, { room: ROOM.id }, options(false))).error).toContain('(calendar_room_needs_google)');
+    expect((await runHandler(book, { room: 'google:other@resource.calendar.google.com' }, options(true))).error).toContain('(calendar_invalid)');
+  });
+
   it('answers a meeting’s call with a fake room and no way in, and records guests’ passes (CA08, CA-Q4)', async () => {
     const REVIEW = { ...STANDUP, attendees: [{ kind: 'person' as const, member: 'user_sam', response: 'needs_action' as const }, { kind: 'email' as const, email: 'g@x.io', response: 'needs_action' as const }] };
     const meet: Handler<Record<string, never>, unknown> = async (_input, { calendar }) => calendar.call('evt_1');
