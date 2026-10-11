@@ -572,6 +572,8 @@ export interface CalendarEventInput {
   room?: string | null;
   /** Email outside guests an invitation with an ICS (and a change or cancellation later). Default true. */
   notify?: boolean;
+  /** The chat room it was made from: in a project's channel the caller is in, it is linked to that project unless `project` is given (CA10). */
+  fromRoom?: string;
 }
 
 /**
