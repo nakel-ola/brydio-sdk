@@ -123,6 +123,15 @@ describe('calendar in the fake host (CA02)', () => {
     expect((await runHandler(range, {}, visitor)).error).toContain('runs for a visitor on a public page');
   });
 
+  it('answers the caller’s open offers as holds in the range, and none by default (CA02)', async () => {
+    const read: Handler<typeof WEEK, Range> = async (query, { calendar }) => calendar.range(query);
+    const hold = { id: 'offer_1:0', offer: 'offer_1', title: 'Offered in #design', start: '2026-10-13T10:00:00.000Z', end: '2026-10-13T11:00:00.000Z' };
+    const later = { ...hold, id: 'offer_1:1', start: '2026-11-02T10:00:00.000Z', end: '2026-11-02T11:00:00.000Z' };
+
+    expect((await runHandler(read, WEEK, { manifest: manifest() as never, caller: { userId: 'user_ada' } })).result!.holds).toEqual([]);
+    expect((await runHandler(read, WEEK, { manifest: manifest() as never, caller: { userId: 'user_ada' }, calendar: { holds: [hold, later] } })).result!.holds).toEqual([hold]);
+  });
+
   it('lists the Google rooms it is given, and books one only when the caller can (CA06)', async () => {
     const ROOM = { id: 'google:c_board@resource.calendar.google.com', email: 'c_board@resource.calendar.google.com', name: 'Boardroom', kind: 'room' as const, capacity: 8, building: null, floor: null, equipment: [] };
     const list: Handler<Record<string, never>, unknown> = async (_input, { calendar }) => calendar.resources();

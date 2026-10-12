@@ -39,6 +39,11 @@ for one occurrence of a series), `on` (whose calendar it sits on), `owner`,
 may change it). A `busyOnly` occurrence has no `title`, `location`,
 `attendees` or notes: the viewer may see only that the time is taken.
 
+`range` also answers `holds`: the caller's own open scheduling offers, times
+their co-partner offered in a chat that nobody has picked yet, one per offered
+time (`{ id, offer, title, start, end }`). Draw them as tentative. A
+colleague's holds are never shown.
+
 People are named by **user id**, the id a `member` field holds. Bots are
 named by their own id (`bot`), outside guests by `email`.
 

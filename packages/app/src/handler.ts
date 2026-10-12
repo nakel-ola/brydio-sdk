@@ -370,6 +370,17 @@ export interface HandlerChat {
   rooms(query?: string): Promise<ChatRoom[]>;
 }
 
+/** One time the caller offered in a chat (CO08) that nobody has picked yet, as `calendar.range` answers it. */
+export interface CalendarHold {
+  id: string;
+  /** The offer it belongs to: its other times are held too. */
+  offer: string;
+  /** Where it was offered, e.g. "Offered in #design". */
+  title: string;
+  start: string;
+  end: string;
+}
+
 /** One of the workspace's Google rooms or resources, as `calendar.resources()` lists it (CA06). */
 export interface GoogleRoom {
   /** `google:<address>`: what an event's `room` takes to book it. */
@@ -608,8 +619,13 @@ export interface CalendarEventInput {
  * page may call only `free`, `book`, `booking`, `rebook` and `unbook`.
  */
 export interface HandlerCalendar {
-  /** Events overlapping [from, to) (62 days at most): the caller's, or each named member's. */
-  range(query: { from: string; to: string; people?: string[]; project?: string; cancelled?: boolean }): Promise<{ people: CalendarPerson[]; events: CalendarOccurrence[] }>;
+  /**
+   * Events overlapping [from, to) (62 days at most): the caller's, or each
+   * named member's. `holds` are the caller's own open scheduling offers (times
+   * their co-partner offered in a chat that nobody has picked yet), one per
+   * offered time: draw them as tentative. Never a colleague's.
+   */
+  range(query: { from: string; to: string; people?: string[]; project?: string; cancelled?: boolean }): Promise<{ people: CalendarPerson[]; events: CalendarOccurrence[]; holds: CalendarHold[] }>;
   /** Busy spans and working windows of the people named (the caller by default). */
   busy(query: { from: string; to: string; people?: string[] }): Promise<{
     people: (CalendarPerson & { busy: { start: string; end: string }[]; working: { start: string; end: string }[] })[];

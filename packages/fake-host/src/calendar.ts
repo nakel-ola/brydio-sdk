@@ -1,5 +1,6 @@
 import type {
   CalendarAttendee,
+  CalendarHold,
   CalendarEventInput,
   CalendarOccurrence,
   CalendarPerson,
@@ -52,6 +53,8 @@ export interface FakeCalendarOptions {
   offers?: Record<string, string[]>;
   /** Bookings already made, e.g. to test a manage link. */
   bookings?: FakeBooking[];
+  /** The caller's open scheduling offers, as `calendar.range` answers them in `holds` (CA02). */
+  holds?: CalendarHold[];
   /** The workspace's Google rooms, as `calendar.resources()` answers (CA06). Default: none, `not_connected`. */
   resources?: Partial<Awaited<ReturnType<HandlerCalendar['resources']>>>;
 }
@@ -276,7 +279,8 @@ export function fakeCalendar(
     async range(query) {
       const { from, to } = span(query);
       const who = whoOf(query.people);
-      return { people: who.map(personOf), events: occurrences(from, to, who, query.project, query.cancelled === true) };
+      const holds = (options.holds ?? []).filter(one => Date.parse(one.start) < to && Date.parse(one.end) > from);
+      return { people: who.map(personOf), events: occurrences(from, to, who, query.project, query.cancelled === true), holds };
     },
     async busy(query) {
       const { from, to } = span(query);
