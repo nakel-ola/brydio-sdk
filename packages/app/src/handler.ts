@@ -381,6 +381,28 @@ export interface CalendarHold {
   end: string;
 }
 
+/** One meeting's notes, as `calendar.notes()` lists them (Brydio's Meeting notes, MN07). */
+export interface MeetingNoteSummary {
+  id: string;
+  source: 'call' | 'device' | 'import';
+  title: string | null;
+  eventId: string | null;
+  state: 'live' | 'waiting' | 'posted';
+  /** The caller owns them; otherwise they were shared with the caller. */
+  mine: boolean;
+  createdAt: string;
+  /** The first line of what happened. */
+  summary: string | null;
+  counts: { decisions: number; actions: number; questions: number };
+}
+
+/** The last earlier meeting of a series, for this one's prep (MN08). */
+export interface MeetingNotesPrep extends MeetingNoteSummary {
+  decisions: string[];
+  actions: { text: string; owner: string | null; due: string | null }[];
+  questions: string[];
+}
+
 /** One of the workspace's Google rooms or resources, as `calendar.resources()` lists it (CA06). */
 export interface GoogleRoom {
   /** `google:<address>`: what an event's `room` takes to book it. */
@@ -660,6 +682,16 @@ export interface HandlerCalendar {
    * `rooms()` answers a Google room's busy times as Google knows them too.
    */
   resources(): Promise<{ status: 'ok' | 'not_connected' | 'needs_permission' | 'unavailable'; bookable: boolean; items: GoogleRoom[] }>;
+
+  /**
+   * An event's meeting notes as the caller may read them (Brydio's Meeting
+   * notes, MN07): this meeting's (`notes`), and for a series the last
+   * earlier meeting's (`previous`), with what was decided, who does what and
+   * what was left open, for prep. Nothing for an event the caller sees only
+   * as busy. Open one with `navigate({ kind: 'meeting-notes', id })`; start
+   * the caller's own with `navigate({ kind: 'take-notes', id: event.id, title })`.
+   */
+  notes(id: string): Promise<{ notes: MeetingNoteSummary[]; previous: MeetingNotesPrep | null }>;
 
   // Booking links (CA05). `link` is the app's own key for a link, e.g. its record id.
 

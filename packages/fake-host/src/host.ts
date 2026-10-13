@@ -132,6 +132,8 @@ export interface FakeHostOptions {
 export type NavigateTo =
   | { kind: 'chat' | 'file' | 'item' | 'project'; id: string }
   | { kind: 'room'; id: string; call?: boolean }
+  | { kind: 'meeting-notes'; id: string }
+  | { kind: 'take-notes'; id: string; title?: string }
   | { kind: 'route'; path: string; newTab?: boolean };
 
 /** One `@brydio/api` call a screen sent to the pretend host. */
@@ -1016,10 +1018,10 @@ export class FakeHost {
 
     if (
       !target ||
-      (target.kind !== 'route' && target.kind !== 'chat' && target.kind !== 'file' && target.kind !== 'item' && target.kind !== 'project' && target.kind !== 'room') ||
+      (target.kind !== 'route' && target.kind !== 'chat' && target.kind !== 'file' && target.kind !== 'item' && target.kind !== 'project' && target.kind !== 'room' && target.kind !== 'meeting-notes' && target.kind !== 'take-notes') ||
       (target.kind === 'route' ? route === null : !closing && (typeof target.id !== 'string' || !target.id))
     ) {
-      fail({ code: -32602, message: 'An app can open one of its own routes, or a chat, file, project, room or item by id.' });
+      fail({ code: -32602, message: 'An app can open one of its own routes, or a chat, file, project, room, meeting notes or item by id, or start notes for an event.' });
 
       return;
     }
@@ -1037,6 +1039,10 @@ export class FakeHost {
         ? { kind: 'route', path: route!, ...((target as { newTab?: unknown }).newTab === true ? { newTab: true } : {}) }
         : target.kind === 'room'
           ? { kind: 'room', id: target.id as string, ...((target as { call?: unknown }).call === true ? { call: true } : {}) }
+          : target.kind === 'meeting-notes'
+          ? { kind: 'meeting-notes', id: target.id as string }
+          : target.kind === 'take-notes'
+          ? { kind: 'take-notes', id: target.id as string, ...(typeof (target as { title?: unknown }).title === 'string' ? { title: (target as { title: string }).title.slice(0, 200) } : {}) }
           : { kind: target.kind as 'chat' | 'file' | 'item' | 'project', id: target.id as string };
 
     this.#busy += 1;

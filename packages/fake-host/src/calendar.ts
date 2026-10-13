@@ -57,6 +57,8 @@ export interface FakeCalendarOptions {
   holds?: CalendarHold[];
   /** The workspace's Google rooms, as `calendar.resources()` answers (CA06). Default: none, `not_connected`. */
   resources?: Partial<Awaited<ReturnType<HandlerCalendar['resources']>>>;
+  /** Meeting notes by event id, as `calendar.notes(id)` answers (MN07). Default: none. */
+  notes?: Record<string, Awaited<ReturnType<HandlerCalendar['notes']>>>;
 }
 
 /** A booking as the fake host keeps it (CA05), with the secret Brydio would only ever email. */
@@ -330,6 +332,12 @@ export function fakeCalendar(
         events.delete(event.id);
       }
       return { cancelled: event.id };
+    },
+    async notes(id) {
+      // Only an event the caller can see the details of has notes for them, as on the host.
+      const seen = one(String(id));
+      if (!seen || seen.busyOnly) return { notes: [], previous: null };
+      return options.notes?.[String(id)] ?? { notes: [], previous: null };
     },
     async resources() {
       const given = options.resources ?? {};

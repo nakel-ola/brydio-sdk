@@ -281,6 +281,10 @@ export type NavigateTarget =
   | { kind: 'chat' | 'file' | 'item' | 'project'; id: string }
   /** A Brydio room the person is in; with `call`, its call is started or joined there (a meeting's Join). */
   | { kind: 'room'; id: string; call?: boolean }
+  /** Meeting notes the person owns or was shared (Brydio's Meeting notes, MN07). */
+  | { kind: 'meeting-notes'; id: string }
+  /** Starts the person's own notes for a calendar event on their device; Brydio still asks them to let the meeting know. */
+  | { kind: 'take-notes'; id: string; title?: string }
   | { kind: 'item'; id: null }
   /** One of the app's own pages; `newTab` opens it in a Brydio tab of its own. */
   | { kind: 'route'; path: string; newTab?: boolean };

@@ -274,8 +274,8 @@ test('a screen asking to open something hears whether it opened, in the host’s
     'room room_hidden: There is no such room.',
     'route /plan//plan_1/details/: opened',
     'selected nothing',
-    'route //example.com: An app can open one of its own routes, or a chat, file, project, room or item by id.',
-    'url https://example.com: An app can open one of its own routes, or a chat, file, project, room or item by id.',
+    'route //example.com: An app can open one of its own routes, or a chat, file, project, room, meeting notes or item by id, or start notes for an event.',
+    'url https://example.com: An app can open one of its own routes, or a chat, file, project, room, meeting notes or item by id, or start notes for an event.',
     'item note_a: opened',
     // Opening one of the app's own items makes it the screen's selection, as Brydio's screen does.
     'selected {"kind":"item","id":"note_a"}',

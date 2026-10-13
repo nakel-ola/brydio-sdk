@@ -145,6 +145,23 @@ describe('calendar in the fake host (CA02)', () => {
     expect((await runHandler(book, { room: 'google:other@resource.calendar.google.com' }, options(true))).error).toContain('(calendar_invalid)');
   });
 
+  it('answers an event’s meeting notes as given, and none for an event the caller only sees as busy (MN07)', async () => {
+    const prep = {
+      notes: [],
+      previous: {
+        id: 'note_1', source: 'device' as const, title: 'Standup', eventId: 'evt_1', state: 'posted' as const, mine: true,
+        createdAt: '2026-10-12T09:30:00.000Z', summary: 'Shipped the export.', counts: { decisions: 1, actions: 1, questions: 0 },
+        decisions: ['Ship on Friday'], actions: [{ text: 'Send the deck', owner: 'Sam', due: null }], questions: [],
+      },
+    };
+    const read: Handler<{ id: string }, unknown> = async ({ id }, { calendar }) => calendar.notes(id);
+    const options = { manifest: manifest() as never, caller: { userId: 'user_ada' }, calendar: { events: [STANDUP], notes: { evt_1: prep } } };
+
+    expect((await runHandler(read, { id: 'evt_1' }, options)).result).toEqual(prep);
+    expect((await runHandler(read, { id: 'evt_missing' }, options)).result).toEqual({ notes: [], previous: null });
+    expect((await runHandler(read, { id: 'evt_1' }, { ...options, caller: { userId: 'user_kim' } })).result).toEqual({ notes: [], previous: null });
+  });
+
   it('answers a meeting’s call with a fake room and no way in, and records guests’ passes (CA08, CA-Q4)', async () => {
     const REVIEW = { ...STANDUP, attendees: [{ kind: 'person' as const, member: 'user_sam', response: 'needs_action' as const }, { kind: 'email' as const, email: 'g@x.io', response: 'needs_action' as const }] };
     const meet: Handler<Record<string, never>, unknown> = async (_input, { calendar }) => calendar.call('evt_1');
