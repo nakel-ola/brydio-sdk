@@ -2275,6 +2275,9 @@ export const CATALOGUE = {
       attachments: { kind: 'boolean' },
       // `@all` offered among the mentions.
       mentionAll: { kind: 'boolean' },
+      // `@` also offers the viewer's rooms and calls, from Brydio (DW08); each a
+      // chip written as a `brydio://` link that opens it.
+      places: { kind: 'boolean' },
       // What `#` offers: choosing one writes its `value` (an identifier, TQ-2).
       // One with `create` is offered last once something is typed, as
       // "label “typed”"; choosing it writes its `value` and raises `createreference`.
