@@ -1,7 +1,7 @@
 {
   "brydio": {
-    "commit": "c76ed3b9c0bae938c588d14cdafbcf38d880c029",
-    "dirty": false
+    "commit": "475202ba84af717d7c911de15236a0d38c9fb143",
+    "dirty": true
   },
   "contracts": {
     "anonymous-problems": {
@@ -6962,6 +6962,7 @@
             "vote",
             "pin",
             "focuspin",
+            "orphans",
             "opencard",
             "export",
             "error"
