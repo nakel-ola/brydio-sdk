@@ -22,6 +22,14 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.49
+
+The Calendar app's rooms, DM cards and holds (tasks/calendar CA02, CA03, CA06). Additive; nothing you wrote has to change.
+
+- **`calendar.resources()`.** Answers `{ status, bookable, items }`: the workspace's Google Workspace room resources (`GoogleRoom`, ids `google:<email>`) once the workspace's Google directory has the room-resource scope. `status` is `'ok'`, `'not_connected'`, `'needs_permission'` or `'unavailable'`. A Google room can be passed as `roomId` and is checked against Google free/busy; a person without a Google calendar connection gets `calendar_room_needs_google`. The fake host takes a `resources` option.
+- **`chat.post({ to })`.** Posts to a member's direct message with the app instead of a room. Pass exactly one of `room` or `to`. `chat.rooms()` now answers `canPost: true` for DMs. The fake host keys `to` posts as `dm:<member>` for `canPost`.
+- **`calendar.range().holds`.** The viewer's own open scheduling offers as `CalendarHold[]` (`{ id, offer, title, start, end }`), never a colleague's. The fake host takes a `holds` option, filtered to the range.
+
 ## 0.1.0-alpha.48
 
 Rooms and calls under `@` (DW08).
