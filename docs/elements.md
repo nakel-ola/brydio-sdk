@@ -18,7 +18,7 @@ A toast is not an element: it is said, not placed. A screen shows one with
 `toast(text, tone)` from `@brydio/app`, which Brydio draws in its own
 toaster; see [the bridge](bridge.md).
 
-There are 101 elements.
+There are 102 elements.
 
 - [`bry-stack`](#bry-stack)
 - [`bry-heading`](#bry-heading)
@@ -114,6 +114,7 @@ There are 101 elements.
 - [`bry-spreadsheet-group`](#bry-spreadsheet-group)
 - [`bry-rich-text`](#bry-rich-text)
 - [`bry-whiteboard`](#bry-whiteboard)
+- [`bry-board-preview`](#bry-board-preview)
 - [`bry-approval`](#bry-approval)
 - [`bry-board-lane`](#bry-board-lane)
 - [`bry-property-list`](#bry-property-list)
@@ -1516,10 +1517,33 @@ Holds nothing: it is drawn from its settings alone.
 |---|---|---|
 | `bind` | a record of `collection`, `id`, `field` (needs `collection`, `id`, `field`) | yes |
 | `size` | `sm`, `md`, `lg` | no |
+| `fill` | `true` or `false` | no |
 | `readonly` | `true` or `false` | no |
 | `label` | text, at most 200 characters | no |
+| `mode` | `board`, `diagram` | no |
+| `ops` | a list of at most 50: a record of `id`, `kind`, `source`, `x`, `y` (needs `id`, `kind`, `source`) | no |
+| `cards` | a list of at most 200: a record of `card`, `ref`, `title`, `meta`, `status` (needs `card`, `ref`, `title`) | no |
+| `library` | text, at most 100,000 characters | no |
+| `hidden` | `true` or `false` | no |
+| `voting` | `true` or `false` | no |
+| `marks` | a list of at most 500: a record of `element`, `label` (needs `element`, `label`) | no |
+| `summon` | a whole number from 0 to 9007199254740991 | no |
+| `commenting` | `true` or `false` | no |
+| `pins` | a list of at most 500: a record of `id`, `x`, `y`, `element`, `label`, `active`, `resolved` (needs `id`, `x`, `y`) | no |
+| `exportId` | text, at most 128 characters | no |
 
-Tells the app: `change`.
+Tells the app: `change`, `applied`, `select`, `librarychange`, `vote`, `pin`, `focuspin`, `opencard`, `export`, `error`.
+
+## `bry-board-preview`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `bind` | a record of `collection`, `id`, `field` (needs `collection`, `id`, `field`) | yes |
+| `label` | text, at most 200 characters | no |
+
+Tells the app nothing.
 
 ## `bry-approval`
 

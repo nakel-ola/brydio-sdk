@@ -103,6 +103,7 @@ var SELECT_MAX = 100;
 var TABLE_COLUMNS = 12;
 var TABLE_ROWS = 500;
 var KEY_MAX = 128;
+var BOARD_OP_SOURCE = 1e5;
 var VIRTUAL_ROWS = 1e6;
 var DIALOG_ACTIONS = 3;
 var MENU_ITEMS = 60;
@@ -1933,11 +1934,84 @@ var CATALOGUE = {
         required: ["collection", "id", "field"]
       },
       size: { kind: "enum", values: ["sm", "md", "lg"] },
+      fill: { kind: "boolean" },
       readonly: { kind: "boolean" },
+      label: { kind: "text", max: LABEL_MAX },
+      mode: { kind: "enum", values: ["board", "diagram"] },
+      ops: {
+        kind: "list",
+        max: 50,
+        of: {
+          kind: "shape",
+          fields: {
+            id: { kind: "text", max: KEY_MAX },
+            kind: { kind: "enum", values: ["elements", "mermaid", "drawio", "card", "sticky", "arrange", "layout", "link"] },
+            source: { kind: "text", max: BOARD_OP_SOURCE },
+            x: { kind: "int", min: -1e6, max: 1e6 },
+            y: { kind: "int", min: -1e6, max: 1e6 }
+          },
+          required: ["id", "kind", "source"]
+        }
+      },
+      cards: {
+        kind: "list",
+        max: 200,
+        of: {
+          kind: "shape",
+          fields: {
+            card: { kind: "text", max: 40 },
+            ref: { kind: "text", max: KEY_MAX },
+            title: { kind: "text", max: LABEL_MAX },
+            meta: { kind: "text", max: LABEL_MAX },
+            status: { kind: "text", max: 60 }
+          },
+          required: ["card", "ref", "title"]
+        }
+      },
+      library: { kind: "text", max: BOARD_OP_SOURCE },
+      hidden: { kind: "boolean" },
+      voting: { kind: "boolean" },
+      marks: {
+        kind: "list",
+        max: 500,
+        of: { kind: "shape", fields: { element: { kind: "text", max: KEY_MAX }, label: { kind: "text", max: 20 } }, required: ["element", "label"] }
+      },
+      summon: { kind: "int", min: 0, max: Number.MAX_SAFE_INTEGER },
+      commenting: { kind: "boolean" },
+      pins: {
+        kind: "list",
+        max: 500,
+        of: {
+          kind: "shape",
+          fields: {
+            id: { kind: "text", max: KEY_MAX },
+            x: { kind: "int", min: -1e6, max: 1e6 },
+            y: { kind: "int", min: -1e6, max: 1e6 },
+            element: { kind: "text", max: KEY_MAX },
+            label: { kind: "text", max: 20 },
+            active: { kind: "boolean" },
+            resolved: { kind: "boolean" }
+          },
+          required: ["id", "x", "y"]
+        }
+      },
+      exportId: { kind: "text", max: KEY_MAX }
+    },
+    required: ["bind"],
+    events: ["change", "applied", "select", "librarychange", "vote", "pin", "focuspin", "opencard", "export", "error"],
+    children: false
+  },
+  "bry-board-preview": {
+    props: {
+      bind: {
+        kind: "shape",
+        fields: { collection: { kind: "text", max: 40 }, id: { kind: "text", max: KEY_MAX }, field: { kind: "text", max: 40 } },
+        required: ["collection", "id", "field"]
+      },
       label: { kind: "text", max: LABEL_MAX }
     },
     required: ["bind"],
-    events: ["change"],
+    events: [],
     children: false
   },
   "bry-approval": {

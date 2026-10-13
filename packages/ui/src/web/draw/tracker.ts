@@ -1939,6 +1939,30 @@ export function mentionAt(text: string, at: number): { from: number; query: stri
   return match ? { from: at - match[2]!.length - 1, query: match[2]! } : null;
 }
 
+// bry-board-preview
+
+// Brydio draws a board's shapes from its drawing; outside Brydio there is no
+// drawing, so the preview is an empty box of the same shape.
+drawAs(
+  'bry-board-preview',
+  element => {
+    const label = str(element.label) || 'Board preview';
+
+    return html`<div class="preview" role="img" aria-label=${`${label}: drawn in Brydio`}></div>`;
+  },
+  [
+    css`
+      :host { display: block; }
+      .preview {
+        aspect-ratio: 16 / 10;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 0.75rem;
+      }
+    `,
+  ],
+);
+
 // bry-whiteboard
 
 const BOARD_HEIGHTS = { sm: 320, md: 520, lg: 760 } as const;
@@ -1952,7 +1976,7 @@ drawAs(
     const size = pick(['sm', 'md', 'lg'] as const, element.size) ?? 'md';
     const label = str(element.label) || 'Whiteboard';
 
-    element.style.setProperty('--bry-board-height', `${BOARD_HEIGHTS[size]}px`);
+    element.style.setProperty('--bry-board-height', element.fill === true ? 'max(480px, calc(100dvh - 12rem))' : `${BOARD_HEIGHTS[size]}px`);
 
     return html`<div class="board type-body" role="group" aria-label=${label}>${label}: drawn together in Brydio</div>`;
   },

@@ -75,6 +75,9 @@ export const TABLE_ROWS = 500;
 /** A column's key and a row's id: short, and never shown. */
 export const KEY_MAX = 128;
 
+/** The most a board op's source (a template, Mermaid, draw.io) or a shared library may hold. */
+export const BOARD_OP_SOURCE = 100_000;
+
 /** The most rows a virtual list can say it has. */
 export const VIRTUAL_ROWS = 1_000_000;
 
@@ -2310,10 +2313,21 @@ export const CATALOGUE = {
     children: false,
   },
   'bry-whiteboard': {
-    // An endless canvas several people draw on at once (WB01), drawn by
+    // An endless canvas several people draw on at once (WB01–WB10), drawn by
     // Brydio with Excalidraw. `bind` names a record's `canvas` field; the app
     // never holds the drawing and hears `change` with `{ elements, text }`
-    // once drawing settles. `size` is `sm`, `md` (default) or `lg`.
+    // once drawing settles (a frame's words under `## Name`). Pressing a face
+    // follows that person. `size` is `sm`, `md` (default) or `lg`; `fill`
+    // takes the screen's height. `mode` `diagram`: grid, snapping, shape
+    // libraries, tidy-up, draw.io import.
+    //
+    // `ops` ({ id, kind, source, x?, y? }) are how the app puts things on a
+    // drawing it never holds; each is applied once per board, then `applied`
+    // says { id, ok, elements } or { id, ok: false, message }. `cards` fill
+    // live cards (`opencard` when pressed); `library` is the shared shapes
+    // (`librarychange`). Facilitation: `hidden`, `voting` (`vote`), `marks`,
+    // `summon`. Comments: `commenting` (`pin`), `pins` (`focuspin`). A new
+    // `exportId` raises `export` with the elements and their Mermaid.
     props: {
       bind: {
         kind: 'shape',
@@ -2321,11 +2335,86 @@ export const CATALOGUE = {
         required: ['collection', 'id', 'field'],
       },
       size: { kind: 'enum', values: ['sm', 'md', 'lg'] },
+      fill: { kind: 'boolean' },
       readonly: { kind: 'boolean' },
+      label: { kind: 'text', max: LABEL_MAX },
+      mode: { kind: 'enum', values: ['board', 'diagram'] },
+      ops: {
+        kind: 'list',
+        max: 50,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            kind: { kind: 'enum', values: ['elements', 'mermaid', 'drawio', 'card', 'sticky', 'arrange', 'layout', 'link'] },
+            source: { kind: 'text', max: BOARD_OP_SOURCE },
+            x: { kind: 'int', min: -1_000_000, max: 1_000_000 },
+            y: { kind: 'int', min: -1_000_000, max: 1_000_000 },
+          },
+          required: ['id', 'kind', 'source'],
+        },
+      },
+      cards: {
+        kind: 'list',
+        max: 200,
+        of: {
+          kind: 'shape',
+          fields: {
+            card: { kind: 'text', max: 40 },
+            ref: { kind: 'text', max: KEY_MAX },
+            title: { kind: 'text', max: LABEL_MAX },
+            meta: { kind: 'text', max: LABEL_MAX },
+            status: { kind: 'text', max: 60 },
+          },
+          required: ['card', 'ref', 'title'],
+        },
+      },
+      library: { kind: 'text', max: BOARD_OP_SOURCE },
+      hidden: { kind: 'boolean' },
+      voting: { kind: 'boolean' },
+      marks: {
+        kind: 'list',
+        max: 500,
+        of: { kind: 'shape', fields: { element: { kind: 'text', max: KEY_MAX }, label: { kind: 'text', max: 20 } }, required: ['element', 'label'] },
+      },
+      summon: { kind: 'int', min: 0, max: Number.MAX_SAFE_INTEGER },
+      commenting: { kind: 'boolean' },
+      pins: {
+        kind: 'list',
+        max: 500,
+        of: {
+          kind: 'shape',
+          fields: {
+            id: { kind: 'text', max: KEY_MAX },
+            x: { kind: 'int', min: -1_000_000, max: 1_000_000 },
+            y: { kind: 'int', min: -1_000_000, max: 1_000_000 },
+            element: { kind: 'text', max: KEY_MAX },
+            label: { kind: 'text', max: 20 },
+            active: { kind: 'boolean' },
+            resolved: { kind: 'boolean' },
+          },
+          required: ['id', 'x', 'y'],
+        },
+      },
+      exportId: { kind: 'text', max: KEY_MAX },
+    },
+    required: ['bind'],
+    events: ['change', 'applied', 'select', 'librarychange', 'vote', 'pin', 'focuspin', 'opencard', 'export', 'error'],
+    children: false,
+  },
+  'bry-board-preview': {
+    // A record's drawing drawn small (WB02), for a list of boards: Brydio
+    // draws its shapes as outlines from the drawing itself, as the viewer.
+    props: {
+      bind: {
+        kind: 'shape',
+        fields: { collection: { kind: 'text', max: 40 }, id: { kind: 'text', max: KEY_MAX }, field: { kind: 'text', max: 40 } },
+        required: ['collection', 'id', 'field'],
+      },
       label: { kind: 'text', max: LABEL_MAX },
     },
     required: ['bind'],
-    events: ['change'],
+    events: [],
     children: false,
   },
   'bry-approval': {

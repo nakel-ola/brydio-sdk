@@ -73,6 +73,17 @@ export interface EventDetails {
  * checkbox's `change` is whether it is ticked, not text, and a dialog's
  * `action` names the button. Looked up first, by element.
  */
+/** A sticky note on a board, as `bry-whiteboard`'s `select` tells of it. */
+export interface BoardSticky {
+  id: string;
+  text: string;
+  color: 'yellow' | 'orange' | 'pink' | 'violet' | 'blue' | 'green' | 'grey';
+  author: string | null;
+  authorName: string | null;
+  /** The frame it sits in, by name. */
+  frame: string | null;
+}
+
 export interface ElementEventDetails {
   'bry-input': {
     change: { value: string };
@@ -436,8 +447,26 @@ export interface ElementEventDetails {
     createreference: { value: string; text: string };
   };
   'bry-whiteboard': {
-    /** The board once drawing settles: how many shapes, and the words on them. */
+    /** The board once drawing settles: how many shapes, and the words on them (a frame's under `## Name`). */
     change: { elements: number; text: string };
+    /** An op from `ops` was applied (or already had been), or couldn't be drawn. */
+    applied: { id: string; ok: true; elements: string[] } | { id: string; ok: false; message: string };
+    /** The selection changed: its element ids, and the stickies among them. */
+    select: { ids: string[]; stickies: BoardSticky[] };
+    /** Somebody added to or took from the shared library: Excalidraw library items as JSON. */
+    librarychange: { items: string };
+    /** While `voting`: a sticky's vote button pressed. */
+    vote: { element: string };
+    /** With `commenting`: the board clicked with the Comment tool; on a shape, `x`/`y` are from its corner. */
+    pin: { x: number; y: number; element?: string };
+    /** A pin pressed. */
+    focuspin: { id: string };
+    /** A live card, or a `brydio://` link, pressed. */
+    opencard: { card: string; ref: string };
+    /** Answer to a new `exportId`. */
+    export: { id: string; elements: string; mermaid: string } | { id: string; tooBig: true };
+    /** Something the board was asked to draw couldn't be (a draw.io file it can't read). */
+    error: { message: string };
   };
   'bry-approval': {
     /** The request's status once the viewer approved or declined it. */

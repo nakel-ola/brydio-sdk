@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "714a40ae83ebc301b165866b77e35d7e50d0ba9c",
+    "commit": "c76ed3b9c0bae938c588d14cdafbcf38d880c029",
     "dirty": false
   },
   "contracts": {
@@ -6769,8 +6769,228 @@
                 "lg"
               ]
             },
+            "fill": {
+              "kind": "boolean"
+            },
             "readonly": {
               "kind": "boolean"
+            },
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "mode": {
+              "kind": "enum",
+              "values": [
+                "board",
+                "diagram"
+              ]
+            },
+            "ops": {
+              "kind": "list",
+              "max": 50,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "kind": {
+                    "kind": "enum",
+                    "values": [
+                      "elements",
+                      "mermaid",
+                      "drawio",
+                      "card",
+                      "sticky",
+                      "arrange",
+                      "layout",
+                      "link"
+                    ]
+                  },
+                  "source": {
+                    "kind": "text",
+                    "max": 100000
+                  },
+                  "x": {
+                    "kind": "int",
+                    "min": -1000000,
+                    "max": 1000000
+                  },
+                  "y": {
+                    "kind": "int",
+                    "min": -1000000,
+                    "max": 1000000
+                  }
+                },
+                "required": [
+                  "id",
+                  "kind",
+                  "source"
+                ]
+              }
+            },
+            "cards": {
+              "kind": "list",
+              "max": 200,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "card": {
+                    "kind": "text",
+                    "max": 40
+                  },
+                  "ref": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "title": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "meta": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "status": {
+                    "kind": "text",
+                    "max": 60
+                  }
+                },
+                "required": [
+                  "card",
+                  "ref",
+                  "title"
+                ]
+              }
+            },
+            "library": {
+              "kind": "text",
+              "max": 100000
+            },
+            "hidden": {
+              "kind": "boolean"
+            },
+            "voting": {
+              "kind": "boolean"
+            },
+            "marks": {
+              "kind": "list",
+              "max": 500,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "element": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 20
+                  }
+                },
+                "required": [
+                  "element",
+                  "label"
+                ]
+              }
+            },
+            "summon": {
+              "kind": "int",
+              "min": 0,
+              "max": 9007199254740991
+            },
+            "commenting": {
+              "kind": "boolean"
+            },
+            "pins": {
+              "kind": "list",
+              "max": 500,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "id": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "x": {
+                    "kind": "int",
+                    "min": -1000000,
+                    "max": 1000000
+                  },
+                  "y": {
+                    "kind": "int",
+                    "min": -1000000,
+                    "max": 1000000
+                  },
+                  "element": {
+                    "kind": "text",
+                    "max": 128
+                  },
+                  "label": {
+                    "kind": "text",
+                    "max": 20
+                  },
+                  "active": {
+                    "kind": "boolean"
+                  },
+                  "resolved": {
+                    "kind": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "x",
+                  "y"
+                ]
+              }
+            },
+            "exportId": {
+              "kind": "text",
+              "max": 128
+            }
+          },
+          "required": [
+            "bind"
+          ],
+          "events": [
+            "change",
+            "applied",
+            "select",
+            "librarychange",
+            "vote",
+            "pin",
+            "focuspin",
+            "opencard",
+            "export",
+            "error"
+          ],
+          "children": false
+        },
+        "bry-board-preview": {
+          "props": {
+            "bind": {
+              "kind": "shape",
+              "fields": {
+                "collection": {
+                  "kind": "text",
+                  "max": 40
+                },
+                "id": {
+                  "kind": "text",
+                  "max": 128
+                },
+                "field": {
+                  "kind": "text",
+                  "max": 40
+                }
+              },
+              "required": [
+                "collection",
+                "id",
+                "field"
+              ]
             },
             "label": {
               "kind": "text",
@@ -6780,9 +7000,7 @@
           "required": [
             "bind"
           ],
-          "events": [
-            "change"
-          ],
+          "events": [],
           "children": false
         },
         "bry-approval": {

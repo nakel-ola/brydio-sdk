@@ -12,6 +12,7 @@ export { FORBIDDEN_PROPS, MAX_TEXT, PARAGRAPH_MAX, TEXT_NODE, checkText, eventOf
 export type { Catalogue, ElementName, ElementSpec, PropSpec } from './catalogue.ts';
 
 export type {
+  BoardSticky,
   BryEvent,
   DetailOf,
   ElementAttributes,
