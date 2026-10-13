@@ -22,6 +22,18 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.51
+
+Whiteboard and diagrams (tasks/whiteboard WB01–WB10). Additive; nothing you wrote has to change.
+
+- **`bry-whiteboard` puts things on a drawing the app never holds.** `ops` is a list of `{ id, kind, source, x?, y? }`, each applied once per board however many windows have it open, then `applied` says `{ id, ok, elements }` or `{ id, ok: false, message }`. Kinds: `elements` (a template's Excalidraw elements or skeletons as JSON), `mermaid` (drawn as editable shapes), `drawio` (a draw.io file), `sticky` (`{ text, color }`), `card` (`{ card, ref }`), `link` (`{ element, url }`), `arrange` (`{ groups: [{ title, ids }] }`, stickies into titled frames) and `layout` (`{ ids? }`, top to bottom by connectors). Keep ops as records and pass the ones not yet applied.
+- **Stickies, selection and the library.** Brydio draws a Sticky button whose stickies carry their author, stamped by Brydio. `select` gives `{ ids, stickies }` (each a `BoardSticky`: `id`, `text`, `color`, `author`, `authorName`, `frame`). `library` is the instance's shared shapes (Excalidraw library JSON); `librarychange` gives `{ items }` to keep.
+- **Facilitation.** `hidden` blanks other people's stickies in each window, never in the drawing; `voting` draws a vote button on each sticky (`vote` with `{ element }`); `marks` (`{ element, label }`) draw counts on a shape's corner; each new `summon` brings every other window to this one's view. Follow mode is Brydio's: pressing someone's face follows them.
+- **Comments.** With `commenting`, a Comment tool raises `pin` with `{ x, y, element? }` (on a shape, from its corner, so it moves with it); `pins` (`{ id, x, y, element?, label?, active?, resolved? }`) are drawn there; pressing one raises `focuspin`.
+- **Cards, export, modes.** `cards` (`{ card, ref, title, meta?, status? }`) fill live cards; pressing a card or a `brydio://` link raises `opencard`. A new `exportId` raises `export` with `{ id, elements, mermaid }` (or `{ id, tooBig: true }`). `mode: 'diagram'` turns on the grid, snapping, shape libraries, tidy-up and draw.io import; `fill` takes the screen's height.
+- **New element `bry-board-preview`** (`bind`, `label`): a board's shapes drawn small by Brydio from the drawing, for lists and cards.
+- A drawing's summary (`canvas.text`) now lists a frame's words under `## <frame name>`, after the loose ones.
+
 ## 0.1.0-alpha.50
 
 Meeting notes from apps (tasks/meeting-notes MN07, MN08; the Calendar app's CA08 prep). Additive; nothing you wrote has to change.
