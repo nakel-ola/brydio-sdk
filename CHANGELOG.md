@@ -22,6 +22,13 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.50
+
+Meeting notes from apps (tasks/meeting-notes MN07, MN08; the Calendar app's CA08 prep). Additive; nothing you wrote has to change.
+
+- **`calendar.notes(id)`.** Answers `{ notes, previous }` for an event the caller can see the details of: `notes` are this meeting's (`MeetingNoteSummary[]`, the caller's own or shared with them), and for a series `previous` is the last earlier meeting's notes (`MeetingNotesPrep`, with `decisions`, `actions` and `questions`) for prep. A read; the fake host takes a `notes` option keyed by event id.
+- **`navigate({ kind: 'meeting-notes', id })`** opens meeting notes the person can read; **`navigate({ kind: 'take-notes', id, title? })`** starts the person's own notes for a calendar event on their computer (Brydio still asks them to let the meeting know). Both need the `navigate` host grant.
+
 ## 0.1.0-alpha.49
 
 The Calendar app's rooms, DM cards and holds (tasks/calendar CA02, CA03, CA06). Additive; nothing you wrote has to change.
