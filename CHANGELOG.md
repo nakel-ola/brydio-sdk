@@ -22,6 +22,13 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.52
+
+A board's comments (tasks/whiteboard WB07). Additive; nothing you wrote has to change.
+
+- **`bry-whiteboard` raises `orphans` with `{ ids }`**: the `pins` whose shapes are no longer on the board, whenever that changes, so a thread can say its shape was removed. The pins stay, drawn faint, where the shape was.
+- Brydio's own board tools also attach a file: it is kept in Brydio's store with the instance and drawn as a live file card. Nothing for the app to do.
+
 ## 0.1.0-alpha.51
 
 Whiteboard and diagrams (tasks/whiteboard WB01–WB10). Additive; nothing you wrote has to change.
