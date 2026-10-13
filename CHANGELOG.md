@@ -22,6 +22,12 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.48
+
+Rooms and calls under `@` (DW08).
+
+- **`bry-rich-text` `places`.** With `places: true`, `@` also offers the viewer's rooms and the calls they were on, from Brydio, never from the app. Each becomes a chip written as a link Brydio opens (`[#general](brydio://room/…)`, `[Call in #general · 3 Oct](brydio://call/…/…)`). A reader in the room sees its name and opens it with a press; anyone else sees "Private channel" or "Private call". `bry-markdown` draws these links the same way. Nothing changes without `places`.
+
 ## 0.1.0-alpha.47
 
 The Calendar app's platform pieces (tasks/calendar CA05, CA08, CA10).
