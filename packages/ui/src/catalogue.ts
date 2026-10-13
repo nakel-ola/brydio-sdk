@@ -2326,7 +2326,8 @@ export const CATALOGUE = {
     // says { id, ok, elements } or { id, ok: false, message }. `cards` fill
     // live cards (`opencard` when pressed); `library` is the shared shapes
     // (`librarychange`). Facilitation: `hidden`, `voting` (`vote`), `marks`,
-    // `summon`. Comments: `commenting` (`pin`), `pins` (`focuspin`). A new
+    // `summon`. Comments: `commenting` (`pin`), `pins` (`focuspin`, and
+    // `orphans` when the shapes some pins were on are deleted). A new
     // `exportId` raises `export` with the elements and their Mermaid.
     props: {
       bind: {
@@ -2399,7 +2400,7 @@ export const CATALOGUE = {
       exportId: { kind: 'text', max: KEY_MAX },
     },
     required: ['bind'],
-    events: ['change', 'applied', 'select', 'librarychange', 'vote', 'pin', 'focuspin', 'opencard', 'export', 'error'],
+    events: ['change', 'applied', 'select', 'librarychange', 'vote', 'pin', 'focuspin', 'orphans', 'opencard', 'export', 'error'],
     children: false,
   },
   'bry-board-preview': {

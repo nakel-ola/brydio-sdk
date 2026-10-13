@@ -461,6 +461,8 @@ export interface ElementEventDetails {
     pin: { x: number; y: number; element?: string };
     /** A pin pressed. */
     focuspin: { id: string };
+    /** The pins whose shapes are no longer on the board, whenever that changes. */
+    orphans: { ids: string[] };
     /** A live card, or a `brydio://` link, pressed. */
     opencard: { card: string; ref: string };
     /** Answer to a new `exportId`. */

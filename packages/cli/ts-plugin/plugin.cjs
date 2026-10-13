@@ -1998,7 +1998,7 @@ var CATALOGUE = {
       exportId: { kind: "text", max: KEY_MAX }
     },
     required: ["bind"],
-    events: ["change", "applied", "select", "librarychange", "vote", "pin", "focuspin", "opencard", "export", "error"],
+    events: ["change", "applied", "select", "librarychange", "vote", "pin", "focuspin", "orphans", "opencard", "export", "error"],
     children: false
   },
   "bry-board-preview": {

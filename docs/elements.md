@@ -1532,7 +1532,7 @@ Holds nothing: it is drawn from its settings alone.
 | `pins` | a list of at most 500: a record of `id`, `x`, `y`, `element`, `label`, `active`, `resolved` (needs `id`, `x`, `y`) | no |
 | `exportId` | text, at most 128 characters | no |
 
-Tells the app: `change`, `applied`, `select`, `librarychange`, `vote`, `pin`, `focuspin`, `opencard`, `export`, `error`.
+Tells the app: `change`, `applied`, `select`, `librarychange`, `vote`, `pin`, `focuspin`, `orphans`, `opencard`, `export`, `error`.
 
 ## `bry-board-preview`
 
