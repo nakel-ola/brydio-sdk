@@ -1901,6 +1901,7 @@ var CATALOGUE = {
       error: { kind: "text", max: LABEL_MAX },
       attachments: { kind: "boolean" },
       mentionAll: { kind: "boolean" },
+      places: { kind: "boolean" },
       references: {
         kind: "list",
         max: 500,

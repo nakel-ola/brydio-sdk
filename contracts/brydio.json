@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "dd398f20ce2c42248645b8ef36656d90f7090e4a",
+    "commit": "27192d4e7586d453093ae6048ae33cefe88ed342",
     "dirty": true
   },
   "contracts": {
@@ -6616,6 +6616,9 @@
               }
             },
             "mentionAll": {
+              "kind": "boolean"
+            },
+            "places": {
               "kind": "boolean"
             },
             "references": {

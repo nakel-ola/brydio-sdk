@@ -1497,6 +1497,7 @@ Holds nothing: it is drawn from its settings alone.
 | `error` | text, at most 200 characters | no |
 | `attachments` | `true` or `false` | no |
 | `mentionAll` | `true` or `false` | no |
+| `places` | `true` or `false` | no |
 | `references` | a list of at most 500: a record of `value`, `label`, `create` (needs `value`, `label`) | no |
 | `bind` | a record of `collection`, `id`, `field` (needs `collection`, `id`, `field`) | no |
 | `hide` | a list of at most 13: `headings`, `lists`, `tasks`, `quote`, `code`, `table`, `maths`, `callout`, `toggle`, `divider`, `highlight`, `scripts`, `align` | no |
