@@ -4,7 +4,9 @@ Every package here shares one version, so this is one changelog. Each entry
 says what changed and, where something you wrote has to change with it, what
 to do about it.
 
-## 0.1.0-alpha.54
+## 0.1.0-alpha.55
+
+Alpha 54 was stopped by CI before publication because its runtime version constant was stale. This release synchronizes the runtime and all package versions.
 
 Add the native `sign` handler grant with `sign.request` and `sign.get`, typed PDF fields, member and external recipients, source preview hashes, idempotent requests and durable status callback events. Requests require a write tool and a current member. Fake-host uses an explicit signing stand-in and enforces the same grant, write and visitor refusals. The manifest reference and host contract include the new grant. See [Signatures](docs/signatures.md). The optional `caller.tool` field matches the host's shared-handler contract and passes through explicit fake-host caller fixtures.
 
