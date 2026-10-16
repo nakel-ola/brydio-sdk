@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "4c7e79b8f2d3d268f4b562694637b18dc6f669c1",
+    "commit": "ef97a965f824e1a816138b5b2d55e9bbfebc3748",
     "dirty": false
   },
   "contracts": {
@@ -8097,7 +8097,8 @@
         "webhooks",
         "timers",
         "calendar",
-        "metrics"
+        "metrics",
+        "sign"
       ],
       "reads": [
         true,

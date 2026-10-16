@@ -1,3 +1,5 @@
+import type { HandlerSign } from './sign.ts';
+export type { HandlerSign, SignRequest, SignSummary, SignStatusEvent, SignStatus, SignSource, SignRecipient, SignField } from './sign.ts';
 /**
  * `@brydio/app/handler`: the types a custom tool's handler is written against
  * (`tasks/apps` A3-F08, ADR-A24).
@@ -40,6 +42,8 @@ export type WorkspaceRole = 'owner' | 'admin' | 'member';
 
 /** A workspace member calling: from the assistant, the app's screen or a folder. */
 export interface MemberCaller {
+  /** The custom tool being invoked, when supplied by the host. */
+  readonly tool?: string;
   /** An id to compare and record, never something that authenticates. */
   readonly userId: string;
   readonly origin: Exclude<HandlerOrigin, 'public'>;
@@ -66,6 +70,7 @@ export interface MemberCaller {
  *   with the code `not_for_visitors`.
  */
 export interface VisitorCaller {
+  readonly tool?: string;
   readonly userId: null;
   readonly origin: 'public';
   readonly role: 'anonymous';
@@ -843,6 +848,7 @@ export interface HandlerClient {
   readonly timers: HandlerTimers;
   readonly calendar: HandlerCalendar;
   readonly metrics: HandlerMetrics;
+  readonly sign: HandlerSign;
   readonly caller: HandlerCaller;
 }
 

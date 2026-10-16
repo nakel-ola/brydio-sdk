@@ -1,3 +1,4 @@
+import type { HandlerSign, SignRequest } from '@brydio/app/handler';
 import { createHmac } from 'node:crypto';
 
 import type {
@@ -108,6 +109,8 @@ export interface FakeHandlerOptions {
   calendar?: FakeCalendarOptions;
   /** Already caller-visible dashboard observations. Omit while dashboards is unavailable. */
   metrics?: MetricRead[];
+  /** Explicit native-signing stand-in. No fake certificate or implied PDF seal. */
+  sign?: HandlerSign;
   /** Timers the instance already holds (PJ01), by key, as `timers.list` would show them. */
   timers?: FakeTimer[];
   /** "Now", for a timer's `next`; without it, the real clock. */
@@ -286,7 +289,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
 
   // The three Forms seams (FO02, FO03, FO07), refused in Brydio's words, each ending with its code.
   const hostGranted = (capability: string) => (manifest ? (manifest.grants?.host ?? []).some(grant => grant === capability || grant === '*') : true);
-  const seam = (capability: 'chat' | 'directory' | 'webhooks' | 'timers' | 'calendar' | 'metrics', words: string, writing: boolean) => (method: string, args: unknown[]) => {
+  const seam = (capability: 'chat' | 'directory' | 'webhooks' | 'timers' | 'calendar' | 'metrics' | 'sign', words: string, writing: boolean) => (method: string, args: unknown[]) => {
     notForVisitors(method);
     if (!hostGranted(capability)) throw new Error(`${appName} did not ask to ${words}. (not_granted)`);
     if (writing && options.write === false) {
@@ -309,9 +312,10 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
   // A visitor on a public page (P3): only what the app marks public.
   const visitor = options.caller?.role === 'anonymous' || options.caller?.origin === 'public';
   const caller: HandlerCaller = visitor
-    ? { userId: null, origin: 'public', role: 'anonymous' }
+    ? { userId: null, origin: 'public', role: 'anonymous', ...(options.caller?.tool ? {tool:options.caller.tool} : {}) }
     : {
         userId: options.caller?.userId ?? 'user_test',
+        ...(options.caller?.tool ? {tool:options.caller.tool} : {}),
         origin: (options.caller?.origin as Exclude<HandlerCaller['origin'], 'public'> | undefined) ?? 'assistant',
         role: (options.caller?.role as Exclude<HandlerCaller['role'], 'anonymous'> | undefined) ?? 'owner',
         ...((options.caller as { timer?: { key: string; due: string } } | undefined)?.timer
@@ -694,6 +698,16 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
       ),
     }),
     // DA02. Fixtures have already been limited to the caller's visible metrics.
+    sign: Object.freeze({
+      request: recorded('sign.request', async (input: SignRequest) => {
+        if (!options.sign) throw new Error('Signatures are unavailable. (sign_unavailable)');
+        return options.sign.request(input);
+      }, seam('sign', 'request document signatures and read their status', true)),
+      get: recorded('sign.get', async (id: string) => {
+        if (!options.sign) throw new Error('Signatures are unavailable. (sign_unavailable)');
+        return options.sign.get(id);
+      }, seam('sign', 'request document signatures and read their status', false)),
+    }),
     metrics: Object.freeze({
       list: recorded('metrics.list', async () => {
         if (!options.metrics) throw new Error('Metrics are not available right now. (metrics_unavailable)');

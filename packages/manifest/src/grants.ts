@@ -37,6 +37,7 @@ export const HOST_CAPABILITIES = [
   'timers',
   'calendar',
   'metrics',
+  'sign',
 ] as const;
 
 /** The older name for `HOST_CAPABILITIES`, kept for what already imports it. */
