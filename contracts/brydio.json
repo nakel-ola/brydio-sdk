@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "ef97a965f824e1a816138b5b2d55e9bbfebc3748",
+    "commit": "964ad6ac1476f0cacf23d32361185a9b1d8bc0f8",
     "dirty": false
   },
   "contracts": {
@@ -8098,7 +8098,8 @@
         "timers",
         "calendar",
         "metrics",
-        "sign"
+        "sign",
+        "finance"
       ],
       "reads": [
         true,
@@ -8187,7 +8188,7 @@
     },
     "limits": {
       "fields": {
-        "collections": 20,
+        "collections": 40,
         "fields": 40,
         "enumValues": 50,
         "enumValueChars": 64,
