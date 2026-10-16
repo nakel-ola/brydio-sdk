@@ -208,7 +208,7 @@ export interface ApprovalPerson {
 }
 
 /** Where an approval request stands. */
-export type ApprovalStatus = 'pending' | 'approved' | 'declined' | 'cancelled';
+export type ApprovalStatus = 'pending' | 'approved' | 'declined' | 'cancelled' | 'expired';
 
 /**
  * `host/profile` (FO02): the viewer's own directory profile, with the

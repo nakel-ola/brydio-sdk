@@ -25,11 +25,13 @@ commands, see the [SDK documentation site](../docs-site/README.md).
   events on Brydio's event layer, colleagues' free time, and writing events.
 - [Brydio's AI](ai.md) covers calling Brydio's model: from a handler with
   the `model` grant, or from your own server with a developer API key.
+- [Finance](finance.md) covers canonical invoices and receipts, paged CSV imports,
+  durable export jobs, native approval templates, budget metrics and accounting.
 - [Publish checklist](publish-checklist.md) matches the checks and messages
   printed by `brydio validate` and the publish path.
 - [Support](support.md) says which packages and interfaces are supported.
 - [Security](security.md) describes what belongs in a private security report.
-- [Releasing](releasing.md) records the reproducible six-package release
+- [Releasing](releasing.md) records the reproducible seven-package release
   process and the owner-only npm steps.
 
 The catalogue, bridge, and manifest pages are generated from code. Run:

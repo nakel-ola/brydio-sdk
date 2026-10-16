@@ -437,3 +437,22 @@ test('askAbout drafts a chat about a record for the person to send, and never se
   expect(host.findAll(node => node.type === 'bry-text')[0]!.props.text).toBe('note_a: plain did not ask to post messages in a chat.');
   expect(host.asks).toEqual([]);
 });
+
+
+describe('declared custom writes',()=>{
+  const customManifest={...manifest,tools:{generated:'read',custom:[{name:'create_note',handler:'handlers/create.js',input:{title:'string'},write:true}]}};
+  test('holds a custom write before executing its handler and releases it only after agreement',async()=>{
+    let executed=0;
+    host=FakeHost.start({entry:screen('counter'),manifest:customManifest,asks:'hold',tools:{create_note:async()=>{executed++;return {structuredContent:{id:'created'}};}}});
+    await host.mounted();await host.waitFor(()=>host!.byText('0 notes'));
+    host.press(host.byText('Add a note')!);await host.waitFor(()=>host!.calls.length===2);
+    expect(executed).toBe(0);expect(host.calls[1]?.asked).toBeUndefined();
+    await host.answer('allow');await host.waitFor(()=>executed===1);expect(host.calls[1]?.asked).toBe('allow');
+  });
+  test('refuses a custom write without invoking it while generated reads continue',async()=>{
+    let executed=0;
+    host=FakeHost.start({entry:screen('counter'),manifest:customManifest,asks:'deny',tools:{create_note:async()=>{executed++;return {structuredContent:{id:'created'}};}}});
+    await host.mounted();await host.waitFor(()=>host!.byText('0 notes'));host.press(host.byText('Add a note')!);
+    await host.waitFor(()=>host!.byText('Refused: The person didn’t allow it.'));expect(executed).toBe(0);expect(host.calls[0]?.asked).toBeUndefined();expect(host.calls[1]?.asked).toBe('deny');
+  });
+});

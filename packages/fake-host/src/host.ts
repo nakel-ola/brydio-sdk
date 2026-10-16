@@ -280,7 +280,8 @@ export class FakeHost {
 
     this.#tools = { ...generated, ...options.tools };
     this.store?.onChange(change => this.#gather(change));
-    this.#writes = new Set(
+    this.#writes = new Set([
+      ...(
       options.manifest && options.manifest.tools?.generated !== false && options.manifest.tools?.generated !== 'read'
         ? collectionsOf(options.manifest).flatMap(spec =>
             [
@@ -291,8 +292,9 @@ export class FakeHost {
               `batch_${spec.plural}`,
             ],
           )
-        : [],
-    );
+        : []),
+      ...(options.manifest?.tools?.custom??[]).filter(tool=>tool.write).map(tool=>tool.name),
+    ]);
 
     const entry = moduleUrl(options.entry);
     const prelude = options.prelude === false ? '' : `(${workerPrelude.toString()})(self);\n`;

@@ -213,7 +213,7 @@ const screenSchema = z.object({
 });
 
 /** Most custom tools one app may declare (A3-F08). */
-export const MAX_CUSTOM_TOOLS = 20;
+export const MAX_CUSTOM_TOOLS = 100;
 
 /** A tool name the model and a policy row can both use as it is. */
 export const CUSTOM_TOOL_NAME = /^[a-z][a-z0-9_]{0,59}$/;

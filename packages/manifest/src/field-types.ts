@@ -77,7 +77,7 @@ export interface FieldType {
  */
 export const FIELD_LIMITS = {
   /** Collections one app may keep. */
-  collections: 20,
+  collections: 40,
   /** Fields one collection may have. */
   fields: 40,
   /** Values one choice may allow. */

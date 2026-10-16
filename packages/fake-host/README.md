@@ -48,3 +48,15 @@ Run the app's tests with `brydio test`. The command builds once, then runs its
 
 This package is MIT licensed. While the SDK is `0.x`, a minor version may
 contain a breaking change. Read the repository changelog before upgrading.
+
+
+Custom tools marked `write: true` use `asks: 'allow' | 'deny' | 'hold'`, just
+like generated writes. A held write does not execute its handler until the
+person agrees. Supplying a managed model fixture also requires the `model`
+host grant when a manifest is provided.
+
+Use `FakeHandlerOptions.finance` for explicit Finance fixtures. Finance and
+provider, metrics or signing grants are checked separately; write methods
+refuse read tools, and accountant export starts require a screen caller.
+These fixtures do not fabricate settlements or provider access. See
+[Finance](https://github.com/nakel-ola/brydio-sdk/blob/main/docs/finance.md).

@@ -1,3 +1,4 @@
+import type { HandlerFinance, InvoicePaymentInput } from '@brydio/app/handler';
 import type { HandlerSign, SignRequest } from '@brydio/app/handler';
 import { createHmac } from 'node:crypto';
 
@@ -111,6 +112,8 @@ export interface FakeHandlerOptions {
   metrics?: MetricRead[];
   /** Explicit native-signing stand-in. No fake certificate or implied PDF seal. */
   sign?: HandlerSign;
+  /** Explicit Finance stand-in; no fabricated settlements. */
+  finance?: Partial<HandlerFinance>;
   /** Timers the instance already holds (PJ01), by key, as `timers.list` would show them. */
   timers?: FakeTimer[];
   /** "Now", for a timer's `next`; without it, the real clock. */
@@ -289,7 +292,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
 
   // The three Forms seams (FO02, FO03, FO07), refused in Brydio's words, each ending with its code.
   const hostGranted = (capability: string) => (manifest ? (manifest.grants?.host ?? []).some(grant => grant === capability || grant === '*') : true);
-  const seam = (capability: 'chat' | 'directory' | 'webhooks' | 'timers' | 'calendar' | 'metrics' | 'sign', words: string, writing: boolean) => (method: string, args: unknown[]) => {
+  const seam = (capability: 'chat' | 'directory' | 'webhooks' | 'timers' | 'calendar' | 'metrics' | 'sign' | 'finance' | 'model', words: string, writing: boolean) => (method: string, args: unknown[]) => {
     notForVisitors(method);
     if (!hostGranted(capability)) throw new Error(`${appName} did not ask to ${words}. (not_granted)`);
     if (writing && options.write === false) {
@@ -398,11 +401,11 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
         ),
       }),
     model: Object.freeze({
-      generate: recorded('model.generate', (options.model?.generate ?? unavailable('model.generate')) as HandlerClient['model']['generate'], both(notForVisitors, keeps)),
+      generate: recorded('model.generate', (options.model?.generate ?? unavailable('model.generate')) as HandlerClient['model']['generate'], seam('model','use its managed model',false)),
       generateMany: recorded(
         'model.generateMany',
         (options.model?.generateMany ?? unavailable('model.generateMany')) as HandlerClient['model']['generateMany'],
-        both(notForVisitors, keeps),
+        seam('model','use its managed model',false),
       ),
     }) as HandlerClient['model'],
     secrets: Object.freeze({
@@ -698,6 +701,80 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
       ),
     }),
     // DA02. Fixtures have already been limited to the caller's visible metrics.
+    finance: Object.freeze({
+      signatureLink:recorded('finance.signatureLink',async(input:Parameters<HandlerFinance['signatureLink']>[0])=>{if(!options.finance?.signatureLink)throw new Error('Finance is unavailable. (finance_unavailable)');return options.finance.signatureLink(input);},both(seam('finance','read a native signature link',false),()=>{if(!hostGranted('sign'))throw new Error('Signatures were not granted. (not_granted)');})),
+      previewTransactions:recorded('finance.previewTransactions',async(input:Parameters<HandlerFinance['previewTransactions']>[0])=>{if(!options.finance?.previewTransactions)throw new Error('Finance is unavailable. (finance_unavailable)');return options.finance.previewTransactions(input);},seam('finance','preview transaction imports',false)),
+      exportTransactions:recorded('finance.exportTransactions',async(input:Parameters<HandlerFinance['exportTransactions']>[0])=>{if(!options.finance?.exportTransactions)throw new Error('Finance is unavailable. (finance_unavailable)');return options.finance.exportTransactions(input);}, both(seam('finance','export Finance transactions',true),()=>{if(caller.origin!=='screen')throw new Error('Only a person in Finance may reconcile an invoice or send an accountant export. (screen_only)');})),
+      exportStatus:recorded('finance.exportStatus',async(input:Parameters<HandlerFinance['exportStatus']>[0])=>{if(!options.finance?.exportStatus)throw new Error('Finance is unavailable. (finance_unavailable)');return options.finance.exportStatus(input);}, seam('finance','export Finance transactions',false)),
+      documentSource:recorded('finance.documentSource',async(input:Parameters<HandlerFinance['documentSource']>[0])=>{if(!options.finance?.documentSource)throw new Error('Finance is unavailable. (finance_unavailable)');return options.finance.documentSource(input);}, seam('finance', 'use Finance host operations', false)),
+      purchaseTemplate:recorded('finance.purchaseTemplate',async(input:Parameters<HandlerFinance['purchaseTemplate']>[0])=>{if(!options.finance?.purchaseTemplate)throw new Error('Finance is unavailable. (finance_unavailable)');return options.finance.purchaseTemplate(input);}, seam('finance', 'use Finance host operations', false)),
+      budgetDashboards:recorded('finance.budgetDashboards',async(input:Parameters<HandlerFinance['budgetDashboards']>[0])=>{if(!options.finance?.budgetDashboards)throw new Error('Finance is unavailable. (finance_unavailable)');return options.finance.budgetDashboards(input);}, both(seam('finance', 'use Finance host operations', false), (method,args)=>{if(!hostGranted('metrics'))throw new Error('Metrics was not granted. (not_granted)');})),
+      saveBudgetMetric:recorded('finance.saveBudgetMetric',async(input:Parameters<HandlerFinance['saveBudgetMetric']>[0])=>{if(!options.finance?.saveBudgetMetric)throw new Error('Finance is unavailable. (finance_unavailable)');return options.finance.saveBudgetMetric(input);}, both(seam('finance', 'use Finance host operations', true), (method,args)=>{if(!hostGranted('metrics'))throw new Error('Metrics was not granted. (not_granted)');})),
+      createPaymentLink: recorded('finance.createPaymentLink', async (input: Parameters<HandlerFinance['createPaymentLink']>[0]) => {
+        if (!options.finance?.createPaymentLink) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.createPaymentLink(input);
+      }, seam('finance', 'collect invoice payments and read receipts', true)),
+      getPayment: recorded('finance.getPayment', async (input: Parameters<HandlerFinance['getPayment']>[0]) => {
+        if (!options.finance?.getPayment) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.getPayment(input);
+      }, seam('finance', 'collect invoice payments and read receipts', false)),
+      receiptSource: recorded('finance.receiptSource', async (input: Parameters<HandlerFinance['receiptSource']>[0]) => {
+        if (!options.finance?.receiptSource) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.receiptSource(input);
+      }, seam('finance', 'collect invoice payments and read receipts', false)),
+      registerReceipt: recorded('finance.registerReceipt', async (input: Parameters<HandlerFinance['registerReceipt']>[0]) => {
+        if (!options.finance?.registerReceipt) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.registerReceipt(input);
+      }, seam('finance', 'collect invoice payments and read receipts', true)),
+      transactionSource: recorded('finance.transactionSource', async (input: Parameters<HandlerFinance['transactionSource']>[0]) => {
+        if (!options.finance?.transactionSource) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.transactionSource(input);
+      }, seam('finance', 'collect invoice payments and read receipts', false)),
+      importTransactions: recorded('finance.importTransactions', async (input: Parameters<HandlerFinance['importTransactions']>[0]) => {
+        if (!options.finance?.importTransactions) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.importTransactions(input);
+      }, seam('finance', 'collect invoice payments and read receipts', true)),
+      sendInvoice: recorded('finance.sendInvoice', async (input: Parameters<HandlerFinance['sendInvoice']>[0]) => {
+        if (!options.finance?.sendInvoice) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.sendInvoice(input);
+      }, seam('finance', 'collect invoice payments and read receipts', true)),
+      invoicePdf: recorded('finance.invoicePdf', async (input: Parameters<HandlerFinance['invoicePdf']>[0]) => {
+        if (!options.finance?.invoicePdf) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.invoicePdf(input);
+      }, seam('finance', 'collect invoice payments and read receipts', true)),
+      publicInvoice: recorded('finance.publicInvoice', async (input: Parameters<HandlerFinance['publicInvoice']>[0]) => {
+        if (!options.finance?.publicInvoice) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.publicInvoice(input);
+      }, (method, args) => { if (!hostGranted('finance')) throw new Error('Finance was not granted. (not_granted)'); keeps(method, args); }),
+      cancelInvoice: recorded('finance.cancelInvoice', async (input: Parameters<HandlerFinance['cancelInvoice']>[0]) => {
+        if (!options.finance?.cancelInvoice) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.cancelInvoice(input);
+      }, both(seam('finance', 'collect invoice payments and read receipts', true),()=>{if(caller.origin!=='screen')throw new Error('Only a person in Finance may reconcile an invoice or send an accountant export. (screen_only)');})),
+      recordManualPayment: recorded('finance.recordManualPayment', async (input: Parameters<HandlerFinance['recordManualPayment']>[0]) => {
+        if (!options.finance?.recordManualPayment) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.recordManualPayment(input);
+      }, both(seam('finance', 'collect invoice payments and read receipts', true),()=>{if(caller.origin!=='screen')throw new Error('Only a person in Finance may reconcile an invoice or send an accountant export. (screen_only)');})),
+      clearManualPayment: recorded('finance.clearManualPayment', async (input: Parameters<HandlerFinance['clearManualPayment']>[0]) => {
+        if (!options.finance?.clearManualPayment) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.clearManualPayment(input);
+      }, both(seam('finance', 'collect invoice payments and read receipts', true),()=>{if(caller.origin!=='screen')throw new Error('Only a person in Finance may reconcile an invoice or send an accountant export. (screen_only)');})),
+      dateInZone: recorded('finance.dateInZone', async (input: Parameters<HandlerFinance['dateInZone']>[0]) => {
+        if (!options.finance?.dateInZone) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.dateInZone(input);
+      }, seam('finance', 'collect invoice payments and read receipts', false)),
+      accountingCompanies: recorded('finance.accountingCompanies', async (input: Parameters<HandlerFinance['accountingCompanies']>[0]) => {
+        if (!options.finance?.accountingCompanies) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.accountingCompanies(input);
+      }, both(seam('finance', 'collect invoice payments and read receipts', false),(_method,args)=>{const provider=(args[0] as {provider?:unknown})?.provider;if((provider!=='xero'&&provider!=='quickbooks')||!hostGranted(`connection:${provider}`))throw new Error('This accounting connection was not granted. (not_granted)');})),
+      accountingAccounts: recorded('finance.accountingAccounts', async (input: Parameters<HandlerFinance['accountingAccounts']>[0]) => {
+        if (!options.finance?.accountingAccounts) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.accountingAccounts(input);
+      }, both(seam('finance', 'collect invoice payments and read receipts', false),(_method,args)=>{const provider=(args[0] as {provider?:unknown})?.provider;if((provider!=='xero'&&provider!=='quickbooks')||!hostGranted(`connection:${provider}`))throw new Error('This accounting connection was not granted. (not_granted)');})),
+      exportAccounting: recorded('finance.exportAccounting', async (input: Parameters<HandlerFinance['exportAccounting']>[0]) => {
+        if (!options.finance?.exportAccounting) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.exportAccounting(input);
+      }, both(seam('finance', 'collect invoice payments and read receipts', true),(_method,args)=>{const provider=(args[0] as {provider?:unknown})?.provider;if((provider!=='xero'&&provider!=='quickbooks')||!hostGranted(`connection:${provider}`))throw new Error('This accounting connection was not granted. (not_granted)');})),
+    }),
     sign: Object.freeze({
       request: recorded('sign.request', async (input: SignRequest) => {
         if (!options.sign) throw new Error('Signatures are unavailable. (sign_unavailable)');
@@ -801,7 +878,7 @@ function carries(value: unknown, held: ReadonlySet<string>): boolean {
   return worth(held).some(secret => text.includes(secret) || text.includes(JSON.stringify(secret).slice(1, -1)));
 }
 
-const APPROVER_TYPES = ['person', 'role', 'manager', 'group'];
+const APPROVER_TYPES = ['person', 'role', 'manager', 'group','department_head','field'];
 const STEP_RULES = ['any', 'all', 'count'];
 const FAKE_ADMIN = 'admin_test';
 
@@ -826,8 +903,9 @@ export function checkApprovalInput(input: AppApprovalInput): void {
     for (const approver of step.approvers) {
       if (!approver || !APPROVER_TYPES.includes(approver.type)) throw new Error(`${at}: an approver is a person, a role, a manager or a group.`);
       if (approver.type === 'person' && (typeof approver.principalId !== 'string' || !approver.principalId)) throw new Error(`${at}: a person approver needs \`principalId\`.`);
+      if(approver.type==='field'&&(typeof approver.key!=='string'||!approver.key))throw new Error(`${at}: a field approver needs a key.`);
       if (approver.type === 'role' && approver.role !== 'admin') throw new Error(`${at}: the only role is admin.`);
-      if (approver.type === 'group' && (typeof approver.groupId !== 'string' || !approver.groupId)) throw new Error(`${at}: a group approver needs \`groupId\`.`);
+      if (approver.type === 'group' && !((typeof approver.groupId==='string'&&approver.groupId)||(typeof approver.name==='string'&&approver.name))) throw new Error(`${at}: a group approver needs \`groupId\` or \`name\`.`);
     }
     if (step.rule === 'count' && (!Number.isInteger(step.count) || (step.count ?? 0) < 1)) throw new Error(`${at}: a count rule needs \`count\` of at least 1.`);
   });

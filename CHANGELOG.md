@@ -4,6 +4,12 @@ Every package here shares one version, so this is one changelog. Each entry
 says what changed and, where something you wrote has to change with it, what
 to do about it.
 
+## 0.1.0-alpha.56
+
+Add the `finance` handler grant for canonical invoice payments, receipts, paged CSV validation, durable CSV/XLSX/receipt export jobs, document sources, native purchase templates and signature links, budget dashboard metrics and Xero/QuickBooks exports. Payment reads include expiry and aggregate settlement facts; invoice delivery accepts a stable delivery key. Accounting exports require the provider connection and exact canonical source revision. These capabilities never pay or refund money. See [Finance](docs/finance.md).
+
+Native approval statuses include `expired`. Requests accept `templateId`; the host compiles the current native template. Expand custom-tool capacity to 100 and app collection capacity to 40; the 40-field and five-watch limits stay the same. Fake-host now gates declared custom writes through approval prompts and enforces the managed model grant. Tests that previously supplied a model fixture without its grant must declare `model`.
+
 ## 0.1.0-alpha.55
 
 Alpha 54 was stopped by CI before publication because its runtime version constant was stale. This release synchronizes the runtime and all package versions.

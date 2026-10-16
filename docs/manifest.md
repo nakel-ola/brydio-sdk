@@ -248,7 +248,7 @@ into the live text rather than written over it. Any other type refuses
 
 `tools.generated` defaults to `true`. Each collection then gets create,
 update, get, list, search, delete, and batch tools. `tools.custom` may hold
-at most 20 handlers. A custom tool has a lower-case `name`,
+at most 100 handlers. A custom tool has a lower-case `name`,
 a `description`, a built `handler` path, and optional `input`, `write`, and
 `collection`. Its input fields use the same schema types as collection fields.
 A custom tool that writes must set `write: true`, which makes Brydio ask the
@@ -302,6 +302,7 @@ app that declares secrets must ask for the `secrets` host grant.
 - `calendar`
 - `metrics`
 - `sign`
+- `finance`
 
 A named connection grant is `connection:<name>`. `*` never grants a
 connection. A collection the app keeps must appear in `grants.collections`,
@@ -329,7 +330,7 @@ The manifest validator and the fake host use the same exports.
 
 | Limit | Value | What it bounds |
 |---|---|---|
-| `FIELD_LIMITS.collections` | 20 | Collections one app may keep |
+| `FIELD_LIMITS.collections` | 40 | Collections one app may keep |
 | `FIELD_LIMITS.fields` | 40 | Fields one collection may have |
 | `FIELD_LIMITS.enumValues` | 50 | Values one choice may allow |
 | `FIELD_LIMITS.enumValueChars` | 64 | Characters in one of a choice's values |

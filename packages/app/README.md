@@ -34,3 +34,5 @@ credential. Read the
 
 This package is MIT licensed. While the SDK is `0.x`, a minor version may
 contain a breaking change. Read the repository changelog before upgrading.
+
+Finance handlers use the host-owned capabilities documented in [Finance](https://github.com/nakel-ola/brydio-sdk/blob/main/docs/finance.md). Add the `finance` grant and use canonical saved records for payment links, document sources, purchase templates, budget metrics and accounting exports.

@@ -1,3 +1,5 @@
+import type { HandlerFinance } from './finance.ts';
+export type * from './finance.ts';
 import type { HandlerSign } from './sign.ts';
 export type { HandlerSign, SignRequest, SignSummary, SignStatusEvent, SignStatus, SignSource, SignRecipient, SignField } from './sign.ts';
 /**
@@ -245,12 +247,16 @@ export interface HandlerNotify {
 export type ApproverSpec =
   | { type: 'person'; principalId: string }
   | { type: 'role'; role: 'admin' }
-  | { type: 'manager' }
-  | { type: 'group'; groupId: string };
+  | { type: 'manager'; level?:number }
+  | { type: 'group'; groupId?: string; name?:string }
+  | { type:'department_head'; department?:string }
+  | { type:'field'; key:string };
 
 /** How many of a step's approvers must say yes: one, every one, or `count`. */
 export type ApprovalStepRule = 'any' | 'all' | 'count';
 
+export interface ApprovalFieldCondition {field:string;op:'gt'|'gte'|'lt'|'lte'|'eq'|'neq'|'in'|'contains';value:unknown}
+export type ApprovalStepCondition=ApprovalFieldCondition|{all:ApprovalFieldCondition[]}|{any:ApprovalFieldCondition[]};
 export interface ApprovalStepInput {
   /** "Manager", "Finance": what the request shows for this step. */
   name?: string;
@@ -258,6 +264,8 @@ export interface ApprovalStepInput {
   rule: ApprovalStepRule;
   /** With `rule: 'count'`: how many yeses. */
   count?: number;
+  stage?:number;
+  when?:ApprovalStepCondition;
 }
 
 /** A value shown on the request: `text`, `long_text`, `number`, `money`, `date`, `date_range`, `choice`, `person` or `file`. */
@@ -270,6 +278,8 @@ export interface ApprovalField {
 
 /** Asking people to approve one of the app's records. */
 export interface AppApprovalInput {
+  /** Native template to compile on the host with its current fields, conditions and Directory routing. */
+  templateId?:string;
   /** What people read first. Up to 200 characters. */
   title: string;
   note?: string;
@@ -282,7 +292,7 @@ export interface AppApprovalInput {
   statusField?: string;
 }
 
-export type ApprovalStatus = 'pending' | 'approved' | 'declined' | 'cancelled';
+export type ApprovalStatus = 'pending' | 'approved' | 'declined' | 'cancelled' | 'expired';
 export type ApprovalStepStatus = 'waiting' | 'active' | 'approved' | 'declined' | 'skipped';
 export type ApprovalAssigneeStatus = 'waiting' | 'approved' | 'declined' | 'passed';
 
@@ -849,6 +859,7 @@ export interface HandlerClient {
   readonly calendar: HandlerCalendar;
   readonly metrics: HandlerMetrics;
   readonly sign: HandlerSign;
+  readonly finance: HandlerFinance;
   readonly caller: HandlerCaller;
 }
 

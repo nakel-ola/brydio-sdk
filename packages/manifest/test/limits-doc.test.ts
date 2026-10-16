@@ -33,7 +33,7 @@ function constantIn(source: string, name: string): Record<string, number> {
   );
 }
 
-/** The documentation page's limit rows: `FIELD_LIMITS.collections` → 20. */
+/** The documentation page's limit rows: `FIELD_LIMITS.collections` → 40. */
 const documented = Object.fromEntries(
   [...page.matchAll(/^\| `((?:FIELD|DOCUMENT)_LIMITS\.\w+)` \| ([\d,]+) \|/gm)].map(([, key, value]) => [key!, Number(value!.replaceAll(',', ''))]),
 );
