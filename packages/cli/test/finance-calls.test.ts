@@ -23,3 +23,8 @@ test('recognizes read-only accounting export status as Finance', () => {
   const calls = callsOf('status.ts', 'export default (i,c)=>c.finance.accountingStatus(i)');
   expect(calls.filter((call) => call.kind === 'host').map((call) => call.name)).toEqual(['finance']);
 });
+
+test('recognizes accounting catalogs and document share capabilities as Finance', () => {
+  for (const method of ['accountingCatalog','shareDocument','revokeDocumentShare','publicDocument'])
+    expect(callsOf('finance.ts', `export default (i,c)=>c.finance.${method}(i)`).filter(call=>call.kind==='host').map(call=>call.name)).toEqual(['finance']);
+});

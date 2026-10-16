@@ -4,6 +4,12 @@ Every package here shares one version, so this is one changelog. Each entry
 says what changed and, where something you wrote has to change with it, what
 to do about it.
 
+## 0.1.0-alpha.57
+
+Add read-only `finance.accountingCatalog` for bounded, current-company contact, tax and item choices. It requires Finance and the exact provider connection, and preserves opaque paging cursors. No provider objects are created.
+
+Add screen-only `shareDocument` and `revokeDocumentShare` writes and the token-scoped `publicDocument` visitor read. The host rechecks current source access; public file IDs and URLs belong to the share. Fake-host enforces grant, caller and write gates with explicit fixtures. See [Finance](docs/finance.md).
+
 ## 0.1.0-alpha.56
 
 Add the `finance` handler grant for canonical invoice payments, receipts, paged CSV validation, durable CSV/XLSX/receipt export jobs, document sources, native purchase templates and signature links, budget dashboard metrics and Xero/QuickBooks exports. Payment reads include expiry and aggregate settlement facts; invoice delivery accepts a stable delivery key. Accounting exports require the provider connection and exact canonical source revision. Read durable progress with `accountingStatus`, including partial or uncertain delivery and attachment counts. These capabilities never pay or refund money. See [Finance](docs/finance.md).

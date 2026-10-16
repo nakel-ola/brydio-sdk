@@ -742,6 +742,18 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
         if (!options.finance?.invoicePdf) throw new Error('Finance is unavailable. (finance_unavailable)');
         return options.finance.invoicePdf(input);
       }, seam('finance', 'collect invoice payments and read receipts', true)),
+      shareDocument: recorded('finance.shareDocument', async (input: Parameters<HandlerFinance['shareDocument']>[0]) => {
+        if (!options.finance?.shareDocument) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.shareDocument(input);
+      }, both(seam('finance', 'share Finance documents', true), () => { if (caller.origin !== 'screen') throw new Error('Only a person in Finance may share or revoke a document. (screen_only)'); })),
+      revokeDocumentShare: recorded('finance.revokeDocumentShare', async (input: Parameters<HandlerFinance['revokeDocumentShare']>[0]) => {
+        if (!options.finance?.revokeDocumentShare) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.revokeDocumentShare(input);
+      }, both(seam('finance', 'share Finance documents', true), () => { if (caller.origin !== 'screen') throw new Error('Only a person in Finance may share or revoke a document. (screen_only)'); })),
+      publicDocument: recorded('finance.publicDocument', async (input: Parameters<HandlerFinance['publicDocument']>[0]) => {
+        if (!options.finance?.publicDocument) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.publicDocument(input);
+      }, (method, args) => { if (!hostGranted('finance')) throw new Error('Finance was not granted. (not_granted)'); keeps(method, args); }),
       publicInvoice: recorded('finance.publicInvoice', async (input: Parameters<HandlerFinance['publicInvoice']>[0]) => {
         if (!options.finance?.publicInvoice) throw new Error('Finance is unavailable. (finance_unavailable)');
         return options.finance.publicInvoice(input);
@@ -770,6 +782,14 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
         if (!options.finance?.accountingAccounts) throw new Error('Finance is unavailable. (finance_unavailable)');
         return options.finance.accountingAccounts(input);
       }, both(seam('finance', 'collect invoice payments and read receipts', false),(_method,args)=>{const provider=(args[0] as {provider?:unknown})?.provider;if((provider!=='xero'&&provider!=='quickbooks')||!hostGranted(`connection:${provider}`))throw new Error('This accounting connection was not granted. (not_granted)');})),
+      accountingCatalog: recorded('finance.accountingCatalog', async (input: Parameters<HandlerFinance['accountingCatalog']>[0]) => {
+        if (!options.finance?.accountingCatalog) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.accountingCatalog(input);
+      }, both(seam('finance', 'read accounting catalog choices', false), (_method, args) => {
+        const provider = (args[0] as { provider?: unknown })?.provider;
+        if ((provider !== 'xero' && provider !== 'quickbooks') || !hostGranted(`connection:${provider}`))
+          throw new Error('This accounting connection was not granted. (not_granted)');
+      })),
       accountingStatus: recorded('finance.accountingStatus', async (input: Parameters<HandlerFinance['accountingStatus']>[0]) => {
         if (!options.finance?.accountingStatus) throw new Error('Finance is unavailable. (finance_unavailable)');
         return options.finance.accountingStatus(input);

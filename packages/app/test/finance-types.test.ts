@@ -15,3 +15,9 @@ test('export types distinguish bounded selected rows, server-side filters and re
   void both;
   void neither;
 });
+
+test('catalog and public document types expose normalized choices and share-scoped files',()=>{
+  const request: import('../src/handler.ts').AccountingCatalogRequest={provider:'xero',companyId:'company',kind:'contacts',cursor:'opaque'};
+  const document: import('../src/handler.ts').PublicFinanceDocument={title:'Shared',markdown:'Public text',files:[{id:'opaque_file',name:'file.pdf',url:'https://brydio.test/share/download'}],expiresAt:'2026-10-17T00:00:00.000Z'};
+  expect(request.kind).toBe('contacts');expect(document.files[0]!.id).toBe('opaque_file');
+});

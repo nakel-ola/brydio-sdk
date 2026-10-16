@@ -2,7 +2,7 @@
 
 Handlers use `client.finance` with the `finance` host grant. The caller must
 currently be a workspace member with access to the installed instance. Public
-visitors can use only `publicInvoice({token})`; the host validates the token,
+visitors can use only `publicInvoice({token})` and `publicDocument({token})`; the host validates the token,
 public page and instance binding. These methods never send or refund money.
 
 Use a write tool for `createPaymentLink`, `registerReceipt`, `importTransactions`,
@@ -107,3 +107,13 @@ It validates the caller's current access to an envelope raised by this app
 instance and returns `{url}` for its configured native signature page. Request
 and read the envelope through `client.sign`; a link never grants signature
 access or bypasses envelope permissions.
+
+## Accounting catalog choices
+
+`accountingCatalog({provider,companyId,kind,search?,cursor?})` is a read. `kind` is `contacts`, `taxCodes` or `items`. Finance and the exact `connection:xero` or `connection:quickbooks` grant are required. The host rechecks the current workspace connection and selected tenant. Responses contain at most 100 normalized `{id,label,kind?,currency?,rateBps?}` choices and optional `nextCursor`. Contact kind is `customer`, `supplier` or `both` when reported. Pass the opaque cursor with the same provider/company/kind/search. Search is at most 100 characters. Provider-reported rates are display metadata; accepted source tax remains authoritative. The host creates no accounts, contacts, products or tax settings.
+
+## Revocable document shares
+
+A member on a screen can call `shareDocument({documentId})` in a write tool, receiving `{shareId,url,expiresAt}`. `revokeDocumentShare({shareId})` is also a screen-only write and returns `{revoked:true}`. The host requires current permission to the Finance document and its connected native Docs source.
+
+`publicDocument({token})` is the additional Finance visitor exception. It returns `{title,markdown,files,expiresAt}` after host capability checks. Each file has `{id,name,url,mimeType?,size?}`. File IDs are opaque share-scoped keys; URLs are authorized host downloads. This method does not grant access to private document sources or permit sharing writes. Fake-host supplies no share service by default; tests must provide explicit Finance fixtures.

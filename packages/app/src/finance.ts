@@ -176,6 +176,23 @@ export interface FinanceTransactionExport {
   total: number;
 }
 /** Requires the finance grant, the current member and current instance access. */
+export interface AccountingCatalogRequest {
+  provider: 'xero' | 'quickbooks';
+  companyId: string;
+  kind: 'contacts' | 'taxCodes' | 'items';
+  search?: string;
+  cursor?: string;
+}
+export interface AccountingCatalogResult {
+  items: { id: string; label: string; kind?: 'customer' | 'supplier' | 'both'; currency?: string; rateBps?: number }[];
+  nextCursor?: string;
+}
+export interface PublicFinanceDocument {
+  title: string;
+  markdown: string;
+  files: { id: string; name: string; url: string; mimeType?: string; size?: number }[];
+  expiresAt: string;
+}
 export interface HandlerFinance {
   /** Write tool. Creates or recovers a checkout using the saved invoice, never caller-supplied totals. */
   createPaymentLink(input: InvoicePaymentInput): Promise<InvoicePayment>;
@@ -209,6 +226,12 @@ export interface HandlerFinance {
   /** Write tool. Stable deliveryKey recovers the same delivery; a new explicit key permits a reminder delivery. */
   sendInvoice(input: { invoiceId: string; deliveryKey?: string }): Promise<{ queued: boolean; pdfFileId: string; url: string }>;
   invoicePdf(input: { invoiceId: string }): Promise<{ pdfFileId: string }>;
+  /** Screen-only write. Shares the currently authorized Finance document through a revocable host capability. */
+  shareDocument(input: { documentId: string }): Promise<{ shareId: string; url: string; expiresAt: string }>;
+  /** Screen-only write. Revokes a share the current person may manage. */
+  revokeDocumentShare(input: { shareId: string }): Promise<{ revoked: true }>;
+  /** Public-page exception. File IDs and download URLs are scoped to the share, never private source IDs. */
+  publicDocument(input: { token: string }): Promise<PublicFinanceDocument>;
   /** Public-page exception: the host validates token, page and instance binding before exposing invoice data. */
   publicInvoice(input: { token: string }): Promise<Record<string, unknown>>;
   cancelInvoice(input: { invoiceId: string; reason?: string }): Promise<{ cancelled: boolean }>;
@@ -224,6 +247,8 @@ export interface HandlerFinance {
   saveBudgetMetric(input: { budgetId: string; dashboardId: string }): Promise<FinanceBudgetMetric>;
   accountingCompanies(input: { provider: 'xero' | 'quickbooks' }): Promise<{ companies: { id: string; name: string }[] }>;
   accountingAccounts(input: { provider: 'xero' | 'quickbooks'; companyId: string }): Promise<{ accounts: Record<string, unknown>[] }>;
+  /** Read-only, also requires the exact provider connection. At most 100 current-company choices with an opaque next cursor. */
+  accountingCatalog(input: AccountingCatalogRequest): Promise<AccountingCatalogResult>;
   /** Also requires the provider connection; checks current source and receipt permissions before reading durable progress. */
   accountingStatus(input: AccountingStatusRequest): Promise<AccountingStatus>;
   /** Write tool, also requires the provider connection. The host loads and validates the exact canonical source revision. */
