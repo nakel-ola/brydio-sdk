@@ -62,7 +62,7 @@ export interface MemberCaller {
  *   made or changed them.
  * - `tools.call` reaches only the app's other `public` tools.
  * - `connection`, `model`, `secrets`, `notify`, `members`, `approvals`,
- *   `files`, `chat`, `directory`, `webhooks` and another app's tool refuse
+ *   `files`, `chat`, `directory`, `metrics`, `webhooks` and another app's tool refuse
  *   with the code `not_for_visitors`.
  */
 export interface VisitorCaller {
@@ -180,6 +180,8 @@ export type NoticeKind = 'assigned' | 'mentioned' | 'commented' | 'status_change
 
 /** One notification: whom to tell, what about, and the record it opens. */
 export interface Notice {
+  /** Ask the recipient's co-partner to remind them in its DM. Queued through quiet hours, pauses and the shared daily cap; ordinary notifications are the fallback when their co-partner is off. */
+  delivery?: 'co-partner';
   /** The member's id, as a member field holds it. */
   to: string;
   kind: NoticeKind;
@@ -787,6 +789,44 @@ export interface HandlerCalendar {
   pass(query: { event: string; email: string }): Promise<{ event: string; email: string; sent: boolean; until: string }>;
 }
 
+/** A dashboard metric the caller may read. */
+export interface MetricSummary {
+  id: string;
+  name: string;
+  unit: string;
+  target: number | null;
+  ownerId: string;
+  dashboardId: string;
+  revision: number;
+}
+
+/** A live observation, its current definition and the caller's own history. */
+export interface MetricRead extends MetricSummary {
+  value: number | null;
+  previous: number | null;
+  change: number | null;
+  range: { from: string; to: string };
+  source: Record<string, unknown>;
+  history: { day: string; value: number | null; revision: number }[];
+  observedAt: string | null;
+  status: 'ok' | 'error';
+  error?: string;
+}
+
+/**
+ * Dashboard metrics (DA02), with the `metrics` host grant, never for a
+ * visitor. Reads run as the current caller, including a timer's setter,
+ * through dashboard and source permissions. `get` reads the source live;
+ * history is this caller's. A failed source has status `error` and value
+ * null, never zero. Missing access refuses rather than revealing a value.
+ * Available from read tools too. Refusals end with `not_granted`,
+ * `metrics_unavailable`, `metrics_invalid` or the dashboard's refusal.
+ */
+export interface HandlerMetrics {
+  list(): Promise<{ metrics: MetricSummary[] }>;
+  get(id: string): Promise<MetricRead>;
+}
+
 /** Everything a handler is given beside its input. */
 export interface HandlerClient {
   readonly data: HandlerData;
@@ -802,6 +842,7 @@ export interface HandlerClient {
   readonly webhooks: HandlerWebhooks;
   readonly timers: HandlerTimers;
   readonly calendar: HandlerCalendar;
+  readonly metrics: HandlerMetrics;
   readonly caller: HandlerCaller;
 }
 

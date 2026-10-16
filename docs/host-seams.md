@@ -135,3 +135,50 @@ run.webhooks; // what it sent, signed with `webhookSecret` (default `whsec_test`
 ```
 
 A screen under the fake host gets `host.profile()` from the `profile` option.
+
+## Read dashboard metrics (`metrics`)
+
+An app with `grants.host: ["metrics"]` can read dashboard numbers through
+`client.metrics.list()` and `client.metrics.get(id)` in a handler. Both work
+from read tools. Visitors cannot use them.
+
+```ts
+const read: Handler<{ metric: string }> = async ({ metric }, { metrics }) => {
+  const observed = await metrics.get(metric);
+  if (observed.status !== 'ok' || observed.value === null) {
+    return { available: false, reason: observed.error ?? 'No value yet' };
+  }
+  return { available: true, value: observed.value, observedAt: observed.observedAt };
+};
+```
+
+`list` returns `{ metrics: MetricSummary[] }`, each with `id`, `name`,
+`unit`, `target`, `ownerId`, `dashboardId` and `revision`. `get` returns that
+definition with `value`, `previous`, `change`, `range`, `source`, `history`,
+`observedAt`, `status` and an optional `error`. Numeric values may be null.
+A failed source stays null rather than becoming zero.
+
+Reads check current dashboard and source permissions as the caller. A timer
+reads as its setter. History belongs to this reader. `get` reads the source
+live, so it is not a read of somebody else's cached Home number. Missing
+access refuses; a host without dashboards answers `metrics_unavailable`.
+The app must decide where a caller's metric may be shared before saving it
+in a record others can read.
+
+The fake host takes `metrics: MetricRead[]` fixtures, already limited to the
+caller's visible metrics. Omit the fixture to test an unavailable service;
+an empty array means a working service with no visible metrics.
+
+## Co-partner reminders
+
+A notice may include `delivery: 'co-partner'`. It uses the same `notify`
+grant and notification policy. `notify.send` queues it durably and returns
+`{ notified: true, held: true }`; `notify.at` keeps its scheduled result.
+At delivery, Brydio rechecks record access and notification preferences.
+The co-partner waits through quiet hours, pauses and its shared daily cap.
+If the recipient's co-partner is off, the ordinary notification is the fallback.
+
+For a reminder to the timer's setter, use `notify.at` with a stable key and
+`at` set to now. `notify.send` retains its usual self-notification refusal.
+A scheduled reminder to oneself is allowed for `reminder`, `due_soon` and
+`overdue`. Reusing the key replaces its pending notice.

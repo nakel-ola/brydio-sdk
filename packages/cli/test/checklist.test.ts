@@ -285,7 +285,7 @@ describe('what the publish route refuses, found first', () => {
     const root = built(issues('0.2.0', { title: 'string' }, { grants: { tools: ['*'], collections: ['*'], host: ['camera'] } }));
 
     expect(found(validate(root).problems)).toEqual([
-      ['grant_unknown', 'app.json asks for "camera", which Brydio does not grant. An app may ask for navigate, message, members, projects, files, chats, model, secrets, notify, approvals, chat, directory, webhooks, timers, calendar or connection:<name>.'],
+      ['grant_unknown', 'app.json asks for "camera", which Brydio does not grant. An app may ask for navigate, message, members, projects, files, chats, model, secrets, notify, approvals, chat, directory, webhooks, timers, calendar, metrics or connection:<name>.'],
     ]);
   });
 
@@ -430,6 +430,12 @@ describe('Forms host seams in the checklist (FO02, FO03, FO07)', () => {
     ]);
     // Another object's `post` or `send` is not one of them.
     expect(callsOf('src/handlers/other.ts', 'http.post(x); socket.send(y); people.profile(z);')).toEqual([]);
+  });
+
+  test('recognizes metrics reads as their own host grant', () => {
+    expect(callsOf('src/handlers/metric.ts', 'export default (_, {metrics}) => metrics.get("m1"); metrics.list();').map(call => [call.kind, call.name])).toEqual([
+      ['host', 'metrics'], ['host', 'metrics'],
+    ]);
   });
 
   test("another app's tool in grants.tools is not a grant that names nothing", () => {

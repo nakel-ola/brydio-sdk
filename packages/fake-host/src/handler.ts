@@ -13,6 +13,7 @@ import type {
   HandlerConnectionRequest,
   HandlerCalendar,
   HandlerTimer,
+  MetricRead,
   Notice,
   NoticeAt,
   NoticeKind,
@@ -105,6 +106,8 @@ export interface FakeHandlerOptions {
   webhookSecret?: string;
   /** The event layer as the caller sees it (CA02): events by id, sharing per member. */
   calendar?: FakeCalendarOptions;
+  /** Already caller-visible dashboard observations. Omit while dashboards is unavailable. */
+  metrics?: MetricRead[];
   /** Timers the instance already holds (PJ01), by key, as `timers.list` would show them. */
   timers?: FakeTimer[];
   /** "Now", for a timer's `next`; without it, the real clock. */
@@ -260,6 +263,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
     keeps(method, args);
   };
   const checkNotice = (notice: Notice) => {
+    if (notice?.delivery !== undefined && notice.delivery !== 'co-partner') throw new Error('notify delivery is co-partner, or omitted for the bell.');
     if (!notice || typeof notice.to !== 'string' || !notice.to) throw new Error('notify needs `to`: the member to tell.');
     if (!NOTICE_KINDS.includes(notice.kind)) throw new Error(`notify's kind is one of ${NOTICE_KINDS.join(', ')}.`);
     if (typeof notice.collection !== 'string' || !notice.collection) throw new Error('notify needs `collection`: the collection the record is in.');
@@ -282,7 +286,7 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
 
   // The three Forms seams (FO02, FO03, FO07), refused in Brydio's words, each ending with its code.
   const hostGranted = (capability: string) => (manifest ? (manifest.grants?.host ?? []).some(grant => grant === capability || grant === '*') : true);
-  const seam = (capability: 'chat' | 'directory' | 'webhooks' | 'timers' | 'calendar', words: string, writing: boolean) => (method: string, args: unknown[]) => {
+  const seam = (capability: 'chat' | 'directory' | 'webhooks' | 'timers' | 'calendar' | 'metrics', words: string, writing: boolean) => (method: string, args: unknown[]) => {
     notForVisitors(method);
     if (!hostGranted(capability)) throw new Error(`${appName} did not ask to ${words}. (not_granted)`);
     if (writing && options.write === false) {
@@ -445,6 +449,11 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
           checkNotice(notice);
           if (notice.to === callerId) return { notified: false as const, reason: 'self' as const };
           if (!(await reaches(notice))) return { notified: false as const, reason: 'cannot_see' as const };
+          if (notice.delivery === 'co-partner') {
+            const key = `delivery:${calls.length}`;
+            notices.pending.set(`${notice.to}:${key}`, { ...notice, key, at: new Date().toISOString() });
+            return { notified: true as const, held: true as const };
+          }
           notices.sent.push(notice);
 
           return { notified: true as const };
@@ -683,6 +692,20 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
         async () => ({ items: [...timers.values()].map(({ input: _input, ...shown }) => shown) }),
         seam('timers', 'run its own tools on a schedule, as the person who set them', false),
       ),
+    }),
+    // DA02. Fixtures have already been limited to the caller's visible metrics.
+    metrics: Object.freeze({
+      list: recorded('metrics.list', async () => {
+        if (!options.metrics) throw new Error('Metrics are not available right now. (metrics_unavailable)');
+        return { metrics: options.metrics.map(({ id, name, unit, target, ownerId, dashboardId, revision }) => ({ id, name, unit, target, ownerId, dashboardId, revision })) };
+      }, seam('metrics', 'read dashboard metrics as you', false)),
+      get: recorded('metrics.get', async (id: string) => {
+        if (typeof id !== 'string' || !id.trim() || id.length > 128) throw new Error('metrics.get takes a metric id. (metrics_invalid)');
+        if (!options.metrics) throw new Error('Metrics are not available right now. (metrics_unavailable)');
+        const metric = options.metrics.find(one => one.id === id);
+        if (!metric) throw new Error('There is no such metric. (metrics_not_found)');
+        return JSON.parse(JSON.stringify(metric)) as MetricRead;
+      }, seam('metrics', 'read dashboard metrics as you', false)),
     }),
     // CA02. An in-memory event layer with Brydio's rules for sharing, owners and invitations.
     calendar: Object.freeze(

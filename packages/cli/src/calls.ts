@@ -112,6 +112,7 @@ export function callsOf(file: string, text: string): ScreenCall[] {
         // A handler's `approvals.request`, `approvals.get` and `approvals.cancel` use the approvals grant.
         else if ((method === 'request' || method === 'get' || method === 'cancel') && /(^|\.)approvals$/.test(object.getText(source))) add('host', 'approvals', callee, false);
         else if (apiArea === 'projects' || apiArea === 'files' || apiArea === 'chats') add('host', apiArea, callee);
+        else if ((method === 'get' || method === 'list') && /(^|\.)metrics$/.test(object.getText(source))) add('host', 'metrics', callee, false);
         else if (METHODS[method]) named(METHODS[method], first, callee);
         else if (method === 'navigate') add('host', 'navigate', callee, false);
         else if (method === 'members' || method === 'projects') add('host', method, callee, false);

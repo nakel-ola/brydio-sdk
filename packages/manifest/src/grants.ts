@@ -36,6 +36,7 @@ export const HOST_CAPABILITIES = [
   'webhooks',
   'timers',
   'calendar',
+  'metrics',
 ] as const;
 
 /** The older name for `HOST_CAPABILITIES`, kept for what already imports it. */

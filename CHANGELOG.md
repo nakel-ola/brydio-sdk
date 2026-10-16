@@ -22,6 +22,14 @@ rely on it, which is the day it changes.
 deprecated first, `brydio validate` says so with what to use instead, and it
 goes no sooner than the next major.
 
+## 0.1.0-alpha.53
+
+Handlers can read dashboard metrics and ask a recipient's co-partner to deliver a reminder.
+
+- Add `metrics` to `grants.host` to use `client.metrics.list()` and `get(id)`. Reads use the caller's current dashboard and source permissions, including timer runs. Source errors keep `value: null` and an explicit status. The fake host accepts already caller-visible `metrics` fixtures.
+- A notice can set `delivery: 'co-partner'`. Delivery queues through notification policy, quiet hours, co-partner pauses and its shared daily cap. Use `notify.at` with a stable key for self-reminders. The delivery preference needs a host with the co-partner adapter. Omitting it preserves ordinary notifications.
+- CLI validation recognizes metrics handler calls and the new grant. Existing grants and calls keep their behavior.
+
 ## 0.1.0-alpha.52
 
 A board's comments (tasks/whiteboard WB07). Additive; nothing you wrote has to change.
