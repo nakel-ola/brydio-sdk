@@ -117,3 +117,35 @@ for (const method of ['cancelInvoice', 'recordManualPayment', 'clearManualPaymen
     expect((await runHandler(handler, {}, { manifest, finance, caller: { origin: 'screen' }, write: true })).result).toEqual({ done: true });
     expect(calls).toBe(1);
   });
+
+for (const provider of ['xero', 'quickbooks'] as const) {
+  test(provider + ' accounting status is a read with current Finance and exact connection grants', async () => {
+    const input = { provider, companyId: 'company_1', kind: 'invoice' as const, id: 'invoice_1' };
+    const handler: Handler = (_, c) => c.finance.accountingStatus(input);
+    let calls = 0;
+    const finance = { accountingStatus: async (actual: typeof input) => {
+      calls++;
+      expect(actual).toEqual(input);
+      return { status: 'not_exported' as const, attachments: 0 };
+    } };
+    const granted = { name: 'finance', grants: { host: ['finance', `connection:${provider}`] } };
+    for (const host of [[], ['finance'], [`connection:${provider}`], ['finance', `connection:${provider === 'xero' ? 'quickbooks' : 'xero'}`]])
+      expect((await runHandler(handler, {}, { manifest: { name: 'finance', grants: { host } }, finance, write: false })).error).toContain('not_granted');
+    expect((await runHandler(handler, {}, { manifest: granted, finance, write: false, caller: { role: 'anonymous' } })).error).toContain("can't use finance");
+    expect(calls).toBe(0);
+    expect((await runHandler(handler, {}, { manifest: granted, finance, write: false })).result).toEqual({ status: 'not_exported', attachments: 0 });
+    expect(calls).toBe(1);
+    expect((await runHandler(handler, {}, { manifest: granted, write: false })).error).toContain('finance_unavailable');
+  });
+}
+
+test('accounting status preserves durable states and provider details without an export write', async () => {
+  for (const status of ['not_exported', 'pending', 'partial', 'uncertain', 'exported'] as const) {
+    const result = { status, providerId: 'remote_1', entityType: 'Invoice', sourceRevision: 3, attachments: 2, error: 'Reconcile the provider result' };
+    const handler: Handler = (_, c) => c.finance.accountingStatus({ provider: 'xero', companyId: 'tenant_1', kind: 'expense', id: 'claim_1' });
+    expect((await runHandler(handler, {}, {
+      manifest: { name: 'finance', grants: { host: ['finance', 'connection:xero'] } },
+      finance: { accountingStatus: async () => result }, write: false,
+    })).result).toEqual(result);
+  }
+});

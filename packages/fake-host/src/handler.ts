@@ -770,6 +770,14 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
         if (!options.finance?.accountingAccounts) throw new Error('Finance is unavailable. (finance_unavailable)');
         return options.finance.accountingAccounts(input);
       }, both(seam('finance', 'collect invoice payments and read receipts', false),(_method,args)=>{const provider=(args[0] as {provider?:unknown})?.provider;if((provider!=='xero'&&provider!=='quickbooks')||!hostGranted(`connection:${provider}`))throw new Error('This accounting connection was not granted. (not_granted)');})),
+      accountingStatus: recorded('finance.accountingStatus', async (input: Parameters<HandlerFinance['accountingStatus']>[0]) => {
+        if (!options.finance?.accountingStatus) throw new Error('Finance is unavailable. (finance_unavailable)');
+        return options.finance.accountingStatus(input);
+      }, both(seam('finance', 'read accounting export status', false), (_method, args) => {
+        const provider = (args[0] as { provider?: unknown })?.provider;
+        if ((provider !== 'xero' && provider !== 'quickbooks') || !hostGranted(`connection:${provider}`))
+          throw new Error('This accounting connection was not granted. (not_granted)');
+      })),
       exportAccounting: recorded('finance.exportAccounting', async (input: Parameters<HandlerFinance['exportAccounting']>[0]) => {
         if (!options.finance?.exportAccounting) throw new Error('Finance is unavailable. (finance_unavailable)');
         return options.finance.exportAccounting(input);

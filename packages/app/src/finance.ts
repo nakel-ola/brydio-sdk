@@ -65,6 +65,21 @@ export interface AccountingExportInput {
     lineMappings?: { accountCode?: string; taxCode?: string; itemId?: string }[];
   };
 }
+/** Reads the durable export without creating or retrying a provider request. */
+export interface AccountingStatusRequest {
+  provider: 'xero' | 'quickbooks';
+  companyId: string;
+  kind: 'invoice' | 'expense' | 'transaction';
+  id: string;
+}
+export interface AccountingStatus {
+  status: 'not_exported' | 'pending' | 'partial' | 'uncertain' | 'exported';
+  providerId?: string;
+  entityType?: string;
+  sourceRevision?: number;
+  attachments: number;
+  error?: string;
+}
 export interface AccountingExportResult {
   status: 'exported';
   providerId: string;
@@ -209,6 +224,8 @@ export interface HandlerFinance {
   saveBudgetMetric(input: { budgetId: string; dashboardId: string }): Promise<FinanceBudgetMetric>;
   accountingCompanies(input: { provider: 'xero' | 'quickbooks' }): Promise<{ companies: { id: string; name: string }[] }>;
   accountingAccounts(input: { provider: 'xero' | 'quickbooks'; companyId: string }): Promise<{ accounts: Record<string, unknown>[] }>;
+  /** Also requires the provider connection; checks current source and receipt permissions before reading durable progress. */
+  accountingStatus(input: AccountingStatusRequest): Promise<AccountingStatus>;
   /** Write tool, also requires the provider connection. The host loads and validates the exact canonical source revision. */
   exportAccounting(input: AccountingExportInput): Promise<AccountingExportResult>;
 }

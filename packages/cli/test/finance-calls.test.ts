@@ -18,3 +18,8 @@ test('recognizes Finance, its additional metrics requirement and managed model g
     'model',
   ]);
 });
+
+test('recognizes read-only accounting export status as Finance', () => {
+  const calls = callsOf('status.ts', 'export default (i,c)=>c.finance.accountingStatus(i)');
+  expect(calls.filter((call) => call.kind === 'host').map((call) => call.name)).toEqual(['finance']);
+});

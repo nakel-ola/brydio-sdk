@@ -72,6 +72,13 @@ provider references recover retries and attachment checkpoints. Ambiguous
 outcomes require reconciliation rather than a second export. The result has
 `status:'exported'`, provider identity and the uploaded attachment count.
 
+`accountingStatus({provider,companyId,kind,id})` reads durable export progress.
+It returns `status` as `not_exported`, `pending`, `partial`, `uncertain` or
+`exported`, an `attachments` count and optional `providerId`, `entityType`,
+`sourceRevision` and `error`. It needs Finance and the exact provider connection
+grant. The host rechecks the source and linked receipt permissions. This read
+makes no provider request and needs neither a mapping nor a revision.
+
 ## Capacity and test permissions
 
 A manifest may declare up to 100 custom tools. Screens calling custom tools
