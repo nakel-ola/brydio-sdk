@@ -33,7 +33,7 @@ export type StopReason = 'cap' | 'refusals' | 'ready' | 'start' | 'load' | 'erro
 export interface HostContext {
   theme: 'light' | 'dark';
   locale: string;
-  placement: { id: string; kind: string; projectId?: string; settings?: Record<string, string> };
+  placement: { id: string; kind: string; projectId?: string; personId?: string; settings?: Record<string, string> };
   instance: { id: string; name: string; scope: string };
   route: { path: string };
   selection?: unknown;
