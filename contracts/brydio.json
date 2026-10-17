@@ -1,6 +1,6 @@
 {
   "brydio": {
-    "commit": "1877b832b6c9802946eb4dccf8fc89e9d66e28e8",
+    "commit": "17589d22e3b7962e7a1cac0f793291ba33d890d2",
     "dirty": true
   },
   "contracts": {
@@ -8305,7 +8305,7 @@
       {
         "ok": false,
         "messages": [
-          "Invalid option: expected one of \"project-tab\"|\"project-widget\"|\"project-sidebar\"|\"workspace-sidebar\"|\"home\"|\"public-page\"|\"chat-card\""
+          "Invalid option: expected one of \"project-tab\"|\"project-widget\"|\"project-sidebar\"|\"workspace-sidebar\"|\"home\"|\"public-page\"|\"chat-card\"|\"person-profile\""
         ]
       },
       {

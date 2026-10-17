@@ -99,8 +99,11 @@ export type Op =
  * `chat-card` is a screen drawn inside a chat message the app posted with
  * `chat.post` (FO03), at the message column's width and a fixed height; its
  * `placement.id` is `card:<key>` and `route` is the card's.
+ * `person-profile` is a panel on a person's Directory profile; its
+ * `placement.personId` is the profiled person's workspace user id, and every
+ * read it makes is the viewer's own.
  */
-export type PlacementKind = 'project-widget' | 'project-tab' | 'project-sidebar' | 'workspace-sidebar' | 'home' | 'public-page' | 'chat-card';
+export type PlacementKind = 'project-widget' | 'project-tab' | 'project-sidebar' | 'workspace-sidebar' | 'home' | 'public-page' | 'chat-card' | 'person-profile';
 
 /** `public` is a public page's: its `instance.id` is the page's id and `name` its title. */
 export type InstanceScope = 'workspace' | 'project' | 'personal' | 'public';
@@ -117,7 +120,8 @@ export type ScreenRole = 'owner' | 'admin' | 'member' | 'anonymous';
 export interface HostContext {
   theme: 'light' | 'dark';
   locale: string;
-  placement: { id: string; kind: PlacementKind; projectId?: string; settings?: Record<string, string> };
+  /** `personId` is set only on a `person-profile` panel: whose profile it is on. */
+  placement: { id: string; kind: PlacementKind; projectId?: string; personId?: string; settings?: Record<string, string> };
   instance: { id: string; name: string; scope: InstanceScope };
   /** The app-local page open inside this placement, always rooted at `/`. */
   route: { path: string };

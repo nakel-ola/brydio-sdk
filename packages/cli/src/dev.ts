@@ -301,8 +301,9 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
     // A widget is on the project's page; the rest open at their own address.
     // A public page never opens in development: Brydio serves it only for a
     // published version an admin turned on (run it with FakeHost's `visitor`).
+    // A profile panel is drawn on people's profiles, not at an address.
     const places =
-      development.placements?.filter(place => place.kind !== 'project-widget' && place.kind !== 'project-tab' && place.kind !== 'public-page') ?? [];
+      development.placements?.filter(place => place.kind !== 'project-widget' && place.kind !== 'project-tab' && place.kind !== 'public-page' && place.kind !== 'person-profile') ?? [];
     const where = (kind: string) => (kind === 'workspace-sidebar' ? "the workspace's sidebar" : "the project's sidebar");
 
     out(

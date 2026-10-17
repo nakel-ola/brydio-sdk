@@ -53,6 +53,23 @@ const share: Handler<{ room: string; form: string }> = ({ room, form }, { chat }
 A `chat-card` placement has no `sizes`, `children` or `settings`
 (`placement_chat_card_shape`), and nobody adds it anywhere by hand.
 
+## A panel on a person's profile
+
+Declare a `person-profile` placement and Brydio draws its screen on every
+person's Directory profile, for each viewer who can read the instance; anyone
+else sees nothing of it. The screen sees `placement.kind === 'person-profile'`,
+`placement.id` `profile:<key>:<personId>` and `placement.personId`, the workspace user id
+of the person whose profile it is. Everything it reads is read as the viewer:
+a tool that refuses them refuses on the profile too, so say so in the panel
+rather than drawing an empty one.
+
+```json
+{ "placements": [{ "kind": "person-profile", "key": "hr-card", "screen": "profile", "label": "HR" }] }
+```
+
+A `person-profile` placement has no `sizes`, `children` or `settings`
+(`placement_person_profile_shape`), and nobody adds it anywhere by hand.
+
 ## Call another app's tool
 
 Name the tool the way the assistant knows it, `<slug>__<tool>`, exactly, in

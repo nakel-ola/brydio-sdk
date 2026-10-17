@@ -116,8 +116,12 @@ const placementSchema = z.object({
    * a handler's `chat.post` (FO03). Nobody places it by hand, so it has no
    * `sizes`, `children` or `settings` (`placement_chat_card_shape`); its
    * screen sees `placement.kind === 'chat-card'` and the card's `route`.
+   * `person-profile`: a panel on every person's Directory profile, for
+   * viewers who can read the instance. Nobody places it by hand, so it has no
+   * `sizes`, `children` or `settings` (`placement_person_profile_shape`); its
+   * screen sees `placement.personId`, and reads only what the viewer may.
    */
-  kind: z.enum(['project-tab', 'project-widget', 'project-sidebar', 'workspace-sidebar', 'home', 'public-page', 'chat-card']),
+  kind: z.enum(['project-tab', 'project-widget', 'project-sidebar', 'workspace-sidebar', 'home', 'public-page', 'chat-card', 'person-profile']),
   screen: z.string().min(1).max(FIELD_LIMITS.nameChars),
   /** For `home` and `project-widget` only, and required there: the sizes the screen draws well at. */
   sizes: z.array(z.enum(HOME_CARD_SIZES)).max(3).optional(),
@@ -365,6 +369,7 @@ export type DataProblemCode =
   | 'placement_public_shape'
   | 'placement_public_nothing'
   | 'placement_chat_card_shape'
+  | 'placement_person_profile_shape'
   | 'grant_tool_cross_app_self'
   | 'placement_children_too_deep'
   | 'placement_create_tool_unknown'
@@ -643,6 +648,14 @@ export function dataProblems(additions: Additions, options: DataProblemOptions =
       problems.push({
         code: 'placement_chat_card_shape',
         message: `The chat card "${placement.screen}" cannot have sizes, children or settings.`,
+      });
+    }
+
+    // A profile panel is drawn on every profile the viewer opens: nothing to size, configure or list.
+    if (placement.kind === 'person-profile' && (placement.sizes?.length || placement.children || placement.settings)) {
+      problems.push({
+        code: 'placement_person_profile_shape',
+        message: `The profile panel "${placement.screen}" cannot have sizes, children or settings.`,
       });
     }
   }
