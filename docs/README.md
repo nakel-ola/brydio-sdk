@@ -27,6 +27,8 @@ commands, see the [SDK documentation site](../docs-site/README.md).
   the `model` grant, or from your own server with a developer API key.
 - [Finance](finance.md) covers canonical invoices and receipts, paged CSV imports,
   durable export jobs, native approval templates, budget metrics and accounting.
+- [People](people.md) covers native HR operations, the dedicated People grant,
+  current-caller authorization and explicit fake-host fixtures.
 - [Publish checklist](publish-checklist.md) matches the checks and messages
   printed by `brydio validate` and the publish path.
 - [Support](support.md) says which packages and interfaces are supported.

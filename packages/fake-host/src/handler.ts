@@ -114,6 +114,11 @@ export interface FakeHandlerOptions {
   sign?: HandlerSign;
   /** Explicit Finance stand-in; no fabricated settlements. */
   finance?: Partial<HandlerFinance>;
+  /** Explicit People answers already authorized as this caller. Omit to fail closed. */
+  people?: {
+    call?: (operation: string, input?: Record<string, unknown>) => Promise<unknown>;
+    results?: Record<string, unknown>;
+  };
   /** Timers the instance already holds (PJ01), by key, as `timers.list` would show them. */
   timers?: FakeTimer[];
   /** "Now", for a timer's `next`; without it, the real clock. */
@@ -292,11 +297,11 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
 
   // The three Forms seams (FO02, FO03, FO07), refused in Brydio's words, each ending with its code.
   const hostGranted = (capability: string) => (manifest ? (manifest.grants?.host ?? []).some(grant => grant === capability || grant === '*') : true);
-  const seam = (capability: 'chat' | 'directory' | 'webhooks' | 'timers' | 'calendar' | 'metrics' | 'sign' | 'finance' | 'model', words: string, writing: boolean) => (method: string, args: unknown[]) => {
+  const seam = (capability: 'chat' | 'directory' | 'webhooks' | 'timers' | 'calendar' | 'metrics' | 'sign' | 'finance' | 'people' | 'model', words: string, writing: boolean) => (method: string, args: unknown[]) => {
     notForVisitors(method);
     if (!hostGranted(capability)) throw new Error(`${appName} did not ask to ${words}. (not_granted)`);
     if (writing && options.write === false) {
-      const what = method === 'chat.post' ? 'post in a chat' : method.startsWith('timers.') ? 'set or cancel a timer' : method.startsWith('calendar.') ? 'change the calendar' : 'send a webhook';
+      const what = method === 'chat.post' ? 'post in a chat' : method.startsWith('timers.') ? 'set or cancel a timer' : method.startsWith('calendar.') ? 'change the calendar' : method === 'people.call' ? 'change People records' : 'send a webhook';
 
       throw new Error(`${tool} is a read tool, so its handler can't ${what} (read_tool)`);
     }
@@ -379,7 +384,14 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
     }) as unknown as (...args: never[]) => Promise<R>;
 
   const data = options.data ?? {};
+  const peopleCall = recorded('people.call', async (operation: string, input?: Record<string, unknown>) => {
+    if (options.people?.call) return options.people.call(operation, input);
+    if (options.people?.results && Object.hasOwn(options.people.results, operation)) return options.people.results[operation];
+    throw new Error('People is unavailable. (people_unavailable)');
+  }, (method, args) => seam('people', 'use People host operations', args[0] !== 'context' && args[0] !== 'listPeople' && args[0] !== 'whoOut')(method, args));
+
   const client: HandlerClient = Object.freeze({
+    people: Object.freeze({ call: <T = unknown>(operation: string, input?: Record<string, unknown>) => peopleCall(operation, input) as Promise<T> }),
     data: Object.freeze({
       get: recorded('data.get', hidden('data.get', data.get ?? unavailable('data.get')) as HandlerClient['data']['get'], visitorData),
       list: recorded('data.list', hidden('data.list', data.list ?? unavailable('data.list')) as HandlerClient['data']['list'], visitorData),

@@ -60,3 +60,5 @@ provider, metrics or signing grants are checked separately; write methods
 refuse read tools, and accountant export starts require a screen caller.
 These fixtures do not fabricate settlements or provider access. See
 [Finance](https://github.com/nakel-ola/brydio-sdk/blob/main/docs/finance.md).
+
+Use `FakeHandlerOptions.people` for explicit native HR fixtures. Supply `results` keyed by operation, or an async `call(operation, input)` function. No fixture means `people_unavailable`. The fake checks the People grant, visitors and read/write boundary; it does not fabricate HR authority. See [People](https://github.com/nakel-ola/brydio-sdk/blob/main/docs/people.md).

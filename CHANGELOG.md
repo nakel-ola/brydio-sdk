@@ -4,6 +4,10 @@ Every package here shares one version, so this is one changelog. Each entry
 says what changed and, where something you wrote has to change with it, what
 to do about it.
 
+## 0.1.0-alpha.58
+
+Add the `people` handler grant and `client.people.call<T>(operation, input?)` for native HR operations as the current caller. Only `context`, `listPeople` and `whoOut` are reads; other operations require a write tool. Fake-host requires explicit People fixtures, refuses visitors and missing grants, and fails closed when no operation result exists. The CLI recognizes People calls without broadening Directory access. See [People](docs/people.md).
+
 ## 0.1.0-alpha.57
 
 Add read-only `finance.accountingCatalog` for bounded, current-company contact, tax and item choices. It requires Finance and the exact provider connection, and preserves opaque paging cursors. No provider objects are created.

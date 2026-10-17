@@ -68,7 +68,7 @@ export interface MemberCaller {
  *   made or changed them.
  * - `tools.call` reaches only the app's other `public` tools.
  * - `connection`, `model`, `secrets`, `notify`, `members`, `approvals`,
- *   `files`, `chat`, `directory`, `metrics`, `webhooks` and another app's tool refuse
+ *   `files`, `chat`, `directory`, `metrics`, `webhooks`, `people` and another app's tool refuse
  *   with the code `not_for_visitors`.
  */
 export interface VisitorCaller {
@@ -842,6 +842,12 @@ export interface HandlerMetrics {
   get(id: string): Promise<MetricRead>;
 }
 
+/** Native HR operations, authorized by the host as the current caller. Requires `people`. */
+export interface HandlerPeople {
+  /** `context`, `listPeople` and `whoOut` are reads. Every other operation requires a write tool. */
+  call<T = unknown>(operation: string, input?: Record<string, unknown>): Promise<T>;
+}
+
 /** Everything a handler is given beside its input. */
 export interface HandlerClient {
   readonly data: HandlerData;
@@ -860,6 +866,7 @@ export interface HandlerClient {
   readonly metrics: HandlerMetrics;
   readonly sign: HandlerSign;
   readonly finance: HandlerFinance;
+  readonly people: HandlerPeople;
   readonly caller: HandlerCaller;
 }
 

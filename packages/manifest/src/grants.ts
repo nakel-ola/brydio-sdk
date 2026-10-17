@@ -19,6 +19,8 @@ import { BUNDLE_MANIFEST } from './bundle.ts';
  * is a handler's `webhooks.send` (FO07); `timers` is a handler's
  * `timers.*`, running one of the app's own tools later (PJ01); `calendar`
  * is a handler's `calendar.*`, the caller's events on the event layer (CA02).
+ * `people` is a handler's native HR operations as the current caller; it does
+ * not broaden `directory` access or authorize private records by itself.
  */
 export const HOST_CAPABILITIES = [
   'navigate',
@@ -39,6 +41,7 @@ export const HOST_CAPABILITIES = [
   'metrics',
   'sign',
   'finance',
+  'people',
 ] as const;
 
 /** The older name for `HOST_CAPABILITIES`, kept for what already imports it. */
