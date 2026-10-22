@@ -1,89 +1,73 @@
-import { BUNDLE_MANIFEST, compareVersions, publishedMigrationProblems, sdkRefusal, sizeOf, type SdkSupport } from '@brydio/manifest';
+import { BUNDLE_MANIFEST, compareVersions, publishedMigrationProblems, sizeOf } from '@brydio/manifest';
 
-import { API_URL_ENV, TOKEN_ENV } from './api.ts';
 import { build } from './build.ts';
 import { KeysRefused, readKeyFile, signingKeyPath, type KeyFile } from './keys.ts';
 import { formatProblem, readProject } from './project.ts';
+import {
+  RegistryRefused,
+  bodyOf,
+  choosePublisher,
+  path,
+  refusalOf,
+  registry,
+  turnedAway,
+  type Me,
+  type Registry,
+  type RegistryApp,
+  type RegistryOptions,
+} from './registry.ts';
 import { signVersion } from './signing.ts';
 import { validate } from './validate.ts';
 import { zipFiles } from './zip.ts';
 
 /**
- * `brydio publish`: build, validate, and upload the bundle to Brydio as a new
- * version (A5-F04, the command line's half).
+ * `brydio publish`: build, validate, picture every screen, sign, and upload
+ * the bundle to the app registry as a new version (PB03).
  *
- * The route is Hodler's `POST /api/v1/apps/publish` (`apps/api/src/apps/
- * publishing/app-publish.controller.ts`): the built folder as a zip, base64,
- * in `{ archiveBase64 }`, signed in as the person publishing. The server runs
- * every check again whatever this command did, and takes the publishing
- * account from the sign-in, never from the upload: nothing this command
- * sends names an account (A7-F05-S02). `--publisher` picks which of that
- * account's publishers a new app belongs to, and Brydio refuses one the
- * account is not in. What it answers:
+ * The route is the registry's `POST /v1/apps/:key/versions`, with the built
+ * folder as a zip, base64, in `{ archiveBase64 }`, and the token `brydio
+ * login` kept. The registry runs every check again whatever this command
+ * did, and takes the account from the token, never from the upload. What it
+ * answers (`tasks/app-publishing/registry-contract.md` in Brydio):
  *
- * - 201, a new version: `{ created: true, appKey, version, versionId,
- *   bundleHash, publishedBy, publishedAt, files }`, `files` being paths on
- *   the API.
- * - 200, the same shape with `created: false`: exactly this version was
- *   already published, so a retry is not a failure.
- * - 409 `{ reason: 'version_exists', message }`: the number is taken by
- *   different code or a different manifest. The message names both
- *   fingerprints.
- * - 422 `{ reason, message, at }`: the bundle or manifest was refused, at a
- *   file or field.
- * - 423: Apps are not on for the workspace.
+ * - 201 `{ key, version, fingerprint, sdk, tag, access, state }`, a new
+ *   version: `live` for `workspace` access, `pending` (Brydio's review) for
+ *   `public`.
+ * - 200, the same, when exactly this bundle is already that version.
+ * - 409 `version_exists` (the number is taken by a different bundle) or
+ *   `version_lower` (below the highest published).
+ * - 403 `not_publisher`, 422 with a check's code, 423 `retired`.
  *
- * Before any of that it asks `GET /api/v1/apps/sdk` which SDK versions the
- * Brydio runs (`{ oldest, before }`), and refuses locally, in the server's
- * `sdk_unsupported` words, a build it would refuse (A5-F04-S03). A Brydio
- * with no such route is from before the check: the upload goes ahead, and the
- * command says the version was not checked.
- *
- * Authorization is a key from Brydio Settings > Developer in
- * `BRYDIO_TOKEN`, sent as a bearer token. It needs the `apps:publish` scope.
- * The address is `BRYDIO_API_URL`.
+ * Before building it asks the registry for the SDK minimum (`GET /v1/sdk`)
+ * and for the app (`GET /v1/apps/:key`), so a build the registry would refuse
+ * for its SDK, its number or a missing migration is refused here, before the
+ * pictures are taken.
  *
  * With `--key` (or `BRYDIO_SIGNING_KEY`, a path to the same file), the
- * version is signed here before it goes up (A7-F05-S03): the app, the
- * number, the fingerprint and the manifest's hash, signed with a key made by
- * `brydio keys create`, sent as `signature: { keyId, value }`. Brydio checks
- * it against that publisher's own keys before it writes anything, and shows
- * "Verified" on versions that check. The private key is read from the file
- * and never leaves this process.
+ * version is signed here before it goes up: the app, the number, the
+ * fingerprint and the manifest's hash, with a key made by `brydio keys
+ * create`, sent as `signature: { keyId, value }`. The private key is read
+ * from the file and never leaves this process.
  */
 
-export { API_URL_ENV, TOKEN_ENV } from './api.ts';
-export const PUBLISH_PATH = '/api/v1/apps/publish';
-export const SDK_PATH = '/api/v1/apps/sdk';
-/** The highest published version of an app, for its publishers: `{ version, manifest, … }`, or 404 before the first. */
-export const LATEST_PATH = (appKey: string) => `/api/v1/apps/publish/${encodeURIComponent(appKey)}/latest`;
+export const ACCESS = ['workspace', 'public'] as const;
+export type Access = (typeof ACCESS)[number];
+/** A tag is a short lower-case word: `latest`, `beta`, `next`, `canary-2`. */
+export const TAG_FORMAT = /^[a-z][a-z0-9-]{0,31}$/;
 
-export interface PublishOptions {
-  /** Brydio's API, like `https://api.brydio.app`. `BRYDIO_API_URL` unless given. */
-  apiUrl?: string;
-  /** A Settings > Developer key with apps:publish. `BRYDIO_TOKEN` unless given. */
-  token?: string;
-  out?: (line: string) => void;
-  /** For tests: the request, made some other way. */
-  fetch?: (url: string, init: RequestInit) => Promise<Response>;
+export interface PublishOptions extends RegistryOptions {
+  /** The tag the version goes under. `latest` unless given. */
+  tag?: string;
+  /** Who may install it. A new app is `workspace` unless given; a published app keeps its own. */
+  access?: string;
   /**
    * Pictures of every screen (A5-F04-S04). By default `@brydio/fake-host`,
    * found from the app's own folder, renders them; `false` publishes without.
    */
   screenshots?: false | Renderer;
-  /**
-   * A key file from `brydio keys create`, whose key signs this version
-   * (A7-F05-S03). `BRYDIO_SIGNING_KEY` unless given; without either, the
-   * version is published unsigned, which Brydio allows until an
-   * administrator turns `APPS_REQUIRE_SIGNED_PUBLISH` on.
-   */
+  /** A key file from `brydio keys create`. `BRYDIO_SIGNING_KEY` unless given; without either, unsigned. */
   key?: string;
-  /**
-   * Which of your publishers a brand new app belongs to (A9-F01-S01), when
-   * the account is in more than one. An app already published is published
-   * by its own publisher whatever this says, and a publisher the account is
-   * not in is refused by Brydio.
-   */
+  /** Which of your publishers a brand new app belongs to, by id or name, when you are in several. */
   publisher?: string;
 }
 
@@ -100,6 +84,23 @@ export type Renderer = (root: string) => Promise<{
   problems: { screen: string; width?: string; theme?: string; message: string }[];
 }>;
 
+/** What the registry answers for a version, published now or before. */
+export interface Published {
+  key: string;
+  version: string;
+  fingerprint: string;
+  sdk: string;
+  tag: string;
+  access: Access;
+  state: string;
+}
+
+/** What `GET /v1/sdk` answers. */
+export interface SdkMinimum {
+  minimum: string;
+  upcoming?: { minimum: string; from: string };
+}
+
 /**
  * The fake host's renderer, loaded from the app's folder. The CLI can't
  * depend on `@brydio/fake-host`, which depends on it, and an app that tests
@@ -115,80 +116,117 @@ async function fakeHostRenderer(root: string): Promise<Renderer | null> {
   }
 }
 
-/** What the server answers for a version, published now or before. */
-export interface Published {
-  created: boolean;
-  appKey: string;
-  version: string;
-  versionId: string;
-  bundleHash: string;
-  publishedBy: string;
-  publishedAt: string;
-  files: string[];
+/** The registry's SDK minimum, or null when it has none to say. */
+export async function sdkMinimum(reg: Registry): Promise<SdkMinimum | null> {
+  const answer = await reg.send<Partial<SdkMinimum>>('GET', path.sdk);
+
+  if (answer.status === 404) return null;
+
+  const body = bodyOf<Partial<SdkMinimum> | null>(answer, reg, [200]);
+
+  if (typeof body?.minimum !== 'string') throw new RegistryRefused(`${reg.url} answered ${path.sdk} with something other than { minimum }.`);
+
+  return {
+    minimum: body.minimum,
+    ...(body.upcoming && typeof body.upcoming.minimum === 'string' && typeof body.upcoming.from === 'string' ? { upcoming: body.upcoming } : {}),
+  };
+}
+
+/** The app as the registry has it, or null before its first version. */
+export async function registryApp(reg: Registry, key: string): Promise<RegistryApp | null> {
+  const answer = await reg.send<RegistryApp>('GET', path.app(key));
+
+  if (answer.status === 404) return null;
+
+  return bodyOf<RegistryApp>(answer, reg, [200]);
+}
+
+/** The highest version below `version` the registry holds, with its manifest, or null. */
+export async function versionBefore(reg: Registry, found: RegistryApp, version: string): Promise<{ version: string; manifest: unknown } | null> {
+  const previous = found.versions
+    .map(one => one.version)
+    .filter(one => compareVersions(one, version) < 0)
+    .sort(compareVersions)
+    .at(-1);
+
+  if (!previous) return null;
+
+  const detail = bodyOf<{ manifest?: unknown }>(await reg.send('GET', path.version(found.key, previous)), reg, [200]);
+
+  return { version: previous, manifest: detail.manifest ?? null };
 }
 
 export async function publish(dir: string, options: PublishOptions = {}): Promise<number> {
   const out = options.out ?? console.log;
-  const apiUrl = (options.apiUrl ?? process.env[API_URL_ENV] ?? '').replace(/\/+$/, '');
-  const token = options.token ?? process.env[TOKEN_ENV] ?? '';
-
-  // Before building: a missing sign-in is found in a second, not after a build.
-  if (!apiUrl || !/^https?:\/\//.test(apiUrl)) {
-    out(`Set ${API_URL_ENV} to your Brydio's API address, like http://localhost:4000.`);
-
-    return 2;
-  }
-
-  if (!token) {
-    out(`Set ${TOKEN_ENV} to a key from Brydio Settings > Developer with Publish apps permission.`);
-
-    return 2;
-  }
-
-  // The key is read before the build too: a path that is wrong, or a file
-  // anybody can read, is worth knowing about now rather than after a build.
-  let signingKey: KeyFile | null = null;
 
   try {
-    const path = signingKeyPath(options.key);
-
-    signingKey = path ? readKeyFile(path) : null;
+    return await publishing(dir, options, out);
   } catch (error) {
-    if (!(error instanceof KeysRefused)) throw error;
+    if (error instanceof RegistryRefused) {
+      out(error.message);
+      if (error.code === 1) out('Not published.');
 
-    out(error.message);
-
-    return 2;
-  }
-
-  const request = options.fetch ?? fetch;
-  const headers = { authorization: `Bearer ${token}` };
-  let support: SdkSupport | null = null;
-
-  try {
-    const answer = await request(`${apiUrl}${SDK_PATH}`, { method: 'GET', headers });
-
-    if (answer.status === 404) {
-      out(`${apiUrl} does not check SDK versions yet, so this build's SDK was not checked before uploading.`);
-    } else if (answer.ok) {
-      const body = (await answer.json().catch(() => null)) as Partial<SdkSupport> | null;
-
-      if (typeof body?.oldest !== 'string' || typeof body?.before !== 'string') {
-        out(`${apiUrl} answered ${SDK_PATH} with something other than { oldest, before }. Not published.`);
-
-        return 1;
-      }
-
-      support = { oldest: body.oldest, before: body.before };
-    } else {
-      out(turnedAway(answer.status, apiUrl, (await answer.json().catch(() => null)) as Record<string, unknown> | null));
-
-      return 1;
+      return error.code;
     }
-  } catch (error) {
-    out(`Could not reach ${apiUrl}: ${error instanceof Error ? error.message : String(error)}`);
 
-    return 1;
+    if (error instanceof KeysRefused) {
+      out(error.message);
+
+      return 2;
+    }
+
+    throw error;
+  }
+}
+
+async function publishing(dir: string, options: PublishOptions, out: (line: string) => void): Promise<number> {
+  const tag = options.tag ?? 'latest';
+
+  // Everything that can be wrong with the words, the login or the key is said
+  // before building: found in a second, not after the pictures.
+  if (!TAG_FORMAT.test(tag)) throw new RegistryRefused(`"${tag}" is not a tag. A tag is a lower-case word of up to 32 letters, digits and dashes, like latest or beta.`, 2);
+
+  if (options.access !== undefined && !ACCESS.includes(options.access as Access)) {
+    throw new RegistryRefused(`--access is workspace (your publisher's own workspaces) or public (the store, after Brydio's review), not "${options.access}".`, 2);
+  }
+
+  const reg = registry(options, 'signedIn');
+  const keyPath = signingKeyPath(options.key);
+  const signingKey: KeyFile | null = keyPath ? readKeyFile(keyPath) : null;
+  const project = readProject(dir);
+  const key = typeof project.raw.name === 'string' ? project.raw.name : '';
+  const version = typeof project.raw.version === 'string' ? project.raw.version : '';
+
+  out(`Registry ${reg.url}`);
+
+  const minimum = await sdkMinimum(reg);
+  const found = key ? await registryApp(reg, key) : null;
+
+  if (found?.retired) throw new RegistryRefused(`${key} is retired on ${reg.url}, so no new version of it can be published. [retired]`);
+
+  // Which of the account's publishers a new app goes to, by id: the registry
+  // takes an id, and a name the account is not in is said here, by name.
+  let publisherId: string | undefined;
+
+  if (key && !found) {
+    const me = bodyOf<Me>(await reg.send('GET', path.me), reg, [200]);
+
+    publisherId = choosePublisher(me, options.publisher, `${key} belongs to`).id;
+  } else if (found && options.publisher) {
+    out(`${key} is already published by ${found.publisher}, so --publisher is not used: an app stays with its publisher.`);
+  }
+
+  if (found && version) {
+    const highest = found.versions
+      .map(one => one.version)
+      .sort(compareVersions)
+      .at(-1);
+
+    if (highest && compareVersions(version, highest) < 0) {
+      throw new RegistryRefused(
+        `${key} ${version} is lower than ${highest}, the highest version on ${reg.url}. Give this build a higher number with brydio version patch, and publish again. [version_lower]`,
+      );
+    }
   }
 
   const built = await build(dir);
@@ -211,63 +249,56 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
     return 1;
   }
 
-  if (support) {
-    const sdk = (JSON.parse(new TextDecoder().decode(built.files.get(BUNDLE_MANIFEST)!)) as { sdk?: unknown }).sdk;
-    const refused = sdkRefusal(sdk, support);
+  const shipping = JSON.parse(new TextDecoder().decode(built.files.get(BUNDLE_MANIFEST)!)) as { name?: string; version?: string; sdk?: string };
 
-    if (refused) {
-      // The server's own sentence for `sdk_unsupported`, said without uploading.
-      out(`Brydio would refuse this version at sdk: ${refused} [sdk_unsupported]`);
-      out('Not published.');
+  if (minimum && typeof shipping.sdk === 'string') {
+    if (compareVersions(shipping.sdk, minimum.minimum) < 0) {
+      throw new RegistryRefused(
+        `This app was built with SDK ${shipping.sdk}, below ${minimum.minimum}, the oldest SDK the registry takes a new version from. Run brydio upgrade-sdk, then publish again. [sdk_below_minimum]`,
+      );
+    }
 
-      return 1;
+    if (minimum.upcoming && compareVersions(shipping.sdk, minimum.upcoming.minimum) < 0) {
+      out(
+        `From ${minimum.upcoming.from} the registry takes new versions built with SDK ${minimum.upcoming.minimum} or newer, and this one is ${shipping.sdk}. It still publishes today; run brydio upgrade-sdk before then.`,
+      );
     }
   }
 
-  // The version published before this one, as Brydio has it: a collection
-  // whose schema changed needs a migration step, said here before uploading
-  // (A5-F03-S02). No version yet, or not this account's to see, is the
-  // server's to decide.
-  const shipping = JSON.parse(new TextDecoder().decode(built.files.get(BUNDLE_MANIFEST)!)) as { name?: string; version?: string };
+  // The version published before this one, as the registry has it: a
+  // collection whose schema changed needs a migration step, said here before
+  // uploading (A5-F03-S02).
+  if (found && version) {
+    const previous = await versionBefore(reg, found, version);
 
-  try {
-    const answer = await request(`${apiUrl}${LATEST_PATH(String(shipping.name))}`, { method: 'GET', headers });
+    if (previous) {
+      const missing = publishedMigrationProblems(previous.manifest, shipping);
 
-    if (answer.ok) {
-      const latest = (await answer.json().catch(() => null)) as { version?: unknown; manifest?: unknown } | null;
+      for (const problem of missing) {
+        out(`error   .brydio/app.json (migrations)  ${problem.message} (${version} against ${previous.version}, the version before it.) [migration_missing]`);
+      }
 
-      if (typeof latest?.version === 'string' && typeof shipping.version === 'string' && compareVersions(latest.version, shipping.version) < 0) {
-        const missing = publishedMigrationProblems(latest.manifest, shipping);
+      if (missing.length) {
+        out('Not published.');
 
-        for (const problem of missing) {
-          out(`error   .brydio/app.json (migrations)  ${problem.message} (${shipping.version} against ${latest.version}, the version before it.) [migration_missing]`);
-        }
-
-        if (missing.length) {
-          out('Not published.');
-
-          return 1;
-        }
+        return 1;
       }
     }
-  } catch {
-    // Unreachable here means unreachable for the upload too, which says so.
   }
 
   let screenshots: PublishedScreenshot[] = [];
 
   if (options.screenshots !== false) {
-    const root = readProject(dir).root;
-    const render = options.screenshots ?? (await fakeHostRenderer(root));
+    const render = options.screenshots ?? (await fakeHostRenderer(project.root));
 
     if (!render) {
-      out('Pictures of each screen are taken with @brydio/fake-host. Add it to this app\'s devDependencies (bun add -d @brydio/fake-host), then publish again.');
+      out("Pictures of each screen are taken with @brydio/fake-host. Add it to this app's devDependencies (bun add -d @brydio/fake-host), then publish again.");
       out('Not published.');
 
       return 1;
     }
 
-    const rendered = await render(root);
+    const rendered = await render(project.root);
 
     for (const problem of rendered.problems) {
       out(`error   ${[problem.screen, problem.width, problem.theme].filter(Boolean).join(', ')}: ${problem.message} [screenshot_failed]`);
@@ -283,118 +314,90 @@ export async function publish(dir: string, options: PublishOptions = {}): Promis
     out(`Pictured ${new Set(screenshots.map(one => one.screen)).size} screen(s), ${screenshots.length} pictures.`);
   }
 
-  const archive = zipFiles(built.files);
-  const url = `${apiUrl}${PUBLISH_PATH}`;
-  // Signed over what was built, not over what is about to be sent: the
-  // fingerprint and the manifest are what Brydio rebuilds and checks.
+  // Signed over what was built: the fingerprint and the manifest are what the registry rebuilds and checks.
   const signature = signingKey
     ? {
         keyId: signingKey.keyId,
-        value: signVersion(
-          { appKey: String(shipping.name), version: String(shipping.version), bundleHash: built.hash!, manifest: shipping },
-          signingKey.privateKey,
-        ),
+        value: signVersion({ appKey: String(shipping.name), version: String(shipping.version), bundleHash: built.hash!, manifest: shipping }, signingKey.privateKey),
       }
     : null;
-  let response: Response;
 
   if (signingKey) out(`Signing as ${signingKey.publisher} with "${signingKey.label}" (${signingKey.keyId}).`);
 
-  out(`Publishing ${sizeOf(built.bytes)}, fingerprint ${built.hash}, to ${apiUrl}.`);
+  const access = (options.access as Access | undefined) ?? found?.access ?? 'workspace';
 
-  try {
-    response = await request(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...headers },
-      body: JSON.stringify({
-        archiveBase64: Buffer.from(archive).toString('base64'),
-        ...(screenshots.length ? { screenshots } : {}),
-        ...(signature ? { signature } : {}),
-        ...(options.publisher ? { publisher: options.publisher } : {}),
-      }),
-    });
-  } catch (error) {
-    out(`Could not reach ${apiUrl}: ${error instanceof Error ? error.message : String(error)}`);
+  out(`Publishing ${key} ${version}, ${sizeOf(built.bytes)}, fingerprint ${built.hash}, under the ${tag} tag with ${access} access.`);
 
-    return 1;
-  }
+  const answer = await reg.send<Published>('POST', path.versions(key), {
+    archiveBase64: Buffer.from(zipFiles(built.files)).toString('base64'),
+    tag,
+    ...(options.access ? { access: options.access } : {}),
+    ...(publisherId ? { publisher: publisherId } : {}),
+    ...(signature ? { signature } : {}),
+    ...(screenshots.length ? { screenshots } : {}),
+  });
+  const { code, message, at } = refusalOf(answer.body);
+  const said = (fallback: string) => `${message ?? fallback}${code ? ` [${code}]` : ''}`;
 
-  const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
-  const said = (fallback: string) => (typeof body?.message === 'string' ? body.message : Array.isArray(body?.message) ? body.message.join(' ') : fallback);
-
-  switch (response.status) {
+  switch (answer.status) {
     case 200:
     case 201: {
-      const published = body as unknown as Published;
-      const files = (published.files ?? []).map(path => (/^https?:/.test(path) ? path : `${apiUrl}${path}`));
+      const published = answer.body;
 
       out(
-        published.created
-          ? `Published ${published.appKey} ${published.version}.`
-          : `${published.appKey} ${published.version} was already published, exactly as it is now. Nothing changed.`,
+        answer.status === 201
+          ? `Published ${published.key} ${published.version} to ${reg.url}.`
+          : `${published.key} ${published.version} was already published, exactly as it is now. Nothing changed.`,
       );
-      out(`  Version    ${published.versionId}`);
-      out(`  Fingerprint ${published.bundleHash}`);
-      out(`  Publisher  ${published.publishedBy}, ${published.publishedAt}`);
+      out(`  Tag          ${published.tag}`);
+      out(`  Access       ${published.access}`);
+      out(
+        `  State        ${
+          published.state === 'live'
+            ? "live: your publisher's workspaces can install it now"
+            : published.state === 'pending'
+              ? "pending: it shows in the store once Brydio's review approves it"
+              : published.state
+        }`,
+      );
+      out(`  Fingerprint  ${published.fingerprint}`);
+      out(`  SDK          ${published.sdk}`);
 
-      // Brydio refuses a signature it cannot check, so a 201 with one means it checked.
-      if (signingKey && published.created) out(`  Signature  checked against "${signingKey.label}" (${signingKey.keyId}); this version reads Verified`);
+      // The registry refuses a signature it cannot check, so a 201 with one means it checked.
+      if (signingKey && answer.status === 201) out(`  Signature    checked against "${signingKey.label}" (${signingKey.keyId}); this version reads Verified`);
 
-      files.forEach(file => out(`  ${file}`));
-
-      if (published.bundleHash !== built.hash) {
-        // The recipe is shared (contracts §11); a difference means one side changed it.
-        out(`The server's fingerprint is not the one worked out here (${built.hash}). Tell the SDK's maintainers.`);
+      if (published.fingerprint && published.fingerprint !== built.hash) {
+        // The recipe is shared; a difference means one side changed it.
+        out(`The registry's fingerprint is not the one worked out here (${built.hash}). Tell the SDK's maintainers.`);
       }
-
-      out('No pictures of the screens were attached: publishing does not render them yet.');
 
       return 0;
     }
     case 409:
-      out(said('That version number is already published.'));
-      out('Give this build a new version number in the manifest, and publish again.');
+      out(said(code === 'version_lower' ? `${key} ${version} is lower than the highest version published.` : `${key} ${version} is already published with a different bundle.`));
+      out('A version is never replaced. Give this build a new number with brydio version patch, and publish again.');
 
       return 1;
     case 422:
-      out(`Brydio refused this version${typeof body?.at === 'string' ? ` at ${body.at}` : ''}: ${said('the bundle was refused.')}${typeof body?.reason === 'string' ? ` [${body.reason}]` : ''}`);
+      out(`The registry refused this version${at ? ` at ${at}` : ''}: ${said('the bundle was refused.')}`);
+
+      return 1;
+    case 413:
+      out(`The registry refused the upload as too large: ${said('it is over the size the registry takes.')}`);
 
       return 1;
     case 400:
-      out(`Brydio could not read the upload: ${said('bad request.')}`);
+      out(`The registry could not read the upload: ${said('bad request.')}`);
 
       return 1;
-    case 401:
-    case 403:
-    case 404:
     case 423:
-      out(turnedAway(response.status, apiUrl, body));
+      out(`${key} is retired on ${reg.url}, so no new version of it can be published.${code ? ` [${code}]` : ''}`);
 
       return 1;
     default:
-      out(`Brydio answered ${response.status}: ${said(response.statusText || 'something went wrong.')}`);
+      out(turnedAway(answer, reg));
+      out('Not published.');
 
       return 1;
-  }
-}
-
-/** What to tell the builder when Brydio turns a request away before looking at the app. */
-function turnedAway(status: number, apiUrl: string, body: Record<string, unknown> | null): string {
-  // A refusal with its own words (a 403 `not_publisher`) is not a bad token: say what Brydio said.
-  if (status !== 401 && typeof body?.message === 'string') {
-    return `Brydio refused this: ${body.message}${typeof body.reason === 'string' ? ` [${body.reason}]` : ''}`;
-  }
-
-  switch (status) {
-    case 423:
-      return 'Apps are not on for your workspace, so nothing can be published to it.';
-    case 401:
-    case 403:
-      return `Brydio did not accept the token in ${TOKEN_ENV}. Make a new key in Brydio Settings > Developer with Publish apps permission.`;
-    case 404:
-      // No route at all: a Brydio from before A5-F04, or one with Apps switched off whole.
-      return `${apiUrl} has no publish route. That Brydio is older than publishing, or has Apps switched off.`;
-    default:
-      return `Brydio answered ${status}: ${typeof body?.message === 'string' ? body.message : 'something went wrong.'}`;
   }
 }

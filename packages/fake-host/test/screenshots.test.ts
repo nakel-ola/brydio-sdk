@@ -1,5 +1,7 @@
-import { build, publish } from '@brydio/cli';
+import { build, publish, writeLogins } from '@brydio/cli';
 import { beforeAll, describe, expect, test } from 'bun:test';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { describeScreenshotProblem, renderScreenshots } from '../src/index.ts';
@@ -72,19 +74,27 @@ describe('pictures of every screen (A5-F04-S04)', () => {
   test('brydio publish finds this renderer from the app’s folder, and stops before uploading when a screen can’t be pictured', async () => {
     const lines: string[] = [];
     const sent: string[] = [];
+    const home = mkdtempSync(join(tmpdir(), 'brydio-home-'));
+
+    writeLogins({ current: 'http://registry.test', logins: { 'http://registry.test': { token: 't', user: { id: 'u', name: 'U' }, savedAt: 'then' } } }, { home });
+
     const code = await publish(app, {
-      apiUrl: 'http://brydio.test',
-      token: 't',
+      registry: 'http://registry.test',
+      home,
       out: one => lines.push(one),
       fetch: async url => {
         sent.push(url);
 
-        return new Response(JSON.stringify({ oldest: '0.0.0', before: '9.0.0' }), { status: 200 });
+        if (url.endsWith('/v1/sdk')) return Response.json({ minimum: '0.0.0' });
+        if (url.endsWith('/v1/me')) return Response.json({ user: { id: 'u', name: 'U' }, publishers: [{ id: 'pub', name: 'P', role: 'owner' }] });
+
+        return Response.json({ code: 'app_not_found', message: 'No such app.' }, { status: 404 });
       },
     });
 
+    rmSync(home, { recursive: true, force: true });
     expect(code).toBe(1);
     expect(lines).toContain('error   blank, narrow, light: It drew nothing. [screenshot_failed]');
-    expect(sent.filter(url => url.endsWith('/publish'))).toEqual([]);
+    expect(sent.filter(url => url.endsWith('/versions'))).toEqual([]);
   }, 30_000);
 });

@@ -9,12 +9,15 @@ import { BUNDLE_MANIFEST } from '@brydio/manifest';
 import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
 import { BRAND, OWNED } from '../../../test-support/owner-rules.ts';
 import { build, publish, sdkVersionFor, signingMessage, writeKeyFile, zipFiles, type PublishOptions } from '../src/index.ts';
+import { ADA, ADA_TOKEN, brydioHome, fakeRegistry, unzip, type FakeRegistry } from './fake-registry.ts';
 
 const SERVER_PUBLISH = 'apps/api/src/apps/publishing/app-publish.service.ts';
 const made: string[] = [];
+const registries: FakeRegistry[] = [];
 
 afterEach(() => {
   for (const root of made.splice(0)) rmSync(root, { recursive: true, force: true });
+  for (const one of registries.splice(0)) one.stop();
 });
 
 function app(files: Record<string, string>): string {
@@ -31,120 +34,293 @@ function app(files: Record<string, string>): string {
   return root;
 }
 
-const tiny = () =>
+const tiny = (version = '1.0.0', extra: Record<string, string> = {}) =>
   app({
-    '.brydio/app.json': JSON.stringify({ name: 'tiny', version: '1.0.0', ...BRAND, screens: { home: { entry: 'screens/home.js' } } }),
+    '.brydio/app.json': JSON.stringify({ name: 'tiny', version, ...BRAND, screens: { home: { entry: 'screens/home.js' } } }),
     'src/screens/home.ts': 'export const home = 1;\n',
+    ...extra,
   });
 
-interface Sent {
-  url: string;
-  headers: Headers;
-  archive: Uint8Array;
-  body: Record<string, unknown>;
+function registry(options: Parameters<typeof fakeRegistry>[0] = {}): FakeRegistry {
+  const one = fakeRegistry(options);
+
+  registries.push(one);
+
+  return one;
 }
 
-/** What the pretend Brydio says at `GET /apps/sdk`: a range, or a status with nothing behind it. */
-type SdkAnswer = { oldest: string; before: string } | number;
-
-/** A pretend publish route that answers with a status and a body, and remembers what it was sent. */
-function server(
-  status: number,
-  body: (sent: Sent) => unknown,
-  sdk: SdkAnswer = { oldest: '0.1.0-alpha.0', before: '0.2.0' },
-  latest: { version: string; manifest: unknown } | null = null,
-) {
-  const sent: Sent[] = [];
-  const asked: string[] = [];
-  const fetch = async (url: string, init: RequestInit) => {
-    if (url.endsWith('/api/v1/apps/sdk')) {
-      asked.push(new Headers(init.headers).get('authorization') ?? '');
-
-      return typeof sdk === 'number'
-        ? new Response(JSON.stringify({ statusCode: sdk }), { status: sdk })
-        : new Response(JSON.stringify(sdk), { status: 200, headers: { 'content-type': 'application/json' } });
-    }
-
-    if (url.endsWith('/latest')) {
-      asked.push(url);
-
-      return latest ? new Response(JSON.stringify({ appKey: 'x', ...latest }), { status: 200 }) : new Response(JSON.stringify({ statusCode: 404 }), { status: 404 });
-    }
-
-    const one = {
-      url,
-      headers: new Headers(init.headers),
-      archive: new Uint8Array(Buffer.from(JSON.parse(String(init.body)).archiveBase64, 'base64')),
-      body: JSON.parse(String(init.body)) as Record<string, unknown>,
-    };
-
-    sent.push(one);
-
-    return new Response(JSON.stringify(body(one)), { status, headers: { 'content-type': 'application/json' } });
-  };
-
-  return { sent, asked, fetch };
-}
-
-const run = async (
-  root: string,
-  route: ReturnType<typeof server> | null,
-  options: { token?: string; apiUrl?: string; screenshots?: PublishOptions['screenshots'] } = {},
-) => {
+/** Publishes with a logged-in home, to the fake registry; the pictures are their own tests below. */
+async function run(root: string, reg: FakeRegistry, options: Partial<PublishOptions> & { loggedIn?: boolean } = {}) {
   const lines: string[] = [];
-  const code = await publish(root, {
-    apiUrl: options.apiUrl ?? 'http://brydio.test/',
-    token: options.token ?? 'session-token',
-    out: line => lines.push(line),
-    // The pictures are their own tests below; these are about the upload.
-    screenshots: 'screenshots' in options ? options.screenshots : false,
-    ...(route ? { fetch: route.fetch } : { fetch: () => Promise.reject(new Error('no request expected')) }),
-  });
+  const { loggedIn = true, ...rest } = options;
+  const home = brydioHome(loggedIn ? reg.url : null);
+
+  made.push(home);
+
+  const code = await publish(root, { registry: reg.url, home, screenshots: false, out: line => lines.push(line), ...rest });
 
   return { code, text: lines.join('\n') };
-};
+}
+
+const uploads = (reg: FakeRegistry) => reg.received.filter(one => one.method === 'POST' && one.path.endsWith('/versions'));
+
+describe('brydio publish to the registry (PB03)', () => {
+  test('builds, validates and uploads the bundle as a zip, logged in, under latest with workspace access', async () => {
+    const reg = registry();
+    const root = tiny();
+    const built = await build(root);
+    const { code, text } = await run(root, reg);
+
+    expect(code).toBe(0);
+    expect(uploads(reg)).toHaveLength(1);
+
+    const sent = uploads(reg)[0]!;
+
+    expect(sent.path).toBe('/v1/apps/tiny/versions');
+    expect(sent.authorization).toBe(`Bearer ${ADA_TOKEN}`);
+    expect(Buffer.from(String(sent.body!.archiveBase64), 'base64').equals(Buffer.from(zipFiles(built.files)))).toBe(true);
+    // A new app goes to Ada's only publisher, by id, and nothing names an account.
+    expect(Object.keys(sent.body!).sort()).toEqual(['archiveBase64', 'publisher', 'tag']);
+    expect(sent.body).toMatchObject({ tag: 'latest', publisher: 'pub_acme' });
+
+    expect(text).toContain(`Registry ${reg.url}`);
+    expect(text).toContain(`Published tiny 1.0.0 to ${reg.url}.`);
+    expect(text).toContain('  Tag          latest');
+    expect(text).toContain('  Access       workspace');
+    expect(text).toContain("live: your publisher's workspaces can install it now");
+    expect(text).toContain(`  Fingerprint  ${built.hash}`);
+    expect(text).toContain(`  SDK          ${sdkVersionFor(tmpdir())}`);
+    expect(text).not.toContain('not the one worked out here');
+    // The line from before pictures were taken is gone.
+    expect(text).not.toContain('No pictures of the screens were attached');
+    expect(reg.apps.get('tiny')!.tags).toEqual({ latest: '1.0.0' });
+  });
+
+  test('--tag beta and --access public go up as given, and a public version waits for review', async () => {
+    const reg = registry();
+    const { code, text } = await run(tiny(), reg, { tag: 'beta', access: 'public' });
+
+    expect(code).toBe(0);
+    expect(uploads(reg)[0]!.body).toMatchObject({ tag: 'beta', access: 'public' });
+    expect(text).toContain('under the beta tag with public access');
+    expect(text).toContain("pending: it shows in the store once Brydio's review approves it");
+    expect(reg.apps.get('tiny')!.tags).toEqual({ beta: '1.0.0' });
+  });
+
+  test('a published app keeps its own access when none is given, and ignores --publisher', async () => {
+    const reg = registry();
+
+    expect((await run(tiny('1.0.0'), reg, { access: 'public' })).code).toBe(0);
+
+    const { code, text } = await run(tiny('1.1.0'), reg, { publisher: 'Someone else' });
+
+    expect(code).toBe(0);
+    expect(uploads(reg)[1]!.body).not.toHaveProperty('access');
+    expect(uploads(reg)[1]!.body).not.toHaveProperty('publisher');
+    expect(text).toContain('with public access');
+    expect(text).toContain('tiny is already published by pub_acme, so --publisher is not used');
+  });
+
+  test('refuses a bad tag or access, and a computer not logged in, before building or asking anything', async () => {
+    const reg = registry();
+    const root = tiny();
+
+    expect(await run(root, reg, { tag: 'Beta!' })).toMatchObject({ code: 2, text: expect.stringContaining('"Beta!" is not a tag.') });
+    expect(await run(root, reg, { access: 'private' })).toMatchObject({ code: 2, text: expect.stringContaining('--access is workspace') });
+    expect(await run(root, reg, { loggedIn: false })).toMatchObject({
+      code: 2,
+      text: expect.stringContaining(`This computer is not logged in to ${reg.url}. Run brydio login --registry ${reg.url} first.`),
+    });
+    expect(existsSync(join(root, 'dist'))).toBe(false);
+    expect(reg.received).toEqual([]);
+  });
+
+  test('asks which publisher a new app belongs to when the account is in several, and turns a name into its id', async () => {
+    const reg = registry({
+      publishers: [
+        { id: 'pub_acme', name: 'Acme Ltd', members: [ADA.id] },
+        { id: 'pub_side', name: 'Side Project', members: [ADA.id] },
+      ],
+    });
+
+    expect(await run(tiny(), reg)).toMatchObject({
+      code: 2,
+      text: expect.stringContaining('Ada is in more than one publisher. Say which tiny belongs to with --publisher: Acme Ltd (pub_acme), Side Project (pub_side).'),
+    });
+    expect(await run(tiny(), reg, { publisher: 'Nobody' })).toMatchObject({ code: 1, text: expect.stringContaining('Ada is not in a publisher called "Nobody".') });
+    expect(uploads(reg)).toEqual([]);
+
+    expect((await run(tiny(), reg, { publisher: 'side project' })).code).toBe(0);
+    expect(uploads(reg)[0]!.body!.publisher).toBe('pub_side');
+  });
+
+  test('refuses locally, in the registry’s code, a build below the registry’s SDK minimum', async () => {
+    const reg = registry({ sdk: { minimum: '9.0.0' } });
+    const { code, text } = await run(tiny(), reg);
+
+    expect(code).toBe(1);
+    expect(text).toContain(
+      `This app was built with SDK ${sdkVersionFor(tmpdir())}, below 9.0.0, the oldest SDK the registry takes a new version from. Run brydio upgrade-sdk, then publish again. [sdk_below_minimum]`,
+    );
+    expect(uploads(reg)).toEqual([]);
+  });
+
+  test('warns, and still publishes, when a higher minimum is announced', async () => {
+    const reg = registry({ sdk: { minimum: '0.0.0', upcoming: { minimum: '9.0.0', from: '2027-01-20' } } });
+    const { code, text } = await run(tiny(), reg);
+
+    expect(code).toBe(0);
+    expect(text).toContain('From 2027-01-20 the registry takes new versions built with SDK 9.0.0 or newer');
+  });
+
+  test('says exactly this version was already published, and succeeds', async () => {
+    const reg = registry();
+
+    expect((await run(tiny(), reg)).code).toBe(0);
+
+    const { code, text } = await run(tiny(), reg);
+
+    expect(code).toBe(0);
+    expect(text).toContain('tiny 1.0.0 was already published, exactly as it is now. Nothing changed.');
+  });
+
+  test('refuses a number taken by a different bundle, in the registry’s words', async () => {
+    const reg = registry();
+
+    expect((await run(tiny(), reg)).code).toBe(0);
+
+    const { code, text } = await run(tiny('1.0.0', { 'src/screens/home.ts': 'export const home = 2;\n' }), reg);
+
+    expect(code).toBe(1);
+    expect(text).toContain('tiny 1.0.0 is already published with fingerprint');
+    expect(text).toContain('[version_exists]');
+    expect(text).toContain('A version is never replaced. Give this build a new number with brydio version patch');
+  });
+
+  test('refuses a number below the highest published before building, and says the registry’s 409 when it gets one', async () => {
+    const reg = registry();
+
+    expect((await run(tiny('2.0.0'), reg)).code).toBe(0);
+
+    const root = tiny('1.5.0');
+    const local = await run(root, reg);
+
+    expect(local.code).toBe(1);
+    expect(local.text).toContain('tiny 1.5.0 is lower than 2.0.0, the highest version on');
+    expect(local.text).toContain('[version_lower]');
+    expect(existsSync(join(root, 'dist'))).toBe(false);
+
+    reg.refuseNext('POST', /\/versions$/, 409, { code: 'version_lower', message: '2.1.0 is below 3.0.0.' });
+    expect((await run(tiny('2.1.0'), reg)).text).toContain('2.1.0 is below 3.0.0. [version_lower]');
+  });
+
+  test('prints a check’s refusal with where it is, and every other status in words', async () => {
+    const reg = registry();
+    const say = async (status: number, body: unknown) => {
+      reg.refuseNext('POST', /\/versions$/, status, body);
+
+      return (await run(tiny(), reg)).text;
+    };
+
+    expect(await say(422, { code: 'grant_unknown', message: 'app.json asks for "camera".', at: 'grants.host' })).toContain(
+      'The registry refused this version at grants.host: app.json asks for "camera". [grant_unknown]',
+    );
+    expect(await say(403, { code: 'not_publisher', message: 'tiny is published by another publisher.' })).toContain(
+      'The registry refused this: tiny is published by another publisher. [not_publisher]',
+    );
+    expect(await say(423, { code: 'retired', message: 'tiny is retired.' })).toContain('so no new version of it can be published. [retired]');
+    expect(await say(401, { code: 'unauthorized' })).toContain("did not accept this computer's login: it was revoked or has run out. Run brydio login");
+    expect(await say(413, { code: 'archive_too_large', message: 'That upload is larger than 2 MB.' })).toContain(
+      'The registry refused the upload as too large: That upload is larger than 2 MB. [archive_too_large]',
+    );
+    expect(await say(400, { code: 'archive_unreadable', message: 'Not a zip.' })).toContain('The registry could not read the upload: Not a zip. [archive_unreadable]');
+    expect(await say(503, { message: 'Down for a moment.' })).toContain('The registry answered 503: Down for a moment.');
+  });
+
+  test('refuses a retired app before building', async () => {
+    const reg = registry();
+
+    expect((await run(tiny(), reg)).code).toBe(0);
+    reg.apps.get('tiny')!.retired = true;
+
+    const root = tiny('1.1.0');
+
+    expect(await run(root, reg)).toMatchObject({ code: 1, text: expect.stringContaining('tiny is retired on') });
+    expect(existsSync(join(root, 'dist'))).toBe(false);
+  });
+
+  test('says it could not reach the registry, naming it', async () => {
+    const home = brydioHome('http://127.0.0.1:1');
+
+    made.push(home);
+
+    const lines: string[] = [];
+    const code = await publish(tiny(), { registry: 'http://127.0.0.1:1', home, screenshots: false, out: line => lines.push(line) });
+
+    expect(code).toBe(1);
+    expect(lines.join('\n')).toContain('Could not reach the registry at http://127.0.0.1:1');
+  });
+
+  test('uploads nothing when the app does not build or validate', async () => {
+    const reg = registry();
+    const root = app({
+      '.brydio/app.json': JSON.stringify({ name: 'tiny', version: '1.0.0', ...BRAND, screens: { home: { entry: 'screens/home.js' } } }),
+      'src/screens/home.tsx': 'export const Home = () => <bry-stack style={{}} />;\n',
+    });
+    const { code, text } = await run(root, reg);
+
+    expect(code).toBe(1);
+    expect(uploads(reg)).toEqual([]);
+    expect(text).toContain('Not built, so not published.');
+  });
+
+  test('the registry got exactly the files that were built, and works out the same fingerprint', async () => {
+    const reg = registry();
+    const root = tiny();
+    const built = await build(root);
+
+    expect((await run(root, reg)).code).toBe(0);
+    expect([...unzip(new Uint8Array(Buffer.from(String(uploads(reg)[0]!.body!.archiveBase64), 'base64'))).keys()].sort()).toEqual([...built.files.keys()].sort());
+    expect(reg.apps.get('tiny')!.versions[0]!.fingerprint).toBe(built.hash!);
+  });
+});
 
 describe('pictures of each screen at publish (A5-F04-S04)', () => {
   const tree = { root: 'root', nodes: [{ id: 'root', type: 'bry-stack', children: [] }] };
-  const created = (hash: string) => ({ created: true, appKey: 'tiny', version: '1.0.0', versionId: 'v', bundleHash: hash, publishedBy: 'u', publishedAt: 'now', files: [] });
 
   test('sends the rendered trees with the bundle, one per screen, width and theme', async () => {
-    const root = tiny();
-    const built = await build(root);
-    const route = server(201, () => created(built.hash!));
+    const reg = registry();
     const pictures = (['narrow', 'wide'] as const).flatMap(width => (['light', 'dark'] as const).map(theme => ({ screen: 'home', width, theme, tree })));
-    const { code, text } = await run(root, route, { screenshots: async () => ({ screenshots: pictures, problems: [] }) });
+    const { code, text } = await run(tiny(), reg, { screenshots: async () => ({ screenshots: pictures, problems: [] }) });
 
     expect(code).toBe(0);
     expect(text).toContain('Pictured 1 screen(s), 4 pictures.');
-    expect(route.sent[0]!.body).toMatchObject({ screenshots: pictures });
+    expect(uploads(reg)[0]!.body).toMatchObject({ screenshots: pictures });
   });
 
   test('stops before uploading when a screen can’t be pictured, naming it', async () => {
-    const root = tiny();
-    const route = server(201, () => ({}));
-    const { code, text } = await run(root, route, {
+    const reg = registry();
+    const { code, text } = await run(tiny(), reg, {
       screenshots: async () => ({ screenshots: [], problems: [{ screen: 'home', width: 'wide', theme: 'dark', message: 'It drew nothing.' }] }),
     });
 
     expect(code).toBe(1);
     expect(text).toContain('error   home, wide, dark: It drew nothing. [screenshot_failed]');
     expect(text).toContain('A screen could not be pictured, so nothing was published.');
-    expect(route.sent).toEqual([]);
+    expect(uploads(reg)).toEqual([]);
   });
 
   test('says how to get pictures when @brydio/fake-host can’t be found from the app', async () => {
-    const root = tiny();
-    const route = server(201, () => ({}));
-    const { code, text } = await run(root, route, { screenshots: undefined });
+    const reg = registry();
+    const { code, text } = await run(tiny(), reg, { screenshots: undefined });
 
     expect(code).toBe(1);
     expect(text).toContain('bun add -d @brydio/fake-host');
-    expect(route.sent).toEqual([]);
+    expect(uploads(reg)).toEqual([]);
   });
 });
 
-describe('a schema change against the version Brydio has (A5-F03-S02)', () => {
+describe('a schema change against the version the registry has (A5-F03-S02)', () => {
   const manifest = (version: string, schema: Record<string, unknown>, migrations?: unknown) => ({
     name: 'tracker',
     version,
@@ -153,165 +329,38 @@ describe('a schema change against the version Brydio has (A5-F03-S02)', () => {
     grants: { tools: ['*'], collections: ['*'] },
     ...(migrations ? { migrations } : {}),
   });
-  const V1 = manifest('0.1.0', { title: 'string' });
   const tracker = (next: object) => app({ '.brydio/app.json': JSON.stringify({ ...BRAND, ...next }), 'src/screens/home.ts': 'export const home = 1;\n' });
 
   test('refuses before uploading a version whose schema changed with no migration step, naming the field', async () => {
-    const root = tracker(manifest('0.2.0', { title: 'string', due: 'date?' }));
-    const route = server(201, () => ({}), undefined, { version: '0.1.0', manifest: V1 });
-    const { code, text } = await run(root, route);
+    const reg = registry();
+
+    expect((await run(tracker(manifest('0.1.0', { title: 'string' })), reg)).code).toBe(0);
+
+    const { code, text } = await run(tracker(manifest('0.2.0', { title: 'string', due: 'date?' })), reg);
 
     expect(code).toBe(1);
-    expect(route.asked).toContain('http://brydio.test/api/v1/apps/publish/tracker/latest');
+    expect(reg.received.some(one => one.method === 'GET' && one.path === '/v1/apps/tracker/versions/0.1.0')).toBe(true);
     expect(text).toContain('issues.due is new; add it with a step. (0.2.0 against 0.1.0, the version before it.) [migration_missing]');
-    expect(route.sent).toEqual([]);
+    expect(uploads(reg)).toHaveLength(1);
   });
 
-  test('uploads once the step is declared, and when the app has no version yet', async () => {
-    const stepped = tracker(manifest('0.2.0', { title: 'string', due: 'date?' }, [{ version: '0.2.0', steps: [{ op: 'add', collection: 'issues', field: 'due' }] }]));
-    const withStep = server(201, () => ({ created: true, appKey: 'tracker', version: '0.2.0', versionId: 'v', bundleHash: 'h', publishedBy: 'u', publishedAt: 'now', files: [] }), undefined, {
-      version: '0.1.0',
-      manifest: V1,
-    });
+  test('uploads once the step is declared', async () => {
+    const reg = registry();
 
-    expect((await run(stepped, withStep)).code).toBe(0);
-    expect(withStep.sent).toHaveLength(1);
-
-    const first = tracker(manifest('0.2.0', { title: 'string', due: 'date?' }));
-    const none = server(201, () => ({ created: true, appKey: 'tracker', version: '0.2.0', versionId: 'v', bundleHash: 'h', publishedBy: 'u', publishedAt: 'now', files: [] }));
-
-    expect((await run(first, none)).code).toBe(0);
-    expect(none.sent).toHaveLength(1);
-  });
-});
-
-describe('brydio publish', () => {
-  test('builds, validates, and uploads the bundle as a zip, signed in with the token', async () => {
-    const root = tiny();
-    const built = await build(root);
-    const route = server(201, () => ({
-      created: true,
-      appKey: 'tiny',
-      version: '1.0.0',
-      versionId: 'version_1',
-      bundleHash: built.hash,
-      publishedBy: 'user_1',
-      publishedAt: '2026-09-16T14:30:00.000Z',
-      files: [`/api/v1/apps/bundles/${built.hash}/screens/home.js`],
-    }));
-    const { code, text } = await run(root, route);
-
-    expect(code).toBe(0);
-    expect(route.sent).toHaveLength(1);
-    expect(route.sent[0]!.url).toBe('http://brydio.test/api/v1/apps/publish');
-    expect(route.sent[0]!.headers.get('authorization')).toBe('Bearer session-token');
-    expect(route.sent[0]!.archive).toEqual(zipFiles(built.files));
-    expect(text).toContain('Published tiny 1.0.0.');
-    expect(text).toContain(`http://brydio.test/api/v1/apps/bundles/${built.hash}/screens/home.js`);
-    expect(text).not.toContain('not the one worked out here');
-  });
-
-  test('asks which SDKs Brydio runs first, and refuses in the server’s words before uploading', async () => {
-    const route = server(201, () => ({}), { oldest: '0.2.0', before: '0.3.0' });
-    const { code, text } = await run(tiny(), route);
-
-    expect(code).toBe(1);
-    expect(route.asked).toEqual(['Bearer session-token']);
-    expect(route.sent).toEqual([]);
-    expect(text).toContain(
-      `Brydio would refuse this version at sdk: This app was built with SDK ${sdkVersionFor(tmpdir())}. Brydio runs apps built with SDK 0.2.0 or newer, before 0.3.0. [sdk_unsupported]`,
-    );
-  });
-
-  test('uploads, saying the SDK was not checked, to a Brydio with no SDK route', async () => {
-    const route = server(201, () => ({ created: true, appKey: 'tiny', version: '1.0.0', versionId: 'v', bundleHash: 'x', publishedBy: 'u', publishedAt: 't', files: [] }), 404);
-    const { code, text } = await run(tiny(), route);
-
-    expect(code).toBe(0);
-    expect(route.sent).toHaveLength(1);
-    expect(text).toContain('does not check SDK versions yet');
-    expect(JSON.parse(new TextDecoder().decode((await import('node:zlib')).inflateRawSync(sliceFirst(route.sent[0]!.archive)))).sdk).toBe(sdkVersionFor(tmpdir()));
-  });
-
-  test('stops before building when the SDK route turns the token or the workspace away', async () => {
-    const root = tiny();
-
-    expect(await run(root, server(201, () => ({}), 401))).toMatchObject({ code: 1, text: expect.stringContaining('did not accept the token') });
-    expect(await run(root, server(201, () => ({}), 423))).toMatchObject({ code: 1, text: expect.stringContaining('Apps are not on') });
-    expect(existsSync(join(root, 'dist'))).toBe(false);
-  });
-
-  test('says so, and succeeds, when exactly this version was already published', async () => {
-    const route = server(200, () => ({ created: false, appKey: 'tiny', version: '1.0.0', versionId: 'v', bundleHash: 'x', publishedBy: 'u', publishedAt: 't', files: [] }));
-    const { code, text } = await run(tiny(), route);
-
-    expect(code).toBe(0);
-    expect(text).toContain('tiny 1.0.0 was already published, exactly as it is now.');
-  });
-
-  test('refuses a version number the server already has, in the server’s words', async () => {
-    const message = 'tiny 1.0.0 was already published with fingerprint aaa; this is bbb. A version is never replaced.';
-    const route = server(409, () => ({ statusCode: 409, reason: 'version_exists', message }));
-    const { code, text } = await run(tiny(), route);
-
-    expect(code).toBe(1);
-    expect(text).toContain(message);
-    expect(text).toContain('new version number');
-  });
-
-  test('prints what the server refused, and where', async () => {
-    const route = server(422, () => ({ statusCode: 422, reason: 'grant_unknown', message: 'app.json asks for "camera".', at: 'grants.host' }));
-    const { code, text } = await run(tiny(), route);
-
-    expect(code).toBe(1);
-    expect(text).toContain('Brydio refused this version at grants.host: app.json asks for "camera". [grant_unknown]');
-  });
-
-  test('explains a Brydio with no publish route, Apps off, and a token it did not take', async () => {
-    expect((await run(tiny(), server(404, () => ({ statusCode: 404 })))).text).toContain('has no publish route');
-    expect((await run(tiny(), server(423, () => ({ statusCode: 423 })))).text).toContain('Apps are not on');
-    expect((await run(tiny(), server(401, () => ({ statusCode: 401 })))).text).toContain(
-      'Make a new key in Brydio Settings > Developer with Publish apps permission',
-    );
-    expect((await run(tiny(), server(403, () => ({ statusCode: 403 })))).text).toContain(
-      'Make a new key in Brydio Settings > Developer with Publish apps permission',
-    );
-  });
-
-  test('says what Brydio said when a signed-in account may not publish the app, not that the token is bad', async () => {
-    const message = 'tiny is published by other accounts. Ask one of them to add you as a publisher.';
-    const { code, text } = await run(tiny(), server(403, () => ({ statusCode: 403, reason: 'not_publisher', message })));
-
-    expect(code).toBe(1);
-    expect(text).toContain(`Brydio refused this: ${message} [not_publisher]`);
-    expect(text).not.toContain('token');
-  });
-
-  test('asks for the sign-in and the address before building anything', async () => {
-    const root = tiny();
-
-    expect(await run(root, null, { token: '' })).toMatchObject({ code: 2, text: expect.stringContaining('BRYDIO_TOKEN') });
-    expect(await run(root, null, { apiUrl: 'brydio.test' })).toMatchObject({ code: 2, text: expect.stringContaining('BRYDIO_API_URL') });
-    expect(existsSync(join(root, 'dist'))).toBe(false);
-  });
-
-  test('uploads nothing when the app does not build or validate', async () => {
-    const root = app({
-      '.brydio/app.json': JSON.stringify({ name: 'tiny', version: '1.0.0', ...BRAND, screens: { home: { entry: 'screens/home.js' } } }),
-      'src/screens/home.tsx': 'export const Home = () => <bry-stack style={{}} />;\n',
-    });
-    const route = server(201, () => ({}));
-    const { code, text } = await run(root, route);
-
-    expect(code).toBe(1);
-    expect(route.sent).toEqual([]);
-    expect(text).toContain('Not built, so not published.');
+    expect((await run(tracker(manifest('0.1.0', { title: 'string' })), reg)).code).toBe(0);
+    expect(
+      (await run(tracker(manifest('0.2.0', { title: 'string', due: 'date?' }, [{ version: '0.2.0', steps: [{ op: 'add', collection: 'issues', field: 'due' }] }])), reg)).code,
+    ).toBe(0);
+    expect(uploads(reg)).toHaveLength(2);
   });
 });
 
 describe('the zip', () => {
   test('is the same bytes for the same files, whatever order they come in', () => {
-    const a = new Map([['app.json', new TextEncoder().encode('{}')], ['screens/a.js', new TextEncoder().encode('x')]]);
+    const a = new Map([
+      ['app.json', new TextEncoder().encode('{}')],
+      ['screens/a.js', new TextEncoder().encode('x')],
+    ]);
     const b = new Map([...a].reverse());
 
     expect(zipFiles(a)).toEqual(zipFiles(b));
@@ -341,54 +390,12 @@ describe('the zip', () => {
   });
 });
 
-/** The deflated bytes of a zip's first entry, which `zipFiles` sorts to `app.json`. */
-function sliceFirst(zip: Uint8Array): Uint8Array {
-  const view = Buffer.from(zip);
-  const size = view.readUInt32LE(18);
-  const start = 30 + view.readUInt16LE(26) + view.readUInt16LE(28);
-
-  return view.subarray(start, start + size);
-}
-
-
-describe('the account is the publisher (A7-F05-S02)', () => {
-  test('sends nothing that names an account: the token is the only identity in the upload', async () => {
-    const root = tiny();
-    const built = await build(root);
-    const route = server(201, () => ({ created: true, appKey: 'tiny', version: '1.0.0', versionId: 'v', bundleHash: built.hash, publishedBy: 'user_1', publishedAt: 'now', files: [] }));
-
-    expect((await run(root, route)).code).toBe(0);
-    // The whole body, so a field naming an account cannot be added without this failing.
-    expect(Object.keys(route.sent[0]!.body)).toEqual(['archiveBase64']);
-    expect(route.sent[0]!.headers.get('authorization')).toBe('Bearer session-token');
-
-    for (const name of ['publishedBy', 'userId', 'accountId', 'publisherUserId', 'as']) {
-      expect(route.sent[0]!.body).not.toHaveProperty(name);
-    }
-  });
-
-  test('names which of your publishers a new app belongs to, and leaves who published it to the token', async () => {
-    const root = tiny();
-    const built = await build(root);
-    const route = server(201, () => ({ created: true, appKey: 'tiny', version: '1.0.0', versionId: 'v', bundleHash: built.hash, publishedBy: 'user_1', publisherId: 'pub_acme', publishedAt: 'now', files: [] }));
-    const lines: string[] = [];
-    const code = await publish(root, { apiUrl: 'http://brydio.test', token: 'session-token', screenshots: false, fetch: route.fetch, publisher: 'Acme Ltd', out: line => lines.push(line) });
-
-    expect(code).toBe(0);
-    expect(Object.keys(route.sent[0]!.body).sort()).toEqual(['archiveBase64', 'publisher']);
-    expect(route.sent[0]!.body.publisher).toBe('Acme Ltd');
-    // Who published it is what Brydio answered, not what was sent.
-    expect(lines.join('\n')).toContain('Publisher  user_1, now');
-  });
-});
-
 describe('signing a version at publish (A7-F05-S03)', () => {
   /** A fixed key, so what a test signs is the same every run. */
   const PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
 MC4CAQAwBQYDK2VwBCIEIPUnuBSae5o4IbpSyfELyEjLNOEjcUx1XUvVBvtPEYMc
 -----END PRIVATE KEY-----
 `;
-  const published = (hash: string) => ({ created: true, appKey: 'tiny', version: '1.0.0', versionId: 'v', bundleHash: hash, publishedBy: 'user_1', publishedAt: 'now', files: [] });
 
   /** A key file as `brydio keys create` writes one. */
   function keyFile(over: { mode?: number } = {}): string {
@@ -414,61 +421,53 @@ MC4CAQAwBQYDK2VwBCIEIPUnuBSae5o4IbpSyfELyEjLNOEjcUx1XUvVBvtPEYMc
   }
 
   test('signs the fingerprint and the manifest with the key file’s key, and sends only the signature', async () => {
+    const reg = registry();
     const root = tiny();
     const built = await build(root);
-    const route = server(201, () => published(built.hash!));
-    const path = keyFile();
-    const lines: string[] = [];
-    const code = await publish(root, { apiUrl: 'http://brydio.test', token: 'session-token', screenshots: false, fetch: route.fetch, key: path, out: line => lines.push(line) });
-    const sent = route.sent[0]!.body.signature as { keyId: string; value: string };
+    const { code, text } = await run(root, reg, { key: keyFile() });
+    const sent = uploads(reg)[0]!.body!.signature as { keyId: string; value: string };
     const manifest = JSON.parse(new TextDecoder().decode(built.files.get(BUNDLE_MANIFEST)!)) as Record<string, unknown>;
+    const publicKey = createPublicKey(createPrivateKey(PRIVATE_KEY));
 
     expect(code).toBe(0);
     expect(sent.keyId).toBe('key_one');
-    // Over exactly the bytes Brydio rebuilds: the app, the number, the fingerprint and the manifest.
-    expect(verify(null, signingMessage({ appKey: 'tiny', version: '1.0.0', bundleHash: built.hash!, manifest }), createPublicKey(createPrivateKey(PRIVATE_KEY)), Buffer.from(sent.value, 'base64'))).toBe(true);
+    // Over exactly the bytes the registry rebuilds: the app, the number, the fingerprint and the manifest.
+    expect(verify(null, signingMessage({ appKey: 'tiny', version: '1.0.0', bundleHash: built.hash!, manifest }), publicKey, Buffer.from(sent.value, 'base64'))).toBe(true);
     // Signing a different build does not make this signature.
-    expect(verify(null, signingMessage({ appKey: 'tiny', version: '1.0.0', bundleHash: 'b'.repeat(64), manifest }), createPublicKey(createPrivateKey(PRIVATE_KEY)), Buffer.from(sent.value, 'base64'))).toBe(false);
-    expect(JSON.stringify(route.sent[0]!.body)).not.toContain('PRIVATE KEY');
-    expect(lines.join('\n')).toContain('Signing as Acme Ltd with "Acme on this computer" (key_one).');
-    expect(lines.join('\n')).toContain('this version reads Verified');
+    expect(verify(null, signingMessage({ appKey: 'tiny', version: '1.0.0', bundleHash: 'b'.repeat(64), manifest }), publicKey, Buffer.from(sent.value, 'base64'))).toBe(false);
+    expect(JSON.stringify(uploads(reg)[0]!.body)).not.toContain('PRIVATE KEY');
+    expect(text).toContain('Signing as Acme Ltd with "Acme on this computer" (key_one).');
+    expect(text).toContain('this version reads Verified');
   });
 
   test('publishes unsigned with no key, exactly as before', async () => {
-    const root = tiny();
-    const built = await build(root);
-    const route = server(201, () => published(built.hash!));
+    const reg = registry();
 
-    expect((await run(root, route)).code).toBe(0);
-    expect(route.sent[0]!.body).not.toHaveProperty('signature');
+    expect((await run(tiny(), reg)).code).toBe(0);
+    expect(uploads(reg)[0]!.body).not.toHaveProperty('signature');
   });
 
-  test('stops before building on a key file other accounts can read, and on a key handed over instead of a path', async () => {
+  test('stops before building or asking the registry on a key file other accounts can read, and on a key handed over instead of a path', async () => {
+    const reg = registry();
     const root = tiny();
-    const route = server(201, () => ({}));
     const loose = keyFile({ mode: 0o644 });
-    const say = async (key: string) => {
-      const lines: string[] = [];
-      const code = await publish(root, { apiUrl: 'http://brydio.test', token: 'session-token', screenshots: false, fetch: route.fetch, key, out: line => lines.push(line) });
 
-      return { code, text: lines.join('\n') };
-    };
-
-    expect(await say(loose)).toMatchObject({ code: 2, text: expect.stringContaining('can be read by other accounts on this computer') });
-    expect(await say(PRIVATE_KEY)).toMatchObject({ code: 2, text: expect.stringContaining('not the key itself') });
-    expect(await say(join(dirname(loose), 'nothing.json'))).toMatchObject({ code: 2, text: expect.stringContaining('brydio keys create') });
+    expect(await run(root, reg, { key: loose })).toMatchObject({ code: 2, text: expect.stringContaining('can be read by other accounts on this computer') });
+    expect(await run(root, reg, { key: PRIVATE_KEY })).toMatchObject({ code: 2, text: expect.stringContaining('not the key itself') });
+    expect(await run(root, reg, { key: join(dirname(loose), 'nothing.json') })).toMatchObject({ code: 2, text: expect.stringContaining('brydio keys create') });
     expect(existsSync(join(root, 'dist'))).toBe(false);
-    expect(route.sent).toEqual([]);
+    expect(reg.received).toEqual([]);
   });
 
-  test('says what Brydio said about a signature it would not take', async () => {
+  test('says what the registry said about a signature it would not take', async () => {
+    const reg = registry();
     const message = 'The key "Old laptop" was retired; sign with an active key.';
-    const route = server(422, () => ({ statusCode: 422, reason: 'key_retired', message }));
-    const root = tiny();
-    const lines: string[] = [];
-    const code = await publish(root, { apiUrl: 'http://brydio.test', token: 'session-token', screenshots: false, fetch: route.fetch, key: keyFile(), out: line => lines.push(line) });
+
+    reg.refuseNext('POST', /\/versions$/, 422, { code: 'key_retired', message });
+
+    const { code, text } = await run(tiny(), reg, { key: keyFile() });
 
     expect(code).toBe(1);
-    expect(lines.join('\n')).toContain(`Brydio refused this version: ${message} [key_retired]`);
+    expect(text).toContain(`The registry refused this version: ${message} [key_retired]`);
   });
 });

@@ -81,6 +81,13 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
   // bundled (A5-F03-S01), so a build that succeeds is one that validates.
   if (options.checkSource !== false) problems.push(...checkSources(project.root));
 
+  // The manifest is the one place an app's version lives (PB03). A
+  // package.json may leave it out; one that says another number is refused,
+  // so the two can never drift apart again.
+  const mismatch = packageVersionProblem(project.root, project.raw.version);
+
+  if (mismatch) problems.push(mismatch);
+
   if (!project.manifest || problems.some(problem => problem.severity === 'error')) return failed();
 
   const manifest = project.manifest;
@@ -556,3 +563,29 @@ export function sdkVersionFor(root: string): string {
   return (JSON.parse(readFileSync(join(import.meta.dir, '..', 'package.json'), 'utf8')) as { version: string }).version;
 }
 
+
+/** A package.json whose `version` is not the manifest's, as a problem; nothing when it carries none. */
+export function packageVersionProblem(root: string, manifestVersion: unknown): Problem | null {
+  const file = join(root, 'package.json');
+
+  if (!existsSync(file)) return null;
+
+  let pkg: { version?: unknown };
+
+  try {
+    pkg = JSON.parse(readFileSync(file, 'utf8')) as { version?: unknown };
+  } catch {
+    return null;
+  }
+
+  if (pkg.version === undefined || pkg.version === manifestVersion) return null;
+
+  return {
+    code: 'version_mismatch',
+    severity: 'error',
+    file: 'package.json',
+    path: 'version',
+    message: `package.json says version ${JSON.stringify(pkg.version)} and the manifest says ${JSON.stringify(manifestVersion)}. An app's version lives in the manifest alone.`,
+    hint: 'Take "version" out of package.json, and change the number with brydio version.',
+  };
+}

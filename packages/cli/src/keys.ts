@@ -3,16 +3,16 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
-import { API_URL_ENV, TOKEN_ENV } from './api.ts';
+import { RegistryRefused, choosePublisher, path, refusalOf, registry, type Me, type Registry, type RegistryOptions } from './registry.ts';
 
 /**
  * `brydio keys`: a publisher's signing keys, from the machine that holds
  * them (A7-F05-S03).
  *
- * The private half is made here and stays here. What goes to Brydio is the
- * 32-byte public key, and later a signature; the routes are Hodler's
- * `GET/POST /api/v1/apps/publisher-accounts/:id/keys` and
- * `POST …/keys/:keyId/retire|revoke`.
+ * The private half is made here and stays here. What goes to the registry
+ * is the 32-byte public key, and later a signature; the routes are the
+ * registry's `GET/POST /v1/publishers/:id/keys` and
+ * `POST …/keys/:keyId/retire|revoke`, with the token `brydio login` kept.
  *
  * The private key is written to one file, readable by its owner alone, kept
  * outside any checkout, and never printed — not by `keys list`, not by a
@@ -27,8 +27,9 @@ import { API_URL_ENV, TOKEN_ENV } from './api.ts';
 export const SIGNING_KEY_ENV = 'BRYDIO_SIGNING_KEY';
 /** Where key files are kept, unless `--out` says otherwise. */
 export const KEYS_HOME_ENV = 'BRYDIO_KEYS_HOME';
-export const PUBLISHERS_PATH = '/api/v1/apps/publishing/publishers';
-export const KEYS_PATH = (publisherId: string) => `/api/v1/apps/publisher-accounts/${encodeURIComponent(publisherId)}/keys`;
+/** The account and the publishers it is in: `{ user, publishers }`. */
+export const PUBLISHERS_PATH = path.me;
+export const KEYS_PATH = path.keys;
 export const KEY_APPROVAL_VERSION = 'brydio-key-v1';
 
 /** What one key file holds. The only copy of `privateKey` anywhere. */
@@ -57,14 +58,12 @@ export interface RemoteKey {
 interface Publisher {
   id: string;
   name: string;
-  role: 'owner' | 'member';
+  role: string;
 }
 
-export interface KeysOptions {
-  apiUrl?: string;
-  token?: string;
-  out?: (line: string) => void;
-  fetch?: (url: string, init: RequestInit) => Promise<Response>;
+export interface KeysOptions extends Omit<RegistryOptions, 'home'> {
+  /** Where `registry.json` lives, instead of `BRYDIO_HOME` or `~/.brydio`. */
+  loginHome?: string;
   /** Where key files live, instead of `BRYDIO_KEYS_HOME` or `~/.brydio/keys`. */
   home?: string;
   publisher?: string;
@@ -232,7 +231,16 @@ export async function keys(words: string[], options: KeysOptions = {}): Promise<
   const [command, ...rest] = words;
 
   try {
-    const call = await caller(options);
+    // Made when first used, so a command missing its words says so before
+    // asking for a login.
+    let made: Caller | null = null;
+    const call: Caller = {
+      get url() {
+        return made?.url ?? '';
+      },
+      get: async at => (made ??= await caller(options, out)).get(at),
+      post: async (at, body) => (made ??= await caller(options, out)).post(at, body),
+    };
 
     switch (command) {
       case 'create':
@@ -249,83 +257,58 @@ export async function keys(words: string[], options: KeysOptions = {}): Promise<
         return 2;
     }
   } catch (error) {
+    if (error instanceof RegistryRefused) {
+      out(error.message);
+
+      return error.code;
+    }
+
     if (!(error instanceof KeysRefused)) throw error;
 
     out(error.message);
 
-    return error.message.startsWith('Set ') ? 2 : 1;
+    return 1;
   }
 }
 
-/** Requests to Brydio, signed in, with its refusals turned into sentences. */
+/** Requests to the registry, logged in, with its refusals turned into sentences. */
 interface Caller {
-  apiUrl: string;
+  url: string;
   get<T>(path: string): Promise<T>;
   post<T>(path: string, body: unknown): Promise<T>;
 }
 
-async function caller(options: KeysOptions): Promise<Caller> {
-  const apiUrl = (options.apiUrl ?? process.env[API_URL_ENV] ?? '').replace(/\/+$/, '');
-  const token = options.token ?? process.env[TOKEN_ENV] ?? '';
+async function caller(options: KeysOptions, out: (line: string) => void): Promise<Caller> {
+  const reg: Registry = registry({ ...options, home: options.loginHome }, 'signedIn');
 
-  if (!apiUrl || !/^https?:\/\//.test(apiUrl)) throw new KeysRefused(`Set ${API_URL_ENV} to your Brydio's API address, like http://localhost:4000.`);
+  out(`Registry ${reg.url}`);
 
-  if (!token) throw new KeysRefused(`Set ${TOKEN_ENV} to a key from Brydio Settings > Developer with Publish apps permission.`);
+  const send = async <T>(method: string, at: string, body?: unknown): Promise<T> => {
+    const answer = await reg.send<T>(method, at, body);
 
-  const request = options.fetch ?? fetch;
-  const send = async <T>(path: string, init: RequestInit): Promise<T> => {
-    let answer: Response;
+    if (answer.status >= 200 && answer.status < 300) return answer.body;
 
-    try {
-      answer = await request(`${apiUrl}${path}`, {
-        ...init,
-        headers: { authorization: `Bearer ${token}`, ...(init.body ? { 'content-type': 'application/json' } : {}), ...init.headers },
-      });
-    } catch (error) {
-      throw new KeysRefused(`Could not reach ${apiUrl}: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    const { code, message } = refusalOf(answer.body);
 
-    const body = (await answer.json().catch(() => null)) as Record<string, unknown> | null;
+    if (answer.status === 401) throw new RegistryRefused(`${reg.url} did not accept this computer's login: it was revoked or has run out. Run brydio login again.`);
 
-    if (answer.ok) return body as T;
+    if (answer.status === 404 && !message) throw new RegistryRefused(`${reg.url} has no signing keys route. Is that a Brydio app registry?`);
 
-    const said = typeof body?.message === 'string' ? body.message : Array.isArray(body?.message) ? body.message.join(' ') : '';
-
-    if (answer.status === 401) throw new KeysRefused(`Brydio did not accept the token in ${TOKEN_ENV}. Make a new key in Brydio Settings > Developer with Publish apps permission.`);
-
-    if (answer.status === 404 && !said) throw new KeysRefused(`${apiUrl} has no signing keys route. That Brydio is older than signing.`);
-
-    throw new KeysRefused(`Brydio refused this: ${said || `it answered ${answer.status}.`}${typeof body?.reason === 'string' ? ` [${body.reason}]` : ''}`);
+    throw new KeysRefused(`The registry refused this: ${message ?? `it answered ${answer.status}.`}${code ? ` [${code}]` : ''}`);
   };
 
   return {
-    apiUrl,
-    get: path => send(path, { method: 'GET' }),
-    post: (path, body) => send(path, { method: 'POST', body: JSON.stringify(body) }),
+    url: reg.url,
+    get: at => send('GET', at),
+    post: (at, body) => send('POST', at, body),
   };
 }
 
 /** Which publisher the command is about: the one named, or the only one. */
 async function publisherOf(call: Caller, options: KeysOptions): Promise<Publisher> {
-  const mine = await call.get<Publisher[]>(PUBLISHERS_PATH);
+  const me = await call.get<Me>(PUBLISHERS_PATH);
 
-  if (!mine.length) throw new KeysRefused('This account is not in any publisher. Make one, or ask an owner to add you, before making a key.');
-
-  const named = options.publisher ?? '';
-
-  if (named) {
-    const found = mine.find(one => one.id === named || one.name.toLowerCase() === named.toLowerCase());
-
-    if (!found) throw new KeysRefused(`This account is not in a publisher called "${named}". It is in ${mine.map(one => `${one.name} (${one.id})`).join(', ')}.`);
-
-    return found;
-  }
-
-  if (mine.length > 1) {
-    throw new KeysRefused(`This account is in more than one publisher. Say which with --publisher: ${mine.map(one => `${one.name} (${one.id})`).join(', ')}.`);
-  }
-
-  return mine[0]!;
+  return choosePublisher(me, options.publisher, 'the key is for');
 }
 
 async function create(call: Caller, options: KeysOptions, out: (line: string) => void): Promise<number> {
@@ -336,7 +319,7 @@ async function create(call: Caller, options: KeysOptions, out: (line: string) =>
   const registered = await call.post<RemoteKey>(KEYS_PATH(publisher.id), {
     publicKey: pair.publicKey,
     label,
-    ...(approval ? { approval } : {}),
+    ...(approval ? { approvedBy: approval } : {}),
     ...(options.override ? { override: true } : {}),
   });
   const path = options.outFile ? resolve(options.outFile) : join(keysHome(options), `${registered.id}.json`);

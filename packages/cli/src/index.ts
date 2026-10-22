@@ -1,6 +1,6 @@
 /** `@brydio/cli`: the commands, as functions, for scripts and tests. */
 
-export { RUNTIME_MAX_BYTES, build, describeBuild, runtimeBytesOf, sdkVersionFor, type BuildOptions, type BuildResult } from './build.ts';
+export { RUNTIME_MAX_BYTES, build, describeBuild, packageVersionProblem, runtimeBytesOf, sdkVersionFor, type BuildOptions, type BuildResult } from './build.ts';
 export { create, CreateRefused, SDK_ROOT, TEMPLATES, type CreateOptions, type Template } from './create.ts';
 export { dev, DevRefused, DEV_CONFIG, DEV_PATH, type DevOptions, type DevSession } from './dev.ts';
 export { DIST, MANIFEST_PATHS, formatProblem, readProject, sourceOf, type Problem, type Project } from './project.ts';
@@ -30,16 +30,41 @@ export {
 } from './keys.ts';
 export { SIGNING_VERSION, canonicalJson, signVersion, signingMessage, type SignedVersion } from './signing.ts';
 export { main } from './main.ts';
+export { API_URL_ENV, TOKEN_ENV } from './api.ts';
 export {
-  API_URL_ENV,
-  PUBLISH_PATH,
-  SDK_PATH,
-  TOKEN_ENV,
+  ACCESS,
+  TAG_FORMAT,
   publish,
+  registryApp,
+  sdkMinimum,
+  versionBefore,
+  type Access,
   type PublishOptions,
   type Published,
   type PublishedScreenshot,
   type Renderer,
+  type SdkMinimum,
 } from './publish.ts';
+export {
+  BRYDIO_HOME_ENV,
+  DEFAULT_REGISTRY,
+  LOGIN_FILE,
+  REGISTRY_URL_ENV,
+  RegistryRefused,
+  brydioHome,
+  readLogins,
+  registry,
+  registryOf,
+  writeLogins,
+  type LoginFile,
+  type Registry,
+  type RegistryApp,
+  type RegistryOptions,
+} from './registry.ts';
+export { login, logout, publishers, whoami, type LoginOptions } from './login.ts';
+export { pack, type PackOptions } from './pack.ts';
+export { BUMPS, migrationStub, nextVersion, version, type VersionOptions } from './version.ts';
+export { access, deprecate, retire, tag, tags, type AppCommandOptions } from './registry-commands.ts';
+export { NPM_REGISTRY, upgradeSdk, type UpgradeSdkOptions } from './upgrade-sdk.ts';
 export { zipFiles } from './zip.ts';
 export { test, type TestOptions } from './test.ts';

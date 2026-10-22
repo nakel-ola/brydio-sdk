@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { build, create, CreateRefused, publish, SDK_ROOT, test as runTests, validate, type CreateOptions } from '../src/index.ts';
+import { brydioHome, fakeRegistry } from './fake-registry.ts';
 
 const made: string[] = [];
 
@@ -147,43 +148,18 @@ describe('brydio create', () => {
     async () => {
       const into = place();
       const dir = await create('fresh-publish', { into, template: 'preact', out: () => {} });
-      const uploads: string[] = [];
-      const route = async (input: string | URL | Request) => {
-        const url = String(input);
+      const reg = fakeRegistry();
+      const home = brydioHome(reg.url);
 
-        if (url.endsWith('/api/v1/apps/sdk')) {
-          return Response.json({ oldest: '0.1.0-alpha.0', before: '0.2.0' });
-        }
+      try {
+        const code = await publish(dir, { registry: reg.url, home, screenshots: false, out: () => {} });
 
-        if (url.endsWith('/latest')) return Response.json({ statusCode: 404 }, { status: 404 });
-
-        uploads.push(url);
-
-        return Response.json(
-          {
-            created: true,
-            appKey: 'fresh-publish',
-            version: '0.1.0',
-            versionId: 'version_1',
-            bundleHash: 'a'.repeat(64),
-            publishedBy: 'user_1',
-            publishedAt: '2026-09-18T19:45:00.000Z',
-            files: [],
-          },
-          { status: 201 },
-        );
-      };
-
-      const code = await publish(dir, {
-        apiUrl: 'http://brydio.test',
-        token: 'session-token',
-        screenshots: false,
-        fetch: route as typeof fetch,
-        out: () => {},
-      });
-
-      expect(code).toBe(0);
-      expect(uploads).toEqual(['http://brydio.test/api/v1/apps/publish']);
+        expect(code).toBe(0);
+        expect(reg.received.filter(one => one.method === 'POST').map(one => one.path)).toEqual(['/v1/apps/fresh-publish/versions']);
+      } finally {
+        reg.stop();
+        rmSync(home, { recursive: true, force: true });
+      }
     },
     120_000,
   );

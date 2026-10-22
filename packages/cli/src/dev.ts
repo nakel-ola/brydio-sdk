@@ -4,7 +4,7 @@ import { createInterface } from 'node:readline/promises';
 
 import { build, describeBuild, type BuildResult } from './build.ts';
 import { formatProblem, readProject, type Problem } from './project.ts';
-import { API_URL_ENV, TOKEN_ENV } from './publish.ts';
+import { API_URL_ENV, TOKEN_ENV } from './api.ts';
 
 /**
  * `brydio dev`: build, serve the bundle on this machine, show it as a tab in
@@ -15,7 +15,7 @@ import { API_URL_ENV, TOKEN_ENV } from './publish.ts';
  * cross-origin`), because a sandboxed frame's origin is opaque and a module
  * import from it is a cross-origin request.
  *
- * Authorized (`BRYDIO_API_URL` and a scoped `BRYDIO_TOKEN`, as `publish` is), it puts
+ * Authorized (`BRYDIO_API_URL` and a scoped `BRYDIO_TOKEN`; see `api.ts`), it puts
  * the app on a project you own as a development tab that loads from here.
  * The first run asks which project and remembers it in `.brydio/dev.json`.
  * Every good build tells Brydio, and the open tab starts the app again with
