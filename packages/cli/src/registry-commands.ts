@@ -216,3 +216,41 @@ export function retire(words: string[], options: AppCommandOptions = {}): Promis
     return 0;
   });
 }
+
+/**
+ * `brydio trust <app> --repo <owner/name> --workflow <file>` (PB05): let that
+ * repository's workflow publish the app from GitHub Actions with GitHub's
+ * OIDC token, and nothing stored. The app needs one published version first.
+ */
+export function trust(words: string[], options: AppCommandOptions & { repo?: string; workflow?: string } = {}): Promise<number> {
+  const out = options.out ?? console.log;
+
+  return refusing(out, async () => {
+    const [app] = words;
+    const repo = (options.repo ?? '').trim();
+    const workflow = (options.workflow ?? '').trim();
+
+    if (!app || !repo || !workflow) {
+      throw new RegistryRefused('Say which app, repository and workflow: brydio trust <app> --repo <owner>/<name> --workflow publish.yml.', 2);
+    }
+
+    if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) throw new RegistryRefused(`"${repo}" is not a GitHub repository. Write it as owner/name.`, 2);
+
+    if (!/^(\.github\/workflows\/)?[A-Za-z0-9_.-]+\.ya?ml$/.test(workflow)) {
+      throw new RegistryRefused(`"${workflow}" is not a workflow file. Give its name, like publish.yml, or its path, like .github/workflows/publish.yml.`, 2);
+    }
+
+    const reg = registry(options, 'signedIn');
+
+    out(`Registry ${reg.url}`);
+
+    const answer = await reg.send('PUT', `${path.app(app)}/trust`, { provider: 'github', repo, workflow });
+
+    if (answer.status !== 200 && answer.status !== 204) throw refused(answer, reg, { 404: `${reg.url} has no app called ${app}. Publish its first version with brydio publish, then link the workflow.` });
+
+    out(`${repo}'s ${workflow} may now publish ${app} from GitHub Actions, with GitHub's OIDC token and no stored secret.`);
+    out('The job needs permissions: id-token: write. Each version it publishes records the repository, workflow and commit.');
+
+    return 0;
+  });
+}

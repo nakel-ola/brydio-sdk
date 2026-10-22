@@ -41,6 +41,7 @@ export interface FakeApp {
   tags: Record<string, string>;
   history: Record<string, { version: string; movedBy: string; movedAt: string }[]>;
   versions: FakeVersion[];
+  trust?: { repo: string; workflow: string; setBy: string };
 }
 
 export interface FakeKey {
@@ -99,6 +100,9 @@ export function fakeRegistry(
   const keys = new Map<string, FakeKey[]>();
   const received: Received[] = [];
   const refusals: { method: string; path: RegExp; status: number; body: unknown }[] = [];
+  const ciTokens = new Map<string, { app: string; userId: string; provenance: Record<string, unknown> }>();
+  /** GitHub OIDC tokens this registry would verify, and the claims they carry. */
+  const idTokens = new Map<string, { repo: string; workflow: string; commit: string }>();
   const logins = [...(options.login ?? ['pending', 'approved'])];
   let sdk = options.sdk === undefined ? { minimum: '0.0.0' } : options.sdk;
   let polls = 0;
@@ -125,7 +129,35 @@ export function fakeRegistry(
       return json(one!.body, one!.status);
     }
 
-    const user = authorization?.startsWith('Bearer ') ? users[authorization.slice(7)] : undefined;
+    const bearer = authorization?.startsWith('Bearer ') ? authorization.slice(7) : '';
+    const ci = ciTokens.get(bearer);
+
+    if (method === 'POST' && path === '/v1/oidc/exchange') {
+      const app = apps.get(String(body?.app ?? ''));
+      const claims = idTokens.get(String(body?.idToken ?? ''));
+
+      if (!claims) return refuse(401, 'oidc_invalid', 'That OIDC token could not be checked.');
+      if (!app) return refuse(404, 'not_found', 'That isn’t in the registry.');
+      if (!app.trust) return refuse(403, 'not_trusted', `${app.key} trusts no workflow.`);
+      if (app.trust.repo !== claims.repo || !claims.workflow.startsWith(`${app.trust.repo}/.github/workflows/${app.trust.workflow}@`)) {
+        return refuse(403, 'trust_mismatch', 'This repository or workflow is not the one the app trusts.');
+      }
+
+      const token = `bry_ci_${ciTokens.size + 1}`;
+
+      ciTokens.set(token, { app: app.key, userId: app.trust.setBy, provenance: { ...claims, verified: true } });
+
+      return json({ token, expiresIn: 900 });
+    }
+
+    // A CI token publishes its own app and does nothing else (registry-contract.md, as built).
+    if (ci && !(method === 'POST' && path === `/v1/apps/${encodeURIComponent(ci.app)}/versions`)) {
+      if (method === 'GET' && path === '/v1/sdk') {
+        // Anyone may read the minimum.
+      } else return refuse(403, 'ci_token_not_allowed', 'A CI token can only publish its own app.');
+    }
+
+    const user = ci ? Object.values(users).find(one => one.id === ci.userId) ?? { id: ci.userId, name: ci.userId } : bearer ? users[bearer] : undefined;
     const signedIn = () => (user ? null : refuse(401, 'unauthorized', 'Log in first.'));
     const mine = () => publishers.filter(one => one.members.includes(user!.id));
     let match: RegExpExecArray | null;
@@ -301,7 +333,7 @@ export function fakeRegistry(
           state: target.access === 'public' ? 'pending' : 'live',
           publishedAt: now(),
           tag,
-          body: body!,
+          body: { ...body!, ...(ci ? { provenance: ci.provenance } : {}) },
         };
 
         target.versions.push(published);
@@ -345,6 +377,12 @@ export function fakeRegistry(
         return json({ key, access: app.access });
       }
 
+      if (rest === '/trust' && method === 'PUT') {
+        app.trust = { repo: String(body?.repo), workflow: String(body?.workflow).replace(/^\.github\/workflows\//, ''), setBy: user!.id };
+
+        return json({ key, trust: { provider: 'github', repo: app.trust.repo, workflow: app.trust.workflow } });
+      }
+
       if (rest === '/retire' && method === 'POST') {
         app.retired = true;
 
@@ -364,6 +402,7 @@ export function fakeRegistry(
     publishers,
     users,
     received,
+    idTokens,
     /** The requests that were not reads: what changed something, or tried to. */
     writes: () => received.filter(one => one.method !== 'GET'),
     setSdk(next: typeof sdk) {

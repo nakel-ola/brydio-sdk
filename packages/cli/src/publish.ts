@@ -17,6 +17,7 @@ import {
   type RegistryApp,
   type RegistryOptions,
 } from './registry.ts';
+import { ciToken, githubActions, provenanceOf, type Provenance } from './oidc.ts';
 import { signVersion } from './signing.ts';
 import { validate } from './validate.ts';
 import { zipFiles } from './zip.ts';
@@ -70,6 +71,8 @@ export interface PublishOptions extends RegistryOptions {
   key?: string;
   /** Which of your publishers a brand new app belongs to, by id or name, when you are in several. */
   publisher?: string;
+  /** For tests: the environment GitHub Actions sets, instead of this process's. */
+  env?: NodeJS.ProcessEnv;
 }
 
 /** A screen's picture: the tree Brydio draws, at a width and in a theme. */
@@ -191,17 +194,39 @@ async function publishing(dir: string, options: PublishOptions, out: (line: stri
     throw new RegistryRefused(`--access is workspace (your publisher's own workspaces) or public (the store, after Brydio's review), not "${options.access}".`, 2);
   }
 
-  const reg = registry(options, 'signedIn');
-  const keyPath = signingKeyPath(options.key);
+  const env = options.env ?? process.env;
+  const keyPath = signingKeyPath(options.key, env);
   const signingKey: KeyFile | null = keyPath ? readKeyFile(keyPath) : null;
   const project = readProject(dir);
   const key = typeof project.raw.name === 'string' ? project.raw.name : '';
   const version = typeof project.raw.version === 'string' ? project.raw.version : '';
+  // In GitHub Actions with no login on the runner, the job signs in with
+  // GitHub's OIDC token (PB05): nothing stored, one app, fifteen minutes.
+  const ci = githubActions(env) && !registry(options).token ? provenanceOf(env) ?? { repo: '', workflow: '', commit: '' } : null;
+  let reg = ci ? registry({ ...options, token: '' }) : registry(options, 'signedIn');
 
   out(`Registry ${reg.url}`);
 
+  if (ci) {
+    // A version tag publishes; it has to be this version's number.
+    if (env.GITHUB_REF_TYPE === 'tag' && env.GITHUB_REF_NAME && env.GITHUB_REF_NAME !== version && env.GITHUB_REF_NAME !== `v${version}`) {
+      throw new RegistryRefused(
+        `This run is for the tag ${env.GITHUB_REF_NAME}, but the manifest says version ${version}. Tag the commit v${version}, or raise the version with brydio version and tag that. [tag_version_mismatch]`,
+        2,
+      );
+    }
+
+    if (!key) throw new RegistryRefused('The manifest has no name, so there is no app to ask GitHub for a token for.', 2);
+
+    const granted = await ciToken(reg, key, { env, ...(options.fetch ? { fetch: options.fetch } : {}) });
+
+    reg = registry({ ...options, token: granted.token });
+    out(`Signed in as GitHub Actions: ${ci.repo || 'this repository'}, ${ci.workflow || 'this workflow'}, ${ci.commit.slice(0, 12) || 'this commit'}. A ${Math.round(granted.expiresIn / 60)}-minute token for ${key}; no secret is stored.`);
+  }
+
   const minimum = await sdkMinimum(reg);
-  const found = key ? await registryApp(reg, key) : null;
+  // A CI token publishes and does nothing else, so the registry makes these checks itself.
+  const found = key && !ci ? await registryApp(reg, key) : null;
 
   if (found?.retired) throw new RegistryRefused(`${key} is retired on ${reg.url}, so no new version of it can be published. [retired]`);
 
@@ -209,7 +234,7 @@ async function publishing(dir: string, options: PublishOptions, out: (line: stri
   // takes an id, and a name the account is not in is said here, by name.
   let publisherId: string | undefined;
 
-  if (key && !found) {
+  if (key && !found && !ci) {
     const me = bodyOf<Me>(await reg.send('GET', path.me), reg, [200]);
 
     publisherId = choosePublisher(me, options.publisher, `${key} belongs to`).id;
@@ -325,7 +350,8 @@ async function publishing(dir: string, options: PublishOptions, out: (line: stri
 
   if (signingKey) out(`Signing as ${signingKey.publisher} with "${signingKey.label}" (${signingKey.keyId}).`);
 
-  const access = (options.access as Access | undefined) ?? found?.access ?? 'workspace';
+  // A CI run can't read the app, so it says the app's own access rather than guess one.
+  const access = (options.access as Access | undefined) ?? found?.access ?? (ci ? "the app's own" : 'workspace');
 
   out(`Publishing ${key} ${version}, ${sizeOf(built.bytes)}, fingerprint ${built.hash}, under the ${tag} tag with ${access} access.`);
 
@@ -336,6 +362,7 @@ async function publishing(dir: string, options: PublishOptions, out: (line: stri
     ...(publisherId ? { publisher: publisherId } : {}),
     ...(signature ? { signature } : {}),
     ...(screenshots.length ? { screenshots } : {}),
+    ...(ci?.repo ? { provenance: ci satisfies Provenance } : {}),
   });
   const { code, message, at } = refusalOf(answer.body);
   const said = (fallback: string) => `${message ?? fallback}${code ? ` [${code}]` : ''}`;

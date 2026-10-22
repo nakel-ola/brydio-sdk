@@ -8,7 +8,7 @@ import { formatProblem, type Problem } from './project.ts';
 import { login, logout, publishers, whoami } from './login.ts';
 import { pack } from './pack.ts';
 import { publish } from './publish.ts';
-import { access, deprecate, retire, tag, tags } from './registry-commands.ts';
+import { access, deprecate, retire, tag, tags, trust } from './registry-commands.ts';
 import { DEFAULT_REGISTRY, REGISTRY_URL_ENV } from './registry.ts';
 import { test } from './test.ts';
 import { upgradeSdk } from './upgrade-sdk.ts';
@@ -65,6 +65,9 @@ const HELP = `brydio — build, check and publish a Brydio app
   brydio access <app> <workspace|public>
                              Who may install the app from now on
   brydio retire <app> --yes  No new version of the app, ever. Installs keep their last one
+  brydio trust <app> --repo <owner/name> --workflow <file>
+                             Let that GitHub workflow publish the app with GitHub's OIDC
+                             token, no stored secret. In Actions, brydio publish uses it
   brydio keys <what>         Your publisher's signing keys. The private half is made here,
                              kept in one file only you can read, and never sent anywhere
                              create         make a key and register its public half
@@ -198,6 +201,12 @@ export async function main(argv: string[], out: (line: string) => void = console
       return deprecate(positional, { ...reg, ...(flags.has('undo') ? { undo: true } : {}) });
     case 'access':
       return access(positional, reg);
+    case 'trust':
+      return trust(positional, {
+        ...reg,
+        ...(flags.has('repo') ? { repo: flags.get('repo')! } : {}),
+        ...(flags.has('workflow') ? { workflow: flags.get('workflow')! } : {}),
+      });
     case 'retire':
       return retire(positional, { ...reg, ...(flags.has('yes') ? { yes: true } : {}) });
     case 'upgrade-sdk': {

@@ -1,7 +1,7 @@
 /** `@brydio/cli`: the commands, as functions, for scripts and tests. */
 
 export { RUNTIME_MAX_BYTES, build, describeBuild, packageVersionProblem, runtimeBytesOf, sdkVersionFor, type BuildOptions, type BuildResult } from './build.ts';
-export { create, CreateRefused, SDK_ROOT, TEMPLATES, type CreateOptions, type Template } from './create.ts';
+export { create, CreateRefused, SDK_ROOT, TEMPLATES, WORKFLOW, WORKFLOW_PATH, type CreateOptions, type Template } from './create.ts';
 export { BUILD_PATH, dev, DevRefused, DEV_CONFIG, type DevOptions, type DevSession, type ServedBuild } from './dev.ts';
 export { DIST, MANIFEST_PATHS, formatProblem, readProject, sourceOf, type Problem, type Project } from './project.ts';
 export { FORBIDDEN_GLOBALS, checkSource, type SourceProblemCode } from './source-checks.ts';
@@ -63,7 +63,8 @@ export {
 export { login, logout, publishers, whoami, type LoginOptions } from './login.ts';
 export { pack, type PackOptions } from './pack.ts';
 export { BUMPS, migrationStub, nextVersion, version, type VersionOptions } from './version.ts';
-export { access, deprecate, retire, tag, tags, type AppCommandOptions } from './registry-commands.ts';
+export { access, deprecate, retire, tag, tags, trust, type AppCommandOptions } from './registry-commands.ts';
+export { OIDC_AUDIENCE, OIDC_AUDIENCE_ENV, ciToken, githubActions, provenanceOf, type Provenance } from './oidc.ts';
 export { NPM_REGISTRY, upgradeSdk, type UpgradeSdkOptions } from './upgrade-sdk.ts';
 export { zipFiles } from './zip.ts';
 export { test, type TestOptions } from './test.ts';

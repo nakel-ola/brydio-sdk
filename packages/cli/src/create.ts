@@ -1,6 +1,6 @@
 import { APP_NAME_FORMAT, MANIFEST_LIMITS } from '@brydio/manifest';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 
@@ -30,6 +30,67 @@ const SDK_PACKAGES = ['app', 'ui', 'manifest', 'api', 'cli', 'fake-host'] as con
 
 /** What a template holds that a new app must not start with. */
 const LEFT_BEHIND = new Set(['node_modules', 'dist', '.DS_Store']);
+
+/** Where a new app's GitHub Actions workflow is written (PB20). */
+export const WORKFLOW_PATH = '.github/workflows/brydio.yml';
+
+/**
+ * Every push is built, validated and tested; a version tag (`v1.4.0`) is
+ * published to the app registry with GitHub's OIDC token, so no secret is
+ * stored anywhere (PB05). The app's publisher links this workflow once with
+ * `brydio trust <app> --repo <owner>/<name> --workflow brydio.yml`.
+ */
+export const WORKFLOW = `# Checks every push, and publishes a version tag to the Brydio app registry.
+#
+# Publishing uses GitHub's OIDC token: there is no Brydio secret in this
+# repository or its settings. Link this workflow to the app once, from your
+# own computer, after its first publish:
+#
+#   brydio trust <app> --repo <owner>/<name> --workflow brydio.yml
+#
+# Then tag a version to publish it: git tag v<version> && git push --tags.
+# The tag must be the manifest's version (brydio version patch raises it).
+name: Brydio
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Build, validate and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+      - run: bun install --frozen-lockfile
+      - run: bunx brydio build
+      - run: bunx brydio validate
+      - run: bunx brydio test
+
+  publish:
+    name: Publish to the app registry
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+      - run: bun install --frozen-lockfile
+      - run: bunx brydio publish
+`;
 
 export interface CreateOptions {
   template?: Template;
@@ -115,6 +176,9 @@ export async function create(name: string, options: CreateOptions = {}): Promise
 
     return { ...rest, compilerOptions: { ...base.compilerOptions, ...(tsconfig.compilerOptions as object) } };
   });
+
+  mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
+  writeFileSync(join(dir, WORKFLOW_PATH), WORKFLOW);
 
   const readme = join(dir, 'README.md');
 

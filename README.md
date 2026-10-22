@@ -146,6 +146,15 @@ brydio deprecate my-app@1.3.0 "data bug, use 1.3.1"
   of workspaces on the version (`--undo` takes it off). `brydio access <app>
   workspace|public` changes who may install it. `brydio retire <app> --yes`
   stops new versions for good.
+- In GitHub Actions, `brydio publish` needs no secret: with
+  `permissions: id-token: write` on the job and no login on the runner, it
+  trades GitHub's OIDC token for a fifteen-minute token that publishes that
+  one app, and the version records the repository, workflow and commit. Link
+  the workflow once, after the first publish: `brydio trust <app> --repo
+  <owner>/<name> --workflow brydio.yml`. A run for a version tag must be that
+  version (`tag_version_mismatch`). `brydio create` writes this workflow
+  (`.github/workflows/brydio.yml`): every push builds, validates and tests,
+  and a `v*` tag publishes.
 - `brydio keys create|list|retire|revoke` manages your publisher's signing
   keys on the registry. The private half is made and kept on your computer.
 - `brydio upgrade-sdk [version]` moves every `@brydio/*` pin in the app's

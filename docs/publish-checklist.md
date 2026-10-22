@@ -336,3 +336,20 @@ patch|minor|major|<x.y.z>` writes it there, and nowhere else.
 | `version_mismatch` (from `brydio build`) | package.json says version `<v>` and the manifest says `<w>`. An app's version lives in the manifest alone. | build | no | Take `"version"` out of `package.json`, and change the number with `brydio version`. |
 | `version_in_package_json` (from `brydio version`) | package.json says "version": `<v>`. An app's version lives in .brydio/app.json alone: take the line out of package.json, then run brydio version again. | no: `brydio version` | no | Take `"version"` out of `package.json`. |
 | `version_not_higher` (from `brydio version`) | `<v>` is not higher than `<current>`, the manifest's version now. A version number only goes up. | no: `brydio version` | no | Give a higher number, or say `patch`, `minor` or `major`. |
+
+## Publishing from GitHub Actions
+
+In a GitHub Actions job with no login on the runner, `brydio publish` signs
+in with GitHub's OIDC token instead (PB05): it asks GitHub for a token with
+the audience `brydio-registry` and trades it at the registry's
+`POST /v1/oidc/exchange` for a fifteen-minute token that publishes one app.
+The publisher links the workflow once with `brydio trust <app> --repo
+<owner>/<name> --workflow <file>`. The version records the repository,
+workflow and commit.
+
+| Code | Refused with | validate | server | How to fix |
+|---|---|---|---|---|
+| `tag_version_mismatch` (from `brydio publish`) | This run is for the tag `<tag>`, but the manifest says version `<v>`. Tag the commit v`<v>`, or raise the version with brydio version and tag that. | no: `brydio publish` in GitHub Actions | no | Tag the commit `v<version>`. |
+| `oidc_unavailable` (from `brydio publish`) | This GitHub Actions job can’t ask GitHub for an OIDC token. Give the publish job permissions: id-token: write (and contents: read), then run it again. (Or: GitHub did not give this job an OIDC token: `<why>`.) | no: `brydio publish` in GitHub Actions | no | Add `permissions: id-token: write` to the publish job. |
+| `not_trusted`, `trust_mismatch`, `oidc_invalid` | The registry's sentence, after: `<registry>` does not trust this workflow to publish `<app>`. A publisher's owner links it once, from their own computer: brydio trust `<app>` --repo `<owner>/<name>` --workflow `<file>` | no | publish (403, 401) | Run the `brydio trust` line it prints. |
+
