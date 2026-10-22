@@ -7,7 +7,7 @@ import { BUILD_PATH, create, dev, DevRefused, main, type DevSession } from '../s
 
 const made: string[] = [];
 const sessions: DevSession[] = [];
-let port = 5300 + Math.floor(Math.random() * 400);
+// Port 0: any free one. A fixed range can land on a port another test's server still holds.
 
 afterEach(async () => {
   for (const session of sessions.splice(0)) await session.stop();
@@ -41,7 +41,7 @@ const tiny = () =>
 
 async function run(root: string, more: Record<string, unknown> = {}) {
   const lines: string[] = [];
-  const session = await dev(root, { port: port++, out: line => void lines.push(line), watch: false, ...more });
+  const session = await dev(root, { port: 0, out: line => void lines.push(line), watch: false, ...more });
 
   sessions.push(session);
 
@@ -166,7 +166,7 @@ describe('brydio dev with no token (PB09)', () => {
     const lines: string[] = [];
     const root = tiny();
     // `main` waits for Ctrl-C: give it a moment, then stop it the way the terminal would.
-    const running = main(['dev', root, '--api', 'http://localhost:4000', '--project', 'p_1', '--port', String(port++)], line => void lines.push(line));
+    const running = main(['dev', root, '--api', 'http://localhost:4000', '--project', 'p_1', '--port', '0'], line => void lines.push(line));
 
     for (let at = 0; at < 100 && !lines.some(line => line.includes('Serving')); at++) await new Promise(done => setTimeout(done, 50));
     process.emit('SIGINT');
