@@ -42,8 +42,8 @@ const PROTOCOL_DOCS: Record<WorkerMethod | HostMethod, ProtocolDoc> = {
     result: 'Changes the mounted tree. A refused operation produces `tree/refused`.',
   },
   'tools/call': {
-    payload: '`ToolsCallParams`: call id, tool name and input record',
-    result: '`tools/result` or `tools/error` with the same id.',
+    payload: '`ToolsCallParams`: call id, tool name, input record, and `stream` to ask for a handler’s model answer as it arrives',
+    result: '`tools/result` or `tools/error` with the same id; with `stream`, `tools/text` for each piece first.',
   },
   'api/call': {
     payload: '`ApiCallParams`: one closed `ApiAction` and its input record',
@@ -132,6 +132,10 @@ const PROTOCOL_DOCS: Record<WorkerMethod | HostMethod, ProtocolDoc> = {
   'tools/result': {
     payload: '`ToolsResultParams`: call id and `ToolResult`',
     result: 'Resolves `tools.result`; `tools.call` rejects if `isError` is true.',
+  },
+  'tools/text': {
+    payload: '`ToolsTextParams`: call id and one piece of a handler’s `model.stream` answer',
+    result: 'Hands the piece to the call’s `onText`, before its `tools/result`.',
   },
   'tools/error': {
     payload: '`ToolsErrorParams`: call id and JSON-RPC error',

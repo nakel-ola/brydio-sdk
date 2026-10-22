@@ -149,7 +149,7 @@ A connection path is relative. `GET` and `HEAD` are reads. `POST`, `PUT`,
 | `worker/ready` | app to Brydio | `WorkerReadyParams`: protocol, app name/version, SDK and capabilities | Starts the session; Brydio answers with `host/context`. |
 | `tree/mount` | app to Brydio | `TreeMountParams`: root id and the complete first node list | Replaces the empty tree. It must arrive inside the first-tree budget. |
 | `tree/patch` | app to Brydio | `TreePatchParams`: ordered insert, remove, move, props and text operations | Changes the mounted tree. A refused operation produces `tree/refused`. |
-| `tools/call` | app to Brydio | `ToolsCallParams`: call id, tool name and input record | `tools/result` or `tools/error` with the same id. |
+| `tools/call` | app to Brydio | `ToolsCallParams`: call id, tool name, input record, and `stream` to ask for a handler’s model answer as it arrives | `tools/result` or `tools/error` with the same id; with `stream`, `tools/text` for each piece first. |
 | `api/call` | app to Brydio | `ApiCallParams`: one closed `ApiAction` and its input record | `api/result` or `api/error`. Writes wait for Brydio approval. |
 | `data/get` | app to Brydio | `{ collection, id }` plus the envelope id | `data/result` with one record, or `data/error`. |
 | `data/list` | app to Brydio | `{ collection, filter?, sort?, limit?, cursor? }` plus the envelope id | `data/result` with one page, or `data/error`. |
@@ -172,6 +172,7 @@ A connection path is relative. `GET` and `HEAD` are reads. `POST`, `PUT`,
 | `tree/event` | Brydio to app | `TreeEventParams`: node id, event name and optional detail | Runs the element handler. An ack-capable worker sends `tree/ack`. |
 | `tree/refused` | Brydio to app | `TreeRefusedParams`: operation, optional node and reason | Notifies refusal listeners. The third refusal stops the app. |
 | `tools/result` | Brydio to app | `ToolsResultParams`: call id and `ToolResult` | Resolves `tools.result`; `tools.call` rejects if `isError` is true. |
+| `tools/text` | Brydio to app | `ToolsTextParams`: call id and one piece of a handler’s `model.stream` answer | Hands the piece to the call’s `onText`, before its `tools/result`. |
 | `tools/error` | Brydio to app | `ToolsErrorParams`: call id and JSON-RPC error | Rejects the matching tool call with `HostError`. |
 | `api/result` | Brydio to app | `{ id, result }` | Resolves the matching `@brydio/api` call. |
 | `api/error` | Brydio to app | `{ id, error }` | Rejects the matching `@brydio/api` call with `HostError`. |

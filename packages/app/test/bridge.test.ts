@@ -25,6 +25,32 @@ describe('tools (contracts §9, as built)', () => {
     expect(await call).toEqual({ id: 'issue_1', version: 1 });
   });
 
+  test('a streamed call asks with `stream` and hands each tools/text piece to onText before the result (PB10)', async () => {
+    const { bridge, take, hostSays, connect } = harness();
+
+    await connect();
+    take();
+
+    const pieces: string[] = [];
+    const call = bridge.callTool('draft_reply', { topic: 'Launch' }, { onText: text => pieces.push(text) });
+
+    expect(take()).toEqual([
+      { jsonrpc: '2.0', id: '1', method: 'tools/call', params: { id: '1', tool: 'draft_reply', input: { topic: 'Launch' }, stream: true } },
+    ]);
+
+    hostSays('tools/text', { id: '1', text: 'Hel' });
+    hostSays('tools/text', { id: '1', text: 'lo.' });
+    // A piece for no call of this screen's is dropped.
+    hostSays('tools/text', { id: '9', text: 'stray' });
+    expect(pieces).toEqual(['Hel', 'lo.']);
+
+    hostSays('tools/result', { id: '1', result: result({ text: 'Hello.', source: 'brydio' }) });
+
+    expect(await call).toEqual({ text: 'Hello.', source: 'brydio' });
+    hostSays('tools/text', { id: '1', text: 'late' });
+    expect(pieces).toEqual(['Hel', 'lo.']);
+  });
+
   test('a result the tool marked isError rejects with its code, its sentence and the record as it is now', async () => {
     const { bridge, hostSays, connect } = harness();
 

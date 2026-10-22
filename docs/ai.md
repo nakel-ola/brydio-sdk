@@ -6,7 +6,7 @@ use depends on where your code runs.
 
 | Your code runs… | Use | Credential | Usage is counted against |
 |---|---|---|---|
-| inside an app, in a custom tool's handler | `model.generate` / `model.generateMany` | none: the `model` host grant | the app's publisher |
+| inside an app, in a custom tool's handler | `model.generate`, `summarize`, `chat`, `stream` | none: the `model` host grant | the app's publisher, on the person's chosen source |
 | on your own server, script, CLI or CI | `@brydio/api/ai` | a developer API key, `BRYDIO_API_KEY` | the key, and its publisher if it has one |
 
 A developer API key never goes in an app. No part of an app (screen, worker or
@@ -28,13 +28,14 @@ Ask for the grant in the manifest:
 ```
 
 A custom tool's handler then receives `model` in its context. A handler
-supplies a prompt and a JSON Schema whose top level is an object. It can't
-choose a provider, a model, tools or a system prompt:
+supplies words, optionally a JSON Schema whose top level is an object, and a
+level. It can't choose a provider, a model, a key or tools:
 
 ```ts
 export default async function ({ brief }, { model }) {
   return model.generate({
     prompt: `Plan a home page for: ${brief}`,
+    level: 'smart',
     schema: {
       type: 'object',
       required: ['title'],
@@ -44,12 +45,68 @@ export default async function ({ brief }, { model }) {
 }
 ```
 
-`model.generateMany([...])` runs up to 30 requests, six at a time, and returns
-the answers in order. A prompt holds at most 12,000 characters, a schema at
-most 16,000, and an answer at most 64,000.
+| Call | Answers |
+|---|---|
+| `model.generate({ prompt, schema, system?, level? })` | the object, following `schema` |
+| `model.generate({ prompt, system?, level? })` | the answer as plain text |
+| `model.generateMany([...])` | up to 30 answers, six at a time, in order |
+| `model.summarize({ text, length?, format?, level? })` | `{ summary, source, notice? }`; `length` is `short`, `medium` (default) or `long`, `format` `paragraph` (default) or `bullets` |
+| `model.chat(messages, { instructions?, level? })` | `{ role: 'assistant', content, source, notice? }`, the next turn |
+| `model.stream({ prompt } \| { messages }, …)` | `{ text, source, notice? }`, sent to the calling screen as it arrives |
+
+A prompt holds at most 12,000 characters, a schema 16,000, `text` 100,000,
+`system` or `instructions` 4,000, and an answer 64,000. `messages` is up to 50
+`{ role: 'user' | 'assistant', content }`, the user's last. The model has no
+tools and can't see the workspace.
+
+### Levels, and where the answer comes from
+
+`level` is `fast` (the default) or `smart`. Brydio maps it to a model on the
+source the person chose for all of Brydio's AI: Brydio's AI, their own API
+key, a key their company gave them, the workspace's key, or a model on their
+Mac. The handler never sees the key. `source` in an answer says which one
+answered, and `notice` says what was passed over when it wasn't the person's
+first choice.
+
+Whose work a call is decides which sources it may use:
+
+- A call from a screen, or from the person's assistant, is their own work and
+  follows their list. A Mac answers only a screen call made in the desktop
+  app, and only once Brydio can send it one-off requests; until then the next
+  source answers and `notice` says so.
+- A call from a timer, a bot or a visitor's public page is the workspace's,
+  and uses the workspace's source. It never uses anyone's own key or Mac.
+
+When no allowed source can answer, the call rejects with words a screen can
+show, for example "No AI source you can use here could answer. Your Mac only
+answers in the desktop app."
+
+### Streaming to the screen
+
+`model.stream` sends each piece of the answer to the screen that called the
+tool, while the handler waits for the whole of it:
+
+```ts
+// The handler
+export default async function ({ topic }, { model }) {
+  const { text } = await model.stream({ prompt: `Draft a reply about ${topic}` });
+  return { text };
+}
+
+// The screen
+let draft = '';
+const { text } = await tools.call('draft_reply', { topic }, {
+  onText: piece => { draft += piece; render(draft); },
+});
+```
+
+Without `onText`, or from a timer or the assistant, `stream` answers as
+`generate` does. The host sends each piece as `tools/text` before
+`tools/result`; a host from before streaming sends only the result.
 
 Each call is recorded against the publisher of the app version that ran,
-together with the person it ran for and their workspace.
+together with the person it ran for, their workspace, and the source that
+answered.
 
 ## From your own code: `@brydio/api/ai`
 

@@ -149,10 +149,75 @@ export interface HandlerConnection {
   request(request: HandlerConnectionRequest): Promise<{ status: number; body: unknown }>;
 }
 
-/** Structured design through Brydio's configured model, with the `model` grant (A8-F03). */
+/**
+ * How capable a model a call needs. Brydio maps it to a model on whichever
+ * source answers: Brydio's AI, the person's own key, the workspace's key,
+ * or a model on their Mac. An app never names a model, provider or key.
+ */
+export type ModelLevel = 'fast' | 'smart';
+
+/** Which source answered a model call, as the person chose it in Settings. */
+export type ModelSource = 'brydio' | 'workspace-key' | 'member-key' | 'personal-key' | 'mac';
+
+/** One request: what to ask, and optionally your own instructions and a level (`fast` unless said). */
+export interface HandlerModelRequest {
+  prompt: string;
+  /** Your own instructions, added after Brydio's. At most 4,000 characters. */
+  system?: string;
+  level?: ModelLevel;
+}
+
+/** One message of a conversation. */
+export interface HandlerModelMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/** Beside the words: which source answered, and what was passed over when it wasn't the person's first. */
+export interface HandlerModelAnswer {
+  source: ModelSource;
+  /** Said when the person's first source couldn't answer and another did, e.g. "Your Mac only answers in the desktop app. Your own key answered instead." */
+  notice?: string;
+}
+
+/**
+ * Brydio's model, with the `model` grant (A8-F03, PB10). Every call runs as
+ * the person the handler runs as, under the workspace's AI policy, on the
+ * source that person's AI comes from (PB11): a call from a screen is their
+ * own work; one from a timer, a bot or a visitor is the workspace's, and
+ * never uses anyone's own key or Mac. A call no source can answer rejects
+ * with words a screen can show.
+ */
 export interface HandlerModel {
-  generate<T = unknown>(request: { prompt: string; schema: Record<string, unknown> }): Promise<T>;
-  generateMany<T = unknown>(requests: { prompt: string; schema: Record<string, unknown> }[]): Promise<T[]>;
+  /** A structured answer following `schema`, a JSON Schema whose top level is an object. */
+  generate<T = unknown>(request: HandlerModelRequest & { schema: Record<string, unknown> }): Promise<T>;
+  /** Without a schema: the answer as plain text. */
+  generate(request: HandlerModelRequest & { schema?: undefined }): Promise<string>;
+  /** Up to 30 requests at once, answered in order. */
+  generateMany<T = unknown>(requests: (HandlerModelRequest & { schema?: Record<string, unknown> })[]): Promise<T[]>;
+  /** A summary of `text`, in its own language: `medium` and `paragraph` unless said. */
+  summarize(request: {
+    text: string;
+    length?: 'short' | 'medium' | 'long';
+    format?: 'paragraph' | 'bullets';
+    level?: ModelLevel;
+  }): Promise<{ summary: string } & HandlerModelAnswer>;
+  /** The next turn of a conversation whose last message is the user's. No tools, and no access to the workspace. */
+  chat(
+    messages: HandlerModelMessage[],
+    options?: { instructions?: string; level?: ModelLevel },
+  ): Promise<{ role: 'assistant'; content: string } & HandlerModelAnswer>;
+  /**
+   * The answer as text, sent piece by piece to the screen that called the
+   * tool while it arrives (`tools.call(name, input, { onText })`), and
+   * resolved with the whole of it. Called from anywhere else, it answers as
+   * `generate` does.
+   */
+  stream(
+    request:
+      | HandlerModelRequest
+      | { messages: HandlerModelMessage[]; instructions?: string; level?: ModelLevel },
+  ): Promise<{ text: string } & HandlerModelAnswer>;
 }
 
 /**
