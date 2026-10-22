@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-import { create, DEV_CONFIG, dev, DevRefused, type DevSession } from '../src/index.ts';
+import { BUILD_PATH, create, dev, DevRefused, main, type DevSession } from '../src/index.ts';
 
 const made: string[] = [];
 const sessions: DevSession[] = [];
@@ -39,61 +39,60 @@ const tiny = () =>
     'src/screens/home.ts': 'export const home = 1;\n',
   });
 
-interface Call {
-  method: string;
-  path: string;
-  body: any;
-}
-
-/** A pretend Brydio: answers by method and path, and remembers every call. */
-function brydio(answers: Record<string, (body: any) => [number, unknown]> = {}) {
-  const calls: Call[] = [];
-  const defaults: Record<string, (body: any) => [number, unknown]> = {
-    'GET /api/v1/apps/development/projects': () => [200, [{ id: 'p_1', name: 'Launch' }, { id: 'p_2', name: 'Bugs' }]],
-    'POST /api/v1/apps/development': body => [201, { id: 'dev_1', instanceId: 'i_1', placementId: 'pl_1', projectId: body.projectId, build: 0 }],
-    'POST /api/v1/apps/development/dev_1/heartbeat': body => [200, { build: body.build ?? 0 }],
-    'DELETE /api/v1/apps/development/dev_1': () => [204, null],
-  };
-  const fetch = async (url: string, init: RequestInit) => {
-    const path = url.replace('http://brydio.test', '');
-    const method = init.method ?? 'GET';
-    const body = init.body ? JSON.parse(String(init.body)) : undefined;
-    const key = `${method} ${path}`;
-
-    calls.push({ method, path, body });
-
-    const answer = answers[key] ?? defaults[key];
-
-    if (!answer) return new Response(JSON.stringify({ message: `no route ${key}` }), { status: 404 });
-
-    const [status, json] = answer(body);
-
-    return new Response(status === 204 ? null : JSON.stringify(json), { status });
-  };
-
-  return { calls, fetch };
-}
-
-async function run(root: string, server: ReturnType<typeof brydio>, more: Record<string, unknown> = {}) {
+async function run(root: string, more: Record<string, unknown> = {}) {
   const lines: string[] = [];
-  const session = await dev(root, {
-    port: port++,
-    apiUrl: 'http://brydio.test',
-    token: 'tok',
-    fetch: server.fetch,
-    out: line => void lines.push(line),
-    ask: async () => '2',
-    watch: false,
-    ...more,
-  });
+  const session = await dev(root, { port: port++, out: line => void lines.push(line), watch: false, ...more });
 
   sessions.push(session);
 
   return { session, lines };
 }
 
-describe('brydio dev, signed in', () => {
-  test('sends its built handlers, so its custom tools run before it is published', async () => {
+const served = async (session: DevSession) => (await (await fetch(`${session.url}${BUILD_PATH}`)).json()) as Record<string, any>;
+
+describe('brydio dev with no token (PB09)', () => {
+  test('makes no network call at all: it only builds and serves', async () => {
+    const real = globalThis.fetch;
+    const asked: string[] = [];
+
+    // Any request this process starts on its own is a call to somewhere.
+    globalThis.fetch = (async (url: string | URL | Request) => {
+      asked.push(String(url));
+      throw new Error('brydio dev must not call anything');
+    }) as unknown as typeof fetch;
+
+    try {
+      const root = tiny();
+      const { session, lines } = await run(root);
+
+      writeFileSync(join(root, 'src/screens/home.ts'), 'export const home = 2;\n');
+      await session.rebuild();
+      await session.stop();
+      sessions.splice(0);
+
+      expect(asked).toEqual([]);
+      expect(lines.join('\n')).toContain('Nothing here talks to Brydio or needs a key');
+    } finally {
+      globalThis.fetch = real;
+    }
+  });
+
+  test('reads no BRYDIO_TOKEN or BRYDIO_API_URL, and its source names neither', async () => {
+    const source = await Bun.file(join(import.meta.dir, '..', 'src', 'dev.ts')).text();
+
+    expect(source).not.toMatch(/BRYDIO_TOKEN|BRYDIO_API_URL|process\.env/);
+  });
+
+  test('says how to load it in Brydio: Settings > Developer > Load from localhost, with its port', async () => {
+    const { session, lines } = await run(tiny());
+    const said = lines.join('\n');
+
+    expect(said).toContain(`Serving dist/ at ${session.url}.`);
+    expect(said).toContain(`in Settings > Developer choose Load from localhost, port ${new URL(session.url).port}, and a project you own.`);
+    expect(said).toContain('never touches an installed copy of the app or its secrets');
+  });
+
+  test('serves what the browser relays: the build number, the manifest and the handlers', async () => {
     const root = app({
       '.brydio/app.json': JSON.stringify({
         name: 'tooled',
@@ -107,72 +106,50 @@ describe('brydio dev, signed in', () => {
       'src/screens/home.ts': 'export const home = 1;\n',
       'src/handlers/whoami.ts': 'export default async (_input: unknown, { caller }: { caller: { userId: string } }) => ({ member: caller.userId });\n',
     });
-    const server = brydio();
+    const { session } = await run(root);
+    const answer = await fetch(`${session.url}${BUILD_PATH}`);
+    const body = (await answer.json()) as Record<string, any>;
 
-    await run(root, server);
+    expect(answer.headers.get('access-control-allow-origin')).toBe('*');
+    expect(answer.headers.get('access-control-allow-private-network')).toBe('true');
+    expect(answer.headers.get('cache-control')).toBe('no-store');
+    expect(body).toMatchObject({ build: 1, manifest: { name: 'tooled' }, problem: null });
+    expect(Object.keys(body.handlers)).toEqual(['handlers/whoami.js']);
+    expect(body.handlers['handlers/whoami.js']).toContain('userId');
 
-    const started = server.calls.find(call => call.method === 'POST' && call.path === '/api/v1/apps/development')!.body;
+    const preflight = await fetch(`${session.url}${BUILD_PATH}`, { method: 'OPTIONS' });
 
-    expect(Object.keys(started.handlers ?? {})).toEqual(['handlers/whoami.js']);
-    expect(started.handlers['handlers/whoami.js']).toContain('userId');
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get('access-control-allow-private-network')).toBe('true');
   });
 
-  test('says where Brydio shows the app when it is placed in the sidebars rather than a tab', async () => {
+  test('counts every build, keeps the last good manifest when one fails, and says why it failed', async () => {
     const root = tiny();
-    const server = brydio({
-      'POST /api/v1/apps/development': body => [201, {
-        id: 'dev_1',
-        instanceId: 'i_1',
-        placementId: 'pl_issues',
-        projectId: body.projectId,
-        build: 0,
-        placements: [
-          { id: 'pl_issues', kind: 'project-sidebar', projectId: body.projectId, screen: 'home', label: 'Issues' },
-          { id: 'pl_mine', kind: 'workspace-sidebar', projectId: null, screen: 'home', label: 'My issues' },
-        ],
-      }],
-    });
-    const { lines } = await run(root, server);
-    const said = lines.join('\n');
+    const { session, lines } = await run(root);
 
-    expect(said).toContain("Issues, in the project's sidebar: /apps/pl_issues");
-    expect(said).toContain("My issues, in the workspace's sidebar: /apps/pl_mine");
-    expect(said).not.toContain('?tab=');
-  });
+    writeFileSync(join(root, 'src/screens/home.ts'), 'export const home = 2;\n');
+    await session.rebuild();
+    expect(await served(session)).toMatchObject({ build: 2, manifest: { name: 'tiny' }, problem: null });
 
-  test('keeps a new app private, asks for the project once, and starts a development tab', async () => {
-    const root = tiny();
-    const server = brydio();
-    const { session, lines } = await run(root, server);
+    writeFileSync(join(root, 'src/screens/home.ts'), 'export const home = ;\n');
+    await session.rebuild();
 
-    expect(server.calls.map(call => `${call.method} ${call.path}`)).toEqual([
-      'GET /api/v1/apps/development/projects',
-      'POST /api/v1/apps/development',
-    ]);
+    const failed = await served(session);
 
-    const started = server.calls.at(-1)!.body;
+    expect(failed.build).toBe(3);
+    expect(failed.manifest).toMatchObject({ name: 'tiny' });
+    expect(typeof failed.problem.message).toBe('string');
+    expect(failed.problem.message.length).toBeGreaterThan(0);
+    expect(lines.join('\n')).toContain('the app in Brydio keeps the last good build');
 
-    expect(started).toMatchObject({ projectId: 'p_2', origin: session.url });
-    expect(started).not.toHaveProperty('appId');
-    expect(started.manifest).toMatchObject({ name: 'tiny', screens: { home: { entry: 'screens/home.js' } } });
-    expect(session.url).toMatch(/^http:\/\/localhost:\d+$/);
-    expect(JSON.parse(readFileSync(join(root, DEV_CONFIG), 'utf8'))).toEqual({ apiUrl: 'http://brydio.test', projectId: 'p_2' });
-    expect(lines.join('\n')).toContain('/projects/p_2?tab=app-pl_1');
-
-    // The second run remembers the project without exposing the app on the shelf.
-    await session.stop();
-    sessions.splice(0);
-
-    const again = brydio();
-
-    await run(root, again, { ask: async () => { throw new Error('asked again'); } });
-
-    expect(again.calls.map(call => `${call.method} ${call.path}`)).toEqual(['POST /api/v1/apps/development']);
+    writeFileSync(join(root, 'src/screens/home.ts'), 'export const home = 3;\n');
+    await session.rebuild();
+    expect(await served(session)).toMatchObject({ build: 4, problem: null });
   });
 
   test('serves the built files, and only them, from localhost with the headers the frame needs', async () => {
     // A5-F02-TC001.
-    const { session } = await run(tiny(), brydio());
+    const { session } = await run(tiny());
     const screen = await fetch(`${session.url}/screens/home.js`);
 
     expect(screen.status).toBe(200);
@@ -184,85 +161,20 @@ describe('brydio dev, signed in', () => {
     expect((await fetch(`${session.url}/screens/missing.js`)).status).toBe(404);
   });
 
-  test('tells Brydio about each good build, with its manifest, and keeps the tab when one fails', async () => {
+  test('says --api and --project are not used any more', async () => {
+    const was = process.env.BRYDIO_HOME;
+    const lines: string[] = [];
     const root = tiny();
-    const server = brydio();
-    const { session, lines } = await run(root, server);
+    // `main` waits for Ctrl-C: give it a moment, then stop it the way the terminal would.
+    const running = main(['dev', root, '--api', 'http://localhost:4000', '--project', 'p_1', '--port', String(port++)], line => void lines.push(line));
 
-    writeFileSync(join(root, 'src/screens/home.ts'), 'export const home = 2;\n');
-    await session.rebuild();
+    for (let at = 0; at < 100 && !lines.some(line => line.includes('Serving')); at++) await new Promise(done => setTimeout(done, 50));
+    process.emit('SIGINT');
 
-    const beats = server.calls.filter(call => call.path.endsWith('/heartbeat'));
-
-    expect(beats).toHaveLength(1);
-    expect(beats[0]!.body).toMatchObject({ build: 1, manifest: { name: 'tiny' }, problem: null });
-
-    writeFileSync(join(root, 'src/screens/home.ts'), 'export const home = ;\n');
-    await session.rebuild();
-
-    const failed = server.calls.filter(call => call.path.endsWith('/heartbeat')).at(-1)!.body;
-
-    // The failed build tells the tab why, and keeps the build number where it was.
-    expect(failed.build).toBe(1);
-    expect(failed.manifest).toBeUndefined();
-    expect(typeof failed.problem.message).toBe('string');
-    expect(failed.problem.message.length).toBeGreaterThan(0);
-    expect(lines.join('\n')).toContain('the widget keeps the last good build');
-
-    writeFileSync(join(root, 'src/screens/home.ts'), 'export const home = 3;\n');
-    await session.rebuild();
-
-    expect(server.calls.filter(call => call.path.endsWith('/heartbeat')).at(-1)!.body).toMatchObject({ build: 2, problem: null });
-  });
-
-  test('says what Brydio said about a build it turned down', async () => {
-    const root = tiny();
-    const server = brydio({
-      'POST /api/v1/apps/development/dev_1/heartbeat': () => [422, { message: 'app.json: "screens": needs at least one screen.' }],
-    });
-    const { session, lines } = await run(root, server);
-
-    await session.rebuild();
-
-    expect(lines.join('\n')).toContain('Brydio didn\'t take this build: app.json: "screens": needs at least one screen.');
-  });
-
-  test('removes the tab when stopped', async () => {
-    const server = brydio();
-    const { session } = await run(tiny(), server);
-
-    await session.stop();
-
-    expect(server.calls.at(-1)).toMatchObject({ method: 'DELETE', path: '/api/v1/apps/development/dev_1' });
-    expect(session.development).toBeNull();
-  });
-
-  test('stops, in Brydio\'s words, where Developer mode or Apps are off', async () => {
-    const forbidden = brydio({
-      'POST /api/v1/apps/development': () => [403, { message: 'Developer mode is off for this workspace.' }],
-    });
-
-    await expect(run(tiny(), forbidden, { projectId: 'p_1' })).rejects.toThrow(
-      new DevRefused('Developer mode is off for this workspace.'),
-    );
-
-    const off = brydio({
-      'POST /api/v1/apps/development': () => [423, { message: 'Locked' }],
-    });
-
-    await expect(run(tiny(), off, { projectId: 'p_1' })).rejects.toThrow(/Apps aren't switched on/);
-  });
-
-  test('explains that BRYDIO_TOKEN comes from Developer settings when it is refused', async () => {
-    const refused = brydio({
-      'POST /api/v1/apps/development': () => [401, { message: 'That API key is not valid.' }],
-    });
-
-    await expect(run(tiny(), refused, { projectId: 'p_1' })).rejects.toThrow(
-      new DevRefused(
-        'http://brydio.test did not accept BRYDIO_TOKEN. Make a new key in Brydio Settings > Developer and give it the Develop apps permission.'
-      )
-    );
+    expect(await running).toBe(0);
+    expect(lines.join('\n')).toContain('--api is not used any more');
+    expect(lines.join('\n')).toContain('--project is not used any more');
+    if (was !== undefined) process.env.BRYDIO_HOME = was;
   });
 });
 
@@ -283,7 +195,7 @@ describe('brydio dev and hot reload', () => {
 
     symlinkSync(join(import.meta.dir, '..', '..', '..', 'templates', 'preact', 'node_modules'), join(root, 'node_modules'));
 
-    const { session, lines } = await run(root, brydio());
+    const { session, lines } = await run(root);
     const entry = await (await fetch(`${session.url}/screens/home.js?build=1`)).text();
     const chunk = /from "\.\/(chunk-[a-z0-9]+\.js)"/.exec(entry)?.[1];
 
@@ -294,14 +206,14 @@ describe('brydio dev and hot reload', () => {
     expect(shared.status).toBe(200);
     expect(shared.headers.get('access-control-allow-origin')).toBe('*');
     expect(await shared.text()).toContain('__PREFRESH__');
-    expect(lines.join('\n')).toContain('swapped into the widget, keeping what is on it');
+    expect(lines.join('\n')).toContain('swapped into what is open, keeping what is on it');
   });
 
   test('builds an app that is not Preact whole, and starts its tab over on a save', async () => {
-    const { session, lines } = await run(tiny(), brydio());
+    const { session, lines } = await run(tiny());
 
     expect(await (await fetch(`${session.url}/screens/home.js`)).text()).not.toContain('chunk-');
-    expect(lines.join('\n')).toContain('starts the widget over with the new code');
+    expect(lines.join('\n')).toContain('starts what is open over with the new code');
   });
 });
 
@@ -315,28 +227,11 @@ describe('brydio dev on a new app', () => {
       made.push(into);
 
       const root = await create(`fresh-${template}`, { into, template, out: () => {} });
-      const server = brydio();
-      const { session } = await run(root, server, { projectId: 'p_1' });
-      const started = server.calls.find(call => call.path === '/api/v1/apps/development')!.body;
+      const { session } = await run(root);
 
-      expect(started.manifest).toMatchObject({ name: `fresh-${template}`, screens: { home: { entry: 'screens/home.js' } } });
+      expect(await served(session)).toMatchObject({ manifest: { name: `fresh-${template}`, screens: { home: { entry: 'screens/home.js' } } }, problem: null });
       expect((await fetch(`${session.url}/screens/home.js`)).status).toBe(200);
-      expect(session.development).toMatchObject({ id: 'dev_1', placementId: 'pl_1' });
     },
     120_000,
   );
-});
-
-describe('brydio dev, not signed in', () => {
-  test('only serves and builds, and says how to see it as a tab', async () => {
-    const lines: string[] = [];
-    const root = tiny();
-    const session = await dev(root, { port: port++, apiUrl: '', token: '', out: line => void lines.push(line), watch: false });
-
-    sessions.push(session);
-
-    expect(session.development).toBeNull();
-    expect(existsSync(join(root, DEV_CONFIG))).toBe(false);
-    expect(lines.join('\n')).toContain('set BRYDIO_API_URL and BRYDIO_TOKEN');
-  });
 });

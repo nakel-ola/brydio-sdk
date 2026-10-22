@@ -82,13 +82,10 @@ const HELP = `brydio — build, check and publish a Brydio app
                              or next tag), install, build and validate. Says when it is below
                              the registry's SDK minimum
 
-  brydio dev [folder]        Build, serve dist/ on localhost, show it in a project where its
-                             manifest places it, and build again on change
-                             --project <id> the project (asked once, then kept in .brydio/dev.json)
-                             --api <url>    your Brydio's API (BRYDIO_API_URL); uses BRYDIO_TOKEN,
-                                            a Settings > Developer key, until dev needs none
+  brydio dev [folder]        Build, serve dist/ on localhost, and build again on change. No key
+                             and no call to Brydio: in Brydio, with Developer mode on, open
+                             Settings > Developer > Load from localhost and give the port
                              --port <n>     the port (5174)
-                             --brydio <dir> Brydio's checkout, for the printed load command
 
 The folder is the app's, the current one unless given.`;
 
@@ -225,12 +222,14 @@ export async function main(argv: string[], out: (line: string) => void = console
       let session: Awaited<ReturnType<typeof dev>>;
 
       try {
+        // An older habit, said once: dev no longer reaches Brydio, so these mean nothing now.
+        for (const gone of ['api', 'project', 'brydio']) {
+          if (flags.has(gone)) out(`--${gone} is not used any more: brydio dev only serves the build. Load it in Brydio from Settings > Developer > Load from localhost.`);
+        }
+
         session = await dev(dir, {
           out,
           ...(flags.has('port') ? { port: Number(flags.get('port')) } : {}),
-          ...(flags.has('brydio') ? { brydio: flags.get('brydio')! } : {}),
-          ...(flags.has('api') ? { apiUrl: flags.get('api')! } : {}),
-          ...(flags.has('project') ? { projectId: flags.get('project')! } : {}),
         });
       } catch (error) {
         if (!(error instanceof DevRefused)) throw error;
@@ -239,7 +238,7 @@ export async function main(argv: string[], out: (line: string) => void = console
         return 1;
       }
 
-      // Runs until stopped, and takes its tab out of Brydio on the way.
+      // Runs until stopped.
       return new Promise<number>(done => {
         const end = () => void session.stop().then(() => done(0));
 

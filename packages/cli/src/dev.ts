@@ -1,128 +1,84 @@
-import { existsSync, mkdirSync, readFileSync, watch, writeFileSync } from 'node:fs';
-import { dirname, extname, join, normalize, relative, sep } from 'node:path';
-import { createInterface } from 'node:readline/promises';
+import { existsSync, readFileSync, watch } from 'node:fs';
+import { extname, join, normalize, relative, sep } from 'node:path';
 
 import { build, describeBuild, type BuildResult } from './build.ts';
 import { formatProblem, readProject, type Problem } from './project.ts';
-import { API_URL_ENV, TOKEN_ENV } from './api.ts';
 
 /**
- * `brydio dev`: build, serve the bundle on this machine, show it as a tab in
- * a project in your own Brydio, and build again on every change (A5-F02).
+ * `brydio dev`: build, serve the bundle on this machine, and build again on
+ * every change (A5-F02, PB09). It makes no network call to Brydio or to the
+ * registry, and needs no key.
  *
- * The folder is served with the headers Brydio's own bundle route sends
+ * Brydio does the rest, in the builder's own signed-in browser: with
+ * Developer mode on, Settings > Developer > "Load from localhost" takes the
+ * port, reads `/__brydio/build` from here (which build, the manifest, the
+ * custom-tool handlers, and why the newest build failed), and starts the
+ * development app with the person's own session. It reads the build again
+ * every second, so each saved change reaches the open app.
+ *
+ * Everything is served with the headers Brydio's own bundle route sends
  * (`Access-Control-Allow-Origin: *`, `Cross-Origin-Resource-Policy:
  * cross-origin`), because a sandboxed frame's origin is opaque and a module
- * import from it is a cross-origin request.
- *
- * Authorized (`BRYDIO_API_URL` and a scoped `BRYDIO_TOKEN`; see `api.ts`), it puts
- * the app on a project you own as a development tab that loads from here.
- * The first run asks which project and remembers it in `.brydio/dev.json`.
- * Every good build tells Brydio, and the open tab starts the app again with
- * the new code. A heartbeat keeps the tab while the command runs; stopping
- * the command removes it, and Brydio removes one it hasn't heard from in an
- * hour. Not signed in, it only serves and builds.
+ * import from it is a cross-origin request, and Brydio's page is on another
+ * origin too.
  */
 
-export const DEV_PATH = '/api/v1/apps/development';
-/** How often the command tells Brydio it is still running. */
-export const HEARTBEAT_MS = 20_000;
-/** Where the chosen project is remembered, inside the app's folder. */
+/** Where the browser reads what is being served. */
+export const BUILD_PATH = '/__brydio/build';
+/** Where an older `brydio dev` remembered the project; nothing reads it now. */
 export const DEV_CONFIG = '.brydio/dev.json';
 
 export interface DevOptions {
   port?: number;
-  /** Where Brydio's checkout is, for the printed command when not signed in. */
-  brydio?: string;
-  /** Brydio's API. `BRYDIO_API_URL` unless given. */
-  apiUrl?: string;
-  /** A Settings > Developer key with apps:develop. `BRYDIO_TOKEN` unless given. */
-  token?: string;
-  /** The project to show the tab on, over what `.brydio/dev.json` remembers. */
-  projectId?: string;
   out?: (line: string) => void;
-  /** Asks the person a question and gives back their answer. */
-  ask?: (question: string) => Promise<string>;
-  /** For tests: the requests, made some other way. */
-  fetch?: (url: string, init: RequestInit) => Promise<Response>;
-  /** For tests: no file watching and no timer. */
+  /** For tests: no file watching. */
   watch?: boolean;
-  heartbeatMs?: number;
+}
+
+/** What `/__brydio/build` answers. */
+export interface ServedBuild {
+  /** Counts every build, good or failed, so the browser can tell a new one. */
+  build: number;
+  /** The last good build's manifest; null before the first. */
+  manifest: Record<string, unknown> | null;
+  /** The last good build's custom-tool handlers, by path. */
+  handlers?: Record<string, string>;
+  /** Why the newest build failed, or null. */
+  problem: { message: string; file?: string; line?: number } | null;
 }
 
 export interface DevSession {
   url: string;
-  /** The development app in Brydio, when signed in. */
-  readonly development: {
-    id: string;
-    projectId: string;
-    placementId: string;
-    /** Everywhere Brydio shows the app while it runs; absent from an older Brydio, which made one tab. */
-    placements?: { id: string; kind: string; projectId: string | null; label: string }[];
-  } | null;
+  /** What the browser is told now. */
+  readonly served: ServedBuild;
   /** Builds now, as a saved change would. */
   rebuild(): Promise<BuildResult>;
-  /** Stops watching and serving, and removes the tab from Brydio. */
+  /** Stops watching and serving. */
   stop(): Promise<void>;
 }
 
 /** A reason `brydio dev` can't go on, in words for the person running it. */
 export class DevRefused extends Error {}
 
-interface Answer {
-  status: number;
-  json: unknown;
-}
+const HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  // Chrome asks before a public page reads a private address (localhost).
+  'Access-Control-Allow-Private-Network': 'true',
+  'Cross-Origin-Resource-Policy': 'cross-origin',
+  'X-Content-Type-Options': 'nosniff',
+  'Cache-Control': 'no-store',
+};
 
 export async function dev(dir: string, options: DevOptions = {}): Promise<DevSession> {
   const out = options.out ?? console.log;
   const project = readProject(dir);
   const root = project.root;
-  const apiUrl = (options.apiUrl ?? process.env[API_URL_ENV] ?? '').replace(/\/+$/, '');
-  const token = options.token ?? process.env[TOKEN_ENV] ?? '';
-  const signedIn = Boolean(apiUrl && token);
-  const request = options.fetch ?? fetch;
-  let buildNumber = 0;
-  let development: DevSession['development'] = null;
-  let running: Promise<unknown> = Promise.resolve();
-  let again = false;
   // A Preact app's saves are taken in place, keeping what's on screen; a
   // plain app has no components to keep, and starts over.
   const hot = usesPreact(root);
-
-  if (signedIn && !/^https?:\/\//.test(apiUrl)) {
-    throw new DevRefused(`Set ${API_URL_ENV} to your Brydio's API address, like http://localhost:4000.`);
-  }
-
-  const call = async (method: string, path: string, body?: unknown): Promise<Answer> => {
-    const answer = await request(`${apiUrl}${path}`, {
-      method,
-      headers: { authorization: `Bearer ${token}`, ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    });
-
-    return { status: answer.status, json: await answer.json().catch(() => null) };
-  };
-
-  const manifestOf = (result: BuildResult): Record<string, unknown> | null => {
-    const file = join(result.outDir, 'app.json');
-
-    return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>) : null;
-  };
-
-  /**
-   * The built custom-tool handlers, by path, for Brydio to run this build's
-   * tools from: a development app has no published bundle.
-   */
-  const handlersOf = (result: BuildResult): Record<string, string> | undefined => {
-    const handlers: Record<string, string> = {};
-
-    for (const [path, bytes] of result.files) {
-      if (path.startsWith('handlers/') && path.endsWith('.js')) handlers[path] = new TextDecoder().decode(bytes);
-    }
-
-    return Object.keys(handlers).length ? handlers : undefined;
-  };
+  let served: ServedBuild = { build: 0, manifest: null, problem: null };
+  let running: Promise<unknown> = Promise.resolve();
+  let again = false;
 
   const rebuild = async (): Promise<BuildResult> => {
     const result = await build(root, { minify: false, hot });
@@ -130,149 +86,63 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
     if (!result.ok) {
       for (const problem of result.problems) out(formatProblem(problem));
 
-      if (development) {
-        out('Not built: the widget keeps the last good build, and says why.');
+      served = { ...served, build: served.build + 1, problem: problemOf(result.problems.find(one => one.severity === 'error') ?? result.problems[0]) };
 
-        const first = result.problems.find(problem => problem.severity === 'error') ?? result.problems[0];
-
-        await call('POST', `${DEV_PATH}/${development.id}/heartbeat`, {
-          build: buildNumber,
-          problem: problemOf(first),
-        }).catch(() => null);
-      }
+      if (served.manifest) out('Not built: the app in Brydio keeps the last good build, and says why.');
 
       return result;
     }
 
     out(`${new Date().toLocaleTimeString('en-GB')}  ${describeBuild(result, root)}`);
 
-    if (development) {
-      buildNumber += 1;
+    const handlers = handlersOf(result);
 
-      const answer = await call('POST', `${DEV_PATH}/${development.id}/heartbeat`, {
-        build: buildNumber,
-        manifest: manifestOf(result),
-        handlers: handlersOf(result),
-        problem: null,
-      }).catch((error: unknown): Answer => ({ status: 0, json: { message: String(error) } }));
-
-      if (answer.status !== 200) out(`Brydio didn't take this build: ${messageOf(answer)}`);
-    }
+    served = { build: served.build + 1, manifest: manifestOf(result), ...(handlers ? { handlers } : {}), problem: null };
 
     return result;
   };
 
   const first = await rebuild();
   const outDir = first.outDir;
-  const server = Bun.serve({
-    port: options.port ?? 5174,
-    hostname: 'localhost',
-    fetch(incoming) {
-      const path = decodeURIComponent(new URL(incoming.url).pathname).replace(/^\/+/, '');
-      const file = normalize(join(outDir, path));
-      const headers = {
-        'Access-Control-Allow-Origin': '*',
-        'Cross-Origin-Resource-Policy': 'cross-origin',
-        'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'no-store',
-      };
-
-      // Nothing outside the built folder, and nothing but what a bundle holds.
-      if (!file.startsWith(outDir + sep) || !['.js', '.mjs', '.json'].includes(extname(file))) {
-        return new Response('Not found', { status: 404, headers });
-      }
-
-      const body = Bun.file(file);
-
-      return body.exists().then(exists =>
-        exists
-          ? new Response(body, {
-              headers: {
-                ...headers,
-                'Content-Type': extname(file) === '.json' ? 'application/json; charset=utf-8' : 'text/javascript; charset=utf-8',
-              },
-            })
-          : new Response('Not found', { status: 404, headers }),
-      );
-    },
-  });
-  const url = `http://localhost:${server.port}`;
-  const watchers: { close(): void }[] = [];
-  let heartbeat: ReturnType<typeof setInterval> | null = null;
-
-  const stop = async () => {
-    if (heartbeat) clearInterval(heartbeat);
-    for (const watcher of watchers) watcher.close();
-    server.stop(true);
-
-    if (development) {
-      const gone = development;
-
-      development = null;
-      await call('DELETE', `${DEV_PATH}/${gone.id}`).catch(() => null);
-      out('Removed the development tab from Brydio.');
-    }
-  };
-
-  /** The project the tab goes on: given, remembered for this Brydio, or chosen now. */
-  const chooseProject = async (): Promise<string> => {
-    const file = join(root, DEV_CONFIG);
-    const remembered = existsSync(file)
-      ? (JSON.parse(readFileSync(file, 'utf8')) as { apiUrl?: string; projectId?: string })
-      : {};
-
-    if (options.projectId) return options.projectId;
-    if (remembered.projectId && remembered.apiUrl === apiUrl) return remembered.projectId;
-
-    const listed = await call('GET', `${DEV_PATH}/projects`);
-
-    if (listed.status !== 200) throw new DevRefused(turnedAway(listed, apiUrl));
-
-    const body = listed.json as { id: string; name: string }[] | { projects?: { id: string; name: string }[] } | null;
-    const projects = Array.isArray(body) ? body : (body?.projects ?? []);
-
-    if (projects.length === 0) throw new DevRefused('You have no projects in this workspace. Make one in Brydio first.');
-
-    out('Which project should show the app?');
-    projects.forEach((one, index) => out(`  ${index + 1}. ${one.name}`));
-
-    const answer = Number((await (options.ask ?? askInTerminal)(`Project (1-${projects.length}): `)).trim());
-    const chosen = projects[answer - 1];
-
-    if (!Number.isInteger(answer) || !chosen) throw new DevRefused('That is not one of the projects.');
-
-    mkdirSync(dirname(file), { recursive: true });
-    writeFileSync(file, `${JSON.stringify({ apiUrl, projectId: chosen.id }, null, 2)}\n`);
-    out(`Remembered "${chosen.name}" in ${DEV_CONFIG}. Commit it or ignore it; delete it to choose again.`);
-
-    return chosen.id;
-  };
-
-  /** Chooses the project, puts the app on the shelf, and starts the development app. */
-  const connect = async (result: BuildResult): Promise<NonNullable<DevSession['development']>> => {
-    const manifest = manifestOf(result);
-    const name = typeof manifest?.name === 'string' ? manifest.name : null;
-
-    if (!manifest || !name) throw new DevRefused('The build has no app.json with a name.');
-
-    const projectId = await chooseProject();
-    const started = await call('POST', DEV_PATH, { projectId, origin: url, manifest, handlers: handlersOf(result) });
-
-    if (started.status !== 201 && started.status !== 200) throw new DevRefused(turnedAway(started, apiUrl));
-
-    return started.json as NonNullable<DevSession['development']>;
-  };
+  let server: ReturnType<typeof Bun.serve>;
 
   try {
-    if (signedIn) {
-      if (!first.ok) throw new DevRefused('Fix the build first: Brydio is shown the app once it builds.');
+    server = Bun.serve({
+      port: options.port ?? 5174,
+      hostname: 'localhost',
+      fetch(incoming) {
+        const path = decodeURIComponent(new URL(incoming.url).pathname);
 
-      development = await connect(first);
-    }
+        if (incoming.method === 'OPTIONS') {
+          return new Response(null, { status: 204, headers: { ...HEADERS, 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Allow-Headers': '*' } });
+        }
+
+        if (path === BUILD_PATH) return Response.json(served, { headers: HEADERS });
+
+        const file = normalize(join(outDir, path.replace(/^\/+/, '')));
+
+        // Nothing outside the built folder, and nothing but what a bundle holds.
+        if (!file.startsWith(outDir + sep) || !['.js', '.mjs', '.json'].includes(extname(file))) {
+          return new Response('Not found', { status: 404, headers: HEADERS });
+        }
+
+        const body = Bun.file(file);
+
+        return body.exists().then(exists =>
+          exists
+            ? new Response(body, {
+                headers: { ...HEADERS, 'Content-Type': extname(file) === '.json' ? 'application/json; charset=utf-8' : 'text/javascript; charset=utf-8' },
+              })
+            : new Response('Not found', { status: 404, headers: HEADERS }),
+        );
+      },
+    });
   } catch (error) {
-    await stop();
-    throw error;
+    throw new DevRefused(`Port ${options.port ?? 5174} is taken: ${error instanceof Error ? error.message : String(error)}. Run brydio dev --port <another>.`);
   }
+
+  const url = `http://localhost:${server.port}`;
+  const watchers: { close(): void }[] = [];
 
   if (options.watch !== false) {
     const onChange = () => {
@@ -286,70 +156,27 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
     };
 
     watchers.push(watch(join(root, 'src'), { recursive: true }, onChange), watch(project.manifestFile, onChange));
-
-    if (development) {
-      const id = development.id;
-
-      heartbeat = setInterval(
-        () => void call('POST', `${DEV_PATH}/${id}/heartbeat`, { build: buildNumber }).catch(() => null),
-        options.heartbeatMs ?? HEARTBEAT_MS,
-      );
-    }
   }
 
-  if (development) {
-    // A widget is on the project's page; the rest open at their own address.
-    // A public page never opens in development: Brydio serves it only for a
-    // published version an admin turned on (run it with FakeHost's `visitor`).
-    // A profile panel is drawn on people's profiles, not at an address.
-    const places =
-      development.placements?.filter(place => place.kind !== 'project-widget' && place.kind !== 'project-tab' && place.kind !== 'public-page' && place.kind !== 'person-profile') ?? [];
-    const where = (kind: string) => (kind === 'workspace-sidebar' ? "the workspace's sidebar" : "the project's sidebar");
-
-    out(
-      [
-        '',
-        `Serving ${relative(root, outDir) || '.'}/ at ${url}.`,
-        ...(places.length
-          ? [
-              `Brydio shows "${titleOf(project.raw)}" marked development, and only you can see it:`,
-              ...places.map(place => `  ${place.label}, in ${where(place.kind)}: /apps/${place.id}`),
-              hot
-                ? 'Every saved change builds again and is swapped into what is open, keeping what is on it (or starts it over when it cannot be). Stop with Ctrl-C to remove it.'
-                : 'Every saved change builds again and starts what is open over with the new code. Stop with Ctrl-C to remove it.',
-            ]
-          : [
-              `Open the project in Brydio: the "${titleOf(project.raw)}" widget is marked development, and only you can see it.`,
-              `  /projects/${development.projectId}?tab=app-${development.placementId}`,
-              hot
-                ? 'Every saved change builds again and is swapped into the widget, keeping what is on it (or starts it over when it cannot be). Stop with Ctrl-C to remove the widget.'
-                : 'Every saved change builds again and starts the widget over with the new code. Stop with Ctrl-C to remove the widget.',
-            ]),
-        '',
-      ].join('\n'),
-    );
-  } else {
-    const brydio = options.brydio ?? join(root, '..', 'brydio');
-
-    out(
-      [
-        '',
-        `Serving ${relative(root, outDir) || '.'}/ at ${url} (for example ${url}/${Object.values(project.manifest?.screens ?? {})[0]?.entry ?? 'screens/…'}).`,
-        'Watching src/ and the manifest; every change builds again.',
-        '',
-        `To see it as a tab in your Brydio, set ${API_URL_ENV} and ${TOKEN_ENV} and run brydio dev again.`,
-        'Or load the built folder into a local Brydio as a version (each load needs a new version number):',
-        `  cd ${join(brydio, 'apps/api')}`,
-        `  NODE_ENV=development ./node_modules/.bin/ts-node scripts/put-app-bundle.ts ${outDir} --by "$USER"`,
-        '',
-      ].join('\n'),
-    );
-  }
+  out(
+    [
+      '',
+      `Serving ${relative(root, outDir) || '.'}/ at ${url}. Watching src/ and the manifest; every change builds again.`,
+      '',
+      `To see "${titleOf(project.raw)}" in Brydio: turn on Developer mode, then in Settings > Developer choose Load from localhost, port ${server.port}, and a project you own.`,
+      'Only you see it, marked development, and it never touches an installed copy of the app or its secrets.',
+      hot
+        ? 'Every saved change builds again and is swapped into what is open, keeping what is on it (or starts it over when it cannot be).'
+        : 'Every saved change builds again and starts what is open over with the new code.',
+      'Nothing here talks to Brydio or needs a key: your signed-in browser reads the build from this port.',
+      '',
+    ].join('\n'),
+  );
 
   return {
     url,
-    get development() {
-      return development;
+    get served() {
+      return served;
     },
     rebuild: () => {
       const next = running.then(rebuild);
@@ -358,7 +185,10 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
 
       return next;
     },
-    stop,
+    async stop() {
+      for (const watcher of watchers) watcher.close();
+      server.stop(true);
+    },
   };
 }
 
@@ -369,47 +199,34 @@ export function usesPreact(root: string): boolean {
   return existsSync(tsconfig) && /"jsxImportSource"\s*:\s*"@brydio\/app\/preact"/.test(readFileSync(tsconfig, 'utf8'));
 }
 
-/** A build problem as the tab shows it: the words, and the file and line when there are some. */
+function manifestOf(result: BuildResult): Record<string, unknown> | null {
+  const file = join(result.outDir, 'app.json');
+
+  return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>) : null;
+}
+
+/** The built custom-tool handlers, by path: a development app has no published bundle to run its tools from. */
+function handlersOf(result: BuildResult): Record<string, string> | undefined {
+  const handlers: Record<string, string> = {};
+
+  for (const [path, bytes] of result.files) {
+    if (path.startsWith('handlers/') && path.endsWith('.js')) handlers[path] = new TextDecoder().decode(bytes);
+  }
+
+  return Object.keys(handlers).length ? handlers : undefined;
+}
+
+/** A build problem as the app in Brydio shows it: the words, and the file and line when there are some. */
 function problemOf(problem: Problem | undefined): { message: string; file?: string; line?: number } {
   if (!problem) return { message: 'The build failed.' };
 
-  const where = problem as Problem & { file?: unknown; line?: unknown };
-
   return {
     message: problem.message,
-    ...(typeof where.file === 'string' ? { file: where.file } : {}),
-    ...(typeof where.line === 'number' ? { line: where.line } : {}),
+    ...(typeof problem.file === 'string' ? { file: problem.file } : {}),
+    ...(typeof problem.line === 'number' ? { line: problem.line } : {}),
   };
 }
 
 function titleOf(raw: Record<string, unknown>): string {
   return typeof raw.displayName === 'string' && raw.displayName ? raw.displayName : String(raw.name ?? 'app');
-}
-
-function messageOf(answer: Answer): string {
-  const message = (answer.json as { message?: unknown } | null)?.message;
-
-  if (typeof message === 'string') return message;
-  if (Array.isArray(message)) return message.join(' ');
-
-  return `status ${answer.status}`;
-}
-
-/** What to tell the person when Brydio said no, in its words where it gave some. */
-function turnedAway(answer: Answer, apiUrl: string): string {
-  if (answer.status === 401)
-    return `${apiUrl} did not accept ${TOKEN_ENV}. Make a new key in Brydio Settings > Developer and give it the Develop apps permission.`;
-  if (answer.status === 423) return "Apps aren't switched on for this workspace. An administrator can turn them on.";
-
-  return messageOf(answer);
-}
-
-async function askInTerminal(question: string): Promise<string> {
-  const terminal = createInterface({ input: process.stdin, output: process.stdout });
-
-  try {
-    return await terminal.question(question);
-  } finally {
-    terminal.close();
-  }
 }

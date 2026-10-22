@@ -2,7 +2,7 @@
 
 export { RUNTIME_MAX_BYTES, build, describeBuild, packageVersionProblem, runtimeBytesOf, sdkVersionFor, type BuildOptions, type BuildResult } from './build.ts';
 export { create, CreateRefused, SDK_ROOT, TEMPLATES, type CreateOptions, type Template } from './create.ts';
-export { dev, DevRefused, DEV_CONFIG, DEV_PATH, type DevOptions, type DevSession } from './dev.ts';
+export { BUILD_PATH, dev, DevRefused, DEV_CONFIG, type DevOptions, type DevSession, type ServedBuild } from './dev.ts';
 export { DIST, MANIFEST_PATHS, formatProblem, readProject, sourceOf, type Problem, type Project } from './project.ts';
 export { FORBIDDEN_GLOBALS, checkSource, type SourceProblemCode } from './source-checks.ts';
 export { checkSources, screenCalls, validate, type ValidateOptions, type ValidateResult } from './validate.ts';
@@ -30,7 +30,6 @@ export {
 } from './keys.ts';
 export { SIGNING_VERSION, canonicalJson, signVersion, signingMessage, type SignedVersion } from './signing.ts';
 export { main } from './main.ts';
-export { API_URL_ENV, TOKEN_ENV } from './api.ts';
 export {
   ACCESS,
   TAG_FORMAT,

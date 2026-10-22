@@ -17,13 +17,14 @@ template, built with Brydio's element functions and no framework.
 ## Running it
 
 ```sh
-bun run dev        # brydio dev: a tab in your own project, redrawn on every save
+bun run dev        # brydio dev: serve it on localhost, rebuilt on every save
 bun run test       # brydio test: the tests, against the fake host
 bun run validate   # brydio validate: what Brydio would refuse at publish
 ```
 
-`brydio dev` signs in with `BRYDIO_API_URL` and `BRYDIO_TOKEN`, asks once
-which project to use, and remembers it in `.brydio/dev.json`.
+`brydio dev` needs no key and talks to nothing. To see the app in Brydio,
+turn on Developer mode, open Settings > Developer > Load from localhost, and
+give the port it prints (5174) and a project you own.
 
 ## Plain or Preact
 

@@ -152,11 +152,13 @@ brydio deprecate my-app@1.3.0 "data bug, use 1.3.1"
   `package.json` to one version (by default the newest of npm's `latest` and
   `next` tags, since SDK releases go out under `next`), installs, builds and
   validates, and says when that SDK is below the registry's minimum.
-- `brydio dev` builds, serves `dist/` on `http://localhost:5174`, builds again
-  whenever a file changes, and prints the command that loads the build into a
-  local Brydio. For now it still shows the build in a project with
-  `BRYDIO_API_URL` and a Settings > Developer `BRYDIO_TOKEN`; it will need
-  neither once Brydio can load a build from localhost in your own browser.
+- `brydio dev` builds, serves `dist/` on `http://localhost:5174`, and builds
+  again whenever a file changes. It needs no key and makes no call to Brydio
+  or the registry. In Brydio, with Developer mode on, Settings > Developer >
+  Load from localhost takes the port and a project you own: your signed-in
+  browser reads the build from localhost (`/__brydio/build`) and shows the app
+  there, marked development, to you alone. It is always a private copy, never
+  an installed one, and has none of its records or secrets.
 
 ## Testing a screen
 
