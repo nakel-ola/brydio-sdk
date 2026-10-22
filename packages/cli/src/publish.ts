@@ -378,10 +378,20 @@ async function publishing(dir: string, options: PublishOptions, out: (line: stri
       out('A version is never replaced. Give this build a new number with brydio version patch, and publish again.');
 
       return 1;
-    case 422:
+    case 422: {
       out(`The registry refused this version${at ? ` at ${at}` : ''}: ${said('the bundle was refused.')}`);
 
+      // Every problem, when the registry lists more than the first.
+      const problems = (answer.body as unknown as { problems?: unknown }).problems;
+
+      if (Array.isArray(problems) && problems.length > 1) {
+        for (const problem of problems.slice(1).map(refusalOf)) {
+          out(`  and${problem.at ? ` at ${problem.at}` : ''}: ${problem.message ?? 'refused.'}${problem.code ? ` [${problem.code}]` : ''}`);
+        }
+      }
+
       return 1;
+    }
     case 413:
       out(`The registry refused the upload as too large: ${said('it is over the size the registry takes.')}`);
 

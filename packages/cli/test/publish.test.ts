@@ -225,6 +225,17 @@ describe('brydio publish to the registry (PB03)', () => {
     expect(await say(422, { code: 'grant_unknown', message: 'app.json asks for "camera".', at: 'grants.host' })).toContain(
       'The registry refused this version at grants.host: app.json asks for "camera". [grant_unknown]',
     );
+    expect(
+      await say(422, {
+        code: 'grant_unknown',
+        message: 'app.json asks for "camera".',
+        at: 'grants.host',
+        problems: [
+          { code: 'grant_unknown', message: 'app.json asks for "camera".', at: 'grants.host' },
+          { code: 'secret_in_bundle', message: 'That package contains a secret.' },
+        ],
+      }),
+    ).toContain('  and: That package contains a secret. [secret_in_bundle]');
     expect(await say(403, { code: 'not_publisher', message: 'tiny is published by another publisher.' })).toContain(
       'The registry refused this: tiny is published by another publisher. [not_publisher]',
     );
