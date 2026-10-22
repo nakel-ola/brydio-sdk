@@ -163,6 +163,8 @@ describe('brydio logout', () => {
     expect(reg.received).toMatchObject([{ method: 'POST', path: '/v1/logout', authorization: `Bearer ${ADA_TOKEN}` }]);
     expect(readLogins({ home: at }).logins).toEqual({});
     expect(reg.users[ADA_TOKEN]).toBeUndefined();
+    // The next command still goes to the same registry, and says it is logged out of it.
+    expect(registryOf({ home: at }, {})).toBe(reg.url);
   });
 
   test('forgets the token even when the registry can’t be told, and says the token still works there', async () => {

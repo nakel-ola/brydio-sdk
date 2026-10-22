@@ -1,5 +1,5 @@
 import { ACCESS, TAG_FORMAT, registryApp, type Access } from './publish.ts';
-import { RegistryRefused, appAndVersion, bodyOf, path, refusalOf, registry, turnedAway, type Answer, type Registry, type RegistryOptions } from './registry.ts';
+import { RegistryRefused, appAndVersion, publisherName, bodyOf, path, refusalOf, registry, turnedAway, type Answer, type Registry, type RegistryOptions } from './registry.ts';
 
 /**
  * What a publisher changes about an app already on the registry, without
@@ -48,7 +48,7 @@ export function tag(words: string[], options: AppCommandOptions = {}): Promise<n
 
     if (!name) throw new RegistryRefused(`Say which tag: brydio tag ${app}@${version} <tag>, like latest or beta.`, 2);
 
-    if (!TAG_FORMAT.test(name)) throw new RegistryRefused(`"${name}" is not a tag. A tag is a lower-case word of up to 32 letters, digits and dashes, like latest or beta.`, 2);
+    if (!TAG_FORMAT.test(name)) throw new RegistryRefused(`"${name}" is not a tag. A tag starts with a lower-case letter and has up to 40 lower-case letters, digits, dots, dashes and underscores, like latest or beta.`, 2);
 
     const reg = registry(options, 'signedIn');
 
@@ -98,7 +98,7 @@ export function tags(words: string[], options: AppCommandOptions = {}): Promise<
 
     if (!found) throw new RegistryRefused(`${reg.url} has no app called ${app}.`);
 
-    out(`${found.key}, published by ${found.publisher}, ${found.access} access${found.retired ? ', retired' : ''}`);
+    out(`${found.key}, published by ${publisherName(found.publisher)}, ${found.access} access${found.retired ? ', retired' : ''}`);
 
     for (const [one, version] of Object.entries(found.tags).sort()) out(`  ${one.padEnd(10)} ${version}`);
 

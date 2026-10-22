@@ -232,7 +232,8 @@ export function fakeRegistry(
 
         return json({
           key,
-          publisher: app.publisher,
+          // As built: `{ id, name }` (registry-contract.md change log, 22 Oct).
+          publisher: { id: app.publisher, name: publishers.find(one => one.id === app.publisher)?.name ?? app.publisher },
           access: app.access,
           retired: app.retired,
           tags: app.tags,

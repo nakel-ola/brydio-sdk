@@ -126,7 +126,8 @@ export function logout(options: RegistryOptions = {}): Promise<number> {
 
     const { [reg.url]: _, ...rest } = file.logins;
 
-    writeLogins({ ...(file.current && file.current !== reg.url ? { current: file.current } : {}), logins: rest }, options);
+    // `current` stays, so the next `brydio login` goes back to the same registry.
+    writeLogins({ ...(file.current ? { current: file.current } : {}), logins: rest }, options);
     out(`Logged out of ${reg.url}.`);
 
     if (!revoked) out('The registry could not be told, so the token still works there until it runs out. It is gone from this computer.');

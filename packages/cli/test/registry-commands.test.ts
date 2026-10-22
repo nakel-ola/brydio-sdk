@@ -107,7 +107,7 @@ describe('brydio tags', () => {
     const { code, text } = await run(tags, ['tasks'], reg, { loggedIn: false });
 
     expect(code).toBe(0);
-    expect(text).toContain('tasks, published by pub_acme, workspace access');
+    expect(text).toContain('tasks, published by Acme Ltd (pub_acme), workspace access');
     expect(text).toContain('  beta       1.5.0');
     expect(text).toContain('  latest     1.4.0');
     expect(text).toContain('deprecated: data bug, use 1.3.1');

@@ -264,7 +264,8 @@ export interface Me {
 /** What `GET /v1/apps/:key` answers. */
 export interface RegistryApp {
   key: string;
-  publisher: string;
+  /** `{ id, name }` from the registry as built; a bare id from v1 as first written. */
+  publisher: string | { id: string; name: string };
   access: 'workspace' | 'public';
   retired: boolean;
   tags: Record<string, string>;
@@ -290,4 +291,9 @@ export function choosePublisher(me: Me, named: string | undefined, why: string):
   if (me.publishers.length > 1) throw new RegistryRefused(`${me.user.name} is in more than one publisher. Say which ${why} with --publisher: ${list}.`, 2);
 
   return me.publishers[0]!;
+}
+
+/** A publisher as `GET /v1/apps/:key` gives it, in words: `Acme Ltd (pub_acme)`. */
+export function publisherName(publisher: RegistryApp['publisher']): string {
+  return typeof publisher === 'string' ? publisher : `${publisher.name} (${publisher.id})`;
 }

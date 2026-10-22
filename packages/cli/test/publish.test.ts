@@ -118,7 +118,7 @@ describe('brydio publish to the registry (PB03)', () => {
     expect(uploads(reg)[1]!.body).not.toHaveProperty('access');
     expect(uploads(reg)[1]!.body).not.toHaveProperty('publisher');
     expect(text).toContain('with public access');
-    expect(text).toContain('tiny is already published by pub_acme, so --publisher is not used');
+    expect(text).toContain('tiny is already published by Acme Ltd (pub_acme), so --publisher is not used');
   });
 
   test('refuses a bad tag or access, and a computer not logged in, before building or asking anything', async () => {

@@ -11,6 +11,7 @@ import {
   refusalOf,
   registry,
   turnedAway,
+  publisherName,
   type Me,
   type Registry,
   type RegistryApp,
@@ -52,8 +53,8 @@ import { zipFiles } from './zip.ts';
 
 export const ACCESS = ['workspace', 'public'] as const;
 export type Access = (typeof ACCESS)[number];
-/** A tag is a short lower-case word: `latest`, `beta`, `next`, `canary-2`. */
-export const TAG_FORMAT = /^[a-z][a-z0-9-]{0,31}$/;
+/** A tag, as the registry reads one: `latest`, `beta`, `next`, `canary-2`, `rc.1`. */
+export const TAG_FORMAT = /^[a-z][a-z0-9._-]{0,39}$/;
 
 export interface PublishOptions extends RegistryOptions {
   /** The tag the version goes under. `latest` unless given. */
@@ -184,7 +185,7 @@ async function publishing(dir: string, options: PublishOptions, out: (line: stri
 
   // Everything that can be wrong with the words, the login or the key is said
   // before building: found in a second, not after the pictures.
-  if (!TAG_FORMAT.test(tag)) throw new RegistryRefused(`"${tag}" is not a tag. A tag is a lower-case word of up to 32 letters, digits and dashes, like latest or beta.`, 2);
+  if (!TAG_FORMAT.test(tag)) throw new RegistryRefused(`"${tag}" is not a tag. A tag starts with a lower-case letter and has up to 40 lower-case letters, digits, dots, dashes and underscores, like latest or beta.`, 2);
 
   if (options.access !== undefined && !ACCESS.includes(options.access as Access)) {
     throw new RegistryRefused(`--access is workspace (your publisher's own workspaces) or public (the store, after Brydio's review), not "${options.access}".`, 2);
@@ -213,7 +214,7 @@ async function publishing(dir: string, options: PublishOptions, out: (line: stri
 
     publisherId = choosePublisher(me, options.publisher, `${key} belongs to`).id;
   } else if (found && options.publisher) {
-    out(`${key} is already published by ${found.publisher}, so --publisher is not used: an app stays with its publisher.`);
+    out(`${key} is already published by ${publisherName(found.publisher)}, so --publisher is not used: an app stays with its publisher.`);
   }
 
   if (found && version) {
