@@ -419,6 +419,9 @@ export function fakeHandlerClient(options: FakeHandlerOptions = {}): {
         (options.model?.generateMany ?? unavailable('model.generateMany')) as HandlerClient['model']['generateMany'],
         seam('model','use its managed model',false),
       ),
+      summarize: recorded('model.summarize', (options.model?.summarize ?? unavailable('model.summarize')) as HandlerClient['model']['summarize'], seam('model','use its managed model',false)),
+      chat: recorded('model.chat', (options.model?.chat ?? unavailable('model.chat')) as HandlerClient['model']['chat'], seam('model','use its managed model',false)),
+      stream: recorded('model.stream', (options.model?.stream ?? unavailable('model.stream')) as HandlerClient['model']['stream'], seam('model','use its managed model',false)),
     }) as HandlerClient['model'],
     secrets: Object.freeze({
       get: recorded('secrets.get', async (name: string) => {

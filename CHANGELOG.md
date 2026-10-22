@@ -10,6 +10,8 @@ to do about it.
 
 The manifest is now the one place an app's version lives. `brydio build` refuses a `package.json` whose `version` differs from the manifest's (`version_mismatch`), and the templates no longer carry one. To upgrade: take `"version"` out of your app's `package.json`, run `brydio login`, then publish as before.
 
+Grow a handler's `model` to everything `@brydio/api/ai` had (PB10): `generate` without a `schema` answers plain text; `summarize({ text, length?, format? })`; `chat(messages, { instructions? })` for the next turn; and `stream(...)`, whose pieces reach the calling screen through `tools.call(name, input, { onText })` (`tools/text` before `tools/result`). Every call takes `level: 'fast' | 'smart'` and never a model id (PB11): Brydio answers on the source the person chose, and `summarize`, `chat` and `stream` say which in `source`, with a `notice` when it wasn't their first. Nothing you wrote has to change: `generate` with a schema answers as before, on `fast`. Fake-host fixtures take `summarize`, `chat` and `stream`. See [Brydio's AI](docs/ai.md).
+
 ## 0.1.0-alpha.59
 
 Add the `person-profile` placement kind: a panel Brydio draws on every person's Directory profile for viewers who can read the instance. Its screen sees `placement.personId` (the profiled person's workspace user id) and `placement.id` `profile:<key>:<personId>`; every read is the viewer's own. Like a chat card it has no `sizes`, `children` or `settings` (`placement_person_profile_shape`). See [Host seams](docs/host-seams.md).

@@ -1,4 +1,4 @@
-import { defaultBridge, type Bridge } from './bridge.ts';
+import { defaultBridge, type Bridge, type ToolCallOptions } from './bridge.ts';
 import type { AppDocument, ApprovalDecision, ApprovalView, ViewerProfile, CopyTarget, DownloadType, DataChange, HostContext, ListQuery, ListResult, NavigateTarget, ToastAction, ToastTone, ToolResult } from './protocol.ts';
 import { createRoot, type RemoteRoot, type RootOptions } from './tree.ts';
 
@@ -50,12 +50,12 @@ export const tools = {
    * (`code` is `stale` for an update from an old version) and a `HostError`
    * when the host or the person did.
    */
-  call<T = unknown>(tool: string, input: Record<string, unknown> = {}): Promise<T> {
-    return defaultBridge().callTool<T>(tool, input);
+  call<T = unknown>(tool: string, input: Record<string, unknown> = {}, options: ToolCallOptions = {}): Promise<T> {
+    return defaultBridge().callTool<T>(tool, input, options);
   },
   /** The same call, answering with the tool's whole result rather than rejecting on `isError`. */
-  result(tool: string, input: Record<string, unknown> = {}): Promise<ToolResult> {
-    return defaultBridge().callToolResult(tool, input);
+  result(tool: string, input: Record<string, unknown> = {}, options: ToolCallOptions = {}): Promise<ToolResult> {
+    return defaultBridge().callToolResult(tool, input, options);
   },
 };
 
@@ -156,6 +156,7 @@ export {
   type BridgeOptions,
   type BuiltApp,
   type BuiltCollection,
+  type ToolCallOptions,
   type WatchListener,
 } from './bridge.ts';
 export { format } from './format.ts';

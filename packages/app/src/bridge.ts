@@ -140,6 +140,13 @@ interface Pending {
   tool: string;
   resolve(result: ToolResult): void;
   reject(error: Error): void;
+  /** For a streamed call: each piece of the handler's model answer as it arrives. */
+  onText?: (text: string) => void;
+}
+
+/** How a tool is called: with `onText`, a handler's `model.stream` answer arrives piece by piece. */
+export interface ToolCallOptions {
+  onText?: (text: string) => void;
 }
 
 export interface BridgeOptions {
@@ -273,17 +280,18 @@ export class Bridge {
    * so there is no timeout: the call ends when the host answers or stops the
    * worker. A person's *Don't allow* arrives as a `HostError`.
    */
-  callToolResult(tool: string, input: Record<string, unknown> = {}): Promise<ToolResult> {
+  callToolResult(tool: string, input: Record<string, unknown> = {}, options: ToolCallOptions = {}): Promise<ToolResult> {
     const refused = this.#toolGrant(tool);
 
     if (refused) return Promise.reject(refused);
     if (this.#stopped) return Promise.reject(new TeardownError());
 
     const id = String(++this.#nextId);
+    const onText = options.onText;
 
     return new Promise<ToolResult>((resolve, reject) => {
-      this.#pending.set(id, { tool, resolve, reject });
-      this.#port.post({ jsonrpc: '2.0', id, method: 'tools/call', params: { id, tool, input } });
+      this.#pending.set(id, { tool, resolve, reject, ...(onText ? { onText } : {}) });
+      this.#port.post({ jsonrpc: '2.0', id, method: 'tools/call', params: { id, tool, input, ...(onText ? { stream: true } : {}) } });
     });
   }
 
@@ -292,8 +300,8 @@ export class Bridge {
    * rejects with a `ToolError` when the tool said no and a `HostError` when
    * the host did.
    */
-  async callTool<T = unknown>(tool: string, input: Record<string, unknown> = {}): Promise<T> {
-    const result = await this.callToolResult(tool, input);
+  async callTool<T = unknown>(tool: string, input: Record<string, unknown> = {}, options: ToolCallOptions = {}): Promise<T> {
+    const result = await this.callToolResult(tool, input, options);
 
     if (result?.isError) throw new ToolError(tool, result);
 
@@ -646,6 +654,17 @@ export class Bridge {
         this.#settle(String(params.id), pending => pending.resolve((params.result ?? {}) as ToolResult));
 
         return;
+      case 'tools/text': {
+        const pending = this.#pending.get(String(params.id));
+
+        if (pending?.onText && typeof params.text === 'string') {
+          const text = params.text;
+
+          run(() => pending.onText!(text));
+        }
+
+        return;
+      }
       case 'tools/error':
         this.#settle(String(params.id), pending => pending.reject(new HostError(params.error)));
 

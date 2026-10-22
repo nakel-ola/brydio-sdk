@@ -322,6 +322,12 @@ export interface ToolsCallParams {
   id: string;
   tool: string;
   input: Record<string, unknown>;
+  /**
+   * Asks for the handler's `model.stream` answer as it arrives: the host
+   * sends `tools/text` for each piece before `tools/result`. A host from
+   * before streaming ignores it and answers only `tools/result`.
+   */
+  stream?: boolean;
 }
 
 /** One supported Brydio API action. The host owns the closed registry behind it. */
@@ -445,6 +451,12 @@ export interface RpcError {
   message: string;
 }
 
+/** One piece of a streamed model answer, for the `tools/call` whose id it carries, before its `tools/result`. */
+export interface ToolsTextParams {
+  id: string | number;
+  text: string;
+}
+
 export interface ToolsErrorParams {
   id: string | number;
   error: RpcError;
@@ -486,6 +498,7 @@ export const HOST_METHODS = [
   'tree/event',
   'tree/refused',
   'tools/result',
+  'tools/text',
   'tools/error',
   'api/result',
   'api/error',
