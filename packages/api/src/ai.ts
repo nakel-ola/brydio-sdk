@@ -20,7 +20,7 @@
 
 /** The environment variable holding the key, `bry_live_…`. */
 export const API_KEY_ENV = 'BRYDIO_API_KEY';
-/** Brydio's API, like `https://api.brydio.app`; the same setting the CLI reads. */
+/** Brydio's API, like `http://localhost:4000`; the same setting `brydio dev` reads. */
 export const API_URL_ENV = 'BRYDIO_API_URL';
 
 const API_PATH = '/api/v1/ai';
@@ -136,7 +136,7 @@ export function createAiClient(options: AiClientOptions = {}): AiClient {
     if (!KEY_SHAPE.test(apiKey)) {
       throw new BrydioAiError(`${API_KEY_ENV} isn't a Brydio developer API key. They start bry_live_.`, 0);
     }
-    if (!apiUrl) throw new BrydioAiError(`Set ${API_URL_ENV} to your Brydio's API address, like https://api.brydio.app.`, 0);
+    if (!apiUrl) throw new BrydioAiError(`Set ${API_URL_ENV} to your Brydio's API address, like http://localhost:4000.`, 0);
 
     let answer: Response;
 

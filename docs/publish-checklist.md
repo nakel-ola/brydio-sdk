@@ -6,17 +6,19 @@ exceptions.
 
 `brydio validate` runs these checks on your own machine. `brydio publish`
 runs `brydio build` and `brydio validate` before it uploads anything. Then
-Brydio's publish route (`POST /api/v1/apps/publish`) checks the upload again,
-because an older or edited command line is still just a client. Every check
-reports a code and one sentence, one item per failure. Warnings don't stop a
-build or a publish; errors do.
+the app registry (`POST /v1/apps/:key/versions` on `registry.brydio.com`)
+checks the upload again, because an older or edited command line is still
+just a client, and Brydio checks it once more when it pulls the version from
+the registry. Every check reports a code and one sentence, one item per
+failure. Warnings don't stop a build or a publish; errors do.
 
 The columns:
 
 - **validate**: whether `brydio validate` (and so `brydio publish`, before
   uploading) runs the check.
-- **server**: whether Brydio runs it again. "publish" means the publish route
-  refuses the version. "runtime" means Brydio refuses the thing when a screen
+- **server**: whether it is run again. "publish" means the registry refuses
+  the version (Brydio's own publish route used the same codes and words, and
+  the registry keeps them). "runtime" means Brydio refuses the thing when a screen
   does it, but still publishes the version. "no" means only the command
   line checks it.
 - **Refused with**: the sentence you see. `<angle brackets>` stand for your
@@ -217,7 +219,7 @@ against the highest version already published below this one.
 
 | Code | Refused with | validate | server | How to fix |
 |---|---|---|---|---|
-| `migration_missing` | `<why>` (`<version>` against `<previous>`, the version before it.) `<why>` is one of the sentences in the next table. `validate` lists every one; the route stops at the first. | with a previous version: `--previous <app.json>`, an older `dist/`, or, in `brydio publish`, the version Brydio last published (`GET /api/v1/apps/publish/:appKey/latest`), checked before uploading | publish | Add the step to `migrations` under this version's number. |
+| `migration_missing` | `<why>` (`<version>` against `<previous>`, the version before it.) `<why>` is one of the sentences in the next table. `validate` lists every one; the route stops at the first. | with a previous version: `--previous <app.json>`, an older `dist/`, or, in `brydio publish`, the highest version below this one on the registry (`GET /v1/apps/:key/versions/:version`), checked before uploading | publish | Add the step to `migrations` under this version's number. `brydio version` writes a first draft of it. |
 | `previous_unreadable` | There is no manifest at `<path>` to compare this version with. Or: `<path>` is not valid JSON, so this version can't be compared with it. | yes | no | Point `--previous` at the published version's `app.json`. |
 | `previous_not_older` | `<path>` is version `<v>`, not one before `<version>`, so it can't say what this version changes. | yes | no | Point `--previous` at an earlier version. |
 
@@ -316,8 +318,21 @@ own step.
 
 | Code | Refused with | validate | server | How to fix |
 |---|---|---|---|---|
-| `sdk_unsupported` | This app was built with SDK `<v>`. Brydio runs apps built with SDK `<oldest>` or newer, before `<before>`. (Or: app.json does not say which SDK built it. Build it with brydio build. …) | no: `brydio publish` checks it before uploading, against `GET /api/v1/apps/sdk` | publish | Build with an SDK in the range. |
+| `sdk_below_minimum` | This app was built with SDK `<v>`, below `<minimum>`, the oldest SDK the registry takes a new version from. Run brydio upgrade-sdk, then publish again. | no: `brydio publish` checks it before uploading, against the registry's `GET /v1/sdk` | publish (422) | Run `brydio upgrade-sdk`. A higher minimum announced for later is a warning until its date. |
 | `screenshot_failed` | `<screen>, <narrow or wide>, <light or dark>`: the screen stopped, had a node refused, threw, or drew nothing, when pictured in the fake host with `.brydio/samples.json`. (Or: pictures need `@brydio/fake-host` in the app's devDependencies.) | no: `brydio publish` pictures every screen before uploading | publish, as `screenshot_invalid` for a picture the server refuses | Fix the screen so it draws with the sample records, or fix `.brydio/samples.json`. |
-| `version_exists` | `<app> <version>` was already published on `<date>` `<how it differs>`. A version is never replaced; publish this as a new version number. | no | publish (409) | Raise the version number. |
-| `not_publisher` | `<app>` is published by other accounts. Ask one of them to add you as a publisher. | no | publish (403) | Ask a publisher to add you. |
+| `version_exists` | The registry's sentence: `<app> <version>` is already published with a different bundle. A version is never replaced. | no | publish (409) | Raise the version number with `brydio version patch`. Exactly the same bundle again is not an error. |
+| `version_lower` | `<app> <version>` is lower than `<highest>`, the highest version on `<registry>`. Give this build a higher number with brydio version patch, and publish again. | no: `brydio publish` checks it before building, against `GET /v1/apps/:key` | publish (409) | Raise the version number above the highest published. |
+| `retired` | `<app>` is retired on `<registry>`, so no new version of it can be published. | no: `brydio publish` checks it before building | publish (423) | A retired app takes no new versions, ever. Publish under a new name. |
+| `not_publisher` | The registry's sentence: `<app>` is published by another publisher. | no | publish (403) | Ask an owner of that publisher to add you, or publish under your own name. |
 | `manifest_unreadable` | app.json is not valid JSON. (Or: app.json is not a JSON object.) | no: `manifest_not_json` covers it | publish | Fix the JSON. |
+
+## The version number
+
+The manifest is the one place an app's version lives. `brydio version
+patch|minor|major|<x.y.z>` writes it there, and nowhere else.
+
+| Code | Refused with | validate | server | How to fix |
+|---|---|---|---|---|
+| `version_mismatch` (from `brydio build`) | package.json says version `<v>` and the manifest says `<w>`. An app's version lives in the manifest alone. | build | no | Take `"version"` out of `package.json`, and change the number with `brydio version`. |
+| `version_in_package_json` (from `brydio version`) | package.json says "version": `<v>`. An app's version lives in .brydio/app.json alone: take the line out of package.json, then run brydio version again. | no: `brydio version` | no | Take `"version"` out of `package.json`. |
+| `version_not_higher` (from `brydio version`) | `<v>` is not higher than `<current>`, the manifest's version now. A version number only goes up. | no: `brydio version` | no | Give a higher number, or say `patch`, `minor` or `major`. |

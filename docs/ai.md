@@ -62,7 +62,7 @@ together with the person it ran for and their workspace.
 
 ```sh
 export BRYDIO_API_KEY=bry_live_…
-export BRYDIO_API_URL=https://api.brydio.app   # your Brydio's API address
+export BRYDIO_API_URL=http://localhost:4000      # your Brydio's API address
 ```
 
 ```ts

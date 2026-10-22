@@ -4,6 +4,12 @@ Every package here shares one version, so this is one changelog. Each entry
 says what changed and, where something you wrote has to change with it, what
 to do about it.
 
+## Unreleased
+
+`brydio publish` now uploads to the app registry (`https://registry.brydio.com`, or `--registry <url>` / `BRYDIO_REGISTRY_URL`) instead of a Brydio API, with the login `brydio login` keeps in `~/.brydio/registry.json`. It takes `--tag` (default `latest`) and `--access workspace|public`, and refuses before building a build below the registry's SDK minimum (`sdk_below_minimum`), a number below the highest published (`version_lower`) and a retired app. `BRYDIO_TOKEN`, `BRYDIO_API_URL` and `--api` no longer apply to `publish` or `keys`; `brydio dev` still reads them until Brydio loads builds from localhost. New commands: `login`, `logout`, `whoami`, `publishers`, `pack`, `version`, `tag`, `tags`, `deprecate`, `access`, `retire` and `upgrade-sdk`. `brydio keys` uses the registry's key routes, and a second key's approval is sent as `approvedBy`.
+
+The manifest is now the one place an app's version lives. `brydio build` refuses a `package.json` whose `version` differs from the manifest's (`version_mismatch`), and the templates no longer carry one. To upgrade: take `"version"` out of your app's `package.json`, run `brydio login`, then publish as before.
+
 ## 0.1.0-alpha.59
 
 Add the `person-profile` placement kind: a panel Brydio draws on every person's Directory profile for viewers who can read the instance. Its screen sees `placement.personId` (the profiled person's workspace user id) and `placement.id` `profile:<key>:<personId>`; every read is the viewer's own. Like a chat card it has no `sizes`, `children` or `settings` (`placement_person_profile_shape`). See [Host seams](docs/host-seams.md).

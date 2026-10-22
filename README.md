@@ -36,7 +36,7 @@ it is Issues, in `../brydio-issues`.
 | `packages/app` | What runs inside a screen: it keeps the screen's tree of building blocks, talks to Brydio, and lets you write screens with Preact (a small React). |
 | `packages/api` | Typed project, file, chat and named-connection reads and writes. Every call goes through the app bridge; no token, cookie or server address reaches the app. |
 | `packages/fake-host` | A pretend Brydio for tests: it runs a built screen, remembers what it drew, lets a test press buttons, and answers tools from sample records. |
-| `packages/cli` | The `brydio` command: `build`, `validate`, `test`, `dev` and `publish`. |
+| `packages/cli` | The `brydio` command: `build`, `validate`, `test`, `pack`, `version`, `dev`, and `login`, `publish`, `tag` and the rest against the app registry. |
 | `packages/create-app` | The packaged templates and initializer behind `npm create @brydio/app`. |
 | `templates/preact` | A starter app (a checklist) to copy. |
 | `CONTRACT-NOTES.md` | Every place the plan and Brydio's actual code differed, and which way this went. |
@@ -93,17 +93,70 @@ Run these in an app's folder (they need [Bun](https://bun.sh) 1.3):
   `bun test` against that build. Words after `--` go to `bun test`
   (`brydio test -- --test-name-pattern adds`). A build that fails runs no
   tests.
-- `brydio publish` builds and validates the app, then uploads `dist/` to
-  Brydio as a new version, signed in as you. Set `BRYDIO_TOKEN` to a Brydio
-  session token and `BRYDIO_API_URL` to the API's address (or pass
-  `--api <url>`). It first asks Brydio which SDK versions it runs, and
-  refuses a build outside them before uploading anything. It prints the version, the fingerprint and each screen's
-  address. Publishing exactly what is already published is not an error; a
-  version number already used by different code is refused, in Brydio's
-  words, naming both fingerprints.
+- `brydio pack` builds the app and lists every file `publish` would send,
+  with each one's size, the total against the 1 MB cap, and the zipped size.
+  Nothing is sent.
+- `brydio version patch|minor|major|<x.y.z>` raises the version in the
+  manifest, the one place it lives. `package.json` carries no version; a
+  build refuses one that says a different number (`version_mismatch`). When a
+  collection's fields changed since the last published version (the
+  registry's, when you are logged in, else the manifest at git `HEAD`), it
+  adds a `migrations` entry for the new number and says which steps need you.
+
+### Publishing to the app registry
+
+Apps are published to the app registry, `https://registry.brydio.com`, the
+way packages are published to npm. The registry holds app versions, tags,
+access and publishers, and nothing else: it can't reach a workspace, and no
+command here talks to Brydio's own servers. Brydio pulls new versions from
+the registry, checks them again, and installs them where they are allowed.
+
+```sh
+brydio login                      # sign in with your Brydio account in the browser
+brydio publish                    # build, validate, picture, sign, upload under latest
+brydio publish --tag beta         # a version to try on a few workspaces first
+brydio tag my-app@1.4.0 latest    # promote it, or move latest back
+brydio deprecate my-app@1.3.0 "data bug, use 1.3.1"
+```
+
+- `brydio login` opens the registry's sign-in page, waits while you sign in
+  with your Brydio account, and keeps a registry-only token in
+  `~/.brydio/registry.json`, readable by your account alone. `brydio logout`
+  revokes it; `brydio whoami` says who you are and your publishers;
+  `brydio publishers create "<name>"` makes a publisher.
+- Every registry command prints the registry it talks to: `--registry <url>`,
+  else `BRYDIO_REGISTRY_URL`, else the registry you last logged in to, else
+  `https://registry.brydio.com`. A local one is
+  `brydio login --registry http://localhost:4300`.
+- `brydio publish` builds, validates, pictures every screen with
+  `@brydio/fake-host`, signs with `--key` (or `BRYDIO_SIGNING_KEY`) when you
+  have a key, and uploads to `POST /v1/apps/:key/versions`. Before building it
+  asks the registry for its SDK minimum and the app's versions, so a build
+  below the minimum (`sdk_below_minimum`), a number below the highest
+  (`version_lower`), a retired app, or a schema change without its migration
+  is refused before anything is sent. `--tag` defaults to `latest`.
+  `--access workspace` (the default for a new app) makes the version live at
+  once for your publisher's own workspaces; `--access public` sends it to
+  Brydio's review and the store. A published app keeps its access unless you
+  give one. Publishing exactly what is already published is not an error; a
+  number already used by a different bundle is refused (`version_exists`).
+- `brydio tag <app>@<version> <tag>` moves a tag, and `brydio tags <app>
+  [tag]` shows the tags, the versions and every move of a tag.
+  `brydio deprecate <app>@<version> "<message>"` shows that message to admins
+  of workspaces on the version (`--undo` takes it off). `brydio access <app>
+  workspace|public` changes who may install it. `brydio retire <app> --yes`
+  stops new versions for good.
+- `brydio keys create|list|retire|revoke` manages your publisher's signing
+  keys on the registry. The private half is made and kept on your computer.
+- `brydio upgrade-sdk [version]` moves every `@brydio/*` pin in the app's
+  `package.json` to one version (by default the newest of npm's `latest` and
+  `next` tags, since SDK releases go out under `next`), installs, builds and
+  validates, and says when that SDK is below the registry's minimum.
 - `brydio dev` builds, serves `dist/` on `http://localhost:5174`, builds again
   whenever a file changes, and prints the command that loads the build into a
-  local Brydio.
+  local Brydio. For now it still shows the build in a project with
+  `BRYDIO_API_URL` and a Settings > Developer `BRYDIO_TOKEN`; it will need
+  neither once Brydio can load a build from localhost in your own browser.
 
 ## Testing a screen
 
