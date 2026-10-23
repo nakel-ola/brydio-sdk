@@ -46,7 +46,7 @@ export function routeForMarkdown(basePath: string, target: string): string {
 
 function shell(title: string, content: string, basePath: string): string {
   const links = [
-    ['Home', ''], ['Elements', 'elements/'], ['Bridge', 'bridge/'], ['Manifest', 'manifest/'], ['Checklist', 'publish-checklist/'], ['Packages', 'packages/'],
+    ['Home', ''], ['Elements', 'elements/'], ['Bridge', 'bridge/'], ['Manifest', 'manifest/'], ['Checklist', 'publish-checklist/'], ['Design guide', 'design-guide/'], ['Packages', 'packages/'],
   ];
   const rail = ELEMENT_NAMES.map(name => `<a href="${href(basePath, `elements/${name}/`)}">${name}</a>`).join('');
   const nav = links.map(([label, route]) => `<a href="${href(basePath, route)}">${label}</a>`).join('');
@@ -170,6 +170,7 @@ export async function buildDocsSite({ outDir, basePath }: SiteBuildOptions): Pro
   await writeRoute('bridge/index.html', await markdownPage('The bridge', 'bridge.md'));
   await writeRoute('manifest/index.html', await markdownPage('Manifest', 'manifest.md'));
   await writeRoute('publish-checklist/index.html', await markdownPage('The publish checklist', 'publish-checklist.md'));
+  await writeRoute('design-guide/index.html', await markdownPage('Design guide', 'design-guide.md'));
   await writeRoute('support/index.html', await markdownPage('Support', 'support.md'));
   await writeRoute('security/index.html', await markdownPage('Security', 'security.md'));
   await writeRoute('packages/index.html', await packagePage(normalizedBasePath));

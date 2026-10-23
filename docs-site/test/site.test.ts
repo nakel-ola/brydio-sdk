@@ -133,7 +133,7 @@ test('keeps root-relative internal links valid at root and under a base path', a
       page(outDir, 'index.html').then(() => 'index.html'),
       page(outDir, 'elements/index.html').then(() => 'elements/index.html'),
       ...ELEMENT_NAMES.map(name => page(outDir, elementRoute(name)).then(() => elementRoute(name))),
-      ...['bridge', 'manifest', 'publish-checklist', 'support', 'security', 'packages'].map(route =>
+      ...['bridge', 'manifest', 'publish-checklist', 'design-guide', 'support', 'security', 'packages'].map(route =>
         page(outDir, `${route}/index.html`).then(() => `${route}/index.html`),
       ),
     ]);
