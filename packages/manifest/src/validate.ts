@@ -1,3 +1,4 @@
+import type { LookProblemCode } from './look.ts';
 import { appManifestSchema, newAppManifestSchema, type AppManifestWithData, type DataProblemCode } from './schema.ts';
 
 /**
@@ -11,7 +12,13 @@ import { appManifestSchema, newAppManifestSchema, type AppManifestWithData, type
  * line.
  */
 
-export type ManifestProblemCode = DataProblemCode | 'manifest_not_json' | 'manifest_invalid';
+export type ManifestProblemCode =
+  | DataProblemCode
+  | LookProblemCode
+  /** A frame screen without an .html page, or an .html entry that isn't a frame screen (PB27). */
+  | 'screen_kind_entry'
+  | 'manifest_not_json'
+  | 'manifest_invalid';
 
 export interface ManifestProblem {
   code: ManifestProblemCode;
