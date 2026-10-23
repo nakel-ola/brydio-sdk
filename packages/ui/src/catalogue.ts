@@ -13,9 +13,10 @@
  * `test/catalogue.test.ts` compares the two whenever a Brydio checkout sits
  * beside this repository.
  *
- * No setting accepts a colour, a pixel size, a class name or a style. Spacing,
- * tone and size are chosen by name, and Brydio turns the name into the right
- * value for the theme.
+ * Spacing, tone and size are chosen by name, and Brydio turns the name into
+ * the right value for the theme. Past the names, every element also takes a
+ * `style` (PB22), held to one safe list by `app-look.ts`, and a tone may name one
+ * of the app's own colours (PB21). No class names and no markup.
  */
 
 /** One setting: which values it takes. */
@@ -74,6 +75,14 @@ export const TABLE_COLUMNS = 12;
 export const TABLE_ROWS = 500;
 /** A column's key and a row's id: short, and never shown. */
 export const KEY_MAX = 128;
+
+/** The most shapes one `bry-canvas` draws at once (PB24). */
+export const CANVAS_OPS = 2_000;
+/** The furthest a canvas's own units reach. */
+export const CANVAS_EXTENT = 100_000;
+/** The longest path a canvas shape may trace, in SVG path words. */
+export const CANVAS_PATH = 4_000;
+const CANVAS_COORDINATE = { kind: 'int', min: -CANVAS_EXTENT, max: CANVAS_EXTENT } as const;
 
 /** The most a board op's source (a template, Mermaid, draw.io) or a shared library may hold. */
 export const BOARD_OP_SOURCE = 100_000;
@@ -476,6 +485,10 @@ export const CATALOGUE = {
     // what is shown stays the app's `value` until the app sends a new one.
     props: {
       value: { kind: 'text', max: LABEL_MAX },
+      // PB23: with `multiple`, several choices; `values` holds them and
+      // `change` carries `{ values }`. Without it, nothing changes.
+      multiple: { kind: 'boolean' },
+      values: { kind: 'list', max: SELECT_MAX, of: { kind: 'text', max: LABEL_MAX } },
       options: { kind: 'options', max: SELECT_MAX },
       placeholder: { kind: 'text', max: LABEL_MAX },
       label: { kind: 'text', max: LABEL_MAX },
@@ -951,6 +964,10 @@ export const CATALOGUE = {
     // A select with a search box: `change` with `{ value }`.
     props: {
       value: { kind: 'text', max: LABEL_MAX },
+      // PB23: with `multiple`, several choices; `values` holds them and
+      // `change` carries `{ values }`. Without it, nothing changes.
+      multiple: { kind: 'boolean' },
+      values: { kind: 'list', max: COMBOBOX_MAX, of: { kind: 'text', max: LABEL_MAX } },
       options: { kind: 'options', max: COMBOBOX_MAX },
       placeholder: { kind: 'text', max: LABEL_MAX },
       search: { kind: 'text', max: LABEL_MAX },
@@ -2592,6 +2609,60 @@ export const CATALOGUE = {
       empty: { kind: 'text', max: LABEL_MAX },
     },
     events: ['select', 'create', 'move', 'resize', 'navigate', 'pick'],
+    children: false,
+  },
+  'bry-box': {
+    // PB23: a container with no look of its own. What it holds is laid out by
+    // its `style`, which every element takes (PB22).
+    props: {},
+    events: [],
+    children: true,
+  },
+  'bry-canvas': {
+    // PB24: a fenced area the app draws shapes into, in its own units (`view`:
+    // `w` by `h`). Colours are names, Brydio's (`brydio.text`) or the app's
+    // (`app.ocean`); text is Brydio's font; nothing is loaded and it holds no
+    // controls. `pointer` with `{ phase, x, y }`, and `key` with `{ key }` when
+    // `focusable`.
+    props: {
+      label: { kind: 'text', max: LABEL_MAX },
+      view: {
+        kind: 'shape',
+        fields: { w: { kind: 'int', min: 1, max: 4_000 }, h: { kind: 'int', min: 1, max: 4_000 } },
+        required: ['w', 'h'],
+      },
+      focusable: { kind: 'boolean' },
+      ops: {
+        kind: 'list',
+        max: CANVAS_OPS,
+        of: {
+          kind: 'shape',
+          fields: {
+            kind: { kind: 'enum', values: ['rect', 'circle', 'line', 'path', 'text'] },
+            x: CANVAS_COORDINATE,
+            y: CANVAS_COORDINATE,
+            w: CANVAS_COORDINATE,
+            h: CANVAS_COORDINATE,
+            x2: CANVAS_COORDINATE,
+            y2: CANVAS_COORDINATE,
+            r: { kind: 'int', min: 0, max: CANVAS_EXTENT },
+            round: { kind: 'int', min: 0, max: 1_000 },
+            d: { kind: 'text', max: CANVAS_PATH },
+            text: { kind: 'text', max: LABEL_MAX },
+            fill: { kind: 'text', max: 64 },
+            stroke: { kind: 'text', max: 64 },
+            line: { kind: 'int', min: 0, max: 64 },
+            points: { kind: 'int', min: 8, max: 96 },
+            weight: { kind: 'enum', values: ['400', '500', '600', '700'] },
+            align: { kind: 'enum', values: ['start', 'center', 'end'] },
+            opacity: { kind: 'int', min: 0, max: 100 },
+          },
+          required: ['kind'],
+        },
+      },
+    },
+    required: ['label', 'view'],
+    events: ['pointer', 'key'],
     children: false,
   },
 } as const satisfies Readonly<Record<`bry-${string}`, ElementSpec>>;

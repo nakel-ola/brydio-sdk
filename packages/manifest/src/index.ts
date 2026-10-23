@@ -179,3 +179,17 @@ export {
   type ManifestValidation,
 } from './validate.ts';
 export { defineManifest, type ManifestShape, type ScreenNameOf, type WithDeclaredScreens } from './define.ts';
+
+// PB21, PB22: the look rules, Brydio's one rule set, copied.
+export {
+  themeProblems,
+  themeWarnings,
+  themeOf,
+  styleRefusal,
+  colourRefusal,
+  type AppTheme,
+  type ColourPair,
+  type LookProblem,
+  type LookProblemCode,
+  type LookWarningCode,
+} from './look.ts';

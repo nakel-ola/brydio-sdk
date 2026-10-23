@@ -24,11 +24,10 @@ export const MAX_TEXT = PARAGRAPH_MAX;
  * sentence comes first, unchanged.
  */
 export const FORBIDDEN_PROPS: Readonly<Record<string, string>> = {
-  style: 'Brydio draws every element in its own style; there is no style setting.',
   className: 'There are no classes in a Brydio app; choose a setting the element offers.',
   class: 'There are no classes in a Brydio app; choose a setting the element offers.',
-  color: 'Colours come from Brydio’s tokens through a setting like tone, never a value.',
-  colour: 'Colours come from Brydio’s tokens through a setting like tone, never a value.',
+  color: 'A colour is set in style ({ "color": "brydio.text" }) or through a setting like tone, never as a setting of its own.',
+  colour: 'A colour is set in style ({ "color": "brydio.text" }) or through a setting like tone, never as a setting of its own.',
   dangerouslySetInnerHTML: 'A Brydio app has no HTML to set.',
   innerHTML: 'A Brydio app has no HTML to set.',
 };

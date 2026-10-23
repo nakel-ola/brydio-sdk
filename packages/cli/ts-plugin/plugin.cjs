@@ -61,7 +61,7 @@ var __export = (target, all) => {
     });
 };
 
-// packages/cli/src/ts-plugin.ts
+// src/ts-plugin.ts
 var exports_ts_plugin = {};
 __export(exports_ts_plugin, {
   default: () => ts_plugin_default,
@@ -73,15 +73,14 @@ module.exports = __toCommonJS(exports_ts_plugin);
 var import_node_fs = require("node:fs");
 var import_node_path2 = require("node:path");
 
-// packages/ui/src/basics.ts
+// ../ui/src/basics.ts
 var PARAGRAPH_MAX = 4000;
 var TEXT_NODE = "#text";
 var FORBIDDEN_PROPS = {
-  style: "Brydio draws every element in its own style; there is no style setting.",
   className: "There are no classes in a Brydio app; choose a setting the element offers.",
   class: "There are no classes in a Brydio app; choose a setting the element offers.",
-  color: "Colours come from Brydio’s tokens through a setting like tone, never a value.",
-  colour: "Colours come from Brydio’s tokens through a setting like tone, never a value.",
+  color: 'A colour is set in style ({ "color": "brydio.text" }) or through a setting like tone, never as a setting of its own.',
+  colour: 'A colour is set in style ({ "color": "brydio.text" }) or through a setting like tone, never as a setting of its own.',
   dangerouslySetInnerHTML: "A Brydio app has no HTML to set.",
   innerHTML: "A Brydio app has no HTML to set."
 };
@@ -91,7 +90,7 @@ function eventOfHandler(name) {
     return null;
   return name.slice(2).toLowerCase();
 }
-// packages/ui/src/catalogue.ts
+// ../ui/src/catalogue.ts
 var LABEL_MAX = 200;
 var GAPS = ["1", "2", "3", "4", "5", "6", "7", "8"];
 var PADDINGS = ["2", "3", "4", "5", "6"];
@@ -103,6 +102,10 @@ var SELECT_MAX = 100;
 var TABLE_COLUMNS = 12;
 var TABLE_ROWS = 500;
 var KEY_MAX = 128;
+var CANVAS_OPS = 2000;
+var CANVAS_EXTENT = 1e5;
+var CANVAS_PATH = 4000;
+var CANVAS_COORDINATE = { kind: "int", min: -CANVAS_EXTENT, max: CANVAS_EXTENT };
 var BOARD_OP_SOURCE = 1e5;
 var VIRTUAL_ROWS = 1e6;
 var DIALOG_ACTIONS = 3;
@@ -379,6 +382,8 @@ var CATALOGUE = {
   "bry-select": {
     props: {
       value: { kind: "text", max: LABEL_MAX },
+      multiple: { kind: "boolean" },
+      values: { kind: "list", max: SELECT_MAX, of: { kind: "text", max: LABEL_MAX } },
       options: { kind: "options", max: SELECT_MAX },
       placeholder: { kind: "text", max: LABEL_MAX },
       label: { kind: "text", max: LABEL_MAX },
@@ -763,6 +768,8 @@ var CATALOGUE = {
   "bry-combobox": {
     props: {
       value: { kind: "text", max: LABEL_MAX },
+      multiple: { kind: "boolean" },
+      values: { kind: "list", max: COMBOBOX_MAX, of: { kind: "text", max: LABEL_MAX } },
       options: { kind: "options", max: COMBOBOX_MAX },
       placeholder: { kind: "text", max: LABEL_MAX },
       search: { kind: "text", max: LABEL_MAX },
@@ -2142,20 +2149,410 @@ var CATALOGUE = {
     },
     events: ["select", "create", "move", "resize", "navigate", "pick"],
     children: false
+  },
+  "bry-box": {
+    props: {},
+    events: [],
+    children: true
+  },
+  "bry-canvas": {
+    props: {
+      label: { kind: "text", max: LABEL_MAX },
+      view: {
+        kind: "shape",
+        fields: { w: { kind: "int", min: 1, max: 4000 }, h: { kind: "int", min: 1, max: 4000 } },
+        required: ["w", "h"]
+      },
+      focusable: { kind: "boolean" },
+      ops: {
+        kind: "list",
+        max: CANVAS_OPS,
+        of: {
+          kind: "shape",
+          fields: {
+            kind: { kind: "enum", values: ["rect", "circle", "line", "path", "text"] },
+            x: CANVAS_COORDINATE,
+            y: CANVAS_COORDINATE,
+            w: CANVAS_COORDINATE,
+            h: CANVAS_COORDINATE,
+            x2: CANVAS_COORDINATE,
+            y2: CANVAS_COORDINATE,
+            r: { kind: "int", min: 0, max: CANVAS_EXTENT },
+            round: { kind: "int", min: 0, max: 1000 },
+            d: { kind: "text", max: CANVAS_PATH },
+            text: { kind: "text", max: LABEL_MAX },
+            fill: { kind: "text", max: 64 },
+            stroke: { kind: "text", max: 64 },
+            line: { kind: "int", min: 0, max: 64 },
+            points: { kind: "int", min: 8, max: 96 },
+            weight: { kind: "enum", values: ["400", "500", "600", "700"] },
+            align: { kind: "enum", values: ["start", "center", "end"] },
+            opacity: { kind: "int", min: 0, max: 100 }
+          },
+          required: ["kind"]
+        }
+      }
+    },
+    required: ["label", "view"],
+    events: ["pointer", "key"],
+    children: false
   }
 };
 var ELEMENT_NAMES = Object.keys(CATALOGUE);
-// packages/ui/src/checks.ts
+// ../manifest/src/look.ts
+var APP_COLOUR_NAME = /^[a-z][a-z0-9-]{0,31}$/;
+var HEX_COLOUR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+var BRYDIO_COLOURS = {
+  text: "--fg",
+  "text-strong": "--fg-strong",
+  "text-soft": "--fg-soft",
+  "text-muted": "--fg-muted",
+  "text-faint": "--fg-faint",
+  surface: "--bg-surface",
+  "surface-soft": "--bg-surface-soft",
+  sunken: "--bg-sunken",
+  elevated: "--bg-elevated",
+  fill: "--bg-fill",
+  selected: "--bg-selected",
+  page: "--bg-page",
+  line: "--line",
+  "line-strong": "--line-strong",
+  "line-faint": "--line-faint",
+  brand: "--brand",
+  "brand-text": "--brand-fg",
+  "brand-on": "--brand-on",
+  "brand-soft": "--brand-soft",
+  "brand-line": "--brand-line",
+  success: "--success",
+  "success-text": "--success-fg",
+  "success-soft": "--success-soft",
+  warn: "--warn",
+  "warn-text": "--warn-fg",
+  "warn-soft": "--warn-soft",
+  danger: "--danger",
+  "danger-text": "--danger-fg",
+  "danger-soft": "--danger-soft"
+};
+var isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var STYLE_MAX_KEYS = 48;
+var STYLE_MAX_BYTES = 4 * 1024;
+var LENGTH_MAX = 1e4;
+var SPACE_MAX = 16;
+var Z_INDEX_MAX = 10;
+var BRYDIO_RADII = ["xs", "sm", "md", "lg", "xl", "2xl", "3xl"];
+var BRYDIO_SHADOWS = ["xs", "sm", "md", "lg"];
+var TRANSITIONS = ["none", "fast", "base", "slow"];
+var ALIGN = ["start", "end", "center", "stretch", "baseline", "flex-start", "flex-end", "normal"];
+var JUSTIFY = [...ALIGN, "space-between", "space-around", "space-evenly"];
+var OVERFLOW = ["visible", "hidden", "clip", "auto", "scroll"];
+var STYLE_PROPERTIES = {
+  width: { kind: "size" },
+  height: { kind: "size" },
+  minWidth: { kind: "size" },
+  maxWidth: { kind: "size" },
+  minHeight: { kind: "size" },
+  maxHeight: { kind: "size" },
+  padding: { kind: "space", negative: false, sides: true },
+  paddingTop: { kind: "space", negative: false, sides: false },
+  paddingRight: { kind: "space", negative: false, sides: false },
+  paddingBottom: { kind: "space", negative: false, sides: false },
+  paddingLeft: { kind: "space", negative: false, sides: false },
+  paddingInline: { kind: "space", negative: false, sides: false },
+  paddingBlock: { kind: "space", negative: false, sides: false },
+  margin: { kind: "space", negative: true, sides: true },
+  marginTop: { kind: "space", negative: true, sides: false },
+  marginRight: { kind: "space", negative: true, sides: false },
+  marginBottom: { kind: "space", negative: true, sides: false },
+  marginLeft: { kind: "space", negative: true, sides: false },
+  marginInline: { kind: "space", negative: true, sides: false },
+  marginBlock: { kind: "space", negative: true, sides: false },
+  gap: { kind: "space", negative: false, sides: false },
+  rowGap: { kind: "space", negative: false, sides: false },
+  columnGap: { kind: "space", negative: false, sides: false },
+  background: { kind: "colour" },
+  color: { kind: "colour" },
+  borderColor: { kind: "colour" },
+  borderWidth: { kind: "border-width" },
+  borderStyle: { kind: "enum", values: ["solid", "dashed", "dotted", "none"] },
+  borderRadius: { kind: "radius" },
+  boxShadow: { kind: "shadow" },
+  backgroundImage: { kind: "image" },
+  backgroundSize: { kind: "enum", values: ["auto", "cover", "contain"] },
+  backgroundPosition: { kind: "enum", values: ["center", "top", "bottom", "left", "right"] },
+  backgroundRepeat: { kind: "enum", values: ["no-repeat", "repeat", "repeat-x", "repeat-y"] },
+  fontSize: { kind: "font-size" },
+  fontWeight: { kind: "font-weight" },
+  lineHeight: { kind: "line-height" },
+  textAlign: { kind: "enum", values: ["start", "center", "end", "left", "right", "justify"] },
+  opacity: { kind: "number", min: 0, max: 1 },
+  display: { kind: "enum", values: ["flex", "inline-flex", "grid", "inline-grid", "block", "inline-block", "inline", "none"] },
+  flexDirection: { kind: "enum", values: ["row", "column", "row-reverse", "column-reverse"] },
+  flexWrap: { kind: "enum", values: ["nowrap", "wrap", "wrap-reverse"] },
+  flex: { kind: "flex" },
+  flexGrow: { kind: "number", min: 0, max: 12 },
+  flexShrink: { kind: "number", min: 0, max: 12 },
+  flexBasis: { kind: "size" },
+  order: { kind: "number", min: -100, max: 100, integer: true },
+  alignItems: { kind: "enum", values: ALIGN },
+  alignSelf: { kind: "enum", values: [...ALIGN, "auto"] },
+  alignContent: { kind: "enum", values: JUSTIFY },
+  justifyContent: { kind: "enum", values: JUSTIFY },
+  justifyItems: { kind: "enum", values: ALIGN },
+  justifySelf: { kind: "enum", values: [...ALIGN, "auto"] },
+  gridTemplateColumns: { kind: "tracks" },
+  gridTemplateRows: { kind: "tracks" },
+  gridColumn: { kind: "grid-line" },
+  gridRow: { kind: "grid-line" },
+  position: { kind: "position" },
+  top: { kind: "offset" },
+  right: { kind: "offset" },
+  bottom: { kind: "offset" },
+  left: { kind: "offset" },
+  inset: { kind: "offset" },
+  zIndex: { kind: "z-index" },
+  overflow: { kind: "enum", values: OVERFLOW },
+  overflowX: { kind: "enum", values: OVERFLOW },
+  overflowY: { kind: "enum", values: OVERFLOW },
+  transition: { kind: "transition" }
+};
+var STYLE_REFUSED = {
+  fontFamily: "every app uses Brydio’s own font, so there is no font setting",
+  font: "every app uses Brydio’s own font, so there is no font setting",
+  animation: "animations that never stop aren’t allowed, and a style has no animation; use transition for a change of state",
+  animationName: "animations that never stop aren’t allowed, and a style has no animation; use transition for a change of state",
+  animationIterationCount: "animations that never stop aren’t allowed, and a style has no animation; use transition for a change of state",
+  backgroundColor: 'the colour of a background is "background"',
+  border: "a border is borderWidth, borderStyle and borderColor, each on its own",
+  transform: "a transform could move an element out of where Brydio laid it; use margin or position inside the app’s area",
+  filter: "a filter is not on the list of properties a style may set",
+  backdropFilter: "a filter is not on the list of properties a style may set",
+  clipPath: "a clip path is not on the list of properties a style may set",
+  mask: "a mask could load an image from outside the app",
+  content: "there is no generated content in an app",
+  cursor: "Brydio chooses the pointer from what an element does",
+  pointerEvents: "Brydio decides what can be pressed",
+  outline: "Brydio draws the focus ring, so the outline is its own"
+};
+var APP_FILE_ADDRESS = /^(?:https?:\/\/[^/\s]+)?(?:\/[\w.-]+)*\/files\/apps\/[\w-]{1,128}\/[\w-]{1,128}$/;
+var VIEWPORT_UNIT = /^-?\d+(\.\d+)?(vw|vh|vmin|vmax|dvh|dvw|svh|svw|lvh|lvw)$/;
+var LENGTH = /^(-?\d+(?:\.\d+)?)(px|rem|em|%)$/;
+var SPACE = /^(-?)space\.(\d{1,2})$/;
+var SIZE_WORDS = ["auto", "fit-content", "min-content", "max-content"];
+var LENGTH_SAID = 'a length: a number of pixels, "12px", "1.5rem", "50%" or a spacing step like "space.4"';
+function lengthRefusal(value, options) {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value) || Math.abs(value) > LENGTH_MAX)
+      return `must be at most ${LENGTH_MAX} pixels`;
+    if (value < 0 && !options.negative)
+      return "can’t be less than 0";
+    return null;
+  }
+  if (typeof value !== "string")
+    return `must be ${LENGTH_SAID}`;
+  if (options.words?.includes(value))
+    return null;
+  if (VIEWPORT_UNIT.test(value))
+    return "can’t use viewport units, which measure Brydio’s window, not the app’s area; use % or pixels";
+  if (/url\(/i.test(value))
+    return "can’t hold url()";
+  const space = SPACE.exec(value);
+  if (space) {
+    if (Number(space[2]) > SPACE_MAX)
+      return `names a spacing step from space.0 to space.${SPACE_MAX}`;
+    if (space[1] && !options.negative)
+      return "can’t be less than 0";
+    return null;
+  }
+  const length = LENGTH.exec(value);
+  if (!length)
+    return `must be ${LENGTH_SAID}`;
+  const amount = Number(length[1]);
+  const unit = length[2];
+  if (amount < 0 && !options.negative)
+    return "can’t be less than 0";
+  if (unit === "%" && Math.abs(amount) > 100)
+    return "can be at most 100%";
+  if ((unit === "rem" || unit === "em") && Math.abs(amount) > 500)
+    return "can be at most 500rem";
+  if (unit === "px" && Math.abs(amount) > LENGTH_MAX)
+    return `must be at most ${LENGTH_MAX} pixels`;
+  return null;
+}
+function colourRefusal(value, colours) {
+  if (value === "transparent" || value === "currentColor")
+    return null;
+  if (typeof value === "string") {
+    if (value.startsWith("brydio.")) {
+      return Object.prototype.hasOwnProperty.call(BRYDIO_COLOURS, value.slice(7)) ? null : `names a Brydio colour that doesn’t exist; Brydio’s colours are ${Object.keys(BRYDIO_COLOURS).map((name) => `brydio.${name}`).join(", ")}`;
+    }
+    if (value.startsWith("app.")) {
+      const name = value.slice(4);
+      if (!APP_COLOUR_NAME.test(name))
+        return "names an app colour, like app.ocean";
+      if (colours && !colours.has(name))
+        return `names "${name}", which the app’s theme doesn’t declare`;
+      return null;
+    }
+    if (HEX_COLOUR.test(value))
+      return 'is a plain colour with no dark-mode value; give both: { "light": "…", "dark": "…" }';
+    if (/url\(/i.test(value))
+      return "can’t hold url()";
+    return 'must be a Brydio colour (brydio.text), one of the app’s (app.ocean), or { "light": "#…", "dark": "#…" }';
+  }
+  if (isRecord(value)) {
+    const keys = Object.keys(value);
+    if (keys.some((key) => key !== "light" && key !== "dark") || value.light === undefined || value.dark === undefined) {
+      return "a plain colour needs both a light and a dark value, and nothing else";
+    }
+    for (const mode of ["light", "dark"]) {
+      if (typeof value[mode] !== "string" || !HEX_COLOUR.test(value[mode]))
+        return `${mode} value must be a colour like #0e7490`;
+    }
+    return null;
+  }
+  return 'must be a Brydio colour (brydio.text), one of the app’s (app.ocean), or { "light": "#…", "dark": "#…" }';
+}
+var TRACK = String.raw`(?:-?\d+(?:\.\d+)?(?:px|rem|em|%)|\d+(?:\.\d+)?fr|auto|min-content|max-content|space\.\d{1,2})`;
+var MINMAX = String.raw`minmax\(\s*${TRACK}\s*,\s*${TRACK}\s*\)`;
+var ONE = `(?:${TRACK}|${MINMAX})`;
+var REPEAT = String.raw`repeat\(\s*(?:\d{1,2}|auto-fill|auto-fit)\s*,\s*${ONE}(?:\s+${ONE}){0,3}\s*\)`;
+var TRACKS = new RegExp(`^(?:${ONE}|${REPEAT})(?:\\s+(?:${ONE}|${REPEAT})){0,23}$`);
+var GRID_LINE = /^(?:auto|span \d{1,2}|-?\d{1,2})(?:\s*\/\s*(?:auto|span \d{1,2}|-?\d{1,2}))?$/;
+function ruleRefusal(rule, value, colours) {
+  switch (rule.kind) {
+    case "size":
+      return lengthRefusal(value, { negative: false, words: SIZE_WORDS });
+    case "space": {
+      if (rule.sides && typeof value === "string" && value.trim().includes(" ")) {
+        const parts = value.trim().split(/\s+/);
+        if (parts.length > 4)
+          return "takes at most four lengths, one for each side";
+        for (const part of parts) {
+          const refused = lengthRefusal(part, { negative: rule.negative, words: rule.negative ? ["auto"] : [] });
+          if (refused)
+            return refused;
+        }
+        return null;
+      }
+      return lengthRefusal(value, { negative: rule.negative, words: rule.negative ? ["auto"] : [] });
+    }
+    case "offset":
+      return lengthRefusal(value, { negative: true, words: ["auto"] });
+    case "colour":
+      return colourRefusal(value, colours);
+    case "enum":
+      return typeof value === "string" && rule.values.includes(value) ? null : `must be one of ${rule.values.join(", ")}`;
+    case "number":
+      return typeof value === "number" && Number.isFinite(value) && value >= rule.min && value <= rule.max && (!rule.integer || Number.isInteger(value)) ? null : `must be a ${rule.integer ? "whole " : ""}number from ${rule.min} to ${rule.max}`;
+    case "border-width":
+      if (typeof value === "number")
+        return value >= 0 && value <= 16 ? null : "must be from 0 to 16 pixels";
+      return typeof value === "string" && /^(?:\d{1,2}(?:\.\d+)?)px$/.test(value) && Number.parseFloat(value) <= 16 ? null : "must be from 0 to 16 pixels";
+    case "radius":
+      if (value === "full")
+        return null;
+      if (typeof value === "string" && value.startsWith("radius.")) {
+        return BRYDIO_RADII.includes(value.slice(7)) ? null : `names one of Brydio’s radii: ${BRYDIO_RADII.map((name) => `radius.${name}`).join(", ")}`;
+      }
+      return lengthRefusal(value, { negative: false });
+    case "shadow":
+      if (value === "none")
+        return null;
+      return typeof value === "string" && value.startsWith("shadow.") && BRYDIO_SHADOWS.includes(value.slice(7)) ? null : `must be none or one of Brydio’s shadows: ${BRYDIO_SHADOWS.map((name) => `shadow.${name}`).join(", ")}`;
+    case "font-size": {
+      const pixels = typeof value === "number" ? value : typeof value === "string" ? pixelsOf(value) : null;
+      return pixels !== null && pixels >= 10 && pixels <= 64 ? null : 'must be from 10 to 64 pixels ("14px" or "0.875rem")';
+    }
+    case "font-weight":
+      return [400, 500, 600, 700, "400", "500", "600", "700"].includes(value) ? null : "must be 400, 500, 600 or 700";
+    case "line-height":
+      if (typeof value === "number")
+        return value >= 0.8 && value <= 3 ? null : "as a plain number is from 0.8 to 3";
+      return lengthRefusal(value, { negative: false });
+    case "flex":
+      if (value === "none" || value === "auto")
+        return null;
+      return typeof value === "number" && value >= 0 && value <= 12 ? null : "must be none, auto, or a number from 0 to 12";
+    case "tracks":
+      return typeof value === "string" && value.length <= 400 && TRACKS.test(value.trim()) ? null : 'must be a list of tracks: lengths, fr, auto, minmax() or repeat(), like "repeat(3, 1fr)"';
+    case "grid-line":
+      return typeof value === "string" && GRID_LINE.test(value.trim()) ? null : 'must be like "span 2" or "1 / 3"';
+    case "position":
+      if (value === "fixed" || value === "sticky") {
+        return "can’t be fixed or sticky: an app draws only inside its own area, so position is relative to that area (static, relative or absolute)";
+      }
+      return value === "static" || value === "relative" || value === "absolute" ? null : "must be static, relative or absolute";
+    case "z-index":
+      if (typeof value === "number" && Number.isInteger(value) && value > Z_INDEX_MAX) {
+        return `can be at most ${Z_INDEX_MAX}: the app’s area is its own layer, and nothing inside it can reach above it`;
+      }
+      return typeof value === "number" && Number.isInteger(value) && value >= 0 ? null : `must be a whole number from 0 to ${Z_INDEX_MAX}`;
+    case "image":
+      if (isRecord(value) && Object.keys(value).length === 1 && typeof value.file === "string" && value.file.length <= 512) {
+        return APP_FILE_ADDRESS.test(value.file) ? null : "names a file by the address the app’s file store gave it";
+      }
+      return 'can only be one of the app’s own uploaded files: { "file": "<its address>" }; url() and outside images aren’t allowed';
+    case "transition":
+      return typeof value === "string" && TRANSITIONS.includes(value) ? null : `must be one of ${TRANSITIONS.join(", ")}`;
+  }
+}
+function pixelsOf(value) {
+  const length = LENGTH.exec(value);
+  if (!length)
+    return null;
+  if (length[2] === "px")
+    return Number(length[1]);
+  if (length[2] === "rem" || length[2] === "em")
+    return Number(length[1]) * 16;
+  return null;
+}
+function styleRefusal(style, colours) {
+  if (!isRecord(style))
+    return 'style must be a record of properties, like { "padding": "space.4" }.';
+  const keys = Object.keys(style);
+  if (keys.length > STYLE_MAX_KEYS)
+    return `style can set at most ${STYLE_MAX_KEYS} properties.`;
+  if (JSON.stringify(style).length > STYLE_MAX_BYTES)
+    return "style must be at most 4 KB.";
+  for (const key of keys) {
+    const value = style[key];
+    if (value === undefined)
+      continue;
+    const refused = STYLE_REFUSED[key];
+    if (refused)
+      return `style ${key} isn’t allowed: ${refused}.`;
+    const rule = STYLE_PROPERTIES[key];
+    if (!rule)
+      return `style ${key} isn’t allowed: it is not on the list of properties a style may set.`;
+    const why = ruleRefusal(rule, value, colours);
+    if (why)
+      return `style ${key} ${why}.`;
+  }
+  return null;
+}
+var appColourOfTone = (tone) => typeof tone === "string" && tone.startsWith("app.") && APP_COLOUR_NAME.test(tone.slice(4)) ? tone.slice(4) : null;
+var takesAppColour = (name, values) => name === "tone" && values.includes("brand");
+var appColourSaid = "or one of the app’s colours (app.<name>)";
+// ../ui/src/checks.ts
 function isElementName(value) {
   return typeof value === "string" && Object.prototype.hasOwnProperty.call(CATALOGUE, value);
 }
 function refusalFor(type, name, value) {
+  if (name === "style") {
+    const refused = styleRefusal(value);
+    return refused ? `${type} ${refused}` : null;
+  }
   const spec = CATALOGUE[type].props[name];
   if (!spec)
     return `${type} has no setting called "${name}".`;
   switch (spec.kind) {
     case "enum":
-      return typeof value === "string" && spec.values.includes(value) ? null : `${type} ${name} must be one of ${spec.values.join(", ")}.`;
+      if (typeof value === "string" && spec.values.includes(value))
+        return null;
+      if (takesAppColour(name, spec.values)) {
+        return appColourOfTone(value) ? null : `${type} ${name} must be one of ${spec.values.join(", ")}, ${appColourSaid}.`;
+      }
+      return `${type} ${name} must be one of ${spec.values.join(", ")}.`;
     case "text":
       return typeof value === "string" && value.length <= spec.max ? null : `${type} ${name} must be text of at most ${spec.max} characters.`;
     case "boolean":
@@ -2251,7 +2648,7 @@ function checkEvent(element, event) {
     return null;
   return events.length ? `${element} raises ${events.join(", ")}, not "${event}".` : `${element} raises no events, so it takes no ${handlerName(event)}.`;
 }
-// packages/cli/src/source-checks.ts
+// src/source-checks.ts
 var import_node_path = require("node:path");
 var import_typescript = __toESM(require("typescript"));
 var PAGE = { code: "dom_global", why: "A screen has no page: it runs in a worker and draws only with the catalogue." };
@@ -2361,6 +2758,18 @@ function literalsOf(expression) {
   }
   if (import_typescript.default.isConditionalExpression(node))
     return [...literalsOf(node.whenTrue), ...literalsOf(node.whenFalse)];
+  if (import_typescript.default.isObjectLiteralExpression(node)) {
+    const value = {};
+    for (const property of node.properties) {
+      if (!import_typescript.default.isPropertyAssignment(property) || !(import_typescript.default.isIdentifier(property.name) || import_typescript.default.isStringLiteral(property.name)))
+        return [undefined];
+      const [field, ...more] = literalsOf(property.initializer);
+      if (!field || more.length)
+        return [undefined];
+      value[property.name.text] = field.value;
+    }
+    return [{ value }];
+  }
   return [undefined];
 }
 function unwrap(node) {
@@ -2486,6 +2895,14 @@ function checkSource(file, text) {
       const refused = checkEvent(element, event);
       if (refused)
         push("event_unknown", refused, at);
+      return;
+    }
+    if (name === "style") {
+      for (const literal of values) {
+        const refused = literal && checkProp(element, name, literal.value);
+        if (refused)
+          return push("style_forbidden", refused, at);
+      }
       return;
     }
     if (!Object.prototype.hasOwnProperty.call(CATALOGUE[element].props, name)) {
@@ -2648,14 +3065,14 @@ function dedupe(problems) {
   });
 }
 
-// packages/cli/src/screen-sources.ts
+// src/screen-sources.ts
 var SOURCE_EXTENSIONS = [".tsx", ".ts", ".jsx", ".js"];
 function isScreenSource(path) {
   const normal = path.replace(/\\/g, "/");
   return /^src\//.test(normal) && SOURCE_EXTENSIONS.some((extension) => normal.endsWith(extension)) && !normal.endsWith(".d.ts") && !/(^|\/)(test|tests|__tests__)\/|\.(test|spec)\.[jt]sx?$/.test(normal);
 }
 
-// packages/cli/src/ts-plugin.ts
+// src/ts-plugin.ts
 var PLUGIN_SOURCE = "brydio";
 var PLUGIN_CODE = 91000;
 function appRootOf(file) {

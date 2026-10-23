@@ -86,6 +86,7 @@ two screens, collection grants, tool grants, and host grants.
 | `instances` | `"one-per-workspace"` | no | One instance for the whole workspace, added from its sidebar and shown on projects as a view of each project’s records; never a project’s or a person’s own. Left out, people make as many as they like. |
 | `migrations` | an ordered list of versioned migration steps | no | How existing records move when a later version changes a collection schema. |
 | `sdk` | semver text | no | Written by `brydio build`. Do not add or edit it in `.brydio/app.json`. |
+| `theme` | `{ accent?, colors?, rounding?, density? }` | no | The app’s own colours and shape. `accent` is `{ "light": "#…", "dark": "#…" }` and becomes the `brand` tone inside the app; `colors` names more pairs, read as `app.<name>` by a `tone` or a `style`; `rounding` is `none`, `small`, `normal`, `large` or `round`; `density` is `compact`, `normal` or `roomy`. Every colour needs both values. There is no font setting: every app uses Brydio’s own font. |
 
 Unknown top-level fields are rejected. The sections below expand the fields
 that have their own nested grammar.

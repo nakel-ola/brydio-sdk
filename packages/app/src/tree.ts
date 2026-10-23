@@ -184,6 +184,7 @@ export class RemoteText extends RemoteNode {
 export class RemoteElement<E extends ElementName = ElementName> extends RemoteNode {
   readonly #type: E;
   #props: Record<string, PropValue> = {};
+  #style: Record<string, unknown> | undefined;
   readonly #handlers = new Map<string, (event: BryEvent<unknown>) => void>();
   readonly #listeners = new Map<string, Set<Listener>>();
   [$children]: RemoteNode[] = [];
@@ -243,9 +244,19 @@ export class RemoteElement<E extends ElementName = ElementName> extends RemoteNo
     return { ...this.#props };
   }
 
-  /** There is no style in a Brydio app; asking for one is the mistake, so it is refused here. */
-  get style(): never {
-    throw new TreeError('prop', `${this.#type} has no style. ${FORBIDDEN_PROPS.style}`);
+  /**
+   * The element's `style` (PB22), as Preact writes it: a property at a time.
+   * What is written becomes the node's `style` setting, a record, which the
+   * host holds to its safe list. CSS text is refused: a style is a record.
+   */
+  get style(): Record<string, unknown> {
+    return (this.#style ??= styleWriter(
+      () => this.#props.style as Record<string, unknown> | undefined,
+      next => this.setAttribute('style', next),
+      () => {
+        throw new TreeError('prop', `${this.#type} style is a record of properties, like { padding: 'space.4' }, never CSS text.`);
+      },
+    ));
   }
 
   get innerHTML(): string {
@@ -963,3 +974,56 @@ export const spinner = (attributes?: ElementAttributes<'bry-spinner'> | null) =>
 export const tabs = (attributes: ElementAttributes<'bry-tabs'>, ...panels: Child[]) => createElement('bry-tabs', attributes, ...panels);
 
 export const tooltip = (attributes: ElementAttributes<'bry-tooltip'>, anchor: Child) => createElement('bry-tooltip', attributes, anchor);
+
+/**
+ * What `node.style` is: writing a property changes the node's `style`
+ * setting, a fresh record each time, and an empty value takes the property
+ * away. Preact sets a numeric length as `"240px"`, which the host takes.
+ */
+function styleWriter(
+  read: () => Record<string, unknown> | undefined,
+  write: (next: Record<string, unknown> | undefined) => void,
+  refuseText: () => never,
+): Record<string, unknown> {
+  const set = (name: string, value: unknown) => {
+    const now = read();
+    const gone = value === '' || value === null || value === undefined;
+
+    // Preact writes every property of an inline style again on each render:
+    // the same value is no change, so nothing is sent again.
+    if (gone ? now?.[name] === undefined : JSON.stringify(now?.[name]) === JSON.stringify(value)) return;
+
+    const next = { ...(now ?? {}) };
+
+    if (gone) delete next[name];
+    else next[name] = value;
+
+    write(Object.keys(next).length ? next : undefined);
+  };
+
+  return new Proxy({} as Record<string, unknown>, {
+    get(_, name) {
+      if (name === 'setProperty') return (property: string, value: unknown) => set(property, value);
+      if (name === 'removeProperty') return (property: string) => set(property, undefined);
+      if (name === 'cssText') return '';
+
+      return typeof name === 'string' ? read()?.[name] : undefined;
+    },
+    set(_, name, value) {
+      if (name === 'cssText') {
+        if (value === '' || value === null || value === undefined) write(undefined);
+        else refuseText();
+
+        return true;
+      }
+      if (typeof name === 'string') set(name, value);
+
+      return true;
+    },
+    deleteProperty(_, name) {
+      if (typeof name === 'string') set(name, undefined);
+
+      return true;
+    },
+  });
+}

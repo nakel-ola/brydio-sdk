@@ -291,12 +291,47 @@ describe('the Preact adapter', () => {
 
     // @ts-expect-error there is no div
     expect(() => render(<div />, root)).toThrow('div is not one of Brydio’s elements, which are all named bry-something.');
-    // @ts-expect-error there is no style
-    expect(() => render(<bry-stack style="color: red" />, harness().root)).toThrow('there is no style setting');
+    // @ts-expect-error a style is a record of properties, never CSS text (PB22)
+    expect(() => render(<bry-stack style="color: red" />, harness().root)).toThrow('never CSS text');
     // What the catalogue would refuse goes to the host, which refuses it in its own words: a
     // screen carries no catalogue (A5-F03-S01), and the editor catches this as it is written.
     // @ts-expect-error a text takes its words as a setting
     expect(() => render(<bry-text text="a">b</bry-text>, harness().root)).not.toThrow();
+  });
+
+  test('sends a style, an app colour and a box as settings, and a change of style as one patch (PB21–PB23)', async () => {
+    const { root, connect, sent, take, hostSays } = harness();
+
+    function Styled() {
+      const [wide, setWide] = useState(false);
+
+      return (
+        <bry-box style={{ display: 'grid', gap: 12, padding: 'space.4', background: { light: '#ffffff', dark: '#111111' } }}>
+          <bry-badge text="Ocean" tone="app.ocean" />
+          <Button label="Wider" style={{ width: wide ? 320 : 160 }} onPress={() => setWide(true)} />
+        </bry-box>
+      );
+    }
+
+    render(<Styled />, root);
+    await connect();
+
+    const mount = sent.find(one => one.method === 'tree/mount')!.params as TreeMountParams;
+    const box = mount.nodes.find(node => node.type === 'bry-box')!;
+    const button = mount.nodes.find(node => node.type === 'bry-button')!;
+
+    // Preact writes a style a property at a time; a number of pixels arrives as "12px".
+    expect(box.props).toEqual({ style: { display: 'grid', gap: '12px', padding: 'space.4', background: { light: '#ffffff', dark: '#111111' } } });
+    expect(mount.nodes.find(node => node.type === 'bry-badge')!.props).toEqual({ text: 'Ocean', tone: 'app.ocean' });
+    expect(button.props?.style).toEqual({ width: '160px' });
+
+    take();
+    hostSays('tree/event', { node: button.id, name: 'press' });
+    await settle();
+
+    expect(take().filter(one => one.method === 'tree/patch').flatMap(one => (one.params as TreePatchParams).ops)).toEqual([
+      { op: 'props', id: button.id, props: { style: { width: '320px' } } },
+    ]);
   });
 
   test('useList reads through data/list and reads again on refetch', async () => {

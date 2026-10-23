@@ -34,10 +34,14 @@ describe('elements and settings, in JSX', () => {
   });
 
   test('a style, a class or a colour, whatever the element', () => {
+    // PB22: a style is taken, held to the safe list; a plain colour needs its dark value.
     expect(codes('<bry-stack style={{ color: "red" }} />')).toEqual(['style_forbidden']);
+    expect(codes('<bry-stack style={{ position: "fixed" }} />')).toEqual(['style_forbidden']);
+    expect(codes('<bry-stack style={{ padding: "space.4", color: "brydio.text", background: { light: "#ffffff", dark: "#111111" } }} />')).toEqual([]);
+    expect(codes('<bry-badge text="x" tone="app.ocean" />')).toEqual([]);
     expect(codes('<bry-card className="box" />')).toEqual(['style_forbidden']);
     expect(codes('<bry-text text="x" class="big" colour="red" />')).toEqual(['style_forbidden', 'style_forbidden']);
-    expect(codes('<bry-stack {...{ style: s }} />')).toEqual(['style_forbidden']);
+    expect(codes('<bry-stack {...{ className: s }} />')).toEqual(['style_forbidden']);
   });
 
   test('a handler for an event the element does not raise', () => {

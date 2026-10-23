@@ -182,11 +182,32 @@ publish route can't check compiled code for this.
 | `handler_source_missing` (from `brydio build`) | The "`<tool>`" tool is built from src/`<handler>`.ts (or .js), and there is no such file. | build | no | Add the source file, or fix the handler's path. |
 | `handler_build_failed` (from `brydio build`) | The "`<tool>`" tool did not build: `<the bundler's words>` | build | no | Fix what the bundler names. |
 
-## 3. No element carries a style, a class or raw HTML
+## 3. A style keeps to the safe list, and no element carries a class or raw HTML
+
+Every element takes `style` (PB22): sizes, spacing, colours, borders,
+rounding, shadow, type size and weight, opacity, flex and grid layout, and
+position inside the app's own area. Brydio refuses anything else at the
+node, with the rule that refuses it. The same rules run in `brydio
+validate`, in the registry's checks of the screenshots, and in Brydio when it
+draws. See [the design guide](./design-guide.md) for what fits.
 
 | Code | Refused with | validate | server | How to fix |
 |---|---|---|---|---|
-| `style_forbidden` | The element's own refusal, followed by the reason. For `style`: Brydio draws every element in its own style; there is no style setting. For `class` and `className`: There are no classes in a Brydio app; choose a setting the element offers. For `color` and `colour`: Colours come from Brydio’s tokens through a setting like tone, never a value. For `dangerouslySetInnerHTML` and `innerHTML`: A Brydio app has no HTML to set. | yes | runtime, as the element's refusal without the reason | Use the element's own settings (`tone`, `variant`, `gap`). |
+| `style_forbidden` | The element's own refusal, naming the property and the rule. For a style: `<element> style position can’t be fixed or sticky: an app draws only inside its own area, …`; `<element> style zIndex can be at most 10: …`; `<element> style backgroundImage can only be one of the app’s own uploaded files: …; url() and outside images aren’t allowed`; `<element> style fontFamily isn’t allowed: every app uses Brydio’s own font, …`; `<element> style animation isn’t allowed: animations that never stop aren’t allowed, …`; `<element> style background is a plain colour with no dark-mode value; give both: …`; `<element> style <property> isn’t allowed: it is not on the list of properties a style may set.` For `class` and `className`: There are no classes in a Brydio app; choose a setting the element offers. For `color` and `colour` as settings: A colour is set in style ({ "color": "brydio.text" }) or through a setting like tone, never as a setting of its own. For `dangerouslySetInnerHTML` and `innerHTML`: A Brydio app has no HTML to set. | yes | runtime, as the element's refusal | Keep to the safe list; give a plain colour both values, `{ "light": "#…", "dark": "#…" }`, or name it in the theme. |
+
+The manifest's `theme` (PB21) is read with the manifest:
+
+| Code | Refused with | validate | server | How to fix |
+|---|---|---|---|---|
+| `theme_invalid` | The theme is a record: accent, colors, rounding, density. (Or: The theme has no setting called "`<key>`".) | yes | publish | Use only `accent`, `colors`, `rounding` and `density`. |
+| `theme_font` | There is no font setting: every app uses Brydio’s own font. | yes | publish | Take the font out. |
+| `theme_colour_pair` | `<The accent or The colour "<name>">` needs both a light and a dark value: { "light": "#…", "dark": "#…" }. | yes | publish | Give the colour its dark value too. |
+| `theme_colour_format` | `<…>`'s `<light or dark>` value is a colour like #0e7490. | yes | publish | Write the colour as `#rgb` or `#rrggbb`. |
+| `theme_colour_name` | "`<name>`" is not a colour name: lower-case letters, digits and dashes, starting with a letter, at most 32. | yes | publish | Rename the colour. |
+| `theme_colours_too_many` | A theme holds at most 24 named colours. | yes | publish | Keep fewer colours. |
+| `theme_density` | The density is one of compact, normal, roomy. | yes | publish | Choose one of the three. |
+| `theme_rounding` | The rounding is one of none, small, normal, large, round. | yes | publish | Choose one of the five. |
+| `theme_contrast_low` | Warning. Text on `<the accent or "<name>">` in `<mode>` mode reads at `<ratio>`:1, below the 4.5:1 WCAG AA asks for. | yes | publish, as a warning | Choose a darker or lighter value for that mode. |
 
 A screen also runs in a worker with no page, no network, no storage and no
 other workers, and it may import only `@brydio/*`, Preact and its own files:
@@ -264,6 +285,7 @@ Screens may call only tools that exist:
 | `bundle_path_invalid` | "`<path>`" is not a path a bundle can hold. | yes | publish | Use plain ASCII names with no hidden segments. |
 | `bundle_manifest_missing` | That bundle has no app.json at its root. | yes | publish | Run `brydio build`. |
 | `bundle_empty` | That bundle has no screens in it, only a manifest. | yes | publish | Declare and build a screen. |
+
 | `archive_unreadable`, `archive_too_large`, `archive_uncompressed_too_large`, `archive_too_many_entries`, `archive_member_path_absolute`, `archive_member_path_has_parent_segment`, `archive_member_path_has_backslash`, `archive_member_path_invalid`, `archive_member_type_unsupported`, `skill_directory_hidden` | The archive reader's sentence, at bundle scale ("That upload is larger than 2 MB. A bundle is at most 1 MB of code."). | no: `brydio publish` writes the zip itself | publish | Publish with `brydio publish` rather than a zip made by hand. |
 
 ## 7. No secret-looking string in the bundle

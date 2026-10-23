@@ -35,17 +35,104 @@ type ShapeOf<Fields extends Readonly<Record<string, PropSpec>>, Required extends
 type PropsOf<E extends ElementName> = Catalogue[E]['props'];
 type RequiredOf<E extends ElementName> = Catalogue[E] extends { required: readonly (infer R)[] } ? R & string : never;
 
-/** Every setting an element takes: the ones the host requires, then the rest, optional. */
+/** One of the app's own colours, as its theme names it (PB21): `app.ocean`. */
+export type AppColour = `app.${string}`;
+
+/** A colour a style takes: Brydio's, the app's, or a plain pair with a dark value (PB22). */
+export type StyleColour = `brydio.${string}` | AppColour | 'transparent' | 'currentColor' | { light: string; dark: string };
+
+/** A length a style takes: pixels, `"12px"`, `"1.5rem"`, `"50%"` or a spacing step, `"space.4"`. */
+export type StyleLength = number | `${number}px` | `${number}rem` | `${number}em` | `${number}%` | `space.${number}` | `-space.${number}` | 'auto';
+
+/**
+ * The `style` every element takes (PB22): the safe list, and nothing else.
+ * Brydio refuses anything else at the node, with the rule that refuses it.
+ * There is no font family: every app uses Brydio's own font.
+ */
+export interface ElementStyle {
+  width?: StyleLength | 'fit-content' | 'min-content' | 'max-content';
+  height?: StyleLength | 'fit-content' | 'min-content' | 'max-content';
+  minWidth?: StyleLength | 'fit-content' | 'min-content' | 'max-content';
+  maxWidth?: StyleLength | 'fit-content' | 'min-content' | 'max-content';
+  minHeight?: StyleLength | 'fit-content' | 'min-content' | 'max-content';
+  maxHeight?: StyleLength | 'fit-content' | 'min-content' | 'max-content';
+  padding?: StyleLength | string;
+  paddingTop?: StyleLength;
+  paddingRight?: StyleLength;
+  paddingBottom?: StyleLength;
+  paddingLeft?: StyleLength;
+  paddingInline?: StyleLength;
+  paddingBlock?: StyleLength;
+  margin?: StyleLength | string;
+  marginTop?: StyleLength;
+  marginRight?: StyleLength;
+  marginBottom?: StyleLength;
+  marginLeft?: StyleLength;
+  marginInline?: StyleLength;
+  marginBlock?: StyleLength;
+  gap?: StyleLength;
+  rowGap?: StyleLength;
+  columnGap?: StyleLength;
+  background?: StyleColour;
+  color?: StyleColour;
+  borderColor?: StyleColour;
+  borderWidth?: number | `${number}px`;
+  borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
+  borderRadius?: StyleLength | `radius.${'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl'}` | 'full';
+  boxShadow?: 'none' | `shadow.${'xs' | 'sm' | 'md' | 'lg'}`;
+  /** One of the app's own uploaded files, by the address its file store gave it. */
+  backgroundImage?: { file: string };
+  backgroundSize?: 'auto' | 'cover' | 'contain';
+  backgroundPosition?: 'center' | 'top' | 'bottom' | 'left' | 'right';
+  backgroundRepeat?: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y';
+  fontSize?: number | `${number}px` | `${number}rem`;
+  fontWeight?: 400 | 500 | 600 | 700 | '400' | '500' | '600' | '700';
+  lineHeight?: number | StyleLength;
+  textAlign?: 'start' | 'center' | 'end' | 'left' | 'right' | 'justify';
+  opacity?: number;
+  display?: 'flex' | 'inline-flex' | 'grid' | 'inline-grid' | 'block' | 'inline-block' | 'inline' | 'none';
+  flexDirection?: 'row' | 'column' | 'row-reverse' | 'column-reverse';
+  flexWrap?: 'nowrap' | 'wrap' | 'wrap-reverse';
+  flex?: number | 'none' | 'auto';
+  flexGrow?: number;
+  flexShrink?: number;
+  flexBasis?: StyleLength | 'fit-content' | 'min-content' | 'max-content';
+  order?: number;
+  alignItems?: string;
+  alignSelf?: string;
+  alignContent?: string;
+  justifyContent?: string;
+  justifyItems?: string;
+  justifySelf?: string;
+  gridTemplateColumns?: string;
+  gridTemplateRows?: string;
+  gridColumn?: string;
+  gridRow?: string;
+  /** Relative to the app's own area. Never fixed or sticky. */
+  position?: 'static' | 'relative' | 'absolute';
+  top?: StyleLength;
+  right?: StyleLength;
+  bottom?: StyleLength;
+  left?: StyleLength;
+  inset?: StyleLength;
+  /** 0 to 10: the app's area is its own layer. */
+  zIndex?: number;
+  overflow?: 'visible' | 'hidden' | 'clip' | 'auto' | 'scroll';
+  overflowX?: 'visible' | 'hidden' | 'clip' | 'auto' | 'scroll';
+  overflowY?: 'visible' | 'hidden' | 'clip' | 'auto' | 'scroll';
+  transition?: 'none' | 'fast' | 'base' | 'slow';
+}
+
+/** A setting's type, and a tone that offers `brand` may also name an app colour (PB21). */
+type SettingOf<K, S> = S extends PropSpec ? (K extends 'tone' ? ('brand' extends ValueOf<S> ? ValueOf<S> | AppColour : ValueOf<S>) : ValueOf<S>) : never;
+
+/** Every setting an element takes: the ones the host requires, then the rest, optional, and a `style`. */
 export type ElementProps<E extends ElementName> = Simplify<
   {
-    -readonly [K in keyof PropsOf<E> as K extends RequiredOf<E> ? K : never]-?: PropsOf<E>[K] extends PropSpec
-      ? ValueOf<PropsOf<E>[K]>
-      : never;
+    -readonly [K in keyof PropsOf<E> as K extends RequiredOf<E> ? K : never]-?: SettingOf<K, PropsOf<E>[K]>;
   } & {
-    -readonly [K in keyof PropsOf<E> as K extends RequiredOf<E> ? never : K]?: PropsOf<E>[K] extends PropSpec
-      ? ValueOf<PropsOf<E>[K]>
-      : never;
-  }
+    -readonly [K in keyof PropsOf<E> as K extends RequiredOf<E> ? never : K]?: SettingOf<K, PropsOf<E>[K]>;
+  } & { style?: ElementStyle }
 >;
 
 /** The events an element raises, by name. */
@@ -493,6 +580,26 @@ export interface ElementEventDetails {
     press: undefined;
     /** Its cross was pressed. */
     remove: undefined;
+  };
+  'bry-select': {
+    /**
+     * The choice: its value. With `multiple` (PB23), `values` is every choice
+     * ticked now, in the options' order, and `value` the first of them or "".
+     */
+    change: { value: string; values?: string[] };
+  };
+  'bry-combobox': {
+    /**
+     * The choice: its value. With `multiple` (PB23), `values` is every choice
+     * ticked now, in the options' order, and `value` the first of them or "".
+     */
+    change: { value: string; values?: string[] };
+  };
+  'bry-canvas': {
+    /** A pointer went down, moved or came up, at `x`, `y` in the canvas's own units (PB24). */
+    pointer: { phase: 'down' | 'move' | 'up'; x: number; y: number };
+    /** A key pressed while a `focusable` canvas had the focus. */
+    key: { key: string };
   };
   'bry-calendar-view': {
     /** An event was pressed, or Enter pressed on it. */

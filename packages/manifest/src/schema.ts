@@ -13,6 +13,7 @@ import {
   RESERVED_FIELDS,
   type FieldType,
 } from './field-types.ts';
+import { themeProblems } from './look.ts';
 import { migrationsSchema } from './migrations.ts';
 import { openSchemaProblems, type OpenProblemCode } from './open-schema.ts';
 import { confirmEmailProblems, confirmEmailSchema, type ConfirmProblemCode } from './confirm-email.ts';
@@ -328,6 +329,13 @@ const extensionShape = {
    * still loads; `POST /apps/publish` requires it and checks it (A5-F04-S03).
    */
   sdk: z.string().max(MANIFEST_LIMITS.versionChars).regex(SEMVER_FORMAT).optional(),
+  /**
+   * The app's own colours and shape (PB21): an accent, named colours each
+   * with a light and a dark value, a rounding and a density. No font: every
+   * app uses Brydio's. Checked by `themeProblems` (`look.ts`), Brydio's one
+   * rule set, copied.
+   */
+  theme: z.unknown().optional(),
 };
 
 /** One problem with an app's additions, named down to the field. */
@@ -905,6 +913,10 @@ function secretProblems(additions: Additions, options: { grants?: boolean }): Da
 }
 
 const refuse = (additions: Additions, ctx: z.RefinementCtx, options: DataProblemOptions = {}) => {
+  for (const problem of themeProblems(additions.theme)) {
+    ctx.addIssue({ code: 'custom', message: problem.message, path: problem.path.split('.'), params: { code: problem.code } });
+  }
+
   for (const problem of dataProblems(additions, options)) {
     ctx.addIssue({
       code: 'custom',

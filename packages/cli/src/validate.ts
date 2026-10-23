@@ -12,6 +12,7 @@ import {
   isScriptPath,
   publishedMigrationProblems,
   toolsProblem,
+  themeWarnings,
   unknownHostGrant,
 } from '@brydio/manifest';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -79,6 +80,11 @@ export function validate(dir: string, options: ValidateOptions = {}): ValidateRe
   }
 
   if (project.manifest) problems.push(...ownerRules(project.root, project.raw, manifestFile));
+
+  // PB21: text that reads badly on a theme colour is said, never refused.
+  for (const warning of themeWarnings(project.raw.theme)) {
+    problems.push({ code: warning.code, severity: 'warning', file: manifestFile, path: warning.path, message: warning.message });
+  }
 
   if (project.manifest) {
     const built = existsSync(outDir) ? filesUnder(outDir) : null;

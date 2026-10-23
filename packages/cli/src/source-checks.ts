@@ -186,6 +186,21 @@ export function literalsOf(expression: ts.Expression | undefined): Literal[] {
   }
   // `tone={done ? 'muted' : 'loud'}`: either branch is a value the screen can send.
   if (ts.isConditionalExpression(node)) return [...literalsOf(node.whenTrue), ...literalsOf(node.whenFalse)];
+  // `style={{ padding: 'space.4' }}` (PB22): a record written out whole, every field a single value.
+  if (ts.isObjectLiteralExpression(node)) {
+    const value: Record<string, unknown> = {};
+
+    for (const property of node.properties) {
+      if (!ts.isPropertyAssignment(property) || !(ts.isIdentifier(property.name) || ts.isStringLiteral(property.name))) return [undefined];
+
+      const [field, ...more] = literalsOf(property.initializer);
+
+      if (!field || more.length) return [undefined];
+      value[property.name.text] = field.value;
+    }
+
+    return [{ value }];
+  }
 
   return [undefined];
 }
@@ -366,6 +381,17 @@ export function checkSource(file: string, text: string): Problem[] {
       const refused = checkEvent(element, event);
 
       if (refused) push('event_unknown', refused, at);
+
+      return;
+    }
+
+    // Every element takes a style (PB22): a written one is held to the safe list here.
+    if (name === 'style') {
+      for (const literal of values) {
+        const refused = literal && checkProp(element, name, literal.value);
+
+        if (refused) return push('style_forbidden', refused, at);
+      }
 
       return;
     }

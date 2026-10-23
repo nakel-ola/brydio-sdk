@@ -127,6 +127,11 @@ const FIELD_DOCS: Record<ManifestField, FieldDoc> = {
     takes: 'semver text',
     description: 'Written by `brydio build`. Do not add or edit it in `.brydio/app.json`.',
   },
+  theme: {
+    takes: '`{ accent?, colors?, rounding?, density? }`',
+    description:
+      'The app’s own colours and shape. `accent` is `{ "light": "#…", "dark": "#…" }` and becomes the `brand` tone inside the app; `colors` names more pairs, read as `app.<name>` by a `tone` or a `style`; `rounding` is `none`, `small`, `normal`, `large` or `round`; `density` is `compact`, `normal` or `roomy`. Every colour needs both values. There is no font setting: every app uses Brydio’s own font.',
+  },
 };
 
 const FIELD_TYPES = [

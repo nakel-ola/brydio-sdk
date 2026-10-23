@@ -1,5 +1,6 @@
 import { FORBIDDEN_PROPS, TEXT_NODE, handlerName } from './basics.ts';
 import { CATALOGUE, LABEL_MAX, type ElementName, type ElementSpec, type PropSpec } from './catalogue.ts';
+import { appColourOfTone, appColourSaid, canvasRefusal, styleRefusal, takesAppColour } from './app-look.ts';
 
 export { checkText, eventOfHandler, handlerName } from './basics.ts';
 
@@ -29,15 +30,26 @@ export function elementSpec(element: ElementName): ElementSpec {
  * `props` op.
  */
 export function refusalFor(type: ElementName, name: string, value: unknown): string | null {
+  // Every element takes a style (PB22), checked by the one rule set.
+  if (name === 'style') {
+    const refused = styleRefusal(value);
+
+    return refused ? `${type} ${refused}` : null;
+  }
+
   const spec = (CATALOGUE[type].props as Record<string, PropSpec>)[name];
 
   if (!spec) return `${type} has no setting called "${name}".`;
 
   switch (spec.kind) {
     case 'enum':
-      return typeof value === 'string' && spec.values.includes(value)
-        ? null
-        : `${type} ${name} must be one of ${spec.values.join(', ')}.`;
+      if (typeof value === 'string' && spec.values.includes(value)) return null;
+      // A tone may name one of the app's own colours (PB21).
+      if (takesAppColour(name, spec.values)) {
+        return appColourOfTone(value) ? null : `${type} ${name} must be one of ${spec.values.join(', ')}, ${appColourSaid}.`;
+      }
+
+      return `${type} ${name} must be one of ${spec.values.join(', ')}.`;
     case 'text':
       return typeof value === 'string' && value.length <= spec.max
         ? null
@@ -149,6 +161,9 @@ export function refusalForProps(type: ElementName, props: Record<string, unknown
   for (const name of (CATALOGUE[type] as ElementSpec).required ?? []) {
     if (props[name] === undefined) return `${type} needs a ${name}.`;
   }
+
+  // A canvas's colours are names only (PB24).
+  if (type === 'bry-canvas') return canvasRefusal(props.ops);
 
   return null;
 }

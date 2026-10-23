@@ -288,16 +288,37 @@ describe('what the runtime refuses itself, and what it leaves to the host', () =
     expect(() => createElement('div' as never)).toThrow(TreeError);
   });
 
-  test('a setting no element will ever take: style, classes, HTML', () => {
+  test('a setting no element will ever take: classes, HTML; and a style only as a record', () => {
     const node = stack();
 
-    expect(() => node.setAttribute('style', 'color: red')).toThrow('Brydio draws every element in its own style');
     expect(() => node.setAttribute('className', 'box')).toThrow('no classes');
-    expect(() => node.style).toThrow('has no style');
+    // PB22: the style is a record; CSS text is refused where it was written.
+    expect(() => {
+      (node.style as Record<string, unknown>).cssText = 'color: red';
+    }).toThrow('never CSS text');
     expect(() => {
       node.innerHTML = '<b>hi</b>';
     }).toThrow('has no HTML');
     expect(node.props).toEqual({});
+  });
+
+  test('a style written a property at a time is the node’s style setting (PB22)', () => {
+    const node = stack();
+    const style = node.style as Record<string, unknown>;
+
+    style.padding = 'space.4';
+    style.background = { light: '#ffffff', dark: '#111111' };
+    expect(node.props).toEqual({ style: { padding: 'space.4', background: { light: '#ffffff', dark: '#111111' } } });
+
+    style.padding = '';
+    expect(node.props).toEqual({ style: { background: { light: '#ffffff', dark: '#111111' } } });
+
+    style.cssText = '';
+    expect(node.props).toEqual({});
+
+    // The plain API takes it whole.
+    node.setProp('style', { gap: 'space.2' });
+    expect(node.props).toEqual({ style: { gap: 'space.2' } });
   });
 
   test('a value the catalogue would refuse goes out, for the host to refuse in its own words', () => {

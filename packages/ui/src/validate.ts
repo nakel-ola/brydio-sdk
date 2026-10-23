@@ -9,3 +9,4 @@
 
 export * from './catalogue.ts';
 export * from './checks.ts';
+export * from './app-look.ts';

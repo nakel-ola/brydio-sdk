@@ -28,6 +28,8 @@ const catalogueDir = 'packages/app/src/apps/catalogue';
 /** The kit's generated token names, which the host's `spec.ts` imports as `@repo/ui/token-names`. */
 const tokenNames = 'packages/ui/src/lib/token-names.ts';
 const HOST_LIST = `${catalogueDir}/elements.ts`;
+/** The host's copy of the look rules, which its catalogue reads for every node's style (PB22). */
+const lookDir = 'packages/app/src/apps/look';
 
 /**
  * The host's catalogue as committed at HEAD, not as it sits on disk: other
@@ -44,7 +46,7 @@ let committed: Promise<{ host: Record<string, any>; unlanded: string[] }> | null
 const hostAtHead = () =>
   (committed ??= (async () => {
     const scratch = mkdtempSync(join(tmpdir(), 'brydio-catalogue-'));
-    const archive = Bun.spawnSync(['git', '-C', brydio, 'archive', 'HEAD', catalogueDir, tokenNames]);
+    const archive = Bun.spawnSync(['git', '-C', brydio, 'archive', 'HEAD', catalogueDir, tokenNames, lookDir]);
 
     if (archive.exitCode !== 0) throw new Error(`git archive failed: ${archive.stderr.toString()}`);
 
@@ -182,6 +184,8 @@ describe('the catalogue as a whole', () => {
       'bry-keys',
       'bry-filter-chip',
       'bry-calendar-view',
+      'bry-box',
+      'bry-canvas',
     ]);
   });
 
@@ -376,10 +380,18 @@ describe('checks', () => {
 
   test('refuse a setting the element does not take, saying why for the web’s favourites', () => {
     expect(checkProp('bry-text', 'tone', 'muted')).toBeNull();
-    expect(checkProp('bry-text', 'tone', 'loud')).toBe('bry-text tone must be one of default, muted, neutral, brand, success, warn, danger.');
+    expect(checkProp('bry-text', 'tone', 'loud')).toBe(
+      'bry-text tone must be one of default, muted, neutral, brand, success, warn, danger, or one of the app’s colours (app.<name>).',
+    );
+    // PB21: a tone may name one of the app's colours.
+    expect(checkProp('bry-text', 'tone', 'app.ocean')).toBeNull();
     expect(checkProp('bry-text', 'tone', 'success')).toBeNull();
     expect(checkProp('bry-text', 'variant', 'caption')).toBeNull();
-    expect(checkProp('bry-text', 'style', 'color: red')).toContain('there is no style setting');
+    // PB22: every element takes a style, a record held to the safe list.
+    expect(checkProp('bry-text', 'style', 'color: red')).toBe('bry-text style must be a record of properties, like { "padding": "space.4" }.');
+    expect(checkProp('bry-text', 'style', { padding: 'space.4', color: 'brydio.text-muted' })).toBeNull();
+    expect(checkProp('bry-box', 'style', { position: 'fixed' })).toContain('bry-box style position can’t be fixed or sticky');
+    expect(checkProp('bry-text', 'className', 'x')).toContain('There are no classes in a Brydio app');
     expect(checkProp('bry-heading', 'level', 2)).toBeNull();
     expect(checkProp('bry-heading', 'level', '2')).toContain('whole number from 1 to 4');
     expect(checkProp('bry-heading', 'variant', 'subheading')).toBeNull();

@@ -33,6 +33,8 @@ import './draw/plan.ts';
 import './draw/tracker.ts';
 // CA02
 import './draw/calendar-view.ts';
+// PB23, PB24
+import './draw/box-canvas.ts';
 import { defineCatalogue } from './define.ts';
 
 export { BryElement } from './base.ts';

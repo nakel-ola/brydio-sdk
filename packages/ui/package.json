@@ -20,6 +20,7 @@
     "src"
   ],
   "dependencies": {
+    "@brydio/manifest": "0.1.0-alpha.59",
     "lit": "3.3.3"
   },
   "devDependencies": {

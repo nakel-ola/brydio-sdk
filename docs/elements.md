@@ -18,7 +18,7 @@ A toast is not an element: it is said, not placed. A screen shows one with
 `toast(text, tone)` from `@brydio/app`, which Brydio draws in its own
 toaster; see [the bridge](bridge.md).
 
-There are 102 elements.
+There are 104 elements.
 
 - [`bry-stack`](#bry-stack)
 - [`bry-heading`](#bry-heading)
@@ -122,6 +122,8 @@ There are 102 elements.
 - [`bry-keys`](#bry-keys)
 - [`bry-filter-chip`](#bry-filter-chip)
 - [`bry-calendar-view`](#bry-calendar-view)
+- [`bry-box`](#bry-box)
+- [`bry-canvas`](#bry-canvas)
 
 ## `bry-stack`
 
@@ -237,6 +239,8 @@ Holds nothing: it is drawn from its settings alone.
 | Setting | Takes | Needed |
 |---|---|---|
 | `value` | text, at most 200 characters | no |
+| `multiple` | `true` or `false` | no |
+| `values` | a list of at most 100: text, at most 200 characters | no |
 | `options` | at most 100 `{ value, label }` choices | yes |
 | `placeholder` | text, at most 200 characters | no |
 | `label` | text, at most 200 characters | no |
@@ -588,6 +592,8 @@ Holds nothing: it is drawn from its settings alone.
 | Setting | Takes | Needed |
 |---|---|---|
 | `value` | text, at most 200 characters | no |
+| `multiple` | `true` or `false` | no |
+| `values` | a list of at most 500: text, at most 200 characters | no |
 | `options` | at most 500 `{ value, label }` choices | yes |
 | `placeholder` | text, at most 200 characters | no |
 | `search` | text, at most 200 characters | no |
@@ -1640,3 +1646,24 @@ Holds nothing: it is drawn from its settings alone.
 | `empty` | text, at most 200 characters | no |
 
 Tells the app: `select`, `create`, `move`, `resize`, `navigate`, `pick`.
+
+## `bry-box`
+
+Holds other elements or text.
+
+No settings.
+
+Tells the app nothing.
+
+## `bry-canvas`
+
+Holds nothing: it is drawn from its settings alone.
+
+| Setting | Takes | Needed |
+|---|---|---|
+| `label` | text, at most 200 characters | yes |
+| `view` | a record of `w`, `h` (needs `w`, `h`) | yes |
+| `focusable` | `true` or `false` | no |
+| `ops` | a list of at most 2,000: a record of `kind`, `x`, `y`, `w`, `h`, `x2`, `y2`, `r`, `round`, `d`, `text`, `fill`, `stroke`, `line`, `points`, `weight`, `align`, `opacity` (needs `kind`) | no |
+
+Tells the app: `pointer`, `key`.
