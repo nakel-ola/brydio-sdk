@@ -63,7 +63,8 @@ describe('the colours the web build may use (A6-F06-S01)', () => {
     // with is a colour the kit never measured.
     const declared = declaredTokens();
 
-    expect([...named].filter(token => !declared.has(token) && !token.startsWith('--bry-')).sort()).toEqual([]);
+    // `--app-color-<name>`: an app's own theme colours (PB21), set by Brydio on the app's area.
+    expect([...named].filter(token => !declared.has(token) && !token.startsWith('--bry-') && !token.startsWith('--app-color-')).sort()).toEqual([]);
   });
 
   test('puts ink on a fill only where the kit gates that pairing', async () => {

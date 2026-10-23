@@ -1,7 +1,7 @@
 {
   "brydio": {
-    "commit": "17589d22e3b7962e7a1cac0f793291ba33d890d2",
-    "dirty": true
+    "commit": "9b87e0963760ef0d8242f5735a9b029163800ae4",
+    "dirty": false
   },
   "contracts": {
     "anonymous-problems": {
@@ -515,6 +515,17 @@
             "value": {
               "kind": "text",
               "max": 200
+            },
+            "multiple": {
+              "kind": "boolean"
+            },
+            "values": {
+              "kind": "list",
+              "max": 100,
+              "of": {
+                "kind": "text",
+                "max": 200
+              }
             },
             "options": {
               "kind": "options",
@@ -2067,6 +2078,17 @@
             "value": {
               "kind": "text",
               "max": 200
+            },
+            "multiple": {
+              "kind": "boolean"
+            },
+            "values": {
+              "kind": "list",
+              "max": 500,
+              "of": {
+                "kind": "text",
+                "max": 200
+              }
             },
             "options": {
               "kind": "options",
@@ -7549,6 +7571,160 @@
             "pick"
           ],
           "children": false
+        },
+        "bry-box": {
+          "props": {},
+          "events": [],
+          "children": true
+        },
+        "bry-canvas": {
+          "props": {
+            "label": {
+              "kind": "text",
+              "max": 200
+            },
+            "view": {
+              "kind": "shape",
+              "fields": {
+                "w": {
+                  "kind": "int",
+                  "min": 1,
+                  "max": 4000
+                },
+                "h": {
+                  "kind": "int",
+                  "min": 1,
+                  "max": 4000
+                }
+              },
+              "required": [
+                "w",
+                "h"
+              ]
+            },
+            "focusable": {
+              "kind": "boolean"
+            },
+            "ops": {
+              "kind": "list",
+              "max": 2000,
+              "of": {
+                "kind": "shape",
+                "fields": {
+                  "kind": {
+                    "kind": "enum",
+                    "values": [
+                      "rect",
+                      "circle",
+                      "line",
+                      "path",
+                      "text"
+                    ]
+                  },
+                  "x": {
+                    "kind": "int",
+                    "min": -100000,
+                    "max": 100000
+                  },
+                  "y": {
+                    "kind": "int",
+                    "min": -100000,
+                    "max": 100000
+                  },
+                  "w": {
+                    "kind": "int",
+                    "min": -100000,
+                    "max": 100000
+                  },
+                  "h": {
+                    "kind": "int",
+                    "min": -100000,
+                    "max": 100000
+                  },
+                  "x2": {
+                    "kind": "int",
+                    "min": -100000,
+                    "max": 100000
+                  },
+                  "y2": {
+                    "kind": "int",
+                    "min": -100000,
+                    "max": 100000
+                  },
+                  "r": {
+                    "kind": "int",
+                    "min": 0,
+                    "max": 100000
+                  },
+                  "round": {
+                    "kind": "int",
+                    "min": 0,
+                    "max": 1000
+                  },
+                  "d": {
+                    "kind": "text",
+                    "max": 4000
+                  },
+                  "text": {
+                    "kind": "text",
+                    "max": 200
+                  },
+                  "fill": {
+                    "kind": "text",
+                    "max": 64
+                  },
+                  "stroke": {
+                    "kind": "text",
+                    "max": 64
+                  },
+                  "line": {
+                    "kind": "int",
+                    "min": 0,
+                    "max": 64
+                  },
+                  "points": {
+                    "kind": "int",
+                    "min": 8,
+                    "max": 96
+                  },
+                  "weight": {
+                    "kind": "enum",
+                    "values": [
+                      "400",
+                      "500",
+                      "600",
+                      "700"
+                    ]
+                  },
+                  "align": {
+                    "kind": "enum",
+                    "values": [
+                      "start",
+                      "center",
+                      "end"
+                    ]
+                  },
+                  "opacity": {
+                    "kind": "int",
+                    "min": 0,
+                    "max": 100
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              }
+            }
+          },
+          "required": [
+            "label",
+            "view"
+          ],
+          "events": [
+            "pointer",
+            "key"
+          ],
+          "children": false
         }
       },
       "textNode": "#text"
@@ -7556,7 +7732,7 @@
     "catalogue-refusals": {
       "values": [
         "bry-stack gap must be one of 1, 2, 3, 4, 5, 6, 7, 8.",
-        "bry-stack has no setting called \"style\".",
+        "bry-stack style must be a record of properties, like { \"padding\": \"space.4\" }.",
         null,
         "bry-heading level must be a whole number from 1 to 4.",
         "bry-text text must be text of at most 4000 characters.",
@@ -7571,7 +7747,7 @@
         "bry-select options must be a list of at most 100 choices, each with a value and a label of at most 200 characters (and optionally a member id as avatar), and no value twice.",
         "bry-select options must be a list of at most 100 choices, each with a value and a label of at most 200 characters (and optionally a member id as avatar), and no value twice.",
         "bry-grid columns must be one of 1, 2, 3, 4, 5, 6.",
-        "bry-badge tone must be one of neutral, brand, success, warn, danger.",
+        "bry-badge tone must be one of neutral, brand, success, warn, danger, or one of the app’s colours (app.<name>).",
         "bry-avatar has no setting called \"src\".",
         "bry-skeleton count must be a whole number from 1 to 12.",
         "bry-empty-state action must be text of at most 200 characters.",
@@ -7607,7 +7783,7 @@
         "bry-heading level must be a whole number from 1 to 4.",
         "bry-heading variant must be one of title, heading, subheading, label.",
         "bry-avatar size must be one of sm, md, lg.",
-        "bry-text tone must be one of default, muted, neutral, brand, success, warn, danger.",
+        "bry-text tone must be one of default, muted, neutral, brand, success, warn, danger, or one of the app’s colours (app.<name>).",
         "bry-text variant must be one of body, ui, caption, label.",
         "bry-markdown text must be text of at most 50000 characters.",
         "bry-markdown expanded must be true or false.",
@@ -8207,6 +8383,1182 @@
         "batchChanges": 50
       }
     },
+    "look": {
+      "styles": [
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {},
+            {}
+          ]
+        },
+        {
+          "refused": "style must be a record of properties, like { \"padding\": \"space.4\" }.",
+          "named": "style must be a record of properties, like { \"padding\": \"space.4\" }.",
+          "css": null
+        },
+        {
+          "refused": "style must be a record of properties, like { \"padding\": \"space.4\" }.",
+          "named": "style must be a record of properties, like { \"padding\": \"space.4\" }.",
+          "css": null
+        },
+        {
+          "refused": "style must be a record of properties, like { \"padding\": \"space.4\" }.",
+          "named": "style must be a record of properties, like { \"padding\": \"space.4\" }.",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "padding": "calc(var(--spacing, 0.25rem) * 4)",
+              "gap": "8px",
+              "margin": "calc(var(--spacing, 0.25rem) * -2)",
+              "width": "50%",
+              "max-width": "640px"
+            },
+            {
+              "padding": "calc(var(--spacing, 0.25rem) * 4)",
+              "gap": "8px",
+              "margin": "calc(var(--spacing, 0.25rem) * -2)",
+              "width": "50%",
+              "max-width": "640px"
+            }
+          ]
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "padding": "4px 8px 4px 8px"
+            },
+            {
+              "padding": "4px 8px 4px 8px"
+            }
+          ]
+        },
+        {
+          "refused": "style padding takes at most four lengths, one for each side.",
+          "named": "style padding takes at most four lengths, one for each side.",
+          "css": null
+        },
+        {
+          "refused": "style padding can’t be less than 0.",
+          "named": "style padding can’t be less than 0.",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "margin": "-12px auto"
+            },
+            {
+              "margin": "-12px auto"
+            }
+          ]
+        },
+        {
+          "refused": "style width can’t use viewport units, which measure Brydio’s window, not the app’s area; use % or pixels.",
+          "named": "style width can’t use viewport units, which measure Brydio’s window, not the app’s area; use % or pixels.",
+          "css": null
+        },
+        {
+          "refused": "style height can’t use viewport units, which measure Brydio’s window, not the app’s area; use % or pixels.",
+          "named": "style height can’t use viewport units, which measure Brydio’s window, not the app’s area; use % or pixels.",
+          "css": null
+        },
+        {
+          "refused": "style width can be at most 100%.",
+          "named": "style width can be at most 100%.",
+          "css": null
+        },
+        {
+          "refused": "style width must be at most 10000 pixels.",
+          "named": "style width must be at most 10000 pixels.",
+          "css": null
+        },
+        {
+          "refused": "style width must be a length: a number of pixels, \"12px\", \"1.5rem\", \"50%\" or a spacing step like \"space.4\".",
+          "named": "style width must be a length: a number of pixels, \"12px\", \"1.5rem\", \"50%\" or a spacing step like \"space.4\".",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "width": "fit-content",
+              "min-height": "auto"
+            },
+            {
+              "width": "fit-content",
+              "min-height": "auto"
+            }
+          ]
+        },
+        {
+          "refused": "style position can’t be fixed or sticky: an app draws only inside its own area, so position is relative to that area (static, relative or absolute).",
+          "named": "style position can’t be fixed or sticky: an app draws only inside its own area, so position is relative to that area (static, relative or absolute).",
+          "css": null
+        },
+        {
+          "refused": "style position can’t be fixed or sticky: an app draws only inside its own area, so position is relative to that area (static, relative or absolute).",
+          "named": "style position can’t be fixed or sticky: an app draws only inside its own area, so position is relative to that area (static, relative or absolute).",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "position": "absolute",
+              "inset": "0",
+              "z-index": "3"
+            },
+            {
+              "position": "absolute",
+              "inset": "0",
+              "z-index": "3"
+            }
+          ]
+        },
+        {
+          "refused": "style zIndex can be at most 10: the app’s area is its own layer, and nothing inside it can reach above it.",
+          "named": "style zIndex can be at most 10: the app’s area is its own layer, and nothing inside it can reach above it.",
+          "css": null
+        },
+        {
+          "refused": "style zIndex must be a whole number from 0 to 10.",
+          "named": "style zIndex must be a whole number from 0 to 10.",
+          "css": null
+        },
+        {
+          "refused": "style zIndex must be a whole number from 0 to 10.",
+          "named": "style zIndex must be a whole number from 0 to 10.",
+          "css": null
+        },
+        {
+          "refused": "style background can’t hold url().",
+          "named": "style background can’t hold url().",
+          "css": null
+        },
+        {
+          "refused": "style backgroundImage can only be one of the app’s own uploaded files: { \"file\": \"<its address>\" }; url() and outside images aren’t allowed.",
+          "named": "style backgroundImage can only be one of the app’s own uploaded files: { \"file\": \"<its address>\" }; url() and outside images aren’t allowed.",
+          "css": null
+        },
+        {
+          "refused": "style backgroundImage names a file by the address the app’s file store gave it.",
+          "named": "style backgroundImage names a file by the address the app’s file store gave it.",
+          "css": null
+        },
+        {
+          "refused": "style backgroundImage names a file by the address the app’s file store gave it.",
+          "named": "style backgroundImage names a file by the address the app’s file store gave it.",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "background-size": "cover"
+            },
+            {
+              "background-size": "cover"
+            }
+          ]
+        },
+        {
+          "refused": "style background is a plain colour with no dark-mode value; give both: { \"light\": \"…\", \"dark\": \"…\" }.",
+          "named": "style background is a plain colour with no dark-mode value; give both: { \"light\": \"…\", \"dark\": \"…\" }.",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "background-color": "#0e7490",
+              "color": "var(--fg)",
+              "border-color": "var(--app-color-ocean, currentColor)"
+            },
+            {
+              "background-color": "#67e8f9",
+              "color": "var(--fg)",
+              "border-color": "var(--app-color-ocean, currentColor)"
+            }
+          ]
+        },
+        {
+          "refused": "style background a plain colour needs both a light and a dark value, and nothing else.",
+          "named": "style background a plain colour needs both a light and a dark value, and nothing else.",
+          "css": null
+        },
+        {
+          "refused": "style background dark value must be a colour like #0e7490.",
+          "named": "style background dark value must be a colour like #0e7490.",
+          "css": null
+        },
+        {
+          "refused": "style background a plain colour needs both a light and a dark value, and nothing else.",
+          "named": "style background a plain colour needs both a light and a dark value, and nothing else.",
+          "css": null
+        },
+        {
+          "refused": "style color names a Brydio colour that doesn’t exist; Brydio’s colours are brydio.text, brydio.text-strong, brydio.text-soft, brydio.text-muted, brydio.text-faint, brydio.surface, brydio.surface-soft, brydio.sunken, brydio.elevated, brydio.fill, brydio.selected, brydio.page, brydio.line, brydio.line-strong, brydio.line-faint, brydio.brand, brydio.brand-text, brydio.brand-on, brydio.brand-soft, brydio.brand-line, brydio.success, brydio.success-text, brydio.success-soft, brydio.warn, brydio.warn-text, brydio.warn-soft, brydio.danger, brydio.danger-text, brydio.danger-soft.",
+          "named": "style color names a Brydio colour that doesn’t exist; Brydio’s colours are brydio.text, brydio.text-strong, brydio.text-soft, brydio.text-muted, brydio.text-faint, brydio.surface, brydio.surface-soft, brydio.sunken, brydio.elevated, brydio.fill, brydio.selected, brydio.page, brydio.line, brydio.line-strong, brydio.line-faint, brydio.brand, brydio.brand-text, brydio.brand-on, brydio.brand-soft, brydio.brand-line, brydio.success, brydio.success-text, brydio.success-soft, brydio.warn, brydio.warn-text, brydio.warn-soft, brydio.danger, brydio.danger-text, brydio.danger-soft.",
+          "css": null
+        },
+        {
+          "refused": "style color names an app colour, like app.ocean.",
+          "named": "style color names an app colour, like app.ocean.",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "color": "transparent"
+            },
+            {
+              "color": "transparent"
+            }
+          ]
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "color": "currentColor"
+            },
+            {
+              "color": "currentColor"
+            }
+          ]
+        },
+        {
+          "refused": "style fontFamily isn’t allowed: every app uses Brydio’s own font, so there is no font setting.",
+          "named": "style fontFamily isn’t allowed: every app uses Brydio’s own font, so there is no font setting.",
+          "css": null
+        },
+        {
+          "refused": "style font isn’t allowed: every app uses Brydio’s own font, so there is no font setting.",
+          "named": "style font isn’t allowed: every app uses Brydio’s own font, so there is no font setting.",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "font-size": "14px",
+              "font-weight": "600",
+              "line-height": "1.4"
+            },
+            {
+              "font-size": "14px",
+              "font-weight": "600",
+              "line-height": "1.4"
+            }
+          ]
+        },
+        {
+          "refused": "style fontSize must be from 10 to 64 pixels (\"14px\" or \"0.875rem\").",
+          "named": "style fontSize must be from 10 to 64 pixels (\"14px\" or \"0.875rem\").",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "font-size": "0.875rem"
+            },
+            {
+              "font-size": "0.875rem"
+            }
+          ]
+        },
+        {
+          "refused": "style fontWeight must be 400, 500, 600 or 700.",
+          "named": "style fontWeight must be 400, 500, 600 or 700.",
+          "css": null
+        },
+        {
+          "refused": "style lineHeight as a plain number is from 0.8 to 3.",
+          "named": "style lineHeight as a plain number is from 0.8 to 3.",
+          "css": null
+        },
+        {
+          "refused": "style animation isn’t allowed: animations that never stop aren’t allowed, and a style has no animation; use transition for a change of state.",
+          "named": "style animation isn’t allowed: animations that never stop aren’t allowed, and a style has no animation; use transition for a change of state.",
+          "css": null
+        },
+        {
+          "refused": "style animationIterationCount isn’t allowed: animations that never stop aren’t allowed, and a style has no animation; use transition for a change of state.",
+          "named": "style animationIterationCount isn’t allowed: animations that never stop aren’t allowed, and a style has no animation; use transition for a change of state.",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "transition": "background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out)"
+            },
+            {
+              "transition": "background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out)"
+            }
+          ]
+        },
+        {
+          "refused": "style transition must be one of none, fast, base, slow.",
+          "named": "style transition must be one of none, fast, base, slow.",
+          "css": null
+        },
+        {
+          "refused": "style boxShadow must be none or one of Brydio’s shadows: shadow.xs, shadow.sm, shadow.md, shadow.lg.",
+          "named": "style boxShadow must be none or one of Brydio’s shadows: shadow.xs, shadow.sm, shadow.md, shadow.lg.",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "box-shadow": "var(--shadow-md)"
+            },
+            {
+              "box-shadow": "var(--shadow-md)"
+            }
+          ]
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "box-shadow": "none"
+            },
+            {
+              "box-shadow": "none"
+            }
+          ]
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "border-radius": "var(--radius-xl)"
+            },
+            {
+              "border-radius": "var(--radius-xl)"
+            }
+          ]
+        },
+        {
+          "refused": "style borderRadius names one of Brydio’s radii: radius.xs, radius.sm, radius.md, radius.lg, radius.xl, radius.2xl, radius.3xl.",
+          "named": "style borderRadius names one of Brydio’s radii: radius.xs, radius.sm, radius.md, radius.lg, radius.xl, radius.2xl, radius.3xl.",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "border-radius": "9999px"
+            },
+            {
+              "border-radius": "9999px"
+            }
+          ]
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "border-radius": "12px",
+              "border-width": "1px",
+              "border-style": "solid"
+            },
+            {
+              "border-radius": "12px",
+              "border-width": "1px",
+              "border-style": "solid"
+            }
+          ]
+        },
+        {
+          "refused": "style borderWidth must be from 0 to 16 pixels.",
+          "named": "style borderWidth must be from 0 to 16 pixels.",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "border-width": "2px"
+            },
+            {
+              "border-width": "2px"
+            }
+          ]
+        },
+        {
+          "refused": "style border isn’t allowed: a border is borderWidth, borderStyle and borderColor, each on its own.",
+          "named": "style border isn’t allowed: a border is borderWidth, borderStyle and borderColor, each on its own.",
+          "css": null
+        },
+        {
+          "refused": "style transform isn’t allowed: a transform could move an element out of where Brydio laid it; use margin or position inside the app’s area.",
+          "named": "style transform isn’t allowed: a transform could move an element out of where Brydio laid it; use margin or position inside the app’s area.",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "opacity": "0.5"
+            },
+            {
+              "opacity": "0.5"
+            }
+          ]
+        },
+        {
+          "refused": "style opacity must be a number from 0 to 1.",
+          "named": "style opacity must be a number from 0 to 1.",
+          "css": null
+        },
+        {
+          "refused": "style gridTemplateRows must be a list of tracks: lengths, fr, auto, minmax() or repeat(), like \"repeat(3, 1fr)\".",
+          "named": "style gridTemplateRows must be a list of tracks: lengths, fr, auto, minmax() or repeat(), like \"repeat(3, 1fr)\".",
+          "css": null
+        },
+        {
+          "refused": "style gridTemplateColumns must be a list of tracks: lengths, fr, auto, minmax() or repeat(), like \"repeat(3, 1fr)\".",
+          "named": "style gridTemplateColumns must be a list of tracks: lengths, fr, auto, minmax() or repeat(), like \"repeat(3, 1fr)\".",
+          "css": null
+        },
+        {
+          "refused": "style gridColumn must be like \"span 2\" or \"1 / 3\".",
+          "named": "style gridColumn must be like \"span 2\" or \"1 / 3\".",
+          "css": null
+        },
+        {
+          "refused": "style display must be one of flex, inline-flex, grid, inline-grid, block, inline-block, inline, none.",
+          "named": "style display must be one of flex, inline-flex, grid, inline-grid, block, inline-block, inline, none.",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "flex": "1",
+              "flex-direction": "column",
+              "flex-wrap": "wrap",
+              "align-items": "center",
+              "justify-content": "space-between",
+              "order": "2"
+            },
+            {
+              "flex": "1",
+              "flex-direction": "column",
+              "flex-wrap": "wrap",
+              "align-items": "center",
+              "justify-content": "space-between",
+              "order": "2"
+            }
+          ]
+        },
+        {
+          "refused": "style flex must be none, auto, or a number from 0 to 12.",
+          "named": "style flex must be none, auto, or a number from 0 to 12.",
+          "css": null
+        },
+        {
+          "refused": "style order must be a whole number from -100 to 100.",
+          "named": "style order must be a whole number from -100 to 100.",
+          "css": null
+        },
+        {
+          "refused": null,
+          "named": null,
+          "css": [
+            {
+              "overflow": "auto",
+              "overflow-x": "hidden",
+              "text-align": "center"
+            },
+            {
+              "overflow": "auto",
+              "overflow-x": "hidden",
+              "text-align": "center"
+            }
+          ]
+        },
+        {
+          "refused": "style cursor isn’t allowed: Brydio chooses the pointer from what an element does.",
+          "named": "style cursor isn’t allowed: Brydio chooses the pointer from what an element does.",
+          "css": null
+        },
+        {
+          "refused": "style whiteSpace isn’t allowed: it is not on the list of properties a style may set.",
+          "named": "style whiteSpace isn’t allowed: it is not on the list of properties a style may set.",
+          "css": null
+        },
+        {
+          "refused": "style colour isn’t allowed: it is not on the list of properties a style may set.",
+          "named": "style colour isn’t allowed: it is not on the list of properties a style may set.",
+          "css": null
+        },
+        {
+          "refused": "style can set at most 48 properties.",
+          "named": "style can set at most 48 properties.",
+          "css": null
+        },
+        {
+          "refused": "style padding names a spacing step from space.0 to space.16.",
+          "named": "style padding names a spacing step from space.0 to space.16.",
+          "css": null
+        },
+        {
+          "refused": "style padding can’t be less than 0.",
+          "named": "style padding can’t be less than 0.",
+          "css": null
+        }
+      ],
+      "themes": [
+        {
+          "problems": [],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [
+            {
+              "code": "theme_invalid",
+              "path": "theme",
+              "message": "The theme is a record: accent, colors, rounding, density."
+            }
+          ],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [
+            {
+              "code": "theme_invalid",
+              "path": "theme",
+              "message": "The theme is a record: accent, colors, rounding, density."
+            }
+          ],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [],
+          "warnings": [
+            {
+              "code": "theme_contrast_low",
+              "path": "theme.colors.sand.dark",
+              "message": "Text on \"sand\" in dark mode reads at 4.49:1, below the 4.5:1 WCAG AA asks for."
+            }
+          ],
+          "variables": [
+            {
+              "--app-color-ocean": "#0e7490",
+              "--app-color-sand": "#f5deb3",
+              "--brand": "#0e7490",
+              "--brand-hover": "color-mix(in oklab, #0e7490 88%, black)",
+              "--brand-active": "color-mix(in oklab, #0e7490 78%, black)",
+              "--brand-fg": "#0e7490",
+              "--brand-on": "#ffffff",
+              "--brand-soft": "color-mix(in oklab, #0e7490 12%, transparent)",
+              "--brand-soft-hover": "color-mix(in oklab, #0e7490 18%, transparent)",
+              "--brand-line": "color-mix(in oklab, #0e7490 45%, transparent)",
+              "--brand-ring": "color-mix(in oklab, #0e7490 24%, transparent)",
+              "--primary": "#0e7490",
+              "--primary-foreground": "#ffffff",
+              "--ring": "#0e7490",
+              "--focus-ring": "color-mix(in oklab, #0e7490 62%, transparent)",
+              "--app-color-accent": "#0e7490",
+              "--radius": "0.875rem",
+              "--radius-xs": "0.525rem",
+              "--radius-sm": "0.7rem",
+              "--radius-md": "0.875rem",
+              "--radius-lg": "1.05rem",
+              "--radius-xl": "1.4rem",
+              "--radius-2xl": "1.75rem",
+              "--radius-3xl": "2.45rem",
+              "--spacing": "0.2125rem",
+              "--control-h-sm": "24px",
+              "--control-h": "27px",
+              "--control-h-lg": "31px",
+              "--list-row-h": "41px"
+            },
+            {
+              "--app-color-ocean": "#67e8f9",
+              "--app-color-sand": "#8b7355",
+              "--brand": "#67e8f9",
+              "--brand-hover": "color-mix(in oklab, #67e8f9 88%, white)",
+              "--brand-active": "color-mix(in oklab, #67e8f9 78%, white)",
+              "--brand-fg": "#67e8f9",
+              "--brand-on": "#111111",
+              "--brand-soft": "color-mix(in oklab, #67e8f9 22%, transparent)",
+              "--brand-soft-hover": "color-mix(in oklab, #67e8f9 30%, transparent)",
+              "--brand-line": "color-mix(in oklab, #67e8f9 45%, transparent)",
+              "--brand-ring": "color-mix(in oklab, #67e8f9 24%, transparent)",
+              "--primary": "#67e8f9",
+              "--primary-foreground": "#111111",
+              "--ring": "#67e8f9",
+              "--focus-ring": "color-mix(in oklab, #67e8f9 62%, transparent)",
+              "--app-color-accent": "#67e8f9",
+              "--radius": "0.875rem",
+              "--radius-xs": "0.525rem",
+              "--radius-sm": "0.7rem",
+              "--radius-md": "0.875rem",
+              "--radius-lg": "1.05rem",
+              "--radius-xl": "1.4rem",
+              "--radius-2xl": "1.75rem",
+              "--radius-3xl": "2.45rem",
+              "--spacing": "0.2125rem",
+              "--control-h-sm": "24px",
+              "--control-h": "27px",
+              "--control-h-lg": "31px",
+              "--list-row-h": "41px"
+            }
+          ]
+        },
+        {
+          "problems": [
+            {
+              "code": "theme_colour_pair",
+              "path": "theme.accent",
+              "message": "The accent needs both a light and a dark value: { \"light\": \"#…\", \"dark\": \"#…\" }."
+            }
+          ],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [
+            {
+              "code": "theme_colour_pair",
+              "path": "theme.accent",
+              "message": "The accent needs both a light and a dark value: { \"light\": \"#…\", \"dark\": \"#…\" }."
+            }
+          ],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [
+            {
+              "code": "theme_colour_format",
+              "path": "theme.accent.dark",
+              "message": "The accent's dark value is a colour like #0e7490."
+            }
+          ],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [
+            {
+              "code": "theme_colour_pair",
+              "path": "theme.accent.hover",
+              "message": "The accent has only a light and a dark value."
+            }
+          ],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [
+            {
+              "code": "theme_colour_name",
+              "path": "theme.colors.Ocean",
+              "message": "\"Ocean\" is not a colour name: lower-case letters, digits and dashes, starting with a letter, at most 32."
+            }
+          ],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [
+            {
+              "code": "theme_invalid",
+              "path": "theme.colors",
+              "message": "Named colours are a record: { \"ocean\": { \"light\": \"#0e7490\", \"dark\": \"#67e8f9\" } }."
+            }
+          ],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [
+            {
+              "code": "theme_colours_too_many",
+              "path": "theme.colors",
+              "message": "A theme holds at most 24 named colours."
+            }
+          ],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [
+            {
+              "code": "theme_font",
+              "path": "theme.font",
+              "message": "There is no font setting: every app uses Brydio’s own font."
+            }
+          ],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [
+            {
+              "code": "theme_font",
+              "path": "theme.fontFamily",
+              "message": "There is no font setting: every app uses Brydio’s own font."
+            }
+          ],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [
+            {
+              "code": "theme_invalid",
+              "path": "theme.colours",
+              "message": "Named colours go in \"colors\"."
+            }
+          ],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [
+            {
+              "code": "theme_density",
+              "path": "theme.density",
+              "message": "The density is one of compact, normal, roomy."
+            }
+          ],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [
+            {
+              "code": "theme_rounding",
+              "path": "theme.rounding",
+              "message": "The rounding is one of none, small, normal, large, round."
+            }
+          ],
+          "warnings": [],
+          "variables": [
+            {},
+            {}
+          ]
+        },
+        {
+          "problems": [],
+          "warnings": [],
+          "variables": [
+            {
+              "--radius": "0rem",
+              "--radius-xs": "0rem",
+              "--radius-sm": "0rem",
+              "--radius-md": "0rem",
+              "--radius-lg": "0rem",
+              "--radius-xl": "0rem",
+              "--radius-2xl": "0rem",
+              "--radius-3xl": "0rem",
+              "--spacing": "0.2875rem",
+              "--control-h-sm": "32px",
+              "--control-h": "37px",
+              "--control-h-lg": "41px",
+              "--list-row-h": "55px"
+            },
+            {
+              "--radius": "0rem",
+              "--radius-xs": "0rem",
+              "--radius-sm": "0rem",
+              "--radius-md": "0rem",
+              "--radius-lg": "0rem",
+              "--radius-xl": "0rem",
+              "--radius-2xl": "0rem",
+              "--radius-3xl": "0rem",
+              "--spacing": "0.2875rem",
+              "--control-h-sm": "32px",
+              "--control-h": "37px",
+              "--control-h-lg": "41px",
+              "--list-row-h": "55px"
+            }
+          ]
+        },
+        {
+          "problems": [],
+          "warnings": [
+            {
+              "code": "theme_contrast_low",
+              "path": "theme.accent.dark",
+              "message": "Text on the accent in dark mode reads at 4.48:1, below the 4.5:1 WCAG AA asks for."
+            }
+          ],
+          "variables": [
+            {
+              "--brand": "#ffff00",
+              "--brand-hover": "color-mix(in oklab, #ffff00 88%, black)",
+              "--brand-active": "color-mix(in oklab, #ffff00 78%, black)",
+              "--brand-fg": "#ffff00",
+              "--brand-on": "#111111",
+              "--brand-soft": "color-mix(in oklab, #ffff00 12%, transparent)",
+              "--brand-soft-hover": "color-mix(in oklab, #ffff00 18%, transparent)",
+              "--brand-line": "color-mix(in oklab, #ffff00 45%, transparent)",
+              "--brand-ring": "color-mix(in oklab, #ffff00 24%, transparent)",
+              "--primary": "#ffff00",
+              "--primary-foreground": "#111111",
+              "--ring": "#ffff00",
+              "--focus-ring": "color-mix(in oklab, #ffff00 62%, transparent)",
+              "--app-color-accent": "#ffff00"
+            },
+            {
+              "--brand": "#777777",
+              "--brand-hover": "color-mix(in oklab, #777777 88%, white)",
+              "--brand-active": "color-mix(in oklab, #777777 78%, white)",
+              "--brand-fg": "#777777",
+              "--brand-on": "#ffffff",
+              "--brand-soft": "color-mix(in oklab, #777777 22%, transparent)",
+              "--brand-soft-hover": "color-mix(in oklab, #777777 30%, transparent)",
+              "--brand-line": "color-mix(in oklab, #777777 45%, transparent)",
+              "--brand-ring": "color-mix(in oklab, #777777 24%, transparent)",
+              "--primary": "#777777",
+              "--primary-foreground": "#ffffff",
+              "--ring": "#777777",
+              "--focus-ring": "color-mix(in oklab, #777777 62%, transparent)",
+              "--app-color-accent": "#777777"
+            }
+          ]
+        },
+        {
+          "problems": [],
+          "warnings": [],
+          "variables": [
+            {
+              "--app-color-pale": "#eeeeee"
+            },
+            {
+              "--app-color-pale": "#808080"
+            }
+          ]
+        }
+      ],
+      "colours": [
+        {
+          "refused": null,
+          "tone": null,
+          "css": [
+            "var(--fg)",
+            "var(--fg)"
+          ]
+        },
+        {
+          "refused": null,
+          "tone": null,
+          "css": [
+            "var(--brand)",
+            "var(--brand)"
+          ]
+        },
+        {
+          "refused": "names a Brydio colour that doesn’t exist; Brydio’s colours are brydio.text, brydio.text-strong, brydio.text-soft, brydio.text-muted, brydio.text-faint, brydio.surface, brydio.surface-soft, brydio.sunken, brydio.elevated, brydio.fill, brydio.selected, brydio.page, brydio.line, brydio.line-strong, brydio.line-faint, brydio.brand, brydio.brand-text, brydio.brand-on, brydio.brand-soft, brydio.brand-line, brydio.success, brydio.success-text, brydio.success-soft, brydio.warn, brydio.warn-text, brydio.warn-soft, brydio.danger, brydio.danger-text, brydio.danger-soft",
+          "tone": null,
+          "css": [
+            null,
+            null
+          ]
+        },
+        {
+          "refused": null,
+          "tone": "ocean",
+          "css": [
+            "var(--app-color-ocean, currentColor)",
+            "var(--app-color-ocean, currentColor)"
+          ]
+        },
+        {
+          "refused": "names \"unknown\", which the app’s theme doesn’t declare",
+          "tone": "unknown",
+          "css": [
+            "var(--app-color-unknown, currentColor)",
+            "var(--app-color-unknown, currentColor)"
+          ]
+        },
+        {
+          "refused": "names an app colour, like app.ocean",
+          "tone": null,
+          "css": [
+            null,
+            null
+          ]
+        },
+        {
+          "refused": "is a plain colour with no dark-mode value; give both: { \"light\": \"…\", \"dark\": \"…\" }",
+          "tone": null,
+          "css": [
+            null,
+            null
+          ]
+        },
+        {
+          "refused": "must be a Brydio colour (brydio.text), one of the app’s (app.ocean), or { \"light\": \"#…\", \"dark\": \"#…\" }",
+          "tone": null,
+          "css": [
+            null,
+            null
+          ]
+        },
+        {
+          "refused": null,
+          "tone": null,
+          "css": [
+            "#0e7490",
+            "#67e8f9"
+          ]
+        },
+        {
+          "refused": "a plain colour needs both a light and a dark value, and nothing else",
+          "tone": null,
+          "css": [
+            "#fff",
+            null
+          ]
+        },
+        {
+          "refused": null,
+          "tone": null,
+          "css": [
+            "transparent",
+            "transparent"
+          ]
+        },
+        {
+          "refused": "must be a Brydio colour (brydio.text), one of the app’s (app.ocean), or { \"light\": \"#…\", \"dark\": \"#…\" }",
+          "tone": null,
+          "css": [
+            null,
+            null
+          ]
+        },
+        {
+          "refused": "must be a Brydio colour (brydio.text), one of the app’s (app.ocean), or { \"light\": \"#…\", \"dark\": \"#…\" }",
+          "tone": null,
+          "css": [
+            null,
+            null
+          ]
+        }
+      ],
+      "canvases": [
+        null,
+        null,
+        null,
+        null,
+        "bry-canvas ops[0].fill must name a colour, Brydio’s (brydio.text) or the app’s (app.ocean); give a plain colour a name in the theme.",
+        "bry-canvas ops[0].fill names a Brydio colour that doesn’t exist; Brydio’s colours are brydio.text, brydio.text-strong, brydio.text-soft, brydio.text-muted, brydio.text-faint, brydio.surface, brydio.surface-soft, brydio.sunken, brydio.elevated, brydio.fill, brydio.selected, brydio.page, brydio.line, brydio.line-strong, brydio.line-faint, brydio.brand, brydio.brand-text, brydio.brand-on, brydio.brand-soft, brydio.brand-line, brydio.success, brydio.success-text, brydio.success-soft, brydio.warn, brydio.warn-text, brydio.warn-soft, brydio.danger, brydio.danger-text, brydio.danger-soft.",
+        "bry-canvas ops[0].stroke must name a colour, Brydio’s (brydio.text) or the app’s (app.ocean); give a plain colour a name in the theme.",
+        null
+      ],
+      "lists": {
+        "properties": [
+          "width",
+          "height",
+          "minWidth",
+          "maxWidth",
+          "minHeight",
+          "maxHeight",
+          "padding",
+          "paddingTop",
+          "paddingRight",
+          "paddingBottom",
+          "paddingLeft",
+          "paddingInline",
+          "paddingBlock",
+          "margin",
+          "marginTop",
+          "marginRight",
+          "marginBottom",
+          "marginLeft",
+          "marginInline",
+          "marginBlock",
+          "gap",
+          "rowGap",
+          "columnGap",
+          "background",
+          "color",
+          "borderColor",
+          "borderWidth",
+          "borderStyle",
+          "borderRadius",
+          "boxShadow",
+          "backgroundImage",
+          "backgroundSize",
+          "backgroundPosition",
+          "backgroundRepeat",
+          "fontSize",
+          "fontWeight",
+          "lineHeight",
+          "textAlign",
+          "opacity",
+          "display",
+          "flexDirection",
+          "flexWrap",
+          "flex",
+          "flexGrow",
+          "flexShrink",
+          "flexBasis",
+          "order",
+          "alignItems",
+          "alignSelf",
+          "alignContent",
+          "justifyContent",
+          "justifyItems",
+          "justifySelf",
+          "gridTemplateColumns",
+          "gridTemplateRows",
+          "gridColumn",
+          "gridRow",
+          "position",
+          "top",
+          "right",
+          "bottom",
+          "left",
+          "inset",
+          "zIndex",
+          "overflow",
+          "overflowX",
+          "overflowY",
+          "transition"
+        ],
+        "refused": {
+          "fontFamily": "every app uses Brydio’s own font, so there is no font setting",
+          "font": "every app uses Brydio’s own font, so there is no font setting",
+          "animation": "animations that never stop aren’t allowed, and a style has no animation; use transition for a change of state",
+          "animationName": "animations that never stop aren’t allowed, and a style has no animation; use transition for a change of state",
+          "animationIterationCount": "animations that never stop aren’t allowed, and a style has no animation; use transition for a change of state",
+          "backgroundColor": "the colour of a background is \"background\"",
+          "border": "a border is borderWidth, borderStyle and borderColor, each on its own",
+          "transform": "a transform could move an element out of where Brydio laid it; use margin or position inside the app’s area",
+          "filter": "a filter is not on the list of properties a style may set",
+          "backdropFilter": "a filter is not on the list of properties a style may set",
+          "clipPath": "a clip path is not on the list of properties a style may set",
+          "mask": "a mask could load an image from outside the app",
+          "content": "there is no generated content in an app",
+          "cursor": "Brydio chooses the pointer from what an element does",
+          "pointerEvents": "Brydio decides what can be pressed",
+          "outline": "Brydio draws the focus ring, so the outline is its own"
+        },
+        "colours": {
+          "text": "--fg",
+          "text-strong": "--fg-strong",
+          "text-soft": "--fg-soft",
+          "text-muted": "--fg-muted",
+          "text-faint": "--fg-faint",
+          "surface": "--bg-surface",
+          "surface-soft": "--bg-surface-soft",
+          "sunken": "--bg-sunken",
+          "elevated": "--bg-elevated",
+          "fill": "--bg-fill",
+          "selected": "--bg-selected",
+          "page": "--bg-page",
+          "line": "--line",
+          "line-strong": "--line-strong",
+          "line-faint": "--line-faint",
+          "brand": "--brand",
+          "brand-text": "--brand-fg",
+          "brand-on": "--brand-on",
+          "brand-soft": "--brand-soft",
+          "brand-line": "--brand-line",
+          "success": "--success",
+          "success-text": "--success-fg",
+          "success-soft": "--success-soft",
+          "warn": "--warn",
+          "warn-text": "--warn-fg",
+          "warn-soft": "--warn-soft",
+          "danger": "--danger",
+          "danger-text": "--danger-fg",
+          "danger-soft": "--danger-soft"
+        }
+      }
+    },
     "manifest-schema": [
       {
         "ok": true,
@@ -8311,7 +9663,7 @@
       {
         "ok": false,
         "messages": [
-          "An entry is a .js or .mjs path inside the bundle."
+          "An entry is a .js or .mjs path inside the bundle, or an .html page for a frame screen."
         ]
       },
       {
