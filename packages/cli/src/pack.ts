@@ -1,4 +1,4 @@
-import { BUNDLE_MAX_BYTES, bundleBytes, sizeOf } from '@brydio/manifest';
+import { BUNDLE_MAX_BYTES, FRAME_ASSETS_MAX_BYTES, bundleBytes, frameAssetBytes, sizeOf } from '@brydio/manifest';
 
 import { build } from './build.ts';
 import { formatProblem, readProject } from './project.ts';
@@ -32,13 +32,18 @@ export async function pack(dir: string, options: PackOptions = {}): Promise<numb
 
   const paths = [...built.files.keys()].sort();
   const width = Math.max(...paths.map(one => one.length));
-  const total = bundleBytes(built.files);
+  // A frame screen's pages, styles, images and media have a cap of their own (PB27).
+  const assets = frameAssetBytes(built.files);
+  const total = bundleBytes(built.files) - assets;
 
   out(`${String(project.raw.name)} ${String(project.raw.version)}: ${paths.length} file${paths.length === 1 ? '' : 's'}`);
 
   for (const path of paths) out(`  ${path.padEnd(width)}  ${sizeOf(built.files.get(path)!.length).padStart(10)}`);
 
   out(`Total ${sizeOf(total)} of the ${sizeOf(BUNDLE_MAX_BYTES)} a bundle may be (${Math.round((total / BUNDLE_MAX_BYTES) * 100)}%), ${sizeOf(zipFiles(built.files).length)} zipped.`);
+  if (assets) {
+    out(`Frame screens' pages, styles, images and media: ${sizeOf(assets)} of the ${sizeOf(FRAME_ASSETS_MAX_BYTES)} they may be (${Math.round((assets / FRAME_ASSETS_MAX_BYTES) * 100)}%), counted apart.`);
+  }
   out(`Fingerprint ${built.hash}`);
   out('Nothing was sent. brydio publish uploads exactly these files.');
 

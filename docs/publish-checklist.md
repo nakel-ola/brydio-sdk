@@ -286,6 +286,21 @@ Screens may call only tools that exist:
 | `bundle_manifest_missing` | That bundle has no app.json at its root. | yes | publish | Run `brydio build`. |
 | `bundle_empty` | That bundle has no screens in it, only a manifest. | yes | publish | Declare and build a screen. |
 
+A bundle with a frame screen (PB27) may also hold that screen's page (its
+`entry`, `.html`), stylesheets, images and media (`.css`, `.png`, `.jpg`,
+`.gif`, `.webp`, `.avif`, `.svg`, `.mp4`, `.webm`, `.mp3`, `.ogg`, `.wav`), up
+to 4 MB of them, counted apart from the 1 MB of code. No fonts: every app uses
+Brydio's own. `brydio build` copies the page from `src/<entry>` and anything
+under `src/assets/` to `assets/`, and builds `src/<entry name>.ts(x)` beside
+the page when there is one; `brydio pack` shows both totals.
+
+| Code | Refused with | validate | server | How to fix |
+|---|---|---|---|---|
+| `screen_kind_entry` | A frame screen’s entry is an .html page inside the bundle. (Or: An .html entry is a frame screen: give the screen "kind": "frame".) | yes | publish | Give a frame screen `"kind": "frame"` and an `.html` entry; give a tree screen a `.js` one. |
+| `bundle_file_not_code` (frame screens) | "`<file>`" is not a script, a frame screen's page, a stylesheet, an image or media. A bundle holds only those and app.json. | yes | publish | Take the file out (a font, for instance), or rename an extra page. |
+| `bundle_too_large` (frame screens) | The frame screens' pages, styles, images and media are `<size>`, over the 4.00 MB cap. The largest is "`<file>`" at `<size>`. | yes | publish | Make the pictures or media smaller. |
+| `frame_password_field` (warning) | The "`<screen>`" frame screen has a password field (`<file>`). An app never asks for a Brydio password or sign-in; a reviewer will ask why it is there. | yes | publish, as a warning | Take it out; outside services are reached through the app's connections. |
+| `frame_font` (warning) | `<file>` declares a font of its own. A frame screen loads no fonts; every app uses Brydio's own, so this one is never shown. | yes | publish, as a warning | Take the `@font-face` out. |
 | `archive_unreadable`, `archive_too_large`, `archive_uncompressed_too_large`, `archive_too_many_entries`, `archive_member_path_absolute`, `archive_member_path_has_parent_segment`, `archive_member_path_has_backslash`, `archive_member_path_invalid`, `archive_member_type_unsupported`, `skill_directory_hidden` | The archive reader's sentence, at bundle scale ("That upload is larger than 2 MB. A bundle is at most 1 MB of code."). | no: `brydio publish` writes the zip itself | publish | Publish with `brydio publish` rather than a zip made by hand. |
 
 ## 7. No secret-looking string in the bundle

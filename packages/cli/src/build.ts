@@ -1,11 +1,15 @@
 import {
   BUNDLE_MANIFEST,
   BUNDLE_MAX_BYTES,
+  FRAME_ASSETS_MAX_BYTES,
   bundleBytes,
+  frameAssetBytes,
   bundleHash,
   brandPathsOf,
   bundleProblem,
   collectionsOf,
+  isFrameAsset,
+  screenKindOf,
   sizeOf,
 } from '@brydio/manifest';
 import { createHash } from 'node:crypto';
@@ -105,7 +109,9 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
   // file each imports rather than a copy in every screen. One screen, or a
   // build that cannot be done together, is built screen by screen below,
   // which is also where a screen that did not build is named.
-  const screens = Object.entries(manifest.screens ?? {});
+  // A frame screen (PB27) is the app's own page: built below, apart.
+  const frames = Object.entries(manifest.screens ?? {}).filter(([screen]) => screenKindOf(manifest, screen) === 'frame');
+  const screens = Object.entries(manifest.screens ?? {}).filter(([screen]) => screenKindOf(manifest, screen) !== 'frame');
   const together =
     options.hot !== true && options.split !== false && screens.length > 1
       ? await bundleScreens(
@@ -173,6 +179,50 @@ export async function build(dir: string, options: BuildOptions = {}): Promise<Bu
     // Beside the entry, which imports them as `./chunk-….js`. Screens that
     // share a runtime share its file.
     for (const [name, bytes] of built.chunks) files.set(join(dirname(entry), name), bytes);
+  }
+
+  // A frame screen (PB27): its page, copied from `src/` to where the manifest
+  // says, and the script beside it of the same name, when there is one,
+  // built like a screen (`screens/settings.html` loads `./settings.js`).
+  for (const [screen, { entry }] of frames) {
+    const page = join(project.root, 'src', entry);
+
+    if (!existsSync(page)) {
+      problems.push({
+        code: 'screen_source_missing',
+        severity: 'error',
+        path: `screens.${screen}.entry`,
+        message: `The "${screen}" frame screen's page is src/${entry}, and there is no such file.`,
+      });
+      continue;
+    }
+
+    files.set(entry, readFileSync(page));
+
+    const script = entry.replace(/\.html$/, '.js');
+    const source = sourceOf(project.root, script);
+
+    if (!source) continue;
+
+    const built = await bundle(project.root, source, baked, options.minify ?? true, false);
+
+    if (typeof built === 'string') {
+      problems.push({ code: 'screen_build_failed', severity: 'error', file: relative(project.root, source), message: `The "${screen}" frame screen's script did not build: ${built}` });
+      continue;
+    }
+
+    files.set(script, built.code);
+    for (const [name, bytes] of built.chunks) files.set(join(dirname(script), name), bytes);
+  }
+
+  // A frame screen's styles, pictures and media, from `src/assets/`, kept at
+  // `assets/` (PB27). Only with a frame screen: a tree screen has none.
+  if (frames.length) {
+    for (const path of assetFiles(join(project.root, 'src', 'assets'))) {
+      const inside = `assets/${relative(join(project.root, 'src', 'assets'), path).replace(/\\/g, '/')}`;
+
+      if (isFrameAsset(inside) && !inside.endsWith('.html')) files.set(inside, readFileSync(path));
+    }
   }
 
   // The shared files, at the paths the screens import them by. Only once
@@ -287,7 +337,10 @@ export function describeBuild(result: BuildResult, root: string): string {
     ...(shared.length
       ? [`The screens share ${sharedBytes ? sizeOf(sharedBytes) : 'nothing'} of code in ${shared.length} ${shared.length === 1 ? 'file' : 'files'} under ${CHUNKS_FOLDER}/, counted once.`]
       : []),
-    `Total ${sizeOf(result.bytes)} of ${sizeOf(BUNDLE_MAX_BYTES)}.`,
+    `Total ${sizeOf(result.bytes - frameAssetBytes(result.files))} of ${sizeOf(BUNDLE_MAX_BYTES)}.`,
+    ...(frameAssetBytes(result.files)
+      ? [`Frame screens' pages, styles, images and media ${sizeOf(frameAssetBytes(result.files))} of ${sizeOf(FRAME_ASSETS_MAX_BYTES)}, counted apart.`]
+      : []),
     `Fingerprint ${result.hash}`,
   ].join('\n');
 }
@@ -588,4 +641,13 @@ export function packageVersionProblem(root: string, manifestVersion: unknown): P
     message: `package.json says version ${JSON.stringify(pkg.version)} and the manifest says ${JSON.stringify(manifestVersion)}. An app's version lives in the manifest alone.`,
     hint: 'Take "version" out of package.json, and change the number with brydio version.',
   };
+}
+
+/** Every file under a folder, for a frame screen's assets. */
+function assetFiles(dir: string): string[] {
+  if (!existsSync(dir)) return [];
+
+  return readdirSync(dir, { withFileTypes: true }).flatMap(entry =>
+    entry.name.startsWith('.') ? [] : entry.isDirectory() ? assetFiles(join(dir, entry.name)) : [join(dir, entry.name)],
+  );
 }

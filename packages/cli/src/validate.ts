@@ -12,6 +12,9 @@ import {
   isScriptPath,
   publishedMigrationProblems,
   toolsProblem,
+  framePagesOf,
+  frameWarnings,
+  screenKindOf,
   themeWarnings,
   unknownHostGrant,
 } from '@brydio/manifest';
@@ -95,8 +98,10 @@ export function validate(dir: string, options: ValidateOptions = {}): ValidateRe
       problems.push({ code: 'bundle_not_built', severity: 'error', message: `There is no ${dist}/ yet. Run brydio build first.` });
     } else {
       for (const [screen, { entry }] of Object.entries(project.manifest.screens ?? {})) {
-        // What `AppVersionService.record` refuses: an entry that is not a script in the bundle.
-        if (!isScriptPath(entry) || !built.has(entry)) {
+        // What `AppVersionService.record` refuses: an entry that is not in the bundle — a script, or a frame screen's page (PB27).
+        const page = screenKindOf(project.manifest, screen) === 'frame' && entry.endsWith('.html');
+
+        if (!(page || isScriptPath(entry)) || !built.has(entry)) {
           problems.push({
             code: 'screen_not_built',
             severity: 'error',
@@ -135,6 +140,11 @@ export function validate(dir: string, options: ValidateOptions = {}): ValidateRe
       const keyIn = developerKeyIn(built);
 
       if (keyIn) problems.push({ code: 'developer_key_in_bundle', severity: 'error', file: `${dist}/${keyIn}`, message: DEVELOPER_KEY_MESSAGE });
+
+      // PB27: what the registry warns about in a frame screen's own files.
+      for (const warning of frameWarnings(project.raw, built)) {
+        problems.push({ code: warning.code, severity: 'warning', file: `${dist}/${warning.at}`, message: warning.message });
+      }
 
       const shipped = built.get(BUNDLE_MANIFEST);
 
@@ -224,9 +234,31 @@ function screenSources(root: string): [string, string][] {
     .map(([path, bytes]) => [`src/${path}`, new TextDecoder().decode(bytes)]);
 }
 
-/** What the source checks find in every screen source under `src/`, tests aside. */
+/**
+ * What the source checks find in every screen source under `src/`, tests aside.
+ *
+ * A frame screen's own script (PB27: `src/screens/settings.ts` beside
+ * `screens/settings.html`) runs in a page, not a worker, so the page is its
+ * to use; everything else still holds — no network, no storage, no eval, no
+ * import from outside — as Brydio's frame enforces it anyway.
+ */
 export function checkSources(root: string): Problem[] {
-  return screenSources(root).flatMap(([file, text]) => checkSource(file, text));
+  const pages = framePageScripts(root);
+
+  return screenSources(root).flatMap(([file, text]) =>
+    checkSource(file, text).filter(problem => !(problem.code === 'dom_global' && pages.has(file.replace(/\.(?:tsx?|jsx?|mjs)$/, '')))),
+  );
+}
+
+/** The stems of the frame screens' own scripts: `src/screens/settings`. */
+function framePageScripts(root: string): Set<string> {
+  try {
+    const raw = JSON.parse(readFileSync(readProject(root).manifestFile, 'utf8')) as Record<string, unknown>;
+
+    return new Set([...framePagesOf(raw)].map(page => `src/${page.replace(/\.html$/, '')}`));
+  } catch {
+    return new Set();
+  }
 }
 
 /** Every tool, collection and host grant the screens name plainly, with where. */

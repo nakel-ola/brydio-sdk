@@ -27,7 +27,12 @@ export {
   BUNDLE_MANIFEST,
   BUNDLE_MAX_BYTES,
   BUNDLE_PATH_MAX_CHARS,
+  FRAME_ASSETS_MAX_BYTES,
+  FRAME_ASSET_TYPES,
   bundleBytes,
+  contentTypeOf,
+  frameAssetBytes,
+  isFrameAsset,
   bundleHash,
   brandOf,
   bundleProblem,
@@ -193,3 +198,7 @@ export {
   type LookProblemCode,
   type LookWarningCode,
 } from './look.ts';
+
+// PB27: tree screens and frame screens.
+export { SCREEN_KINDS, framePagesOf, screenKindOf, screensOfKind, type ScreenKind } from './screen-kinds.ts';
+export { frameWarnings, type FrameWarning } from './frame-checks.ts';

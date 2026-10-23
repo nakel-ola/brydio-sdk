@@ -1,6 +1,8 @@
 import { existsSync, readFileSync, watch } from 'node:fs';
 import { extname, join, normalize, relative, sep } from 'node:path';
 
+import { contentTypeOf } from '@brydio/manifest';
+
 import { build, describeBuild, type BuildResult } from './build.ts';
 import { formatProblem, readProject, type Problem } from './project.ts';
 
@@ -121,8 +123,13 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
 
         const file = normalize(join(outDir, path.replace(/^\/+/, '')));
 
-        // Nothing outside the built folder, and nothing but what a bundle holds.
-        if (!file.startsWith(outDir + sep) || !['.js', '.mjs', '.json'].includes(extname(file))) {
+        // Nothing outside the built folder, and nothing but what a bundle holds:
+        // code, the manifest, and a frame screen's pages, styles, images and
+        // media (PB27), each with the type Brydio's bundle route sends.
+        const inside = relative(outDir, file).split(sep).join('/');
+        const type = extname(file) === '.json' ? 'application/json; charset=utf-8' : contentTypeOf(inside);
+
+        if (!file.startsWith(outDir + sep) || !type) {
           return new Response('Not found', { status: 404, headers: HEADERS });
         }
 
@@ -131,7 +138,12 @@ export async function dev(dir: string, options: DevOptions = {}): Promise<DevSes
         return body.exists().then(exists =>
           exists
             ? new Response(body, {
-                headers: { ...HEADERS, 'Content-Type': extname(file) === '.json' ? 'application/json; charset=utf-8' : 'text/javascript; charset=utf-8' },
+                headers: {
+                  ...HEADERS,
+                  'Content-Type': type,
+                  // As Brydio's: a page or a picture opened on its own runs nothing.
+                  ...(type.startsWith('text/javascript') || type.startsWith('application/json') ? {} : { 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox" }),
+                },
               })
             : new Response('Not found', { status: 404, headers: HEADERS }),
         );

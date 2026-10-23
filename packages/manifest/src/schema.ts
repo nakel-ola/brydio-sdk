@@ -14,6 +14,7 @@ import {
   type FieldType,
 } from './field-types.ts';
 import { themeProblems } from './look.ts';
+import { SCREEN_KINDS } from './screen-kinds.ts';
 import { migrationsSchema } from './migrations.ts';
 import { openSchemaProblems, type OpenProblemCode } from './open-schema.ts';
 import { confirmEmailProblems, confirmEmailSchema, type ConfirmProblemCode } from './confirm-email.ts';
@@ -204,18 +205,40 @@ const collectionSchema = z.object({
   editors: editorsSchema.optional(),
 });
 
-const screenSchema = z.object({
-  /**
-   * Relative to the bundle's root: `screens/board.js` or `screens/board.mjs`.
-   * The server's schema said `.js` only while its store and the mount took
-   * `.mjs` too; the schema gives (E1 and Hodler, 16 Sep 14:04 and 14:12).
-   */
-  entry: z
-    .string()
-    .min(1)
-    .max(200)
-    .regex(/^(?!\/)(?!.*\.\.)[A-Za-z0-9_\-./]+\.m?js$/, 'An entry is a .js or .mjs path inside the bundle.'),
-});
+const screenSchema = z
+  .object({
+    /**
+     * Relative to the bundle's root: `screens/board.js` or `screens/board.mjs`.
+     * The server's schema said `.js` only while its store and the mount took
+     * `.mjs` too; the schema gives (E1 and Hodler, 16 Sep 14:04 and 14:12). A
+     * frame screen's entry is its page, `screens/settings.html` (PB27).
+     */
+    entry: z
+      .string()
+      .min(1)
+      .max(200)
+      .regex(
+        /^(?!\/)(?!.*\.\.)[A-Za-z0-9_\-./]+\.(?:m?js|html)$/,
+        'An entry is a .js or .mjs path inside the bundle, or an .html page for a frame screen.',
+      ),
+    /** `tree` (the default): drawn by Brydio from the app's elements. `frame`: the app's own HTML and CSS (PB27). */
+    kind: z.enum(SCREEN_KINDS).optional(),
+  })
+  .superRefine((screen, ctx) => {
+    const page = screen.entry.endsWith('.html');
+
+    if ((screen.kind === 'frame') !== page) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['entry'],
+        message:
+          screen.kind === 'frame'
+            ? 'A frame screen’s entry is an .html page inside the bundle.'
+            : 'An .html entry is a frame screen: give the screen "kind": "frame".',
+        params: { code: 'screen_kind_entry' },
+      });
+    }
+  });
 
 /** Most custom tools one app may declare (A3-F08). */
 export const MAX_CUSTOM_TOOLS = 100;

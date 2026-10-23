@@ -1,4 +1,4 @@
-import { workerPort, type Port } from './port.ts';
+import { framePort, inFrameScreen, workerPort, type Port } from './port.ts';
 import {
   PROTOCOL,
   type AppDocument,
@@ -832,9 +832,9 @@ function run(listener: () => void): void {
 
 let current: Bridge | null = null;
 
-/** The bridge of the worker this code runs in, made on first use. */
+/** The bridge of the worker this code runs in — or the frame screen's page (PB27) — made on first use. */
 export function defaultBridge(): Bridge {
-  current ??= new Bridge(workerPort());
+  current ??= new Bridge(inFrameScreen() ? framePort() : workerPort());
 
   return current;
 }
