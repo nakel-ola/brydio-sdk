@@ -81,6 +81,8 @@ describe('pictures of every screen (A5-F04-S04)', () => {
     const code = await publish(app, {
       registry: 'http://registry.test',
       home,
+      // Not the CI runner's own variables: on a tag run they would make this a CI publish.
+      env: Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GITHUB_'))),
       out: one => lines.push(one),
       fetch: async url => {
         sent.push(url);

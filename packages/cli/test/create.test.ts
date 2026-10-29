@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { build, create, CreateRefused, publish, SDK_ROOT, test as runTests, validate, type CreateOptions } from '../src/index.ts';
-import { brydioHome, fakeRegistry } from './fake-registry.ts';
+import { brydioHome, fakeRegistry, localEnv } from './fake-registry.ts';
 
 const made: string[] = [];
 
@@ -152,7 +152,7 @@ describe('brydio create', () => {
       const home = brydioHome(reg.url);
 
       try {
-        const code = await publish(dir, { registry: reg.url, home, screenshots: false, out: () => {} });
+        const code = await publish(dir, { registry: reg.url, home, env: localEnv(), screenshots: false, out: () => {} });
 
         expect(code).toBe(0);
         expect(reg.received.filter(one => one.method === 'POST').map(one => one.path)).toEqual(['/v1/apps/fresh-publish/versions']);

@@ -60,6 +60,14 @@ export interface Received {
   body: Record<string, unknown> | null;
 }
 
+/**
+ * This process's environment without the CI runner's own variables, so a test
+ * run inside GitHub Actions (on a tag, say) publishes as it would on a laptop.
+ * The tests that mean to be in Actions pass their own `env`.
+ */
+export const localEnv = (): NodeJS.ProcessEnv =>
+  Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GITHUB_') && !name.startsWith('ACTIONS_')));
+
 export const ADA: FakeUser = { id: 'user_ada', name: 'Ada' };
 export const ADA_TOKEN = 'bry_reg_ada';
 

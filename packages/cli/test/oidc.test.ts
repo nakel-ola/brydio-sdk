@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 
 import { BRAND, OWNED } from '../../../test-support/owner-rules.ts';
 import { publish, trust, WORKFLOW, WORKFLOW_PATH } from '../src/index.ts';
-import { brydioHome, fakeRegistry, type FakeRegistry } from './fake-registry.ts';
+import { brydioHome, fakeRegistry, localEnv, type FakeRegistry } from './fake-registry.ts';
 
 /**
  * Publishing from GitHub Actions with no stored secret (PB05), and the
@@ -66,7 +66,7 @@ async function trusted(): Promise<FakeRegistry> {
   const home = brydioHome(reg.url);
 
   made.push(home);
-  expect(await publish(app('1.0.0'), { registry: reg.url, home, screenshots: false, out: () => {} })).toBe(0);
+  expect(await publish(app('1.0.0'), { registry: reg.url, home, env: localEnv(), screenshots: false, out: () => {} })).toBe(0);
   expect(await trust(['tiny'], { registry: reg.url, home, repo: 'acme/tiny', workflow: 'publish.yml', out: () => {} })).toBe(0);
   reg.idTokens.set('github-id-token', { repo: 'acme/tiny', workflow: 'acme/tiny/.github/workflows/publish.yml@refs/tags/v1.1.0', commit: 'abc123def4567890' });
 

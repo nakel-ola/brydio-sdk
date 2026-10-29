@@ -9,7 +9,7 @@ import { BUNDLE_MANIFEST } from '@brydio/manifest';
 import { brydioAnswers, inBrydio } from '../../../test-support/contracts.ts';
 import { BRAND, OWNED } from '../../../test-support/owner-rules.ts';
 import { build, publish, sdkVersionFor, signingMessage, writeKeyFile, zipFiles, type PublishOptions } from '../src/index.ts';
-import { ADA, ADA_TOKEN, brydioHome, fakeRegistry, unzip, type FakeRegistry } from './fake-registry.ts';
+import { ADA, ADA_TOKEN, brydioHome, fakeRegistry, localEnv, unzip, type FakeRegistry } from './fake-registry.ts';
 
 const SERVER_PUBLISH = 'apps/api/src/apps/publishing/app-publish.service.ts';
 const made: string[] = [];
@@ -57,7 +57,7 @@ async function run(root: string, reg: FakeRegistry, options: Partial<PublishOpti
 
   made.push(home);
 
-  const code = await publish(root, { registry: reg.url, home, screenshots: false, out: line => lines.push(line), ...rest });
+  const code = await publish(root, { registry: reg.url, home, env: localEnv(), screenshots: false, out: line => lines.push(line), ...rest });
 
   return { code, text: lines.join('\n') };
 }
@@ -266,7 +266,7 @@ describe('brydio publish to the registry (PB03)', () => {
     made.push(home);
 
     const lines: string[] = [];
-    const code = await publish(tiny(), { registry: 'http://127.0.0.1:1', home, screenshots: false, out: line => lines.push(line) });
+    const code = await publish(tiny(), { registry: 'http://127.0.0.1:1', home, env: localEnv(), screenshots: false, out: line => lines.push(line) });
 
     expect(code).toBe(1);
     expect(lines.join('\n')).toContain('Could not reach the registry at http://127.0.0.1:1');
