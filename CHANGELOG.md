@@ -4,7 +4,9 @@ Every package here shares one version, so this is one changelog. Each entry
 says what changed and, where something you wrote has to change with it, what
 to do about it.
 
-## 0.1.0-alpha.60
+## 0.1.0-alpha.61
+
+The first release of the changes below. `v0.1.0-alpha.60` was tagged but never published: a CLI test read the release runner's own tag and failed.
 
 Apps get far more say over how they look (PB21–PB27). The manifest takes a `theme`: an `accent` (`{ light, dark }`) that becomes the `brand` tone inside the app, named `colors` pairs read as `app.<name>` by a `tone` or a `style`, `rounding` (`none` to `round`) and `density` (`compact`, `normal`, `roomy`). Every colour needs both values, and low contrast is a warning (`theme_contrast_low`). There is no font setting: every app uses Brydio's own font. Every element takes a `style`, limited to a safe list (size, spacing, background, text colour, border, rounding, shadow, font size and weight, opacity, flex and grid, position inside the app's area); fixed or sticky position, a `z-index` above the app's area, any outside `url()`, outside fonts and endless animations are refused with the rule named. `brydio validate`, Brydio's publish check, the registry and the host all apply the same rules. New elements: `bry-box`, a container with no look of its own, and `bry-canvas`, a fenced drawing area that takes a list of shapes and raises `pointer` and `key`. `bry-select` and `bry-combobox` take `multiple` and raise `change` with `{ values, value }`; apps that don't set it see no change. See [Elements](docs/elements.md) and [Manifest](docs/manifest.md).
 

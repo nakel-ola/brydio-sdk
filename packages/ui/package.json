@@ -1,6 +1,6 @@
 {
   "name": "@brydio/ui",
-  "version": "0.1.0-alpha.60",
+  "version": "0.1.0-alpha.61",
   "description": "The catalogue of elements a Brydio app draws with: their names, settings and events.",
   "license": "MIT",
   "author": "Brydio Inc.",
@@ -20,7 +20,7 @@
     "src"
   ],
   "dependencies": {
-    "@brydio/manifest": "0.1.0-alpha.60",
+    "@brydio/manifest": "0.1.0-alpha.61",
     "lit": "3.3.3"
   },
   "devDependencies": {
